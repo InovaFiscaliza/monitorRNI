@@ -1,0 +1,3 @@
+Nome do arquivo: C:\P&D\AppRNI\DataBase\Meas_Sondas\monitEM_Mapem_13MT0312_202404231656.txt
+Número de linhas do arquivo: 2274
+Tipo de sonda: Monitem

@@ -100,7 +100,7 @@ function Data_Monitem_Narda  = ReadFile_Meas_Sondas(app, TypeFileMeas, File_Sond
             end
         % fcn.Metadata(app, TypeFileMeas, File_Sondas, height(dataArray));
         
-        Data_Monitem_Narda  = {File_Sondas, contsteps, TypeFileMeas, dataArray};
+        Data_Monitem_Narda  = {File_Sondas, contsteps, TypeProbes, dataArray};
         % Fechar a barra de progresso
         close(numOccurrences{3});
         app.MaioresnveisButton.Enable = true;

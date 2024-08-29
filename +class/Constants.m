@@ -12,31 +12,18 @@ classdef (Abstract) Constants
         xDecimals     = 5        
         floatDiffTol  = 1e-5
 
-        userPaths     = {fullfile(getenv('USERPROFILE'), 'Documents'); fullfile(getenv('USERPROFILE'), 'Downloads')}
-
-        GUIColumns        = {'ID', 'Unidade regional', 'UF', 'Município', 'Serviço', 'N° Fistel', 'N° da Estação', 'Latitude da Estação', 'Longitude da Estação', 'Data da Medição', 'Valor Medido (V/m)', 'Latitude do maior valor Medido', 'Longitude do maior valor Medido', 'N° de Medidas acima de 14 V/M', 'Justificativa (apenas para estações sem medições)', 'Observações', 'Distância (metros)'};
-  
-        GUIColumns_Sondas = {'DataTime', 'Latitude', 'Longitude', 'E_VM'};
-                                % rawTable
+        GUIColumns        = {'ID', 'UR (Unidade Regional)', 'UF', 'Município', 'Serviço', 'N° Fistel', 'N° da Estação', 'Latitude Estação', 'Longitude Estação'};
+       
+        GUINewColumns     = {'Data da Medição', 'Valor Medido (V/m)', 'Latitude maior valor Medido', 'Longitude maior valor Medido', 'N° de Medidas acima de 14 V/M', 'Justificativa (apenas para estações sem medições)', 'Observações', 'Distância (metros)'}
         
-        % opts = delimitedTextImportOptions('NumVariables',       17,         ...
-        %                                       'Encoding',           'UTF-8',    ...
-        %                                       'Delimiter',          ';',        ...
-        %                                       'VariableNamingRule', 'preserve', ...
-        %                                       'VariableNamesLine',  1,         class( ...
-        %                                       'DataLines',          2,          ...
-        %                                       'VariableTypes',      {'double', 'cell', 'cell', 'cell', 'cell', 'cell', 'cell', 'cell', 'cell', 'string', 'string', 'string', 'double', 'double', 'string', 'string', 'string'});
-    end
+        % Novas colunas para adicionar na UITable
+        GUIColumnsAll     = {'ID', 'Unidade regional', 'UF', 'Município', 'Serviço', 'N° Fistel', 'N° da Estação', 'Latitude da Estação', 'Longitude da Estação', 'Data da Medição', 'Valor Medido (V/m)', 'Latitude do maior valor Medido', 'Longitude do maior valor Medido', 'N° de Medidas acima de 14 V/M', 'Justificativa (apenas para estações sem medições)', 'Observações', 'Distância (metros)'};
 
-    
-    methods (Static = true)
-        %-----------------------------------------------------------------%
-        function fileName = DefaultFileName(userPath, Prefix, Issue)
-            fileName = fullfile(userPath, sprintf('%s_%s', Prefix, datestr(now, 'yyyy.mm.dd_THH.MM.SS')));
+        GUIColumns_Sondas = {'DataTime', 'Latitude', 'Longitude', 'E_VM'};
 
-            if Issue > 0
-                fileName = sprintf('%s_%d', fileName, Issue);
-            end
-        end
+        GuiColumnWidth = {40, 50, 50, 170, 170, 100, 100, 100, 100};
+        GuiColumnWidthClear = {1, 1, 1, 1, 1, 1, 100, 1, 1, 80, 70, 100, 100, 80, 140, 140, 80};
+                                % rawTable
+
     end
 end

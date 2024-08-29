@@ -1,15 +1,5 @@
 function Type_Meas_Probe = SearchTypeProbe(app, File_Sondas)
 
-            % Nome do arquivo
-            % Caminho do diretório
-            % directoryPath = 'C:\P&D\AppRNI\DataBase\Meas_Sondas';
-            
-            % Nome do arquivo
-            % fileName = File_Sondas;  % Substitua pelo nome do arquivo real
-            
-            % Construir o caminho completo para o arquivo usando sprintf
-            % fullFilePath = sprintf('%s\\%s', directoryPath, fileName);
-
             % Abrir o arquivo para leitura
             fileID = fopen(File_Sondas, 'r');
             

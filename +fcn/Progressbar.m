@@ -1,24 +1,46 @@
-function ProgressoBarraStatus = Progressbar(app, nFiles)
-    % Número de passos no loop
-    nSteps = 10;
+function ProgressoBarraStatus = Progressbar(app, File_Sondas)
+            % Criar a figura da barra de progresso
+            % Tamanho da tela
+            screenSize = get(0, 'ScreenSize');
+            screenWidth = screenSize(3);
+            screenHeight = screenSize(4);
+            
+            % Define o tamanho da figura
+            figWidth = 400;
+            figHeight = 110;
+            
+            % Calcula a posição para centralizar a figura na tela
+            figLeft = (screenWidth - figWidth) / 2;
+            figBottom = (screenHeight - figHeight) / 2;
+            
+            % Cria a figura centralizada e desabilita a maximização
+            fig = uifigure('Position', [figLeft, figBottom, figWidth, figHeight], 'Resize', 'off');
+            
+            % Criar o diálogo de progresso
+            d = uiprogressdlg(fig, 'Title', 'Aguarde a importação dos dados das medições!', ...
+                'Message', 'Opening the application', ...
+                'Indeterminate', 'off', ... % Para ter uma barra de progresso que aumenta gradualmente
+                'Value', 0);  % Valor inicial do progresso
+            
+            drawnow
+            
+            % Ler o conteúdo do arquivo para uma string
+            fileContent = fileread(File_Sondas);
 
-    % Criar a barra de progresso
-    hWaitbar = waitbar(0, 'Progresso...');
+            % Encontrar as ocorrências da palavra-chave
+            occurrences = numel(strfind(fileContent, sprintf('\n')));
 
-    % Loop para atualizar a barra de progresso
-    for k = 1:nSteps
-        % Simulação de um processamento (pause pode ser substituído por sua tarefa)
-        pause(0.1);
-        
-        % Atualizar a barra de progresso
-        updateProgressBar(hWaitbar, k, nSteps, nFiles);
-    end
+            % Encontrar as ocorrências da palavra-chave 'PAUSED'
+            occurrences_PAUSED = numel(strfind(fileContent, 'PAUSED'));
 
-    % Fechar a barra de progresso
-    close(hWaitbar);
-end
+            % Total de linahs com iformações úteis no arquivo
+            occurrences = occurrences - occurrences_PAUSED;
+                
+            StepsProgress = 100;
+            % Número do Sterps do Progressbar
+            numOccurrences = round(occurrences/StepsProgress);
 
-function updateProgressBar(hWaitbar, currentStep, totalSteps, nFiles)
-    progress = currentStep / totalSteps;
-    waitbar(progress, hWaitbar, sprintf('Lendro Arquivo %d%% / Progresso: %d%%', nFiles, round(progress * 10)));
+            contsteps = 0;
+            count_ocorrencia = 0;
+            corrent_Step = 0;
 end

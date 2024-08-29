@@ -14,8 +14,13 @@ function Data_PA_RNI = ReadFile_PA_RNI(app)
 
             Data_PA_RNI = readtable(Path_Data_PA_RNI, opts);
 
-            Data_PA_RNI{:,8} = replace(string(table2array(Data_PA_RNI(:,8))),",",".");
-            Data_PA_RNI{:,9} = replace(string(table2array(Data_PA_RNI(:,9))),",",".");
+            format long;
+
+            ProcData_Lat_Estacao  = str2double(replace(string(table2array(Data_PA_RNI(:,8))),",","."));
+            ProcData_Long_Estacao = str2double(replace(string(table2array(Data_PA_RNI(:,9))),",","."));
+
+            Data_PA_RNI{:,8} = ProcData_Lat_Estacao;
+            Data_PA_RNI{:,9} = ProcData_Long_Estacao;
 
             % Identificar os valor app.Data_PA_RNIs ausentes (NaN ou vazio)
             missingIdx = cellfun(@(x) isempty(x) || (ischar(x) && strcmpi(x, 'NaN')), Data_PA_RNI {:,1:9});

@@ -1,0 +1,3 @@
+Nome do arquivo: C:\P&D\AppRNI\DataBase\Meas_Sondas\8059Log_080152_270324.txt
+Número de linahs do arquivo: 18517
+Tipo de sonda: Narda
