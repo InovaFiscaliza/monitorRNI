@@ -132,5 +132,5 @@ function Data_Probe  = ReadFile_Meas_Probes(app, TypeFileMeas, fileFullName, Arq
                             'LongitudeLimits', [minLongitude; maxLongitude],...
                             'MetaDataProbe',   {Metadata_Probe});
 
-        app.MaioresnveisButton.Enable = true;
+        app.CalcMaisProx.Enable = true;
 end
