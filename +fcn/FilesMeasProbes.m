@@ -1,4 +1,4 @@
-function Files_Meas_Probes = Files_Dir_Meas_Probes(app)
+function Files_Meas_Probes = FilesMeasProbes(app)
 
             % Especificar o caminho do diretório
             path = 'C:\P&D\AppRNI\DataBase\Meas_Sondas';

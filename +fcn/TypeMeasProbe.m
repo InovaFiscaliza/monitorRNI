@@ -1,4 +1,4 @@
-function Type_Meas_Probe = SearchTypeProbe(app, File_Sondas)
+function Type_Meas_Probe = TypeMeasProbe(app, File_Sondas)
 
             % Abrir o arquivo para leitura
             fileID = fopen(File_Sondas, 'r');
