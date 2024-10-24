@@ -13,5 +13,5 @@ function Files_Meas_Probes = FilesMeasProbes(app)
             fileNames = {fileInfo(isFile).name}';
             
             % Converter para vetor de strings (opcional)
-            fileNames = string(fileNames);
+            fileNames         = string(fileNames);
             Files_Meas_Probes = fileNames;

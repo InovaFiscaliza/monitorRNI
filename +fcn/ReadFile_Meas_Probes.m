@@ -32,7 +32,7 @@ function Data_Probe  = ReadFile_Meas_Probes(app, TypeFileMeas, fileFullName, Arq
                     % Encontrar todas as linhas que correspondem ao padrão
                     validLines_S_W = ~cellfun(@isempty, regexp(filenonEmptyLines, pattern_SW, 'once'));
                     validLines_N_E = ~cellfun(@isempty, regexp(filenonEmptyLines, pattern_NE, 'once'));
-                    validLines = (validLines_S_W + validLines_N_E)~= 0;
+                    validLines     = (validLines_S_W + validLines_N_E)~= 0;
 
                     fileValidRNI  = filenonEmptyLines(validLines);
 
@@ -43,17 +43,17 @@ function Data_Probe  = ReadFile_Meas_Probes(app, TypeFileMeas, fileFullName, Arq
                                            
                     %Lê as informações de Latitude
                     Latitude_Narda_int_S_W = str2double(extractBetween(fileValidRNI, ',A,', ',S,'));
-                    Latitude_Narda_S_W = -1*(floor(Latitude_Narda_int_S_W/100) + (((Latitude_Narda_int_S_W/100) - floor(Latitude_Narda_int_S_W/100))/0.6));
+                    Latitude_Narda_S_W     = -1*(floor(Latitude_Narda_int_S_W/100) + (((Latitude_Narda_int_S_W/100) - floor(Latitude_Narda_int_S_W/100))/0.6));
                     Latitude_Narda_int_N_E = str2double(extractBetween(fileValidRNI, ',A,', ',N,'));
-                    Latitude_Narda_N_E = floor(Latitude_Narda_int_N_E/100) + (((Latitude_Narda_int_N_E/100) - floor(Latitude_Narda_int_N_E/100))/0.6);
-                    Latitude = [Latitude_Narda_S_W Latitude_Narda_N_E];
+                    Latitude_Narda_N_E     = floor(Latitude_Narda_int_N_E/100) + (((Latitude_Narda_int_N_E/100) - floor(Latitude_Narda_int_N_E/100))/0.6);
+                    Latitude               = [Latitude_Narda_S_W Latitude_Narda_N_E];
          
                     %Lê as informações de Longitude
                     Longitude_Narda_int_S_W = str2double(extractBetween(fileValidRNI, ',S,', ',W,'));
-                    Longitude_Narda_S_W = -1*(floor(Longitude_Narda_int_S_W/100) + (((Longitude_Narda_int_S_W/100) - floor(Longitude_Narda_int_S_W/100))/0.6));
+                    Longitude_Narda_S_W     = -1*(floor(Longitude_Narda_int_S_W/100) + (((Longitude_Narda_int_S_W/100) - floor(Longitude_Narda_int_S_W/100))/0.6));
                     Longitude_Narda_int_N_E = str2double(extractBetween(fileValidRNI, ',N,', ',E,'));
-                    Longitude_Narda_N_E = floor(Longitude_Narda_int_N_E/100) + (((Longitude_Narda_int_N_E/100) - floor(Longitude_Narda_int_N_E/100))/0.6);
-                    Longitude = [Longitude_Narda_S_W Longitude_Narda_N_E];
+                    Longitude_Narda_N_E     = floor(Longitude_Narda_int_N_E/100) + (((Longitude_Narda_int_N_E/100) - floor(Longitude_Narda_int_N_E/100))/0.6);
+                    Longitude               = [Longitude_Narda_S_W Longitude_Narda_N_E];
 
                     %Lê as informações de Datatime
                     Timestamp = datetime(extractBetween(fileValidRNI, '-->', '*;'), "InputFormat", "yy/MM/dd HH:mm:ss", "Format", "dd/MM/yy HH:mm:ss");
@@ -88,7 +88,7 @@ function Data_Probe  = ReadFile_Meas_Probes(app, TypeFileMeas, fileFullName, Arq
                     % Encontrar todas as linhas que correspondem ao padrão
                     validLines_S_W = ~cellfun(@isempty, regexp(filenonEmptyLines, pattern_SW, 'once'));
                     validLines_N_E = ~cellfun(@isempty, regexp(filenonEmptyLines, pattern_NE, 'once'));
-                    validLines = (validLines_S_W + validLines_N_E)~= 0;
+                    validLines     = (validLines_S_W + validLines_N_E)~= 0;
 
                     fileValidRNI  = filenonEmptyLines(validLines);
 
@@ -99,17 +99,17 @@ function Data_Probe  = ReadFile_Meas_Probes(app, TypeFileMeas, fileFullName, Arq
 
                     %Lê as informações de Latitude
                     Latitude_Monitem_int_S_W = str2double(extractBetween(fileValidRNI, 42, ',S,'));
-                    Latitude_Monitem_S_W = -1*(floor(Latitude_Monitem_int_S_W/100) + (((Latitude_Monitem_int_S_W/100) - floor(Latitude_Monitem_int_S_W/100))/0.6));
+                    Latitude_Monitem_S_W     = -1*(floor(Latitude_Monitem_int_S_W/100) + (((Latitude_Monitem_int_S_W/100) - floor(Latitude_Monitem_int_S_W/100))/0.6));
                     Latitude_Monitem_int_N_E = str2double(extractBetween(fileValidRNI, ',A,', ',N,'));
-                    Latitude_Monitem_N_E = floor(Latitude_Monitem_int_N_E/100) + (((Latitude_Monitem_int_N_E/100) - floor(Latitude_Monitem_int_N_E/100))/0.6);
-                    Latitude = [Latitude_Monitem_S_W Latitude_Monitem_N_E];
+                    Latitude_Monitem_N_E     = floor(Latitude_Monitem_int_N_E/100) + (((Latitude_Monitem_int_N_E/100) - floor(Latitude_Monitem_int_N_E/100))/0.6);
+                    Latitude                 = [Latitude_Monitem_S_W Latitude_Monitem_N_E];
                      
                     %Lê as informações de Longitude
                     Longitude_Monitem_int_S_W = str2double(extractBetween(fileValidRNI, ',S,', ',W,'));
-                    Longitude_Monitem_S_W = -1*(floor(Longitude_Monitem_int_S_W/100) + (((Longitude_Monitem_int_S_W/100) - floor(Longitude_Monitem_int_S_W/100))/0.6));
+                    Longitude_Monitem_S_W     = -1*(floor(Longitude_Monitem_int_S_W/100) + (((Longitude_Monitem_int_S_W/100) - floor(Longitude_Monitem_int_S_W/100))/0.6));
                     Longitude_Monitem_int_N_E = str2double(extractBetween(fileValidRNI, ',N,', ',E,'));
-                    Longitude_Monitem_N_E = floor(Longitude_Monitem_int_N_E/100) + (((Longitude_Monitem_int_N_E/100) - floor(Longitude_Monitem_int_N_E/100))/0.6);
-                    Longitude = [Longitude_Monitem_S_W Longitude_Monitem_N_E];                                                    
+                    Longitude_Monitem_N_E     = floor(Longitude_Monitem_int_N_E/100) + (((Longitude_Monitem_int_N_E/100) - floor(Longitude_Monitem_int_N_E/100))/0.6);
+                    Longitude                 = [Longitude_Monitem_S_W Longitude_Monitem_N_E];                                                    
 
                     %Lê as informações de Datatime
                     Timestamp = datetime(extractBetween(fileValidRNI, 1, 19), "InputFormat", "yyyy/MM/dd,HH:mm:ss", "Format", "dd/MM/yyyy HH:mm:ss");
@@ -131,6 +131,5 @@ function Data_Probe  = ReadFile_Meas_Probes(app, TypeFileMeas, fileFullName, Arq
                             'LatitudeLimits',  [minLatitude;  maxLatitude],  ...
                             'LongitudeLimits', [minLongitude; maxLongitude],...
                             'MetaDataProbe',   {Metadata_Probe});
-
-        app.CalcMaisProx.Enable = true;
+       
 end
