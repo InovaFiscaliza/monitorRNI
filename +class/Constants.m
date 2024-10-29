@@ -2,9 +2,9 @@ classdef (Abstract) Constants
 
     properties (Constant)
         %-----------------------------------------------------------------%
-        appName       = 'SCH'
+        appName       = 'RNI'
         appRelease    = 'R2024a'
-        appVersion    = '0.01'
+        appVersion    = '0.02'
 
         windowSize    = [1244, 660]
         windowMinSize = [ 880, 660]
@@ -25,6 +25,23 @@ classdef (Abstract) Constants
 
         GuiColumnWidth = {50, 40, 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'}
         GuiColumnWidthCalc = {50, 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'}
+    end
 
+
+    methods (Static = true)
+        %-----------------------------------------------------------------%
+        function fileName = DefaultFileName(userPath, Prefix, Issue)
+            arguments
+                userPath char
+                Prefix   char
+                Issue    double = -1
+            end
+
+            fileName = fullfile(userPath, sprintf('%s_%s', Prefix, datestr(now,'yyyy.mm.dd_THH.MM.SS')));
+
+            if Issue > 0
+                fileName = sprintf('%s_%d', fileName, Issue);
+            end
+        end
     end
 end
