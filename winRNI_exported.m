@@ -8,8 +8,8 @@ classdef winRNI_exported < matlab.apps.AppBase
         popupContainerGrid              matlab.ui.container.GridLayout
         SplashScreen                    matlab.ui.control.Image
         toolGrid                        matlab.ui.container.GridLayout
-        PlotarKMLButton                 matlab.ui.control.Button
-        CalcularMaioresnveisButton      matlab.ui.control.Button
+        ButtonKML                       matlab.ui.control.Button
+        Button_2                        matlab.ui.control.Button
         ImageOpenFile                   matlab.ui.control.Image
         AppInfo                         matlab.ui.control.Image
         FigurePosition                  matlab.ui.control.Image
@@ -177,20 +177,21 @@ classdef winRNI_exported < matlab.apps.AppBase
         % ESPECIFICIDADES
         %-----------------------------------------------------------------%
         Data_PA_RNI            % Dados das estações do Plano Anual de RNI
-        Path_Data_PA_RNI_Out
-
+        Path_Data_PA_RNI_Out   % Path do arquivo gerado pelo AppRNI
         Data_Meas_Probes       % Dados das medições obtidas pelas em campo pelas sondas       
         Data_Meas_cache        % Dados de todas as informações de Data_PA_RNI em cache 
         UTTable_Formated       % Dados de todas as informações da UITable inicial formatada em cache
         Data_Meas_cache_Select % Dados filtrados de Data_PA_RNI em cache
-        Data_Meas_cache_All     % Dados de todas as informações Calculadas de de Data_PA_RNI em cache 
-        Data_PA_RNI_Out         % Dados das  medições de RNI calculados que serão gravados no arquivo XLS  
-        Data_Localidades        % Dados da Tabela das Localidades do Brasil
-        Data_Serv_Rad_Tel       % Dados dos serviços de Radiodifusão e de Telecom fiscalizados pela Anatel
+        Data_Meas_cache_All    % Dados de todas as informações Calculadas de de Data_PA_RNI em cache 
+        Data_PA_RNI_Out        % Dados das  medições de RNI calculados que serão gravados no arquivo XLS  
+        Data_Localidades       % Dados da Tabela das Localidades do Brasil
+        Data_Serv_Rad_Tel      % Dados dos serviços de Radiodifusão e de Telecom fiscalizados pela Anatel
         EditFieldRow           % Dado do número da linha selecionada da tabela UITable
+        IncrPoints             % incremento das estações pontuais
         mapAxes                % Eixo do mapa
         Data_Points            % Dados dos pontos (locais) de interesses nas demandas pontuais        
         metaData = struct('Filename', {}, 'Measures', {}, 'Sensor', {}, 'Data', {}, 'LatitudeLimits', {}, 'LongitudeLimits', {}, 'MetaDataProbe', {})
+        metaData_cache = struct('Filename', {}, 'Measures', {}, 'Sensor', {}, 'Data', {}, 'LatitudeLimits', {}, 'LongitudeLimits', {}, 'MetaDataProbe', {})
     end
 
     
@@ -481,9 +482,19 @@ classdef winRNI_exported < matlab.apps.AppBase
 
             % Configura inicialmente a barra de níveis no mapa
             app.mapAxes.CLimMode = 'auto';
+
+            % Encontrar os objetos com a Tag 'MapPoints'
+            pointsToRemove = findobj(app.mapAxes.Children, 'Tag', 'MapPoints');
+            
+            % Excluir os pontos encontrados
+            delete(pointsToRemove);
             
             % Plota os pontos no mapAxes atribuindo cores aos E(V/m) em cada coordenada
-            hPlot = geoscatter(app.mapAxes, app.Data_Meas_Probes.Latitude, app.Data_Meas_Probes.Longitude, [], app.Data_Meas_Probes.FieldValue, 'filled');
+            % Definir a Tag como uma string
+            tagValue = 'MapPoints';
+
+            % Plotar os pontos no mapa com a Tag definida
+            hPlot = geoscatter(app.mapAxes, app.Data_Meas_Probes.Latitude, app.Data_Meas_Probes.Longitude, [], app.Data_Meas_Probes.FieldValue, 'filled', 'Tag', tagValue);
             hPlot.DataTipTemplate.DataTipRows(3).Label  = 'Nivel';
             hPlot.DataTipTemplate.DataTipRows(3).Format = '%2.2f V/m';
 
@@ -617,6 +628,7 @@ classdef winRNI_exported < matlab.apps.AppBase
                 appUtil.winPosition(app.UIFigure)
                 jsBackDoor_Initialization(app)
                 startup_timerCreation(app)
+                app.IncrPoints = 0;
 
             catch ME
                 appUtil.modalWindow(app.UIFigure, 'error', getReport(ME), 'CloseFcn', @(~,~)closeFcn(app));
@@ -703,7 +715,7 @@ classdef winRNI_exported < matlab.apps.AppBase
         end
 
         % Image clicked function: ImageOpenFile
-        function ImageOpenFileClicked2(app, event)
+        function ImageOpenFileClicked(app, event)
             
             % Armazena as informações de latitude e longitude das estações 
             St_RNI_Lat  = app.Data_PA_RNI.('Latitude da Estação');
@@ -736,21 +748,34 @@ classdef winRNI_exported < matlab.apps.AppBase
             end
                 
             % Descarta os arquivos já lidos.
-            idxExistFile = ~ismember(fileFullName, {app.metaData.Filename});
-            fileFullName = fileFullName(idxExistFile);
+            idxExistFile = ~ismember(fileFullName, {app.metaData_cache.Filename});
+            fileFullName_all = fileFullName(idxExistFile);
+            
+            if isempty(fileFullName_all)
+                listOfTables = [];
+                app.metaData = struct('Filename', {}, 'Measures', {}, 'Sensor', {}, 'Data', {}, 'LatitudeLimits', {}, 'LongitudeLimits', {}, 'MetaDataProbe', {});
+                % Armazenar os dados de medições dos arquivos
+                for kk = 1:numel(fileFullName)
+                    file_index = find(strcmp(unique({app.metaData_cache.Filename}), fileFullName{kk}));
+                    listOfTables = [listOfTables; app.metaData_cache(file_index).Data];
 
-
-            for pp = 1:numel(fileFullName)
-                 % Extrai do arquivo a informação sobre o tipo de sonda que gerou o arquivo de medição
-                 Type_Meas_Probes = fcn.TypeMeasProbe(app, fileFullName{pp});
-
-                 % Obtém todas os dados relavantes dos arquivos das medições de RNI
-                 app.metaData(end+1) = fcn.ReadFile_Meas_Probes(app, Type_Meas_Probes, fileFullName{pp}, pp, numel(fileFullName));                 
+                    app.metaData(end+1) = app.metaData_cache(file_index);
+                end
+                app.Data_Meas_Probes = sortrows(vertcat(listOfTables), 'Timestamp', 'descend');
+            else
+                for pp = 1:numel(fileFullName_all)
+                    % Extrai do arquivo a informação sobre o tipo de sonda que gerou o arquivo de medição
+                    Type_Meas_Probes = fcn.TypeMeasProbe(app, fileFullName_all{pp});
+    
+                    % Obtém todas os dados relavantes dos arquivos das medições de RNI
+                    app.metaData(end+1) = fcn.ReadFile_Meas_Probes(app, Type_Meas_Probes, fileFullName_all{pp}, pp, numel(fileFullName_all));
+                    app.metaData_cache(end+1) = fcn.ReadFile_Meas_Probes(app, Type_Meas_Probes, fileFullName_all{pp}, pp, numel(fileFullName_all));
+                end
+                % Armazenar os dados de medições dos arquivos
+                listOfTables = {app.metaData.Data};            
+                app.Data_Meas_Probes = sortrows(vertcat(listOfTables{:}), 'Timestamp', 'descend');
             end
 
-            % Armazenar os dados de medições dos arquivos
-            listOfTables = {app.metaData.Data};            
-            app.Data_Meas_Probes = sortrows(vertcat(listOfTables{:}), 'Timestamp', 'descend');
 
             LocalMaisProximo = {};
 
@@ -777,6 +802,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             for ll = 1:numel(LocalMaisProximo)
                 childNode{ll} = uitreenode(rootNode, 'Text', LocalMaisProximo{ll});
             end
+            
             expand(app.TreeLocalRNI)
 
             % Seleciona todos os nós da TreeLocalRNI (CheckedNodes)
@@ -923,10 +949,10 @@ classdef winRNI_exported < matlab.apps.AppBase
 
         end
 
-        % Button pushed function: Button_AddPoints
+        % Callback function: Button_AddPoints, Image
         function Button_AddPointsPushed(app, event)
             
-            Incr_Node = app.EditFieldIncrPoints.Value+1;
+            Incr_Node = app.IncrPoints+1;
 
             % % Criar um nó raiz 'Locais'
             % rootNode = uitreenode(app.Tree_CoordEnd, 'Text', 'Locais');
@@ -944,12 +970,12 @@ classdef winRNI_exported < matlab.apps.AppBase
            
             expand(app.Tree_CoordEnd)
 
-            app.EditFieldIncrPoints.Value = app.EditFieldIncrPoints.Value +1; 
+            app.IncrPoints = app.IncrPoints +1; 
 
         end
 
-        % Button pushed function: CalcularMaioresnveisButton
-        function CalcularMaioresnveisButtonPushed(app, event)
+        % Button pushed function: Button_2
+        function Button_2Pushed(app, event)
             
             Dist_Max_Level = app.EditField_DistPont.Value;
             Latitude_Pont  = app.EditField_LatGrau.Value ; 
@@ -1033,17 +1059,22 @@ classdef winRNI_exported < matlab.apps.AppBase
 
         end
 
-        % Button pushed function: PlotarKMLButton
-        function PlotarKMLButtonPushed(app, event)
-            
+        % Button pushed function: ButtonKML
+        function ButtonKMLPushed(app, event)
+
             % Criar arquivo KML
-            error('Não operacional!')
-            outputFileName = 'C:\P&D\AppRNI\DataBase\PA_RNI\mapa_pontos.kml';
+            arq_KML = 'mapa_earth.kml';
+            sub_folder = 'DataBase\PA_RNI\';
+            outputFileName = fullfile(app.rootFolder, sub_folder, arq_KML);
+            %outputFileName = 'C:\P&D\AppRNI\DataBase\PA_RNI\mapa_pontos.kml';
             
-            % Usar kmlwrite para gerar o arquivo KML
-            kmlwrite(outputFileName, app.Data_Meas_Probes.Latitude, app.Data_Meas_Probes.Longitude);
+            % Criar o arquivo KML
+            Names = repmat("", size(app.Data_Meas_Probes.Latitude));  % Nome vazio para cada ponto
+            kmlwrite(outputFileName, app.Data_Meas_Probes.Latitude, app.Data_Meas_Probes.Longitude, 'Name', Names);
+            %kmlwrite(outputFileName, Lat, Lon, 'Name', Names);
             
-            disp('Arquivo KML gerado com sucesso!');
+            % Mensagem de sucesso
+            uialert(app.UIFigure, ['Arquivo KML criado: ' arq_KML], 'Aviso');
 
         end
 
@@ -1116,7 +1147,7 @@ classdef winRNI_exported < matlab.apps.AppBase
 
         end
 
-        % Callback function: not associated with a component
+        % Callback function
         function DropDownlocalNivelMaiorValueChanged(app, event)
                         
             % Altera o range maior do intensidade de campo (V/m)
@@ -1134,56 +1165,56 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.EditFieldRow = event.InteractionInformation.DisplayRow;
 
             if isempty(app.Data_Meas_cache_Select)
-                uialert(app.UIFigure, 'Realize o cálculo dos parâmetros de Emáx do(s) arquivo(s) RNI e após selecione com duplo click a visualização das infomeções da estação desejada', 'Aviso')
+                uialert(app.UIFigure, 'Realize o cálculo dos parâmetros de Emáx do(s) arquivo(s) RNI e após selecione com duplo click a visualização das informações da estação desejada', 'Aviso')
                 return
             end
             
             % Escreve os textos referentes aos dados  app.Data_Meas_cache_Select da estação selecionada em htmlContent
-            htmlContent = sprintf([ ...
-                '<!DOCTYPE html><html lang="en"><head>'...
-                '<meta charset="UTF-8">'...
-                '<meta name="viewport" content="width=device-width, initial-scale=1.0">'...
-                '<title>Modificar Tabela</title>'...
-                '<style>'...  
-                'p.infoText { width: 100%%; text-align: left; font-weight: bold; color: red; margin: 10px 0; font-family: Times New Roman, sans-serif; font-size: 16px; }'... % Centraliza o texto, negrito, vermelho, Arial 12px
-                'table { width: 100%%; border-collapse: collapse; margin-bottom: 18px; }'...
-                'td { color: blue; font-weight: bold; border: 1px solid black; padding: 6px; text-align: left; }'...
-                'td.greenText { color: green; }'... % Classe para texto verde
-                '</style>'...
-                '</head><body>'...
-                '<p class="infoText">Dados da estação do Plano anual do RNI:</p>'...
-                '<table>'...
-                '<tr><td class="greenText">Estação N º: </td><td>%.0f</td></tr>'...
-                '<tr><td class="greenText">Município/UF: </td><td>%s</td></tr>'...
-                '<tr><td class="greenText">Serviço: </td><td>%s</td></tr>'...
-                '<tr><td class="greenText">Latitude: </td><td>%.6f</td></tr>'...
-                '<tr><td class="greenText">Longitude: </td><td>%.6f</td></tr>'...
-                '</table>'...
-                '<p class="infoText">Dados do monitoramento:</p>'...
-                '<table>'...
-                '<tr><td class="greenText">Data da medição: </td><td>%s</td></tr>'...
-                '<tr><td class="greenText">Campo maior V/m: </td><td>%.3f</td></tr>'...
-                '<tr><td class="greenText">Latitude Maior V/m: </td><td>%.6f</td></tr>'...
-                '<tr><td class="greenText">Longitude maior V/m: </td><td>%.6f</td></tr>'...
-                '<tr><td class="greenText">Medidas > 14 V/M: </td><td>%.0f</td></tr>'...
-                '<tr><td class="greenText">Justificativa de NV: </td><td>%s</td></tr>'...
-                '<tr><td class="greenText">Observações: </td><td>%s</td></tr>'...
-                '</table>'...
-                '</body></html>'], ...
-                app.Data_Meas_cache_Select.('N° da Estacao')(app.EditFieldRow), ...
-                strcat(app.Data_Meas_cache_Select.Municipio(app.EditFieldRow),"/",app.Data_Meas_cache_Select.UF(app.EditFieldRow)), ...
-                app.Data_Meas_cache_Select.('Serviço')(app.EditFieldRow), ...
-                app.Data_Meas_cache_Select.('Latitude da Estação')(app.EditFieldRow), ...
-                app.Data_Meas_cache_Select.('Longitude da Estação')(app.EditFieldRow), ...
-                app.Data_Meas_cache_Select.('Data da Medição')(app.EditFieldRow), ...
-                app.Data_Meas_cache_Select.('Emáx (V/m)')(app.EditFieldRow), ...
-                app.Data_Meas_cache_Select.('Latitude Emáx')(app.EditFieldRow), ...
-                app.Data_Meas_cache_Select.('Longitude Emáx')(app.EditFieldRow), ...
-                app.Data_Meas_cache_Select.('> 14 V/M')(app.EditFieldRow), ...
-                app.Data_Meas_cache_Select.('Justificativa (apenas NV)')(app.EditFieldRow), ...
-                app.Data_Meas_cache_Select.('Observações importantes')(app.EditFieldRow));
+            % htmlContent = sprintf([ ...
+            %     '<!DOCTYPE html><html lang="en"><head>'...
+            %     '<meta charset="UTF-8">'...
+            %     '<meta name="viewport" content="width=device-width, initial-scale=1.0">'...
+            %     '<title>Modificar Tabela</title>'...
+            %     '<style>'...  
+            %     'p.infoText { width: 100%%; text-align: left; font-weight: bold; color: red; margin: 10px 0; font-family: Times New Roman, sans-serif; font-size: 16px; }'... % Centraliza o texto, negrito, vermelho, Arial 12px
+            %     'table { width: 100%%; border-collapse: collapse; margin-bottom: 18px; }'...
+            %     'td { color: blue; font-weight: bold; border: 1px solid black; padding: 6px; text-align: left; }'...
+            %     'td.greenText { color: green; }'... % Classe para texto verde
+            %     '</style>'...
+            %     '</head><body>'...
+            %     '<p class="infoText">Dados da estação do Plano anual do RNI:</p>'...
+            %     '<table>'...
+            %     '<tr><td class="greenText">Estação N º: </td><td>%.0f</td></tr>'...
+            %     '<tr><td class="greenText">Município/UF: </td><td>%s</td></tr>'...
+            %     '<tr><td class="greenText">Serviço: </td><td>%s</td></tr>'...
+            %     '<tr><td class="greenText">Latitude: </td><td>%.6f</td></tr>'...
+            %     '<tr><td class="greenText">Longitude: </td><td>%.6f</td></tr>'...
+            %     '</table>'...
+            %     '<p class="infoText">Dados do monitoramento:</p>'...
+            %     '<table>'...
+            %     '<tr><td class="greenText">Data da medição: </td><td>%s</td></tr>'...
+            %     '<tr><td class="greenText">Campo maior V/m: </td><td>%.3f</td></tr>'...
+            %     '<tr><td class="greenText">Latitude Maior V/m: </td><td>%.6f</td></tr>'...
+            %     '<tr><td class="greenText">Longitude maior V/m: </td><td>%.6f</td></tr>'...
+            %     '<tr><td class="greenText">Medidas > 14 V/M: </td><td>%.0f</td></tr>'...
+            %     '<tr><td class="greenText">Justificativa de NV: </td><td>%s</td></tr>'...
+            %     '<tr><td class="greenText">Observações: </td><td>%s</td></tr>'...
+            %     '</table>'...
+            %     '</body></html>'], ...
+            %     app.Data_Meas_cache_Select.('N° da Estacao')(app.EditFieldRow), ...
+            %     strcat(app.Data_Meas_cache_Select.Municipio(app.EditFieldRow),"/",app.Data_Meas_cache_Select.UF(app.EditFieldRow)), ...
+            %     app.Data_Meas_cache_Select.('Serviço')(app.EditFieldRow), ...
+            %     app.Data_Meas_cache_Select.('Latitude da Estação')(app.EditFieldRow), ...
+            %     app.Data_Meas_cache_Select.('Longitude da Estação')(app.EditFieldRow), ...
+            %     app.Data_Meas_cache_Select.('Data da Medição')(app.EditFieldRow), ...
+            %     app.Data_Meas_cache_Select.('Emáx (V/m)')(app.EditFieldRow), ...
+            %     app.Data_Meas_cache_Select.('Latitude Emáx')(app.EditFieldRow), ...
+            %     app.Data_Meas_cache_Select.('Longitude Emáx')(app.EditFieldRow), ...
+            %     app.Data_Meas_cache_Select.('> 14 V/M')(app.EditFieldRow), ...
+            %     app.Data_Meas_cache_Select.('Justificativa (apenas NV)')(app.EditFieldRow), ...
+            %     app.Data_Meas_cache_Select.('Observações importantes')(app.EditFieldRow));
 
-                app.HTML.HTMLSource = htmlContent;
+                app.HTML.HTMLSource = fcn.htmlCode_station_row_selected(app.Data_Meas_cache_Select, app.EditFieldRow);
 
                 % Obtém as coordenadas da estação selecionada pra plotar no mapAxes
                 Lat_Est  = app.Data_Meas_cache_Select.('Latitude da Estação')(app.EditFieldRow);
@@ -1215,12 +1246,22 @@ classdef winRNI_exported < matlab.apps.AppBase
                 % Plot the point EMax
                 EmaxPlot = geoscatter(app.mapAxes, Lat_Est_EMax, Long_Est_EMax, app.Data_Meas_cache_Select.('Emáx (V/m)')(app.EditFieldRow), 'LineWidth', 6, 'Marker','square', 'MarkerEdgeColor', 'yellow', 'Tag', plotTag);
                 EmaxPlot.DataTipTemplate.DataTipRows = EstPlot.DataTipTemplate.DataTipRows([1, 2, 3]);
-                EmaxPlot.DataTipTemplate.DataTipRows(3).Label = 'Nivel (Emáx)';
+                Emapp.mapAxesaxPlot.DataTipTemplate.DataTipRows(3).Label = 'Nivel (Emáx)';
                 EmaxPlot.DataTipTemplate.DataTipRows(3).Value = app.Data_Meas_cache_Select.('Emáx (V/m)')(app.EditFieldRow);
                 EmaxPlot.DataTipTemplate.DataTipRows(3).Format = '%2.2f V/m';
 
                 % Define limtes geográficos conforme arquivos de meidições
-                % geolimits(app.mapAxes, [Lat_Est-0.05, Lat_Est+0.05], [Long_Est-0.05, Long_Est+0.05]);
+                arclen = km2deg(2*(app.EditFieldDistMedicoes.Value/1000));
+                [~, lim_long1] = reckon(Lat_Est,Long_Est,arclen,-90);
+                [~, lim_long2] = reckon(Lat_Est,Long_Est,arclen,90);
+
+                [lim_lat1, ~] = reckon(Lat_Est,Long_Est,arclen,180);
+                [lim_lat2, ~] = reckon(Lat_Est,Long_Est,arclen,0);
+
+                geolimits(app.mapAxes, [lim_lat1, lim_lat2], [lim_long1, lim_long2]);
+
+                % [lat2,lon2] = reckon(lat1,lon1,arclen,az)
+                % deg = km2deg(km)
 
                 general_ControlPanelSelectionChanged(app, struct('Source', app.menu_Button4Icon))
 
@@ -1327,6 +1368,11 @@ classdef winRNI_exported < matlab.apps.AppBase
             end
 
         end
+
+        % Callback function
+        function ImageClicked(app, event)
+            
+        end
     end
 
     % Component initialization
@@ -1369,7 +1415,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             % Create ControlTabGroup
             app.ControlTabGroup = uitabgroup(app.ControlTabGrid);
             app.ControlTabGroup.AutoResizeChildren = 'off';
-            app.ControlTabGroup.Layout.Row = [2 3];
+            app.ControlTabGroup.Layout.Row = 3;
             app.ControlTabGroup.Layout.Column = 1;
 
             % Create Tab_4
@@ -1481,6 +1527,7 @@ classdef winRNI_exported < matlab.apps.AppBase
 
             % Create Image
             app.Image = uiimage(app.GridLayout7);
+            app.Image.ImageClickedFcn = createCallbackFcn(app, @Button_AddPointsPushed, true);
             app.Image.Layout.Row = 5;
             app.Image.Layout.Column = 2;
             app.Image.VerticalAlignment = 'bottom';
@@ -2275,11 +2322,11 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.GravarButton.ImageClickedFcn = createCallbackFcn(app, @GravarButtonPushed, true);
             app.GravarButton.Layout.Row = 2;
             app.GravarButton.Layout.Column = 5;
-            app.GravarButton.ImageSource = 'Export_16.png';
+            app.GravarButton.ImageSource = fullfile(pathToMLAPP, 'Icons', 'Excel.png');
 
             % Create jsBackDoor
             app.jsBackDoor = uihtml(app.toolGrid);
-            app.jsBackDoor.Layout.Row = 2;
+            app.jsBackDoor.Layout.Row = [1 2];
             app.jsBackDoor.Layout.Column = 8;
 
             % Create tool_tableNRows
@@ -2308,24 +2355,26 @@ classdef winRNI_exported < matlab.apps.AppBase
             % Create ImageOpenFile
             app.ImageOpenFile = uiimage(app.toolGrid);
             app.ImageOpenFile.ScaleMethod = 'none';
-            app.ImageOpenFile.ImageClickedFcn = createCallbackFcn(app, @ImageOpenFileClicked2, true);
+            app.ImageOpenFile.ImageClickedFcn = createCallbackFcn(app, @ImageOpenFileClicked, true);
             app.ImageOpenFile.Layout.Row = 2;
             app.ImageOpenFile.Layout.Column = 2;
             app.ImageOpenFile.ImageSource = 'Import_16.png';
 
-            % Create CalcularMaioresnveisButton
-            app.CalcularMaioresnveisButton = uibutton(app.toolGrid, 'push');
-            app.CalcularMaioresnveisButton.ButtonPushedFcn = createCallbackFcn(app, @CalcularMaioresnveisButtonPushed, true);
-            app.CalcularMaioresnveisButton.Layout.Row = [1 3];
-            app.CalcularMaioresnveisButton.Layout.Column = 6;
-            app.CalcularMaioresnveisButton.Text = 'Calcular Maiores níveis';
+            % Create Button_2
+            app.Button_2 = uibutton(app.toolGrid, 'push');
+            app.Button_2.ButtonPushedFcn = createCallbackFcn(app, @Button_2Pushed, true);
+            app.Button_2.Icon = fullfile(pathToMLAPP, 'Icons', 'icon_216x140.png');
+            app.Button_2.Layout.Row = [1 3];
+            app.Button_2.Layout.Column = 6;
+            app.Button_2.Text = '';
 
-            % Create PlotarKMLButton
-            app.PlotarKMLButton = uibutton(app.toolGrid, 'push');
-            app.PlotarKMLButton.ButtonPushedFcn = createCallbackFcn(app, @PlotarKMLButtonPushed, true);
-            app.PlotarKMLButton.Layout.Row = [1 3];
-            app.PlotarKMLButton.Layout.Column = 7;
-            app.PlotarKMLButton.Text = 'Plotar KML';
+            % Create ButtonKML
+            app.ButtonKML = uibutton(app.toolGrid, 'push');
+            app.ButtonKML.ButtonPushedFcn = createCallbackFcn(app, @ButtonKMLPushed, true);
+            app.ButtonKML.Icon = fullfile(pathToMLAPP, 'Icons', 'Python_32.png');
+            app.ButtonKML.Layout.Row = [1 3];
+            app.ButtonKML.Layout.Column = 7;
+            app.ButtonKML.Text = '';
 
             % Create popupContainerGrid
             app.popupContainerGrid = uigridlayout(app.GridLayout);
@@ -2346,7 +2395,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.Button_AddPoints = uibutton(app.UIFigure, 'push');
             app.Button_AddPoints.ButtonPushedFcn = createCallbackFcn(app, @Button_AddPointsPushed, true);
             app.Button_AddPoints.FontSize = 10;
-            app.Button_AddPoints.Position = [-24 467 15 24];
+            app.Button_AddPoints.Position = [-23 550 8 12];
             app.Button_AddPoints.Text = '+';
 
             % Create filter_ContextMenu
