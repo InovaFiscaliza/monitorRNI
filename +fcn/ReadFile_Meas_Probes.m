@@ -1,4 +1,4 @@
-function Data_Probe  = ReadFile_Meas_Probes(app, TypeFileMeas, fileFullName, Arq_Num, Get_Files)
+function metaData  = ReadFile_Meas_Probes(app, TypeFileMeas, fileFullName, Arq_Num, Get_Files)
     % Cria a barra de progresso e imprimi os Steps
     numOccurrences            = fcn.Progressbar_Files(app);    
     numOccurrences{2}.Message = sprintf('Lendo %dº de %d Arquivo(s)...', Arq_Num, Get_Files);
@@ -114,12 +114,17 @@ function Data_Probe  = ReadFile_Meas_Probes(app, TypeFileMeas, fileFullName, Arq
         [minLatitude,  maxLatitude]  = bounds(dataTable.Latitude);
         [minLongitude, maxLongitude] = bounds(dataTable.Longitude);
         
-        Data_Probe = struct('Filename',        fileFullName,                 ...
-                            'Measures',        height(dataTable),            ...
-                            'Sensor',          TypeFileMeas,                 ...
-                            'Data',            dataTable,                    ...
-                            'LatitudeLimits',  [minLatitude;  maxLatitude],  ...
-                            'LongitudeLimits', [minLongitude; maxLongitude],...
-                            'MetaDataProbe',   {Metadata_Probe});
-       
+        metaData = class.metaData;
+
+        metaData.Filename = fileFullName;
+        
+        metaData.Sensor   = TypeFileMeas;
+        metaData.MetaData = Metadata_Probe;
+        
+        metaData.Measures = height(dataTable);
+        metaData.Data     = dataTable;
+        
+        metaData.LatitudeLimits  = [minLatitude;  maxLatitude];
+        metaData.LongitudeLimits = [minLongitude; maxLongitude];
+        metaData.Location        = fcn.gpsFindCity(struct('Latitude', mean([minLatitude;  maxLatitude]), 'Longitude', mean([minLongitude; maxLongitude])));       
 end

@@ -8,6 +8,10 @@ classdef (Abstract) Constants
 
         windowSize    = [1244, 660]
         windowMinSize = [ 880, 660]
+
+        gps2locAPI    = 'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=<Latitude>&longitude=<Longitude>&localityLanguage=pt'
+        gps2loc_City  = 'city'
+        gps2loc_Unit  = 'principalSubdivisionCode'
         
         xDecimals     = 5        
         floatDiffTol  = 1e-5
