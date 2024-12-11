@@ -5,18 +5,19 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         UIFigure                     matlab.ui.Figure
         GridLayout                   matlab.ui.container.GridLayout
         GridLayout2                  matlab.ui.container.GridLayout
+        play_ControlsTab1Grid_2      matlab.ui.container.GridLayout
+        play_ControlsTab1Label_2     matlab.ui.control.Label
+        play_ControlsTab1Image_2     matlab.ui.control.Image
         Card4_stationsOutRoute       matlab.ui.control.Label
         Card3_stationsOnRoute        matlab.ui.control.Label
         Card2_numberOfRiskStations   matlab.ui.control.Label
         Card1_numberOfStations       matlab.ui.control.Label
         UITree                       matlab.ui.container.CheckBoxTree
         config_geoAxesLabel_2        matlab.ui.control.Label
-        play_ControlsTab1Grid_2      matlab.ui.container.GridLayout
-        play_ControlsTab1Image_2     matlab.ui.control.Image
-        play_ControlsTab1Label_2     matlab.ui.control.Label
         toolGrid                     matlab.ui.container.GridLayout
+        Image3                       matlab.ui.control.Image
+        Image2                       matlab.ui.control.Image
         Image                        matlab.ui.control.Image
-        ButtonKML                    matlab.ui.control.Button
         tool_tableNRows              matlab.ui.control.Label
         jsBackDoor                   matlab.ui.control.HTML
         GravarButton                 matlab.ui.control.Image
@@ -64,11 +65,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % measTable é a concatenação de todas as timetables de measData,
         % uma para cada arquivo.
         measTable
-
-        % Dados das estações do Plano Anual de RNI:
-        % (pendente criar possibilidade de atualizar planilha, no módulo
-        % auxApp.winConfig)
-        stationTable
 
         % Handle do eixo e propriedade que armazena os limites automáticos
         UIAxes
@@ -154,7 +150,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             startup_AppProperties(app)
             startup_GUIComponents(app)
-            startup_InitialAnalysis(app)
+            Analysis(app)
 
             app.progressDialog.Visible = 'hidden';
         end
@@ -162,17 +158,16 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function startup_AppProperties(app)
             if isempty(app.CallingApp.stationTable)
-                app.CallingApp.stationTable = fileReader.MonitoringPlanStations(fullfile(app.rootFolder, 'DataBase', 'PA_RNI', 'Dados_PA_RNI.csv'));
+                app.CallingApp.stationTable = fileReader.MonitoringPlanStations(fullfile(app.rootFolder, 'DataBase', 'PA_RNI', 'Dados_PA_RNI.csv'), app.General);
             end
-            app.stationTable = app.CallingApp.stationTable;
         end
 
         %-----------------------------------------------------------------%
         function startup_GUIComponents(app)
-            startup_AxesCreation(app)            
+            startup_AxesCreation(app)
             startup_TreeBuilding(app)
 
-            app.tool_TableVisibility.UserData = true;
+            app.tool_TableVisibility.UserData = 1;
         end
 
         %-----------------------------------------------------------------%
@@ -213,17 +208,12 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             app.UITree.CheckedNodes = app.UITree.Children(1);
         end
-
-        %-----------------------------------------------------------------%
-        function startup_InitialAnalysis(app)
-            updateTable(app)
-        end
     end
 
 
     methods (Access = private)
         %-----------------------------------------------------------------%
-        function updateTable(app)
+        function Analysis(app)
             selectedLocations = {app.UITree.CheckedNodes.Text};
             idxFile = find(ismember({app.measData.Location}, selectedLocations));
 
@@ -236,7 +226,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Identifica localidades relacionadas à monitoração sob análise.
             listOfLocations = {};
-            DIST_km = app.General.Distance.MonitoringPlan/1000;
+            DIST_km = app.General.MonitoringPlan.Distance_km;
 
             for ii = idxFile
                 % Limites de latitude e longitude relacionados à rota, acrescentando 
@@ -245,42 +235,47 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 [maxLatitude, maxLongitude] = reckon(app.measData(ii).LatitudeLimits(2), app.measData(ii).LongitudeLimits(2), km2deg(DIST_km), 45);
                 [minLatitude, minLongitude] = reckon(app.measData(ii).LatitudeLimits(1), app.measData(ii).LongitudeLimits(1), km2deg(DIST_km), 225);
 
-                idxLogicalStation = app.stationTable.("Latitude da Estação")  >= minLatitude  & ...
-                                    app.stationTable.("Latitude da Estação")  <= maxLatitude  & ...
-                                    app.stationTable.("Longitude da Estação") >= minLongitude & ...
-                                    app.stationTable.("Longitude da Estação") <= maxLongitude;
+                idxLogicalStation = app.CallingApp.stationTable.("Latitude da Estação")  >= minLatitude  & ...
+                                    app.CallingApp.stationTable.("Latitude da Estação")  <= maxLatitude  & ...
+                                    app.CallingApp.stationTable.("Longitude da Estação") >= minLongitude & ...
+                                    app.CallingApp.stationTable.("Longitude da Estação") <= maxLongitude;
 
                 if any(idxLogicalStation)
-                    listOfLocations = [listOfLocations; unique(app.stationTable.("Municipio")(idxLogicalStation))];
+                    listOfLocations = [listOfLocations; unique(app.CallingApp.stationTable.Location(idxLogicalStation))];
                 end
             end
 
-            idxStations = find(ismember(app.stationTable.("Municipio"), listOfLocations));
+            idxStations = find(ismember(app.CallingApp.stationTable.Location, listOfLocations));
             identifyMeasuresForEachStation(app, idxStations, DIST_km)
-            app.UITable.Data = sortrows(app.stationTable(idxStations, {'Location',             ...
-                                                                       'Serviço',              ...
-                                                                       'N° da Estacao',        ...
-                                                                       'numberOfMeasures',     ...
-                                                                       'numberOfRiskMeasures', ...
-                                                                       'minFieldValue',        ...
-                                                                       'meanFieldValue',       ...
-                                                                       'maxFieldValue',        ...
-                                                                       'Justificativa'}), 'numberOfMeasures', 'descend');
 
+            [table2Render, ...
+             table2RenderIndex] = sortrows(app.CallingApp.stationTable(idxStations, {'Location',             ...
+                                                                                     'Serviço',              ...
+                                                                                     'N° da Estacao',        ...
+                                                                                     'numberOfMeasures',     ...
+                                                                                     'numberOfRiskMeasures', ...
+                                                                                     'minFieldValue',        ...
+                                                                                     'meanFieldValue',       ...
+                                                                                     'maxFieldValue',        ...
+                                                                                     'Justificativa'}), 'numberOfMeasures', 'descend');
+            set(app.UITable, 'Data', table2Render, 'UserData', idxStations(table2RenderIndex))
+
+            % Aplica estilo à tabela...
+            layout_TableStyle(app)
+            plot_Stations(app)
+
+            % Atualiza painel com quantitativo de estações...
             nStations         = numel(idxStations);
-            nRiskStations     = sum(app.stationTable.numberOfRiskMeasures > 0);
-            nStationsOnRoute  = sum(app.stationTable.numberOfMeasures > 0);
+            nRiskStations     = sum(app.UITable.Data.numberOfRiskMeasures > 0);
+            nStationsOnRoute  = sum(app.UITable.Data.numberOfMeasures > 0);
             nStationsOutRoute = nStations - nStationsOnRoute;
 
+            app.Card1_numberOfStations.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: black;   font-size: 32px;">%d</font>\nESTAÇÕES LOCALIZADAS NOS MUNICÍPIOS SOB ANÁLISE</p>',                nStations);
+            app.Card2_numberOfRiskStations.Text = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES NO ENTORNO DE REGISTROS DE NÍVEIS ACIMA DE 14 V/m</p></p>', nRiskStations);
+            app.Card3_stationsOnRoute .Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: black;   font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS NO ENTORNO DA ROTA</p>',                         nStationsOnRoute);
+            app.Card4_stationsOutRoute.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS FORA DA ROTA</p>',                               nStationsOutRoute);
 
-            app.Card1_numberOfStations.Text     = sprintf(['<p style="margin: 10 2 0 2px;"><font style="color: BLACK; font-size: 32px;">' ...
-                                                           '%d</font>\nESTAÇÕES LOCALIZADAS NOS MUNICÍPIOS SOB ANÁLISE</p>'], nStations);
-            app.Card2_numberOfRiskStations.Text = sprintf(['<p style="margin: 10 2 0 2px;"><font style="color: BLACK; font-size: 32px;">' ...
-                                                           '%d</font>\nESTAÇÕES NO ENTORNO DE REGISTROS DE NÍVEIS ACIMA DE 14 V/m</p></p>'], nRiskStations);
-            app.Card3_stationsOnRoute .Text     = sprintf(['<p style="margin: 10 2 0 2px;"><font style="color: BLACK; font-size: 32px;">' ...
-                                                           '%d</font>\nESTAÇÕES INSTALADAS NO ENTORNO DA ROTA</p>'], nStationsOnRoute);
-            app.Card4_stationsOutRoute.Text     = sprintf(['<p style="margin: 10 2 0 2px;"><font style="color: BLACK; font-size: 32px;">' ...
-                                                           '%d</font>\nESTAÇÕES INSTALADAS FORA DA ROTA</p>'], nStationsOutRoute);
+            app.tool_tableNRows.Text = sprintf('PLANILHA DE REFERÊNCIA DO PM-RNI CONTÉM REGISTROS DE %d ESTAÇÕES\nEM ANÁLISE ESTAÇÕES INSTALADAS NA(S) LOCALIDADE(S): %s', height(app.CallingApp.stationTable), textFormatGUI.cellstr2ListWithQuotes(sort(listOfLocations)));
         end
 
         %-----------------------------------------------------------------%
@@ -291,35 +286,89 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             delete(findobj(app.UIAxes.Children, 'Tag', 'Measure'))
 
             % Plotar os pontos no mapa com a Tag definida
-            hPlot = geoscatter(app.UIAxes, app.measTable.Latitude, app.measTable.Longitude, [], app.measTable.FieldValue, 'filled', 'Tag', 'Measure');
+            hPlot = geoscatter(app.UIAxes, app.measTable.Latitude, app.measTable.Longitude, [], app.measTable.FieldValue, 'filled', 'DisplayName', 'Medidas', 'Tag', 'Measure');
             hPlot.DataTipTemplate.DataTipRows(3).Label  = 'Nivel';
             hPlot.DataTipTemplate.DataTipRows(3).Format = '%0.2f V/m';
 
             app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
         end
+
+        %-----------------------------------------------------------------%
+        function plot_Stations(app)
+            delete(findobj(app.UIAxes.Children, 'Tag', 'Stations'))
+            
+            if ~isempty(app.UITable.Data)
+                idxStations    = app.UITable.UserData;
+                latitudeArray  = app.CallingApp.stationTable.("Latitude da Estação")(idxStations);
+                longitudeArray = app.CallingApp.stationTable.("Longitude da Estação")(idxStations);
+
+                geoscatter(app.UIAxes, latitudeArray, longitudeArray, ...
+                    'Marker', '^', 'MarkerFaceColor', app.General.Plot.Stations.Color, ...
+                    'MarkerEdgeColor', app.General.Plot.Stations.Color,           ...
+                    'SizeData',        app.General.Plot.Stations.Size,            ...
+                    'DisplayName',     'Estações de referência PM-RNI',           ...
+                    'Tag',             'Stations');
+            end
+        end
         
         %-----------------------------------------------------------------%
         function identifyMeasuresForEachStation(app, idxStations, DIST_km)
             for ii = idxStations'
+                if app.CallingApp.stationTable.AnalysisFlag(ii)
+                    continue
+                end
+
+                app.CallingApp.stationTable.AnalysisFlag(ii) = true;
+
                 % Inicialmente, afere a distância da estação a cada uma das
                 % medidas, identificando aquelas no entorno.
-                stationDistance    = deg2km(distance(app.stationTable.('Latitude da Estação')(ii), app.stationTable.('Longitude da Estação')(ii), app.measTable.Latitude, app.measTable.Longitude));                
+                stationDistance    = deg2km(distance(app.CallingApp.stationTable.('Latitude da Estação')(ii), app.CallingApp.stationTable.('Longitude da Estação')(ii), app.measTable.Latitude, app.measTable.Longitude));                
                 idxLogicalMeasures = stationDistance <= DIST_km;
 
                 if any(idxLogicalMeasures)
                     stationMeasures = app.measTable(idxLogicalMeasures, :);
                     [maxFieldValue, idxMaxFieldValue] = max(stationMeasures.FieldValue);
 
-                    app.stationTable.numberOfMeasures(ii)     = height(stationMeasures);
-                    app.stationTable.numberOfRiskMeasures(ii) = sum(stationMeasures.FieldValue > app.General.Field.MonitoringPlan);                    
-                    app.stationTable.minFieldValue(ii)        = min(stationMeasures.FieldValue);
-                    app.stationTable.meanFieldValue(ii)       = mean(stationMeasures.FieldValue);
-                    app.stationTable.maxFieldValue(ii)        = maxFieldValue;
-                    app.stationTable.maxFieldTimestamp(ii)    = stationMeasures.Timestamp(idxMaxFieldValue);
-                    app.stationTable.maxFieldLatitude(ii)     = stationMeasures.Latitude(idxMaxFieldValue);
-                    app.stationTable.maxFieldLongitude(ii)    = stationMeasures.Longitude(idxMaxFieldValue);        
+                    app.CallingApp.stationTable.numberOfMeasures(ii)     = height(stationMeasures);
+                    app.CallingApp.stationTable.numberOfRiskMeasures(ii) = sum(stationMeasures.FieldValue > app.General.MonitoringPlan.FieldValue);
+                    app.CallingApp.stationTable.minFieldValue(ii)        = min(stationMeasures.FieldValue);
+                    app.CallingApp.stationTable.meanFieldValue(ii)       = mean(stationMeasures.FieldValue);
+                    app.CallingApp.stationTable.maxFieldValue(ii)        = maxFieldValue;
+                    app.CallingApp.stationTable.maxFieldTimestamp(ii)    = stationMeasures.Timestamp(idxMaxFieldValue);
+                    app.CallingApp.stationTable.maxFieldLatitude(ii)     = stationMeasures.Latitude(idxMaxFieldValue);
+                    app.CallingApp.stationTable.maxFieldLongitude(ii)    = stationMeasures.Longitude(idxMaxFieldValue);        
                 end
             end
+        end
+
+        %-----------------------------------------------------------------%
+        function idxTableRow = layout_searchUnexpectedTableValues(app, operationType)
+            switch operationType
+                case 'TableLayout'
+                    idxTableRow = find(app.UITable.Data.numberOfRiskMeasures > 0 | ...
+                                      ((app.UITable.Data.numberOfMeasures == 0) & (app.UITable.Data.("Justificativa") == "-1")));
+
+                case 'TableExport'
+                    idxTableRow = find((app.UITable.Data.numberOfMeasures == 0) & (app.UITable.Data.("Justificativa") == "-1"));
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function layout_TableStyle(app)
+            removeStyle(app.UITable)
+
+            % Identifica estações que NÃO tiveram medições no seu entorno, 
+            % apesar da rota englobar o município em que está instalada a
+            % estação. Ou estações que apresentaram medições com níveis
+            % acima de 14 V/m.
+            idxTableRow = layout_searchUnexpectedTableValues(app, 'TableLayout');
+            columnIndex = find(ismember(app.UITable.Data.Properties.VariableNames, 'Justificativa'));
+            cellList    = [idxTableRow, repmat(columnIndex, numel(idxTableRow), 1)];
+            
+            % Neste caso, passa a ser obrigatório o preenchimento do campo
+            % "Justificativa" da tabela.
+            s = uistyle('BackgroundColor', '#c80b0f', 'FontColor', 'white');
+            addStyle(app.UITable, s, "cell", cellList)
         end
     end
     
@@ -372,14 +421,74 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     end
 
                 case app.tool_TableVisibility
-                    app.tool_TableVisibility.UserData = ~app.tool_TableVisibility.UserData;
-                    if app.tool_TableVisibility.UserData
-                        app.UITable.Visible = 1;
-                        app.GridLayout.RowHeight(4:5) = {10,'.4x'};
-                    else
-                        app.UITable.Visible = 0;
-                        app.GridLayout.RowHeight(4:5) = {0,0};
+                    app.tool_TableVisibility.UserData = mod(app.tool_TableVisibility.UserData+1, 3);
+
+                    switch app.tool_TableVisibility.UserData
+                        case 0
+                            app.UITable.Visible = 0;
+                            app.GridLayout.RowHeight(2:5) = {22,'1x', 0, 0};
+                        case 1
+                            app.UITable.Visible = 1;
+                            app.GridLayout.RowHeight(2:5) = {22, '1x', 10, 175};
+                        case 2
+                            app.UITable.Visible = 1;
+                            app.GridLayout.RowHeight(2:5) = {0, 0, 0, '1x'};
                     end
+            end
+
+        end
+
+        % Image clicked function: GravarButton
+        function tool_ExportTableAsExcelSheet(app, event)
+            
+            % Inicialmente, verifica se o campo "Justificativa" foi devidamente 
+            % preenchido...
+            if ~isempty(layout_searchUnexpectedTableValues(app, 'TableExport'))
+                msgQuestion   = ['Há registro de estações instaladas na(s) localidade(s) sob análise para as quais '     ...
+                                 'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
+                                 'o campo "Justificativa".<br><br>Deseja ignorar esse alerta, exportando a tabela como planilha?'];
+                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
+                if userSelection == "Não"
+                    return
+                end
+            end
+
+            % Usuário escolhe nome do arquivo a ser salvo...       
+            nameFormatMap = {'*.xlsx', 'RNI (*.xlsx)'};
+            defaultName   = appUtil.DefaultFileName(app.General.fileFolder.userPath, 'RNI', '-1');
+            fileFullPath  = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', nameFormatMap, defaultName);
+            if isempty(fileFullPath)
+                return
+            end
+
+            % Ajusta planilha para o formato definido no PM-RNI, salvando-a 
+            % como planilha Excel, ao final.
+            try
+                tempTable = app.CallingApp.stationTable(app.UITable.UserData, [1:8, 16, 15, 17:18, 12, 19:20]);
+                tempTable.Properties.VariableNames(9:15) = {'Data da Medição',           ...
+                                                            'Emáx (V/m)',                ...
+                                              	            'Latitude Emáx',             ...
+                                            	            'Longitude Emáx',            ...
+                                              	            '> 14 V/M',                  ...
+                                              	            'Justificativa (apenas NV)', ...
+                                              	            'Observações importantes'};
+                writetable(tempTable, fileFullPath)
+
+            catch ME
+                appUtil.modalWindow(app.UIFigure, 'error', ME.message);
+            end
+
+        end
+
+        % Image clicked function: axesTool_RegionZoom, axesTool_RestoreView
+        function axesTool_InteractionImageClicked(app, event)
+            
+            switch event.Source
+                case app.axesTool_RestoreView
+                    geolimits(app.UIAxes, app.restoreView(1).xLim, app.restoreView(1).yLim)
+
+                case app.axesTool_RegionZoom
+                    plot.axes.Interactivity.GeographicRegionZoomInteraction(app.UIAxes, app.axesTool_RegionZoom)
             end
 
         end
@@ -387,83 +496,17 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Callback function: UITree
         function UITreeCheckedNodesChanged(app, event)
             
-            selectedNodes = app.UITree.CheckedNodes;
-
-            if ~isempty(selectedNodes)
-                idxLogical_Cach = [];
-            
-                for ii = 1:numel(selectedNodes)
-                    idxLogical  = find(strcmp(strcat(app.Data_Meas_cache.UF, " - ", app.Data_Meas_cache.Municipio), string(selectedNodes(ii).Text)));
-                    idxLogical  = unique([idxLogical_Cach; idxLogical], 'stable');
-                    idxLogical_Cach = idxLogical;
-                end
-
-                if ~isempty(idxLogical_Cach)
-                    app.UITable.Data          = app.UTTable_Formated(idxLogical_Cach,:);
-                    app.Data_Meas_cache_Select = app.Data_Meas_cache(idxLogical_Cach,:);
-                else
-                    app.UITable.Data          = app.UITable.Data;
-                    app.Data_Meas_cache_Select = app.Data_Meas_cache;
-                end
-    
-                % calcula o Emax das estações e os valores de Datatime e coordenadas associadas aos Emáx 
-                Dist_Max_Level = app.General.Distance.ExternalRequest;
-                identifyMeasuresForEachStation(app, Dist_Max_Level);
-
-            else
-                app.UITable.Data = app.UTTable_Formated;
-            end     
+            Analysis(app)
 
         end
 
-        % Button pushed function: ButtonKML
-        function ButtonKMLPushed(app, event)
+        % Cell edit callback: UITable
+        function UITableCellEdit(app, event)
 
-            % Criar arquivo KML
-            arq_KML = 'mapa_earth.kml';
-            sub_folder = 'DataBase\PA_RNI\';
-            outputFileName = fullfile(app.rootFolder, sub_folder, arq_KML);
-            %outputFileName = 'C:\P&D\AppRNI\DataBase\PA_RNI\mapa_pontos.kml';
+            idxStation  = app.UITable.UserData(event.Indices(1));
+            app.CallingApp.stationTable.("Justificativa")(idxStation) = event.NewData;
             
-            % Criar o arquivo KML
-            Names = repmat("", size(app.measTable.Latitude));  % Nome vazio para cada ponto
-            kmlwrite(outputFileName, app.measTable.Latitude, app.measTable.Longitude, 'Name', Names);
-            %kmlwrite(outputFileName, Lat, Lon, 'Name', Names);
-            
-            % Mensagem de sucesso
-            uialert(app.UIFigure, ['Arquivo KML criado: ' arq_KML], 'Aviso');
-
-        end
-
-        % Image clicked function: GravarButton
-        function GravarButtonPushed(app, event)
-            
-            % Lendo os dados existentes do arquivo CSV
-            try
-                opts = detectImportOptions(app.Path_Data_PA_RNI_Out);
-                opts.PreserveVariableNames = true;
-                app.Data_PA_RNI_Out = readtable(app.Path_Data_PA_RNI_Out, opts);
-            catch
-                startupFcn(app);
-            end
-      
-            index_out = find(~isnan(app.UITable.Data.('Emáx (V/m)')));
-
-            for pp = 1: numel(index_out)
-                Idx_Station = find(strcmp(string(app.Data_Meas_cache.('N° da Estacao')),  string(app.UITable.Data.('N° da Estacao')(index_out(pp)))));
-
-                app.Data_PA_RNI_Out.('Data da Medição'){Idx_Station} = app.UITable.Data.('Data da Medição')(index_out(pp));
-                app.Data_PA_RNI_Out.('Emáx (V/m)'){Idx_Station} = app.UITable.Data.('Emáx (V/m)')(index_out(pp));
-                app.Data_PA_RNI_Out.('Latitude Emáx'){Idx_Station} = app.UITable.Data.('Latitude Emáx')(index_out(pp));
-                app.Data_PA_RNI_Out.('Longitude Emáx'){Idx_Station} = app.UITable.Data.('Longitude Emáx')(index_out(pp));
-                app.Data_PA_RNI_Out.('> 14 V/M')(Idx_Station) = app.UITable.Data.('> 14 V/M')(index_out(pp));
-                app.Data_PA_RNI_Out.('Justificativa (apenas NV)'){Idx_Station} = app.UITable.Data.('Justificativa (apenas NV)')(index_out(pp));
-                app.Data_PA_RNI_Out.('Observações importantes'){Idx_Station} = app.UITable.Data.('Observações importantes')(index_out(pp));
-            end
-            
-            % Escrevendo os dados atualizados de volta no arquivo xlsx
-            writetable(app.Data_PA_RNI_Out, app.Path_Data_PA_RNI_Out);
-            uialert(app.UIFigure, 'Arquivo XLSX atualizado com sucesso!', 'Feito!','Icon','success');
+            layout_TableStyle(app)
 
         end
 
@@ -530,16 +573,19 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
         end
 
-        % Image clicked function: axesTool_RegionZoom, axesTool_RestoreView
-        function axesTool_InteractionImageClicked(app, event)
-            
-            switch event.Source
-                case app.axesTool_RestoreView
-                    geolimits(app.UIAxes, app.restoreView(1).xLim, app.restoreView(1).yLim)
+        % Image clicked function: Image3
+        function tool_ExportPlotAsKML(app, event)
 
-                case app.axesTool_RegionZoom
-                    plot.axes.Interactivity.GeographicRegionZoomInteraction(app.UIAxes, app.axesTool_RegionZoom)
-            end
+            % Criar arquivo KML
+            arq_KML = 'mapa_earth.kml';
+            sub_folder = 'DataBase\PA_RNI\';
+            outputFileName = fullfile(app.rootFolder, sub_folder, arq_KML);
+            %outputFileName = 'C:\P&D\AppRNI\DataBase\PA_RNI\mapa_pontos.kml';
+            
+            % Criar o arquivo KML
+            Names = repmat("", size(app.measTable.Latitude));  % Nome vazio para cada ponto
+            kmlwrite(outputFileName, app.measTable.Latitude, app.measTable.Longitude, 'Name', Names);
+            %kmlwrite(outputFileName, Lat, Lon, 'Name', Names);
 
         end
     end
@@ -619,10 +665,11 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Create UITable
             app.UITable = uitable(app.GridLayout);
             app.UITable.ColumnName = {'Localidade'; 'Serviço'; 'Estação'; 'Qtd.|Medidas'; 'Qtd.|> 14 V/m'; 'Emin|(V/m)'; 'Emean|(V/m)'; 'Emax|(V/m)'; 'Justificativa'};
-            app.UITable.ColumnWidth = {'auto', 'auto', 'auto', 70, 70, 70, 70, 70, 'auto'};
+            app.UITable.ColumnWidth = {150, 'auto', 90, 70, 70, 70, 70, 70, 'auto'};
             app.UITable.RowName = {};
             app.UITable.ColumnSortable = [true true true true true true true true false];
             app.UITable.ColumnEditable = [false false false false false false false false true];
+            app.UITable.CellEditCallback = createCallbackFcn(app, @UITableCellEdit, true);
             app.UITable.DoubleClickedFcn = createCallbackFcn(app, @UITableDoubleClicked, true);
             app.UITable.Multiselect = 'off';
             app.UITable.ForegroundColor = [0.149 0.149 0.149];
@@ -632,7 +679,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create toolGrid
             app.toolGrid = uigridlayout(app.GridLayout);
-            app.toolGrid.ColumnWidth = {22, 22, 22, 22, 22, '1x', '1x', 22};
+            app.toolGrid.ColumnWidth = {22, 22, 5, 22, 22, 22, 140, '1x', 22};
             app.toolGrid.RowHeight = {4, 17, '1x'};
             app.toolGrid.ColumnSpacing = 5;
             app.toolGrid.RowSpacing = 0;
@@ -660,15 +707,16 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Create GravarButton
             app.GravarButton = uiimage(app.toolGrid);
             app.GravarButton.ScaleMethod = 'none';
-            app.GravarButton.ImageClickedFcn = createCallbackFcn(app, @GravarButtonPushed, true);
+            app.GravarButton.ImageClickedFcn = createCallbackFcn(app, @tool_ExportTableAsExcelSheet, true);
+            app.GravarButton.Tooltip = {'Exporta tabela como planilha Excel (.xlsx)'};
             app.GravarButton.Layout.Row = 2;
-            app.GravarButton.Layout.Column = 3;
+            app.GravarButton.Layout.Column = 4;
             app.GravarButton.ImageSource = 'Export_16.png';
 
             % Create jsBackDoor
             app.jsBackDoor = uihtml(app.toolGrid);
             app.jsBackDoor.Layout.Row = [1 2];
-            app.jsBackDoor.Layout.Column = 5;
+            app.jsBackDoor.Layout.Column = 6;
 
             % Create tool_tableNRows
             app.tool_tableNRows = uilabel(app.toolGrid);
@@ -676,58 +724,39 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_tableNRows.FontSize = 10;
             app.tool_tableNRows.FontColor = [0.6 0.6 0.6];
             app.tool_tableNRows.Layout.Row = [1 3];
-            app.tool_tableNRows.Layout.Column = 7;
-            app.tool_tableNRows.Text = {'Em análise estações instaladas nas localidades "Salvador/BA" e "Ilhéus/BA"'; '25 de 1523 registros'};
-
-            % Create ButtonKML
-            app.ButtonKML = uibutton(app.toolGrid, 'push');
-            app.ButtonKML.ButtonPushedFcn = createCallbackFcn(app, @ButtonKMLPushed, true);
-            app.ButtonKML.Icon = 'Instr_Global.png';
-            app.ButtonKML.Layout.Row = [1 3];
-            app.ButtonKML.Layout.Column = 4;
-            app.ButtonKML.Text = '';
+            app.tool_tableNRows.Layout.Column = 8;
+            app.tool_tableNRows.Text = '';
 
             % Create Image
             app.Image = uiimage(app.toolGrid);
             app.Image.ScaleMethod = 'none';
             app.Image.Enable = 'off';
             app.Image.Layout.Row = [1 3];
-            app.Image.Layout.Column = 8;
+            app.Image.Layout.Column = 9;
             app.Image.ImageSource = 'Filter_18.png';
 
-            % Create play_ControlsTab1Grid_2
-            app.play_ControlsTab1Grid_2 = uigridlayout(app.GridLayout);
-            app.play_ControlsTab1Grid_2.ColumnWidth = {18, '1x'};
-            app.play_ControlsTab1Grid_2.RowHeight = {'1x'};
-            app.play_ControlsTab1Grid_2.ColumnSpacing = 5;
-            app.play_ControlsTab1Grid_2.RowSpacing = 5;
-            app.play_ControlsTab1Grid_2.Padding = [2 2 2 2];
-            app.play_ControlsTab1Grid_2.Tag = 'COLORLOCKED';
-            app.play_ControlsTab1Grid_2.Layout.Row = 2;
-            app.play_ControlsTab1Grid_2.Layout.Column = 2;
-            app.play_ControlsTab1Grid_2.BackgroundColor = [0.749 0.749 0.749];
+            % Create Image2
+            app.Image2 = uiimage(app.toolGrid);
+            app.Image2.Enable = 'off';
+            app.Image2.Layout.Row = [1 3];
+            app.Image2.Layout.Column = 3;
+            app.Image2.ImageSource = 'LineV.png';
 
-            % Create play_ControlsTab1Label_2
-            app.play_ControlsTab1Label_2 = uilabel(app.play_ControlsTab1Grid_2);
-            app.play_ControlsTab1Label_2.FontSize = 11;
-            app.play_ControlsTab1Label_2.Layout.Row = 1;
-            app.play_ControlsTab1Label_2.Layout.Column = 2;
-            app.play_ControlsTab1Label_2.Text = 'MEDIDAS';
-
-            % Create play_ControlsTab1Image_2
-            app.play_ControlsTab1Image_2 = uiimage(app.play_ControlsTab1Grid_2);
-            app.play_ControlsTab1Image_2.Layout.Row = 1;
-            app.play_ControlsTab1Image_2.Layout.Column = 1;
-            app.play_ControlsTab1Image_2.HorizontalAlignment = 'left';
-            app.play_ControlsTab1Image_2.ImageSource = 'Playback_32.png';
+            % Create Image3
+            app.Image3 = uiimage(app.toolGrid);
+            app.Image3.ImageClickedFcn = createCallbackFcn(app, @tool_ExportPlotAsKML, true);
+            app.Image3.Tooltip = {'Exporta medidas apresentadas em plot como .KML'};
+            app.Image3.Layout.Row = [1 3];
+            app.Image3.Layout.Column = 5;
+            app.Image3.ImageSource = 'Instr_Global.png';
 
             % Create GridLayout2
             app.GridLayout2 = uigridlayout(app.GridLayout);
-            app.GridLayout2.RowHeight = {22, '1x', 85, 85};
+            app.GridLayout2.RowHeight = {22, 22, '1x', 85, 85};
             app.GridLayout2.ColumnSpacing = 5;
             app.GridLayout2.RowSpacing = 5;
             app.GridLayout2.Padding = [0 0 0 0];
-            app.GridLayout2.Layout.Row = [3 5];
+            app.GridLayout2.Layout.Row = [2 5];
             app.GridLayout2.Layout.Column = 2;
             app.GridLayout2.BackgroundColor = [1 1 1];
 
@@ -736,14 +765,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.config_geoAxesLabel_2.VerticalAlignment = 'bottom';
             app.config_geoAxesLabel_2.WordWrap = 'on';
             app.config_geoAxesLabel_2.FontSize = 10;
-            app.config_geoAxesLabel_2.Layout.Row = 1;
+            app.config_geoAxesLabel_2.Layout.Row = 2;
             app.config_geoAxesLabel_2.Layout.Column = 1;
             app.config_geoAxesLabel_2.Text = 'LOCALIDADES';
 
             % Create UITree
             app.UITree = uitree(app.GridLayout2, 'checkbox');
             app.UITree.FontSize = 11;
-            app.UITree.Layout.Row = 2;
+            app.UITree.Layout.Row = 3;
             app.UITree.Layout.Column = [1 2];
 
             % Assign Checked Nodes
@@ -756,10 +785,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card1_numberOfStations.WordWrap = 'on';
             app.Card1_numberOfStations.FontSize = 10;
             app.Card1_numberOfStations.FontColor = [0.502 0.502 0.502];
-            app.Card1_numberOfStations.Layout.Row = 3;
+            app.Card1_numberOfStations.Layout.Row = 4;
             app.Card1_numberOfStations.Layout.Column = 1;
             app.Card1_numberOfStations.Interpreter = 'html';
-            app.Card1_numberOfStations.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: BLACK; font-size: 32px;">100</font>'; 'ESTAÇÕES LOCALIZADAS NOS MUNICÍPIOS SOB ANÁLISE</p>'};
+            app.Card1_numberOfStations.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: BLACK; font-size: 32px;">0</font>'; 'ESTAÇÕES LOCALIZADAS NOS MUNICÍPIOS SOB ANÁLISE</p>'};
 
             % Create Card2_numberOfRiskStations
             app.Card2_numberOfRiskStations = uilabel(app.GridLayout2);
@@ -768,10 +797,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card2_numberOfRiskStations.WordWrap = 'on';
             app.Card2_numberOfRiskStations.FontSize = 10;
             app.Card2_numberOfRiskStations.FontColor = [0.502 0.502 0.502];
-            app.Card2_numberOfRiskStations.Layout.Row = 3;
+            app.Card2_numberOfRiskStations.Layout.Row = 4;
             app.Card2_numberOfRiskStations.Layout.Column = 2;
             app.Card2_numberOfRiskStations.Interpreter = 'html';
-            app.Card2_numberOfRiskStations.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">3</font>'; 'ESTAÇÕES NO ENTORNO DE REGISTROS DE NÍVEIS ACIMA DE 14 V/m</p>'};
+            app.Card2_numberOfRiskStations.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">0</font>'; 'ESTAÇÕES NO ENTORNO DE REGISTROS DE NÍVEIS ACIMA DE 14 V/m</p>'};
 
             % Create Card3_stationsOnRoute
             app.Card3_stationsOnRoute = uilabel(app.GridLayout2);
@@ -780,10 +809,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card3_stationsOnRoute.WordWrap = 'on';
             app.Card3_stationsOnRoute.FontSize = 10;
             app.Card3_stationsOnRoute.FontColor = [0.502 0.502 0.502];
-            app.Card3_stationsOnRoute.Layout.Row = 4;
+            app.Card3_stationsOnRoute.Layout.Row = 5;
             app.Card3_stationsOnRoute.Layout.Column = 1;
             app.Card3_stationsOnRoute.Interpreter = 'html';
-            app.Card3_stationsOnRoute.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: black; font-size: 32px;">78</font>'; 'ESTAÇÕES INSTALADAS NO ENTORNO DA ROTA</p>'};
+            app.Card3_stationsOnRoute.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: black; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS NO ENTORNO DA ROTA</p>'};
 
             % Create Card4_stationsOutRoute
             app.Card4_stationsOutRoute = uilabel(app.GridLayout2);
@@ -792,10 +821,36 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card4_stationsOutRoute.WordWrap = 'on';
             app.Card4_stationsOutRoute.FontSize = 10;
             app.Card4_stationsOutRoute.FontColor = [0.502 0.502 0.502];
-            app.Card4_stationsOutRoute.Layout.Row = 4;
+            app.Card4_stationsOutRoute.Layout.Row = 5;
             app.Card4_stationsOutRoute.Layout.Column = 2;
             app.Card4_stationsOutRoute.Interpreter = 'html';
-            app.Card4_stationsOutRoute.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">22</font>'; 'ESTAÇÕES INSTALADAS FORA DA ROTA</p>'};
+            app.Card4_stationsOutRoute.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS FORA DA ROTA</p>'};
+
+            % Create play_ControlsTab1Grid_2
+            app.play_ControlsTab1Grid_2 = uigridlayout(app.GridLayout2);
+            app.play_ControlsTab1Grid_2.ColumnWidth = {18, '1x'};
+            app.play_ControlsTab1Grid_2.RowHeight = {'1x'};
+            app.play_ControlsTab1Grid_2.ColumnSpacing = 5;
+            app.play_ControlsTab1Grid_2.RowSpacing = 5;
+            app.play_ControlsTab1Grid_2.Padding = [2 2 2 2];
+            app.play_ControlsTab1Grid_2.Tag = 'COLORLOCKED';
+            app.play_ControlsTab1Grid_2.Layout.Row = 1;
+            app.play_ControlsTab1Grid_2.Layout.Column = [1 2];
+            app.play_ControlsTab1Grid_2.BackgroundColor = [0.749 0.749 0.749];
+
+            % Create play_ControlsTab1Image_2
+            app.play_ControlsTab1Image_2 = uiimage(app.play_ControlsTab1Grid_2);
+            app.play_ControlsTab1Image_2.Layout.Row = 1;
+            app.play_ControlsTab1Image_2.Layout.Column = 1;
+            app.play_ControlsTab1Image_2.HorizontalAlignment = 'left';
+            app.play_ControlsTab1Image_2.ImageSource = 'Playback_32.png';
+
+            % Create play_ControlsTab1Label_2
+            app.play_ControlsTab1Label_2 = uilabel(app.play_ControlsTab1Grid_2);
+            app.play_ControlsTab1Label_2.FontSize = 11;
+            app.play_ControlsTab1Label_2.Layout.Row = 1;
+            app.play_ControlsTab1Label_2.Layout.Column = 2;
+            app.play_ControlsTab1Label_2.Text = 'MEDIDAS';
 
             % Create filter_ContextMenu
             app.filter_ContextMenu = uicontextmenu(app.UIFigure);

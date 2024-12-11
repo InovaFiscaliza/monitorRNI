@@ -1,7 +1,7 @@
-function stationTable = MonitoringPlanStations(fileFullPath)
+function stationTable = MonitoringPlanStations(fileFullPath, appGeneral)
     stationTable = readtable(fileFullPath, 'VariableNamingRule', 'preserve');
     
-    % Subtui as virgulas das coordendas por pontos e tranforma Lat. e Long. para Double
+    % Tipos de dados:
     stationTable.("N° Fistel")            = uint64(stationTable.("N° Fistel"));
     stationTable.("N° da Estacao")        = uint32(stationTable.("N° da Estacao"));
     stationTable.('Latitude da Estação')  = str2double(replace(stationTable.('Latitude da Estação'),  ',', '.'));
@@ -9,6 +9,7 @@ function stationTable = MonitoringPlanStations(fileFullPath)
     
     % Novas colunas:
     stationTable.Location                 = strcat(stationTable.("Municipio"), '/', stationTable.UF);
+    stationTable.AnalysisFlag             = false(height(stationTable), 1);
     stationTable.numberOfMeasures(:)      = 0;
     stationTable.numberOfRiskMeasures(:)  = 0;
     stationTable.minFieldValue(:)         = 0;
@@ -17,6 +18,6 @@ function stationTable = MonitoringPlanStations(fileFullPath)
     stationTable.maxFieldTimestamp(:)     = NaT;
     stationTable.maxFieldLatitude(:)      = 0;
     stationTable.maxFieldLongitude(:)     = 0;
-    stationTable.("Justificativa")        = repmat({''}, height(stationTable), 1);
-    stationTable.("Observações")          = stationTable.("Justificativa");
+    stationTable.("Justificativa")        = repmat(categorical("-1", appGeneral.MonitoringPlan.NoMeasureReasons), height(stationTable), 1);
+    stationTable.("Observações")          = repmat({''}, height(stationTable), 1);
 end
