@@ -3,6 +3,45 @@ classdef winConfig_exported < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                        matlab.ui.Figure
+        Panel                           matlab.ui.container.Panel
+        Tab3_Grid                       matlab.ui.container.GridLayout
+        config_geoAxesSubPanel          matlab.ui.container.Panel
+        config_geoAxesSubGrid           matlab.ui.container.GridLayout
+        play_Persistance_cLim_Grid2     matlab.ui.container.GridLayout
+        Label                           matlab.ui.control.Label
+        play_Persistance_cLim2          matlab.ui.control.Spinner
+        play_Persistance_cLim1          matlab.ui.control.Spinner
+        LimitesLabel                    matlab.ui.control.Label
+        LegendadecorLabel               matlab.ui.control.Label
+        DropDownLocalBarra              matlab.ui.control.DropDown
+        config_Colormap                 matlab.ui.control.DropDown
+        config_ColormapLabel            matlab.ui.control.Label
+        config_Basemap                  matlab.ui.control.DropDown
+        config_BasemapLabel             matlab.ui.control.Label
+        config_FolderMapLabel_2         matlab.ui.control.Label
+        config_FolderMapPanel_2         matlab.ui.container.Panel
+        config_FolderMapGrid_2          matlab.ui.container.GridLayout
+        config_Folder_userPathButton_2  matlab.ui.control.Image
+        config_Folder_userPath_2        matlab.ui.control.DropDown
+        config_Folder_userPathLabel_2   matlab.ui.control.Label
+        config_Folder_pythonPathButton_2  matlab.ui.control.Image
+        config_Folder_pythonPath_2      matlab.ui.control.EditField
+        config_Folder_pythonPathLabel_2  matlab.ui.control.Label
+        config_Folder_DataHubPOSTButton_2  matlab.ui.control.Image
+        config_Folder_DataHubPOST_2     matlab.ui.control.EditField
+        config_Folder_DataHubPOSTLabel_2  matlab.ui.control.Label
+        config_Folder_DataHubGETButton_2  matlab.ui.control.Image
+        config_Folder_DataHubGET_2      matlab.ui.control.EditField
+        config_Folder_DataHubGETLabel_2  matlab.ui.control.Label
+        misc_ElevationSourcePanel       matlab.ui.container.Panel
+        GridLayout8                     matlab.ui.container.GridLayout
+        EditFieldDist_PARNI             matlab.ui.control.NumericEditField
+        EditFieldDistMedicoes           matlab.ui.control.NumericEditField
+        DistPARNILabel                  matlab.ui.control.Label
+        DisMedicoesLabel                matlab.ui.control.Label
+        ANLISELabel                     matlab.ui.control.Label
+        config_Refresh                  matlab.ui.control.Image
+        config_geoAxesLabel             matlab.ui.control.Label
         GridLayout                      matlab.ui.container.GridLayout
         jsBackDoor                      matlab.ui.control.HTML
         tool_RFDataHubButton            matlab.ui.control.Image
@@ -1385,6 +1424,316 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.jsBackDoor = uihtml(app.GridLayout);
             app.jsBackDoor.Layout.Row = 3;
             app.jsBackDoor.Layout.Column = 5;
+
+            % Create Panel
+            app.Panel = uipanel(app.UIFigure);
+            app.Panel.AutoResizeChildren = 'off';
+            app.Panel.Title = 'Panel';
+            app.Panel.Position = [1331 250 510 551];
+
+            % Create Tab3_Grid
+            app.Tab3_Grid = uigridlayout(app.Panel);
+            app.Tab3_Grid.ColumnWidth = {'1x', 16};
+            app.Tab3_Grid.RowHeight = {22, 112, 22, 72, 22, '1x'};
+            app.Tab3_Grid.ColumnSpacing = 5;
+            app.Tab3_Grid.RowSpacing = 5;
+            app.Tab3_Grid.Padding = [0 0 0 0];
+            app.Tab3_Grid.BackgroundColor = [1 1 1];
+
+            % Create config_geoAxesLabel
+            app.config_geoAxesLabel = uilabel(app.Tab3_Grid);
+            app.config_geoAxesLabel.VerticalAlignment = 'bottom';
+            app.config_geoAxesLabel.WordWrap = 'on';
+            app.config_geoAxesLabel.FontSize = 10;
+            app.config_geoAxesLabel.Layout.Row = 1;
+            app.config_geoAxesLabel.Layout.Column = [1 2];
+            app.config_geoAxesLabel.Text = 'MAPA';
+
+            % Create config_Refresh
+            app.config_Refresh = uiimage(app.Tab3_Grid);
+            app.config_Refresh.Visible = 'off';
+            app.config_Refresh.Tooltip = {'Volta à configuração inicial'};
+            app.config_Refresh.Layout.Row = 1;
+            app.config_Refresh.Layout.Column = 2;
+            app.config_Refresh.VerticalAlignment = 'bottom';
+            app.config_Refresh.ImageSource = 'Refresh_18.png';
+
+            % Create ANLISELabel
+            app.ANLISELabel = uilabel(app.Tab3_Grid);
+            app.ANLISELabel.VerticalAlignment = 'bottom';
+            app.ANLISELabel.FontSize = 10;
+            app.ANLISELabel.Layout.Row = 3;
+            app.ANLISELabel.Layout.Column = 1;
+            app.ANLISELabel.Text = 'ANÁLISE';
+
+            % Create misc_ElevationSourcePanel
+            app.misc_ElevationSourcePanel = uipanel(app.Tab3_Grid);
+            app.misc_ElevationSourcePanel.AutoResizeChildren = 'off';
+            app.misc_ElevationSourcePanel.Layout.Row = 4;
+            app.misc_ElevationSourcePanel.Layout.Column = [1 2];
+
+            % Create GridLayout8
+            app.GridLayout8 = uigridlayout(app.misc_ElevationSourcePanel);
+            app.GridLayout8.ColumnWidth = {'1x', 110};
+            app.GridLayout8.RowHeight = {22, 22};
+            app.GridLayout8.RowSpacing = 5;
+            app.GridLayout8.BackgroundColor = [1 1 1];
+
+            % Create DisMedicoesLabel
+            app.DisMedicoesLabel = uilabel(app.GridLayout8);
+            app.DisMedicoesLabel.WordWrap = 'on';
+            app.DisMedicoesLabel.FontSize = 10;
+            app.DisMedicoesLabel.Layout.Row = 1;
+            app.DisMedicoesLabel.Layout.Column = 1;
+            app.DisMedicoesLabel.Text = 'Distância limite entre ponto de medição e estação sob análise (m):';
+
+            % Create DistPARNILabel
+            app.DistPARNILabel = uilabel(app.GridLayout8);
+            app.DistPARNILabel.WordWrap = 'on';
+            app.DistPARNILabel.FontSize = 10;
+            app.DistPARNILabel.Layout.Row = 2;
+            app.DistPARNILabel.Layout.Column = 1;
+            app.DistPARNILabel.Text = 'Distância da estação (PA_RNI) (m):';
+
+            % Create EditFieldDistMedicoes
+            app.EditFieldDistMedicoes = uieditfield(app.GridLayout8, 'numeric');
+            app.EditFieldDistMedicoes.FontSize = 11;
+            app.EditFieldDistMedicoes.Layout.Row = 1;
+            app.EditFieldDistMedicoes.Layout.Column = 2;
+            app.EditFieldDistMedicoes.Value = 200;
+
+            % Create EditFieldDist_PARNI
+            app.EditFieldDist_PARNI = uieditfield(app.GridLayout8, 'numeric');
+            app.EditFieldDist_PARNI.FontSize = 11;
+            app.EditFieldDist_PARNI.Layout.Row = 2;
+            app.EditFieldDist_PARNI.Layout.Column = 2;
+            app.EditFieldDist_PARNI.Value = 200;
+
+            % Create config_FolderMapPanel_2
+            app.config_FolderMapPanel_2 = uipanel(app.Tab3_Grid);
+            app.config_FolderMapPanel_2.AutoResizeChildren = 'off';
+            app.config_FolderMapPanel_2.Layout.Row = 6;
+            app.config_FolderMapPanel_2.Layout.Column = [1 2];
+
+            % Create config_FolderMapGrid_2
+            app.config_FolderMapGrid_2 = uigridlayout(app.config_FolderMapPanel_2);
+            app.config_FolderMapGrid_2.ColumnWidth = {'1x', 20};
+            app.config_FolderMapGrid_2.RowHeight = {17, 22, 17, 22, 17, 22, 17, 22};
+            app.config_FolderMapGrid_2.ColumnSpacing = 5;
+            app.config_FolderMapGrid_2.RowSpacing = 5;
+            app.config_FolderMapGrid_2.Padding = [10 10 10 5];
+            app.config_FolderMapGrid_2.BackgroundColor = [1 1 1];
+
+            % Create config_Folder_DataHubGETLabel_2
+            app.config_Folder_DataHubGETLabel_2 = uilabel(app.config_FolderMapGrid_2);
+            app.config_Folder_DataHubGETLabel_2.VerticalAlignment = 'bottom';
+            app.config_Folder_DataHubGETLabel_2.FontSize = 10;
+            app.config_Folder_DataHubGETLabel_2.Layout.Row = 1;
+            app.config_Folder_DataHubGETLabel_2.Layout.Column = 1;
+            app.config_Folder_DataHubGETLabel_2.Text = 'DataHub - GET:';
+
+            % Create config_Folder_DataHubGET_2
+            app.config_Folder_DataHubGET_2 = uieditfield(app.config_FolderMapGrid_2, 'text');
+            app.config_Folder_DataHubGET_2.Editable = 'off';
+            app.config_Folder_DataHubGET_2.FontSize = 11;
+            app.config_Folder_DataHubGET_2.Layout.Row = 2;
+            app.config_Folder_DataHubGET_2.Layout.Column = 1;
+
+            % Create config_Folder_DataHubGETButton_2
+            app.config_Folder_DataHubGETButton_2 = uiimage(app.config_FolderMapGrid_2);
+            app.config_Folder_DataHubGETButton_2.Tag = 'DataHub_GET';
+            app.config_Folder_DataHubGETButton_2.Layout.Row = 2;
+            app.config_Folder_DataHubGETButton_2.Layout.Column = 2;
+            app.config_Folder_DataHubGETButton_2.ImageSource = 'OpenFile_36x36.png';
+
+            % Create config_Folder_DataHubPOSTLabel_2
+            app.config_Folder_DataHubPOSTLabel_2 = uilabel(app.config_FolderMapGrid_2);
+            app.config_Folder_DataHubPOSTLabel_2.VerticalAlignment = 'bottom';
+            app.config_Folder_DataHubPOSTLabel_2.FontSize = 10;
+            app.config_Folder_DataHubPOSTLabel_2.Layout.Row = 3;
+            app.config_Folder_DataHubPOSTLabel_2.Layout.Column = 1;
+            app.config_Folder_DataHubPOSTLabel_2.Text = 'DataHub - POST:';
+
+            % Create config_Folder_DataHubPOST_2
+            app.config_Folder_DataHubPOST_2 = uieditfield(app.config_FolderMapGrid_2, 'text');
+            app.config_Folder_DataHubPOST_2.Editable = 'off';
+            app.config_Folder_DataHubPOST_2.FontSize = 11;
+            app.config_Folder_DataHubPOST_2.Layout.Row = 4;
+            app.config_Folder_DataHubPOST_2.Layout.Column = 1;
+
+            % Create config_Folder_DataHubPOSTButton_2
+            app.config_Folder_DataHubPOSTButton_2 = uiimage(app.config_FolderMapGrid_2);
+            app.config_Folder_DataHubPOSTButton_2.Tag = 'DataHub_POST';
+            app.config_Folder_DataHubPOSTButton_2.Layout.Row = 4;
+            app.config_Folder_DataHubPOSTButton_2.Layout.Column = 2;
+            app.config_Folder_DataHubPOSTButton_2.ImageSource = 'OpenFile_36x36.png';
+
+            % Create config_Folder_pythonPathLabel_2
+            app.config_Folder_pythonPathLabel_2 = uilabel(app.config_FolderMapGrid_2);
+            app.config_Folder_pythonPathLabel_2.VerticalAlignment = 'bottom';
+            app.config_Folder_pythonPathLabel_2.FontSize = 10;
+            app.config_Folder_pythonPathLabel_2.Layout.Row = 5;
+            app.config_Folder_pythonPathLabel_2.Layout.Column = 1;
+            app.config_Folder_pythonPathLabel_2.Text = 'Pasta do ambiente virtual Python (lib fiscaliza):';
+
+            % Create config_Folder_pythonPath_2
+            app.config_Folder_pythonPath_2 = uieditfield(app.config_FolderMapGrid_2, 'text');
+            app.config_Folder_pythonPath_2.Editable = 'off';
+            app.config_Folder_pythonPath_2.FontSize = 11;
+            app.config_Folder_pythonPath_2.Layout.Row = 6;
+            app.config_Folder_pythonPath_2.Layout.Column = 1;
+
+            % Create config_Folder_pythonPathButton_2
+            app.config_Folder_pythonPathButton_2 = uiimage(app.config_FolderMapGrid_2);
+            app.config_Folder_pythonPathButton_2.Tag = 'pythonPath';
+            app.config_Folder_pythonPathButton_2.Layout.Row = 6;
+            app.config_Folder_pythonPathButton_2.Layout.Column = 2;
+            app.config_Folder_pythonPathButton_2.ImageSource = 'OpenFile_36x36.png';
+
+            % Create config_Folder_userPathLabel_2
+            app.config_Folder_userPathLabel_2 = uilabel(app.config_FolderMapGrid_2);
+            app.config_Folder_userPathLabel_2.VerticalAlignment = 'bottom';
+            app.config_Folder_userPathLabel_2.FontSize = 10;
+            app.config_Folder_userPathLabel_2.Layout.Row = 7;
+            app.config_Folder_userPathLabel_2.Layout.Column = 1;
+            app.config_Folder_userPathLabel_2.Text = 'Pasta do usuário:';
+
+            % Create config_Folder_userPath_2
+            app.config_Folder_userPath_2 = uidropdown(app.config_FolderMapGrid_2);
+            app.config_Folder_userPath_2.Items = {''};
+            app.config_Folder_userPath_2.FontSize = 11;
+            app.config_Folder_userPath_2.BackgroundColor = [1 1 1];
+            app.config_Folder_userPath_2.Layout.Row = 8;
+            app.config_Folder_userPath_2.Layout.Column = 1;
+            app.config_Folder_userPath_2.Value = '';
+
+            % Create config_Folder_userPathButton_2
+            app.config_Folder_userPathButton_2 = uiimage(app.config_FolderMapGrid_2);
+            app.config_Folder_userPathButton_2.Tag = 'userPath';
+            app.config_Folder_userPathButton_2.Layout.Row = 8;
+            app.config_Folder_userPathButton_2.Layout.Column = 2;
+            app.config_Folder_userPathButton_2.ImageSource = 'OpenFile_36x36.png';
+
+            % Create config_FolderMapLabel_2
+            app.config_FolderMapLabel_2 = uilabel(app.Tab3_Grid);
+            app.config_FolderMapLabel_2.VerticalAlignment = 'bottom';
+            app.config_FolderMapLabel_2.FontSize = 10;
+            app.config_FolderMapLabel_2.Layout.Row = 5;
+            app.config_FolderMapLabel_2.Layout.Column = 1;
+            app.config_FolderMapLabel_2.Text = 'MAPEAMENTO DE PASTAS';
+
+            % Create config_geoAxesSubPanel
+            app.config_geoAxesSubPanel = uipanel(app.Tab3_Grid);
+            app.config_geoAxesSubPanel.Layout.Row = 2;
+            app.config_geoAxesSubPanel.Layout.Column = [1 2];
+
+            % Create config_geoAxesSubGrid
+            app.config_geoAxesSubGrid = uigridlayout(app.config_geoAxesSubPanel);
+            app.config_geoAxesSubGrid.RowHeight = {17, 22, 17, 22};
+            app.config_geoAxesSubGrid.RowSpacing = 5;
+            app.config_geoAxesSubGrid.Padding = [10 10 10 5];
+            app.config_geoAxesSubGrid.BackgroundColor = [1 1 1];
+
+            % Create config_BasemapLabel
+            app.config_BasemapLabel = uilabel(app.config_geoAxesSubGrid);
+            app.config_BasemapLabel.VerticalAlignment = 'bottom';
+            app.config_BasemapLabel.FontSize = 10;
+            app.config_BasemapLabel.Layout.Row = 1;
+            app.config_BasemapLabel.Layout.Column = 1;
+            app.config_BasemapLabel.Text = 'Basemap:';
+
+            % Create config_Basemap
+            app.config_Basemap = uidropdown(app.config_geoAxesSubGrid);
+            app.config_Basemap.Items = {'none', 'darkwater', 'streets-light', 'streets-dark', 'satellite', 'topographic', 'grayterrain'};
+            app.config_Basemap.FontSize = 11;
+            app.config_Basemap.BackgroundColor = [1 1 1];
+            app.config_Basemap.Layout.Row = 2;
+            app.config_Basemap.Layout.Column = 1;
+            app.config_Basemap.Value = 'none';
+
+            % Create config_ColormapLabel
+            app.config_ColormapLabel = uilabel(app.config_geoAxesSubGrid);
+            app.config_ColormapLabel.VerticalAlignment = 'bottom';
+            app.config_ColormapLabel.FontSize = 10;
+            app.config_ColormapLabel.Layout.Row = 1;
+            app.config_ColormapLabel.Layout.Column = 2;
+            app.config_ColormapLabel.Text = 'Mapa de cor:';
+
+            % Create config_Colormap
+            app.config_Colormap = uidropdown(app.config_geoAxesSubGrid);
+            app.config_Colormap.Items = {'winter', 'parula', 'turbo', 'gray', 'hot', 'jet', 'summer'};
+            app.config_Colormap.FontSize = 11;
+            app.config_Colormap.BackgroundColor = [1 1 1];
+            app.config_Colormap.Layout.Row = 2;
+            app.config_Colormap.Layout.Column = 2;
+            app.config_Colormap.Value = 'winter';
+
+            % Create DropDownLocalBarra
+            app.DropDownLocalBarra = uidropdown(app.config_geoAxesSubGrid);
+            app.DropDownLocalBarra.Items = {'off', 'east', 'eastoutside', 'south', 'southoutside'};
+            app.DropDownLocalBarra.FontSize = 11;
+            app.DropDownLocalBarra.BackgroundColor = [1 1 1];
+            app.DropDownLocalBarra.Layout.Row = 4;
+            app.DropDownLocalBarra.Layout.Column = 1;
+            app.DropDownLocalBarra.Value = 'off';
+
+            % Create LegendadecorLabel
+            app.LegendadecorLabel = uilabel(app.config_geoAxesSubGrid);
+            app.LegendadecorLabel.VerticalAlignment = 'bottom';
+            app.LegendadecorLabel.FontSize = 10;
+            app.LegendadecorLabel.Layout.Row = 3;
+            app.LegendadecorLabel.Layout.Column = 1;
+            app.LegendadecorLabel.Text = 'Legenda de cor:';
+
+            % Create LimitesLabel
+            app.LimitesLabel = uilabel(app.config_geoAxesSubGrid);
+            app.LimitesLabel.VerticalAlignment = 'bottom';
+            app.LimitesLabel.FontSize = 10;
+            app.LimitesLabel.Layout.Row = 3;
+            app.LimitesLabel.Layout.Column = 2;
+            app.LimitesLabel.Text = 'Limites:';
+
+            % Create play_Persistance_cLim_Grid2
+            app.play_Persistance_cLim_Grid2 = uigridlayout(app.config_geoAxesSubGrid);
+            app.play_Persistance_cLim_Grid2.ColumnWidth = {'1x', 10, '1x'};
+            app.play_Persistance_cLim_Grid2.RowHeight = {'1x'};
+            app.play_Persistance_cLim_Grid2.ColumnSpacing = 0;
+            app.play_Persistance_cLim_Grid2.RowSpacing = 5;
+            app.play_Persistance_cLim_Grid2.Padding = [0 0 0 0];
+            app.play_Persistance_cLim_Grid2.Layout.Row = 4;
+            app.play_Persistance_cLim_Grid2.Layout.Column = 2;
+            app.play_Persistance_cLim_Grid2.BackgroundColor = [1 1 1];
+
+            % Create play_Persistance_cLim1
+            app.play_Persistance_cLim1 = uispinner(app.play_Persistance_cLim_Grid2);
+            app.play_Persistance_cLim1.Step = 0.1;
+            app.play_Persistance_cLim1.Limits = [0 Inf];
+            app.play_Persistance_cLim1.ValueDisplayFormat = '%.3f';
+            app.play_Persistance_cLim1.FontSize = 11;
+            app.play_Persistance_cLim1.Enable = 'off';
+            app.play_Persistance_cLim1.Tooltip = {''};
+            app.play_Persistance_cLim1.Layout.Row = 1;
+            app.play_Persistance_cLim1.Layout.Column = 1;
+
+            % Create play_Persistance_cLim2
+            app.play_Persistance_cLim2 = uispinner(app.play_Persistance_cLim_Grid2);
+            app.play_Persistance_cLim2.Limits = [0 Inf];
+            app.play_Persistance_cLim2.ValueDisplayFormat = '%.3f';
+            app.play_Persistance_cLim2.FontSize = 11;
+            app.play_Persistance_cLim2.Enable = 'off';
+            app.play_Persistance_cLim2.Tooltip = {''};
+            app.play_Persistance_cLim2.Layout.Row = 1;
+            app.play_Persistance_cLim2.Layout.Column = 3;
+            app.play_Persistance_cLim2.Value = 1;
+
+            % Create Label
+            app.Label = uilabel(app.play_Persistance_cLim_Grid2);
+            app.Label.HorizontalAlignment = 'center';
+            app.Label.FontSize = 10;
+            app.Label.Enable = 'off';
+            app.Label.Layout.Row = 1;
+            app.Label.Layout.Column = 2;
+            app.Label.Text = '-';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

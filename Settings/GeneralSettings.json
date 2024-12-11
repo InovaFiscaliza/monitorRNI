@@ -1,5 +1,5 @@
 {
-    "version": 0.01,
+    "version": 0.04,
     "operationMode": {
         "Debug": false,
         "Dock": false,
@@ -183,6 +183,11 @@
         "Resolution": 120
     },
     "Plot": {
+        "GeographicAxes": {
+            "Basemap": "satellite",
+            "Colormap": "winter",
+            "Colorbar": "off"
+        },
         "MinHold": {
             "Fcn": "area",
             "LineStyle": "-",
@@ -228,5 +233,13 @@
             "Value": 30
         },
         "lastSearch": []
+    },
+    "Distance": {
+        "MonitoringPlan": 200,
+        "ExternalRequest": 500
+    },
+    "Field": {
+        "MonitoringPlan": 14,
+        "ExternalRequest": 14
     }
 }

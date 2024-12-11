@@ -1,7 +1,7 @@
 {
   "VersionFile": "https://raw.githubusercontent.com/InovaFiscaliza/.github/main/releases/VersionFile.json",
   "RNI": {
-      "Sharepoint": "https://anatel365.sharepoint.com/sites/InovaFiscaliza/SitePages/appAnalise.aspx"
+      "Sharepoint": "https://anatel365.sharepoint.com/sites/InovaFiscaliza/SitePages/RNI.aspx"
   },
   "RFDataHub": {
       "Sharepoint": "https://anatel365.sharepoint.com/sites/InovaFiscaliza/SitePages/RFDataHub.aspx",

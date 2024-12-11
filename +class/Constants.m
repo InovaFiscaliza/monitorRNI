@@ -2,23 +2,22 @@ classdef (Abstract) Constants
 
     properties (Constant)
         %-----------------------------------------------------------------%
-        appName       = 'RNI'
-        appRelease    = 'R2024a'
-        appVersion    = '0.02'
+        appName        = 'RNI'
+        appRelease     = 'R2024a'
+        appVersion     = '0.02'
 
-        windowSize    = [1244, 660]
-        windowMinSize = [ 880, 660]
+        windowSize     = [1244, 660]
+        windowMinSize  = [ 880, 660]
 
-        gps2locAPI    = 'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=<Latitude>&longitude=<Longitude>&localityLanguage=pt'
-        gps2loc_City  = 'city'
-        gps2loc_Unit  = 'principalSubdivisionCode'
+        gps2locAPI     = 'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=<Latitude>&longitude=<Longitude>&localityLanguage=pt'
+        gps2loc_City   = 'city'
+        gps2loc_Unit   = 'principalSubdivisionCode'
         
-        xDecimals     = 5        
-        floatDiffTol  = 1e-5
+        xDecimals      = 5        
+        floatDiffTol   = 1e-5
 
-        GUIColumns        = {'UR', 'UF', 'Município', 'Serviço', 'N° Fistel', 'N° da Estação', 'Latitude Estação', 'Longitude Estação'};
-       
-        GUINewColumns     = {'Data da Medição', 'Valor Medido (V/m)', 'Latitude maior valor Medido', 'Longitude maior valor Medido', 'N° de Medidas acima de 14 V/M', 'Justificativa (apenas para estações sem medições)', 'Observações'}
+        GUIColumns     = {'UF', 'Município', 'Serviço', 'Estação', 'Data', 'Campo elétrico máximo (V/m)', 'Latitude', 'Longitude', 'Qtd. medidas superior 14V/m', 'Justificativa', 'Observações'}
+        GuiColumnWidth = {35, 70, 70, 70, 70, 70, 70, 70, 70, 'auto', 'auto'}
         
         % Novas colunas para adicionar na UITable
         GUIColumnsAll     = {'UR', 'UF', 'Município', 'Serviço', 'N° Fistel', 'N° da Estação', 'Latitude da Estação', 'Longitude da Estação', 'Data da Medição', 'Emáx (V/m)', 'Latitude Emáx', 'Longitude Emáx', '> 14 V/M', 'Justificativa (apenas NV)', 'Observações importantes'};
@@ -27,7 +26,7 @@ classdef (Abstract) Constants
 
         GUIColumns_Sondas = {'DataTime', 'Latitude', 'Longitude', 'E_VM'};
 
-        GuiColumnWidth = {50, 40, 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'}
+        
         GuiColumnWidthCalc = {50, 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'}
     end
 

@@ -81,23 +81,17 @@ classdef winRNI_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         % ESPECIFICIDADES
         %-----------------------------------------------------------------%
-        Data_PA_RNI            % Dados das estações do Plano Anual de RNI
+        % Instância da classe class.measData contendo a organização da
+        % informação lida dos arquivos de medida. O cacheData armazena tudo
+        % o que foi lido, e o measData apenas aquilo que consta na lista de
+        % arquivos.
+        cacheData = class.measData.empty
+        measData  = class.measData.empty
 
-
-
-
-        Path_Data_PA_RNI_Out   % Path do arquivo gerado pelo AppRNI
-        Data_Meas_Probes       % Dados das medições obtidas pelas em campo pelas sondas       
-        Data_Meas_cache        % Dados de todas as informações de Data_PA_RNI em cache 
-        UTTable_Formated       % Dados de todas as informações da UITable inicial formatada em cache
-        Data_Meas_cache_Select % Dados filtrados de Data_PA_RNI em cache
-        Data_Meas_cache_All    % Dados de todas as informações Calculadas de de Data_PA_RNI em cache 
-        Data_PA_RNI_Out        % Dados das  medições de RNI calculados que serão gravados no arquivo XLS  
-        Data_Localidades       % Dados da Tabela das Localidades do Brasil
-        Data_Serv_Rad_Tel      % Dados dos serviços de Radiodifusão e de Telecom fiscalizados pela Anatel
-        
-        metaData       = class.metaData.empty
-        metaData_cache = class.metaData.empty
+        % Dados das estações do Plano Anual de RNI:
+        % (pendente criar possibilidade de atualizar planilha, no módulo
+        % auxApp.winConfig)
+        stationTable
     end
 
     
@@ -119,8 +113,9 @@ classdef winRNI_exported < matlab.apps.AppBase
                 case 'BackgroundColorTurnedInvisible'
                     switch event.HTMLEventData
                         case 'SplashScreen'
-                            if isvalid(app.popupContainerGrid)
-                                delete(app.popupContainerGrid)
+                            if isvalid(app.SplashScreen)
+                                delete(app.SplashScreen)
+                                app.popupContainerGrid.Visible = 0;
                             end
                         otherwise
                             % ...
@@ -156,6 +151,8 @@ classdef winRNI_exported < matlab.apps.AppBase
 
                     sendEventToHTMLSource(app.jsBackDoor, 'htmlClassCustomization', struct('className',        '.mw-default-header-cell', ...
                                                                                            'classAttributes',  'font-size: 10px; white-space: pre-wrap; margin-bottom: 5px;'));
+
+                    ccTools.compCustomizationV2(app.jsBackDoor, app.popupContainerGrid, 'backgroundColor', 'rgba(255,255,255,0.65)')
 
                 otherwise
                     if any(app.jsBackDoorFlag{tabIndex})
@@ -224,48 +221,6 @@ classdef winRNI_exported < matlab.apps.AppBase
                 startup_ConfigFileRead(app)
                 startup_AppProperties(app)
                 startup_GUIComponents(app)
-    
-                % Para criação de arquivos temporários, cria-se uma pasta da 
-                % sessão.
-                tempDir = tempname;
-                mkdir(tempDir)
-                app.General_I.fileFolder.tempPath = tempDir;
-    
-                switch app.executionMode
-                    case 'webApp'
-                        % Força a exclusão do SplashScreen do MATLAB WebDesigner.
-                        sendEventToHTMLSource(app.jsBackDoor, "delProgressDialog");
-    
-                        % Webapp também não suporta outras janelas, de forma que os 
-                        % módulos auxiliares devem ser abertos na própria janela
-                        % do appAnalise.
-                        app.dockModule_Undock.Visible     = 0;
-    
-                        app.General_I.operationMode.Debug = false;
-                        app.General_I.operationMode.Dock  = true;
-                        
-                        % A pasta do usuário não é configurável, mas obtida por 
-                        % meio de chamada a uiputfile. 
-                        app.General_I.fileFolder.userPath = tempDir;
-    
-                    otherwise    
-                        % Resgata a pasta de trabalho do usuário (configurável).
-                        userPaths = appUtil.UserPaths(app.General_I.fileFolder.userPath);
-                        app.General_I.fileFolder.userPath = userPaths{end};
-    
-                        switch app.executionMode
-                            case 'desktopStandaloneApp'
-                                app.General_I.operationMode.Debug = false;
-                            case 'MATLABEnvironment'
-                                app.General_I.operationMode.Debug = true;
-                                % app.General_I.operationMode.Dock  = true;               % APENAS PARA TESTE, CASO QUEIRA VER OS MÓDULOS RENDERIZADOS NO PRÓPRIO APP! REMOVER DEPOIS.
-                        end
-                end
-                app.General.operationMode = app.General_I.operationMode;
-                app.General.fileFolder    = app.General_I.fileFolder;
-
-                % Leitura de arquivo relacionado ao PM-RNI
-                [app.Data_PA_RNI, app.Path_Data_PA_RNI_Out] = fcn.ReadFile_PA_RNI(app.rootFolder, app.General.fileFolder.userPath);
                 
                 % Torna visível o container do auxApp.popupContainer, forçando
                 % a exclusão do SplashScreen.
@@ -273,7 +228,6 @@ classdef winRNI_exported < matlab.apps.AppBase
                 drawnow
     
                 % Força a exclusão do SplashScreen.
-                app.TabGroup.Visible = 1;
                 if isvalid(app.SplashScreen)
                     pause(1)
                     delete(app.SplashScreen)
@@ -290,13 +244,48 @@ classdef winRNI_exported < matlab.apps.AppBase
                 appUtil.modalWindow(app.UIFigure, 'error', msgWarning);
             end
 
+            % Para criação de arquivos temporários, cria-se uma pasta da 
+            % sessão.
+            tempDir = tempname;
+            mkdir(tempDir)
+            app.General_I.fileFolder.tempPath = tempDir;
+
+            switch app.executionMode
+                case 'webApp'
+                    % Força a exclusão do SplashScreen do MATLAB WebDesigner.
+                    sendEventToHTMLSource(app.jsBackDoor, "delProgressDialog");
+
+                    % Webapp também não suporta outras janelas, de forma que os 
+                    % módulos auxiliares devem ser abertos na própria janela
+                    % do appAnalise.
+                    app.dockModule_Undock.Visible     = 0;
+
+                    app.General_I.operationMode.Debug = false;
+                    app.General_I.operationMode.Dock  = true;
+                    
+                    % A pasta do usuário não é configurável, mas obtida por 
+                    % meio de chamada a uiputfile. 
+                    app.General_I.fileFolder.userPath = tempDir;
+
+                otherwise    
+                    % Resgata a pasta de trabalho do usuário (configurável).
+                    userPaths = appUtil.UserPaths(app.General_I.fileFolder.userPath);
+                    app.General_I.fileFolder.userPath = userPaths{end};
+
+                    switch app.executionMode
+                        case 'desktopStandaloneApp'
+                            app.General_I.operationMode.Debug = false;
+                        case 'MATLABEnvironment'
+                            app.General_I.operationMode.Debug = true;
+                    end
+            end
+
             app.General            = app.General_I;
             app.General.AppVersion = fcn.envVersion(app.rootFolder, 'full');
         end
 
         %-----------------------------------------------------------------%
         function startup_AppProperties(app)
-            % app.rfDataHub
             global RFDataHub
             global RFDataHubLog
             
@@ -345,18 +334,31 @@ classdef winRNI_exported < matlab.apps.AppBase
         function file_TreeBuilding(app)
             delete(app.file_Tree.Children);
 
-            for ii = 1:numel(app.metaData)
-                uitreenode(app.file_Tree, 'Text',        app.metaData(ii).Filename, ...
+            for ii = 1:numel(app.measData)
+                uitreenode(app.file_Tree, 'Text',        app.measData(ii).Filename, ...
                                           'NodeData',    ii,                        ...
                                           'ContextMenu', app.file_ContextMenu);
             end
 
-            if ~isempty(app.metaData)
+            if ~isempty(app.measData)
                 app.file_Tree.SelectedNodes = app.file_Tree.Children(1);
                 file_TreeSelectionChanged(app)
+
+                app.menu_Button2.Enable = 1;
+                app.menu_Button3.Enable = 1;
             else
                 app.file_Metadata.HTMLSource = ' ';
+                app.menu_Button2.Enable = 0;
+                app.menu_Button3.Enable = 0;
             end
+        end
+
+        %-----------------------------------------------------------------%
+        function misc_updateLastVisitedFolder(app, filePath)
+            app.General_I.fileFolder.lastVisited = filePath;
+            app.General.fileFolder.lastVisited   = filePath;
+
+            appUtil.generalSettingsSave(class.Constants.appName, app.rootFolder, app.General_I, app.executionMode)
         end
     end
 
@@ -424,12 +426,6 @@ classdef winRNI_exported < matlab.apps.AppBase
         % Close request function: UIFigure
         function closeFcn(app, event)
 
-            % TIMER
-            h = timerfindall;
-            if ~isempty(h)
-                stop(h); delete(h); clear h
-            end
-
             % PROGRESS DIALOG
             delete(app.progressDialog)
 
@@ -457,82 +453,12 @@ classdef winRNI_exported < matlab.apps.AppBase
         % Value changed function: menu_Button1, menu_Button2, 
         % ...and 2 other components
         function menu_mainButtonPushed(app, event)
-            
-            % em sendo o ADICIONAR TAREFA, verificar se existe alguma
-            % tarefa selecionado em tabela. Caso sim, pergunta se se deseja
-            % editar ou adicionar uma nova. ao incluir a tarefa, o módulo é
-            % encerrado.
 
             clickedButton  = event.Source;
             auxAppTag      = clickedButton.Tag;
             inputArguments = menu_auxAppInputArguments(app, auxAppTag);
 
             openModule(app.tabGroupController, event.Source, event.PreviousValue, app.General, inputArguments{:})
-
-        end
-
-        % Image clicked function: file_OpenFileButton
-        function file_OpenFileButtonImageClicked(app, event)
-
-            % Abre o diretório dos arquivos das medições das sondas
-            initialPath = fullfile(app.rootFolder, 'DataBase', 'Meas_Sondas');
-            
-            % Abrir a caixa de diálogo para selecionar múltiplos arquivos
-            [fileName, folderName] = uigetfile({'*.txt';'*.csv';'*.mat';'*.*'}, ...
-                                              'Selecione arquivos', initialPath, ...
-                                              'MultiSelect', 'on');
-            %Mantém a Tela principal (figure) em primeiro plano
-            figure(app.UIFigure);
-            
-            % Verifica se algum arquivo foi selecionado
-            if isequal(fileName, 0)
-                uialert(app.UIFigure, 'Nenhum arquivo selecionado! Selecione algum arquivo de medição de RNI', 'Aviso')
-                return
-            end
-
-            % Verifica o tipo de arquivo que foi selecionado
-            if ischar(fileName)
-                fileName = {fileName};
-            end
-            fileFullName = fullfile(folderName, fileName);
-
-            % Atualiza a informação de app.metaData e app.metaDataCache,
-            % caso necessário.
-
-            ArquivosJaLidos = {};
-
-            for ff = 1:numel(fileFullName)
-                % (a) ESTÁ EM CACHE?
-                [~, idxExistFileCache] = ismember(fileFullName{ff}, {app.metaData_cache.Filename});
-                if ~idxExistFileCache
-                    % Extrai do arquivo a informação sobre o tipo de sonda que gerou o arquivo de medição
-                    Type_Meas_Probes = fcn.TypeMeasProbe(app, fileFullName{ff});
-    
-                    % Obtém todas os dados relavantes dos arquivos das medições de RNI
-                    app.metaData_cache(end+1) = fcn.ReadFile_Meas_Probes(app, Type_Meas_Probes, fileFullName{ff}, ff, numel(fileFullName));
-                    idxExistFileCache = numel(app.metaData_cache);
-                end
-
-                % (b) ESTÁ EM METADATA?
-                [~, idxExistFile] = ismember(fileFullName{ff}, {app.metaData.Filename});
-                if ~idxExistFile
-                    app.metaData(end+1) = app.metaData_cache(idxExistFileCache);
-                else
-                    ArquivosJaLidos{end+1} = fileFullName{ff};
-                end
-            end
-
-            if ~isempty(ArquivosJaLidos)
-                msgWarning = sprintf('Arquivos já lidos: %s', strjoin(ArquivosJaLidos));
-                appUtil.modalWindow(app.UIFigure, "warning", msgWarning);
-            end
-
-            % Armazenar os dados de medições dos arquivos
-            listOfTables = {app.metaData.Data};            
-            app.Data_Meas_Probes = sortrows(vertcat(listOfTables{:}), 'Timestamp', 'descend');
-            
-            % Escreve na app.Tree as informações relacionadas a localidade
-            file_TreeBuilding(app)
 
         end
 
@@ -567,14 +493,12 @@ classdef winRNI_exported < matlab.apps.AppBase
 
             switch event.Source
                 case app.dockModule_Undock
-                    initialDockState = app.General.operationMode.Dock;
-                    app.General.operationMode.Dock = false;
+                    appGeneral = app.General;
+                    appGeneral.operationMode.Dock = false;
 
-                    inputArguments   = menu_auxAppInputArguments(app, auxAppTag);
+                    inputArguments = menu_auxAppInputArguments(app, auxAppTag);
                     closeModule(app.tabGroupController, auxAppTag, app.General)
-                    openModule(app.tabGroupController, clickedButton, false, app.General, inputArguments{:})
-
-                    app.General.operationMode.Dock = initialDockState;
+                    openModule(app.tabGroupController, clickedButton, false, appGeneral, inputArguments{:})
 
                 case app.dockModule_Close
                     closeModule(app.tabGroupController, auxAppTag, app.General)
@@ -585,12 +509,16 @@ classdef winRNI_exported < matlab.apps.AppBase
         % Selection changed function: file_Tree
         function file_TreeSelectionChanged(app, event)
             
-            % metaData       = struct('Filename', {}, 'Measures', {}, 'Sensor', {}, 'Data', {}, 'LatitudeLimits', {}, 'LongitudeLimits', {}, 'MetaDataProbe', {})
-            idx = app.file_Tree.SelectedNodes.NodeData;
-            
+            % !! PONTO DE EVOLUÇÃO !!
+            % Criar um HTML destacando informações relevantes do arquivo -
+            % tamanho, por exemplo - e da campanha de medição - sensor,
+            % período, limites, nível máximo etc.
+            % !! PONTO DE EVOLUÇÃO !!
+
+            idx = app.file_Tree.SelectedNodes.NodeData;            
             app.file_Metadata.HTMLSource = sprintf(['<p style="font-family: Helvetica, Arial, sans-serif; font-size: 11; text-align: justify; ' ...
                                                     'line-height: 12px; margin: 5px; word-break: break-all;">Arquivo: %s<br>Sensor: %s<br>'     ...
-                                                    'Localidade: %s</p>'], app.metaData(idx).Filename, app.metaData(idx).Sensor, app.metaData(idx).Location);
+                                                    'Localidade: %s</p>'], app.measData(idx).Filename, app.measData(idx).Sensor, app.measData(idx).Location);
             
         end
 
@@ -599,9 +527,65 @@ classdef winRNI_exported < matlab.apps.AppBase
             
             if ~isempty(app.file_Tree.SelectedNodes)
                 idx = app.file_Tree.SelectedNodes.NodeData;
-                app.metaData(idx) = [];
+                app.measData(idx) = [];
                 file_TreeBuilding(app)
             end
+
+        end
+
+        % Image clicked function: file_OpenFileButton
+        function file_OpenFileButtonImageClicked(app, event)
+
+            [fileName, filePath] = uigetfile({'*.txt';'*.csv';'*.mat';'*.*'}, ...
+                                              '', app.General.fileFolder.lastVisited, 'MultiSelect', 'on');
+            figure(app.UIFigure)
+
+            if isequal(fileName, 0)
+                return
+            elseif ~iscell(fileName)
+                fileName = {fileName};
+            end
+            misc_updateLastVisitedFolder(app, filePath)            
+
+            % !! PONTO DE EVOLUÇÃO !!
+            % O progressdialog deve ser único. E não ser criado por arquivo... 
+            % as coisas relacionadas à GUI devem, preferencialmente, permanecer 
+            % no MLAPP.
+            % !! PONTO DE EVOLUÇÃO !!
+            
+            fileFullName = fullfile(filePath, fileName);
+            filesInCache = {};
+
+            for ii = 1:numel(fileFullName)
+                % (a) Verifica se arquivo já foi lido, comparando o seu
+                %     nome com a variável app.cacheData.
+                [~, idxCache] = ismember(fileFullName{ii}, {app.cacheData.Filename});
+                if ~idxCache
+                    % Extrai do arquivo a informação sobre o tipo de sonda que gerou o arquivo de medição
+                    Type_Meas_Probes = fcn.TypeMeasProbe(app, fileFullName{ii});
+    
+                    % Obtém todas os dados relavantes dos arquivos das medições de RNI
+                    app.cacheData(end+1) = fcn.ReadFile_Meas_Probes(app, Type_Meas_Probes, fileFullName{ii}, ii, numel(fileFullName));
+                    idxCache = numel(app.cacheData);
+                end
+
+                % (b) Verifica se arquivo já está ativo, comparando o seu
+                %     nome com a variável app.measData.
+                [~, idxFile] = ismember(fileFullName{ii}, {app.measData.Filename});
+                if ~idxFile
+                    app.measData(end+1) = app.cacheData(idxCache);
+                else
+                    filesInCache{end+1} = fileFullName{ii};
+                end
+            end
+
+            if ~isempty(filesInCache)
+                msgWarning = sprintf('Arquivos já lidos:\n%s', textFormatGUI.cellstr2Bullets(filesInCache));
+                appUtil.modalWindow(app.UIFigure, "warning", msgWarning);
+            end
+            
+            % Atualiza app.file_Tree.
+            file_TreeBuilding(app)
 
         end
     end
@@ -809,6 +793,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.menu_Button2 = uibutton(app.menu_Grid, 'state');
             app.menu_Button2.ValueChangedFcn = createCallbackFcn(app, @menu_mainButtonPushed, true);
             app.menu_Button2.Tag = 'MONITORINGPLAN';
+            app.menu_Button2.Enable = 'off';
             app.menu_Button2.Tooltip = {'PM-RNI'};
             app.menu_Button2.Icon = fullfile(pathToMLAPP, 'Icons', 'DriveTestDensity_32White.png');
             app.menu_Button2.IconAlignment = 'right';
@@ -822,6 +807,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.menu_Button3 = uibutton(app.menu_Grid, 'state');
             app.menu_Button3.ValueChangedFcn = createCallbackFcn(app, @menu_mainButtonPushed, true);
             app.menu_Button3.Tag = 'EXTERNALREQUEST';
+            app.menu_Button3.Enable = 'off';
             app.menu_Button3.Tooltip = {'Demanda externa'};
             app.menu_Button3.Icon = fullfile(pathToMLAPP, 'Icons', 'Report_32White.png');
             app.menu_Button3.IconAlignment = 'right';
