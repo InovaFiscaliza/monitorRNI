@@ -15,7 +15,10 @@ function stationTable = MonitoringPlanStations(fileFullPath, appGeneral)
     stationTable.minFieldValue(:)         = 0;
     stationTable.meanFieldValue(:)        = 0;
     stationTable.maxFieldValue(:)         = 0;
+
     stationTable.maxFieldTimestamp(:)     = NaT;
+    stationTable.maxFieldTimestamp.Format = 'dd/MM/yyyy HH:mm:ss';
+
     stationTable.maxFieldLatitude(:)      = 0;
     stationTable.maxFieldLongitude(:)     = 0;
     stationTable.("Justificativa")        = repmat(categorical("-1", appGeneral.MonitoringPlan.NoMeasureReasons), height(stationTable), 1);

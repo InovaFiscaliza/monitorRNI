@@ -1,4 +1,4 @@
-classdef measData
+classdef measData < handle
 
     properties
         %-----------------------------------------------------------------%
@@ -17,6 +17,6 @@ classdef measData
         Longitude
         Location
 
-        UserData = struct('MonitoringPlanFlag', false)
+        UserData
     end
 end

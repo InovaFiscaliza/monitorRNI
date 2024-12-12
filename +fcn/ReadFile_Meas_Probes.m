@@ -55,10 +55,7 @@ function measData  = ReadFile_Meas_Probes(app, TypeFileMeas, fileFullName, Arq_N
             Longitude               = [Longitude_Narda_S_W Longitude_Narda_N_E];
     
             % Lê as informações de Datatime
-            Timestamp = datetime(extractBetween(fileValidRNI, '-->', '*;'), "InputFormat", "yy/MM/dd HH:mm:ss", "Format", "dd/MM/yy HH:mm:ss");
-    
-            % Cria a matriz dos dados dos arquivos de medições de RNI
-            dataTable = timetable(Timestamp, Latitude, Longitude, FieldValue);
+            Timestamp = datetime(extractBetween(fileValidRNI, '-->', '*;'), "InputFormat", "yy/MM/dd HH:mm:ss");
     
             % Resposta = fileReader.NardaCSV(fileID);               
         
@@ -102,14 +99,16 @@ function measData  = ReadFile_Meas_Probes(app, TypeFileMeas, fileFullName, Arq_N
             Longitude                 = [Longitude_Monitem_S_W Longitude_Monitem_N_E];                                                    
     
             %Lê as informações de Datatime
-            Timestamp = datetime(extractBetween(fileValidRNI, 1, 19), "InputFormat", "yyyy/MM/dd,HH:mm:ss", "Format", "dd/MM/yyyy HH:mm:ss");
-    
-            dataTable = timetable(Timestamp, Latitude, Longitude, FieldValue);
+            Timestamp = datetime(extractBetween(fileValidRNI, 1, 19), "InputFormat", "yyyy/MM/dd,HH:mm:ss");
     
         % Resposta = fileReader.MonitemCSV(fileID);
         otherwise
             error('UnexpectedFileFormat')
     end
+
+        % Cria a matriz dos dados dos arquivos de medições de RNI
+        dataTable = timetable(Timestamp, Latitude, Longitude, FieldValue);
+        dataTable.Timestamp.Format = 'dd/MM/yyyy HH:mm:ss';
 
         [minLatitude,  maxLatitude]  = bounds(dataTable.Latitude);
         [minLongitude, maxLongitude] = bounds(dataTable.Longitude);
