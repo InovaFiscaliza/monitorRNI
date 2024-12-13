@@ -280,6 +280,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 app.UITable.Data(:,:) = [];
                 app.UITable.UserData  = [];
             end
+
+            layout_ToolbarButtonVisibility(app)
         end
 
         %-----------------------------------------------------------------%
@@ -323,8 +325,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function plot_SelectedStation(app)
             delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedStation'))
 
-            idxTable = app.UITable.Selection(1);            
-            if ~isempty(idxTable)
+            if ~isempty(app.UITable.Selection)
+                idxTable = app.UITable.Selection(1);
+
                 % (a) Estação selecionada
                 idxSelectedStation = app.UITable.UserData(idxTable);
                 stationLatitude    = app.CallingApp.stationTable.("Latitude da Estação")(idxSelectedStation);
@@ -428,6 +431,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             s = uistyle('BackgroundColor', '#c80b0f', 'FontColor', 'white');
             addStyle(app.UITable, s, "cell", cellList)
         end
+
+        %-----------------------------------------------------------------%
+        function layout_ToolbarButtonVisibility(app)
+            if isempty(app.UITable.Data)
+                app.tool_ExportFiles.Enable = 0;
+            else
+                app.tool_ExportFiles.Enable = 1;
+            end        
+        end
     end
     
 
@@ -504,7 +516,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             if ~isempty(layout_searchUnexpectedTableValues(app, 'TableExport'))
                 msgQuestion   = ['Há registro de estações instaladas na(s) localidade(s) sob análise para as quais '     ...
                                  'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
-                                 'o campo "Justificativa".<br><br>Deseja ignorar esse alerta, exportando a tabela como planilha?'];
+                                 'o campo "Justificativa".<br><br>Deseja ignorar esse alerta, exportando plot e tabela como arquivos (.KML e .XLSX)?'];
                 userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
                 if userSelection == "Não"
                     return
@@ -588,7 +600,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 app.UIFigure = uifigure('Visible', 'off');
                 app.UIFigure.AutoResizeChildren = 'off';
                 app.UIFigure.Position = [100 100 1244 660];
-                app.UIFigure.Name = 'appAnalise';
+                app.UIFigure.Name = 'RNI';
                 app.UIFigure.Icon = 'icon_48.png';
                 app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @closeFcn, true);
 
@@ -692,7 +704,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_ExportFiles = uiimage(app.toolGrid);
             app.tool_ExportFiles.ScaleMethod = 'none';
             app.tool_ExportFiles.ImageClickedFcn = createCallbackFcn(app, @tool_ExportTableAsExcelSheet, true);
-            app.tool_ExportFiles.Tooltip = {'Exporta tabela como planilha Excel (.xlsx)'};
+            app.tool_ExportFiles.Enable = 'off';
+            app.tool_ExportFiles.Tooltip = {'Exporta plot e tabela como arquivos'; '(.KML e .XLSX)'};
             app.tool_ExportFiles.Layout.Row = 2;
             app.tool_ExportFiles.Layout.Column = 5;
             app.tool_ExportFiles.ImageSource = 'Export_16.png';
