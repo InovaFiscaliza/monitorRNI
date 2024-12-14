@@ -323,7 +323,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function plot_SelectedStation(app)
-            delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedStation'))
+            delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedStation', '-or', 'Tag', 'FieldPeak'))
 
             if ~isempty(app.UITable.Selection)
                 idxTable = app.UITable.Selection(1);
@@ -334,41 +334,48 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 stationLongitude   = app.CallingApp.stationTable.("Longitude da Estação")(idxSelectedStation);
                 stationNumber      = sprintf('Estação nº %d', app.CallingApp.stationTable.("N° da Estacao")(idxSelectedStation));
 
-                geoscatter(app.UIAxes, stationLatitude, stationLongitude, ...
-                    'Marker', '^', 'MarkerFaceColor', 'red',              ...
-                    'MarkerEdgeColor', 'red',                             ...
-                    'SizeData',        32,                                ...
-                    'DisplayName',     stationNumber,                     ...
+                geoscatter(app.UIAxes, stationLatitude, stationLongitude,      ...
+                    'Marker',          '^',                                    ...
+                    'MarkerFaceColor', app.General.Plot.SelectedStation.Color, ...
+                    'MarkerEdgeColor', app.General.Plot.SelectedStation.Color, ...
+                    'SizeData',        app.General.Plot.SelectedStation.Size,  ...
+                    'DisplayName',     stationNumber,                          ...
                     'Tag',             'SelectedStation');
     
-                % (b) Círculo de raio Dist_Emax ao redor da estação 
-                drawcircle(app.UIAxes, 'Position', [stationLatitude, stationLongitude],           ...
-                                        'Radius', km2deg(app.General.MonitoringPlan.Distance_km), ...
-                                        'Color', 'red', 'FaceAlpha', .25, 'EdgeAlpha', .4,        ...
-                                        'FaceSelectable', 0, 'InteractionsAllowed', 'none',       ...                                        
-                                        'Tag', 'SelectedStation');
+                % (b) Círculo entorno da estação
+                drawcircle(app.UIAxes,                                                 ...
+                    'Position',        [stationLatitude, stationLongitude],            ...
+                    'Radius',          km2deg(app.General.MonitoringPlan.Distance_km), ...
+                    'Color',           app.General.Plot.CircleRegion.Color,            ...
+                    'FaceAlpha',       app.General.Plot.CircleRegion.FaceAlpha,        ...
+                    'EdgeAlpha',       app.General.Plot.CircleRegion.EdgeAlpha,        ...
+                    'FaceSelectable',  0, 'InteractionsAllowed', 'none',               ...
+                    'Tag',            'SelectedStation');
     
-                % (c) Plot do ponto EMax
+                % (c) Maior nível em torno da estação
                 maxFieldValue      = app.CallingApp.stationTable.maxFieldValue(idxSelectedStation);
                 if maxFieldValue > 0
                     maxFieldLatitude   = app.CallingApp.stationTable.maxFieldLatitude(idxSelectedStation);
                     maxFieldLongitude  = app.CallingApp.stationTable.maxFieldLongitude(idxSelectedStation);
     
                     geoscatter(app.UIAxes, maxFieldLatitude, maxFieldLongitude, maxFieldValue, ...
-                        'Marker','square', 'MarkerFaceColor', 'yellow',              ...
-                        'SizeData',        24, ...
-                        'DisplayName', 'Maior nível em torno da estação', ...
-                        'Tag', 'SelectedStation');
+                        'Marker',          'square',                          ...
+                        'MarkerFaceColor', app.General.Plot.FieldPeak.Color,  ...
+                        'SizeData',        app.General.Plot.FieldPeak.Size,   ...
+                        'DisplayName',     'Maior nível em torno da estação', ...
+                        'Tag',             'FieldPeak');
                 end
 
-                % Define limtes geográficos conforme arquivos de meidições
-                arclen = km2deg(2*app.General.MonitoringPlan.Distance_km);
-                [~, lim_long1] = reckon(stationLatitude, stationLongitude, arclen, -90);
-                [~, lim_long2] = reckon(stationLatitude, stationLongitude, arclen,  90);    
-                [lim_lat1, ~]  = reckon(stationLatitude, stationLongitude, arclen, 180);
-                [lim_lat2, ~]  = reckon(stationLatitude, stationLongitude, arclen,   0);
-    
-                geolimits(app.UIAxes, [lim_lat1, lim_lat2], [lim_long1, lim_long2]);
+                % Zoom automático em torno da estação
+                if app.General.Plot.SelectedStation.AutomaticZoom
+                    arclen         = km2deg(app.General.Plot.SelectedStation.AutomaticZoomFactor * app.General.MonitoringPlan.Distance_km);
+                    [~, lim_long1] = reckon(stationLatitude, stationLongitude, arclen, -90);
+                    [~, lim_long2] = reckon(stationLatitude, stationLongitude, arclen,  90);    
+                    [lim_lat1, ~]  = reckon(stationLatitude, stationLongitude, arclen, 180);
+                    [lim_lat2, ~]  = reckon(stationLatitude, stationLongitude, arclen,   0);
+        
+                    geolimits(app.UIAxes, [lim_lat1, lim_lat2], [lim_long1, lim_long2]);
+                end
             end
         end
         
@@ -487,7 +494,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                         app.GridLayout.ColumnWidth(2:3) = {0,0};
                     else
                         app.tool_ControlPanelVisibility.ImageSource = 'ArrowLeft_32.png';
-                        app.GridLayout.ColumnWidth(2:3) = {275,10};
+                        app.GridLayout.ColumnWidth(2:3) = {325,10};
                     end
 
                 case app.tool_TableVisibility
@@ -618,7 +625,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.Container);
-            app.GridLayout.ColumnWidth = {5, 275, 10, 5, 50, '1x', 5};
+            app.GridLayout.ColumnWidth = {5, 325, 10, 5, 50, '1x', 5};
             app.GridLayout.RowHeight = {5, 22, '1x', 10, 175, 5, 34};
             app.GridLayout.ColumnSpacing = 0;
             app.GridLayout.RowSpacing = 0;

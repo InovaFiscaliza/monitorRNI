@@ -3,121 +3,89 @@ classdef winConfig_exported < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                        matlab.ui.Figure
-        Panel                           matlab.ui.container.Panel
-        Tab3_Grid                       matlab.ui.container.GridLayout
-        config_geoAxesSubPanel          matlab.ui.container.Panel
-        config_geoAxesSubGrid           matlab.ui.container.GridLayout
-        play_Persistance_cLim_Grid2     matlab.ui.container.GridLayout
-        Label                           matlab.ui.control.Label
-        play_Persistance_cLim2          matlab.ui.control.Spinner
-        play_Persistance_cLim1          matlab.ui.control.Spinner
-        LimitesLabel                    matlab.ui.control.Label
-        LegendadecorLabel               matlab.ui.control.Label
-        DropDownLocalBarra              matlab.ui.control.DropDown
-        config_Colormap                 matlab.ui.control.DropDown
-        config_ColormapLabel            matlab.ui.control.Label
-        config_Basemap                  matlab.ui.control.DropDown
-        config_BasemapLabel             matlab.ui.control.Label
-        config_FolderMapLabel_2         matlab.ui.control.Label
-        config_FolderMapPanel_2         matlab.ui.container.Panel
-        config_FolderMapGrid_2          matlab.ui.container.GridLayout
-        config_Folder_userPathButton_2  matlab.ui.control.Image
-        config_Folder_userPath_2        matlab.ui.control.DropDown
-        config_Folder_userPathLabel_2   matlab.ui.control.Label
-        config_Folder_pythonPathButton_2  matlab.ui.control.Image
-        config_Folder_pythonPath_2      matlab.ui.control.EditField
-        config_Folder_pythonPathLabel_2  matlab.ui.control.Label
-        config_Folder_DataHubPOSTButton_2  matlab.ui.control.Image
-        config_Folder_DataHubPOST_2     matlab.ui.control.EditField
-        config_Folder_DataHubPOSTLabel_2  matlab.ui.control.Label
-        config_Folder_DataHubGETButton_2  matlab.ui.control.Image
-        config_Folder_DataHubGET_2      matlab.ui.control.EditField
-        config_Folder_DataHubGETLabel_2  matlab.ui.control.Label
-        misc_ElevationSourcePanel       matlab.ui.container.Panel
-        GridLayout8                     matlab.ui.container.GridLayout
-        EditFieldDist_PARNI             matlab.ui.control.NumericEditField
-        EditFieldDistMedicoes           matlab.ui.control.NumericEditField
-        DistPARNILabel                  matlab.ui.control.Label
-        DisMedicoesLabel                matlab.ui.control.Label
-        ANLISELabel                     matlab.ui.control.Label
-        config_Refresh                  matlab.ui.control.Image
-        config_geoAxesLabel             matlab.ui.control.Label
         GridLayout                      matlab.ui.container.GridLayout
+        Toolbar                         matlab.ui.container.GridLayout
         jsBackDoor                      matlab.ui.control.HTML
         tool_RFDataHubButton            matlab.ui.control.Image
-        tool_FiscalizaButton            matlab.ui.control.Image
         tool_LeftPanelVisibility        matlab.ui.control.Image
         Document                        matlab.ui.container.GridLayout
-        Folders_Grid                    matlab.ui.container.GridLayout
-        config_FolderMapPanel           matlab.ui.container.Panel
-        config_FolderMapGrid            matlab.ui.container.GridLayout
-        config_Folder_tempPath          matlab.ui.control.EditField
-        config_Folder_tempPathLabel     matlab.ui.control.Label
-        config_Folder_userPathButton    matlab.ui.control.Image
-        config_Folder_userPath          matlab.ui.control.EditField
-        config_Folder_userPathLabel     matlab.ui.control.Label
-        config_Folder_pythonPathButton  matlab.ui.control.Image
-        config_Folder_pythonPath        matlab.ui.control.EditField
-        config_Folder_pythonPathLabel   matlab.ui.control.Label
-        config_Folder_DataHubPOSTButton  matlab.ui.control.Image
-        config_Folder_DataHubPOST       matlab.ui.control.EditField
-        config_Folder_DataHubPOSTLabel  matlab.ui.control.Label
-        config_Folder_DataHubGETButton  matlab.ui.control.Image
-        config_Folder_DataHubGET        matlab.ui.control.EditField
-        config_Folder_DataHubGETLabel   matlab.ui.control.Label
-        config_FolderMapLabel           matlab.ui.control.Label
-        APIFiscaliza_Grid               matlab.ui.container.GridLayout
-        config_FiscalizaVersion         matlab.ui.container.ButtonGroup
-        config_FiscalizaHM              matlab.ui.control.RadioButton
-        config_FiscalizaPD              matlab.ui.control.RadioButton
-        config_FiscalizaVersionLabel    matlab.ui.control.Label
-        General_Grid                    matlab.ui.container.GridLayout
-        general_ElevationPanel          matlab.ui.container.Panel
-        general_ElevationGrid           matlab.ui.container.GridLayout
-        ElevationForceSearch            matlab.ui.control.CheckBox
-        ElevationNPoints                matlab.ui.control.DropDown
-        ElevationNPointsLabel           matlab.ui.control.Label
-        ElevationAPIServer              matlab.ui.control.DropDown
-        ElevationAPIServerLabel         matlab.ui.control.Label
-        general_ElevationRefresh        matlab.ui.control.Image
-        general_ElevationLabel          matlab.ui.control.Label
-        general_GraphicsPanel           matlab.ui.container.Panel
-        general_GraphicsGrid            matlab.ui.container.GridLayout
+        FolderGrid                      matlab.ui.container.GridLayout
+        FolderPanel                     matlab.ui.container.Panel
+        FolderPanelGrid                 matlab.ui.container.GridLayout
+        tempPath                        matlab.ui.control.EditField
+        tempPathLabel                   matlab.ui.control.Label
+        userPathButton                  matlab.ui.control.Image
+        userPath                        matlab.ui.control.EditField
+        userPathLabel                   matlab.ui.control.Label
+        FolderTitle                     matlab.ui.control.Label
+        CustomPlotGrid                  matlab.ui.container.GridLayout
+        CustomPlotPanel                 matlab.ui.container.Panel
+        CustomPlotPanelGrid             matlab.ui.container.GridLayout
+        AutomaticZoomFactor             matlab.ui.control.Spinner
+        AutomaticZoomFactorLabel        matlab.ui.control.Label
+        AutomaticZoom                   matlab.ui.control.CheckBox
+        CircleEdgeAlpha                 matlab.ui.control.Spinner
+        CircleFaceAlpha                 matlab.ui.control.Spinner
+        CircleColorAlphaLabel           matlab.ui.control.Label
+        CircleColor                     matlab.ui.control.DropDown
+        CircleColorLabel                matlab.ui.control.Label
+        PeakSize                        matlab.ui.control.Slider
+        PeakColor                       matlab.ui.control.ColorPicker
+        PeakLabel                       matlab.ui.control.Label
+        SelectedStationSize             matlab.ui.control.Slider
+        SelectedStationColor            matlab.ui.control.ColorPicker
+        SelectedStationLabel            matlab.ui.control.Label
+        StationsSize                    matlab.ui.control.Slider
+        StationsColor                   matlab.ui.control.ColorPicker
+        StationsLabel                   matlab.ui.control.Label
+        Colorbar                        matlab.ui.control.DropDown
+        ColorbarLabel                   matlab.ui.control.Label
+        Colormap                        matlab.ui.control.DropDown
+        ColormapLabel                   matlab.ui.control.Label
+        Basemap                         matlab.ui.control.DropDown
+        BasemapLabel                    matlab.ui.control.Label
+        CustomPlotTitle                 matlab.ui.control.Label
+        AnalysisGrid                    matlab.ui.container.GridLayout
+        AnalysisPanel                   matlab.ui.container.Panel
+        AnalysisPanelGrid               matlab.ui.container.GridLayout
+        ExternalRequestPanel            matlab.ui.container.Panel
+        ExternalRequestGrid             matlab.ui.container.GridLayout
+        ExternalRequestLevel            matlab.ui.control.NumericEditField
+        ExternalRequestLevelLabel       matlab.ui.control.Label
+        ExternalRequestDistance         matlab.ui.control.NumericEditField
+        ExternalRequestDistanceLabel    matlab.ui.control.Label
+        ExternalRequestLabel            matlab.ui.control.Label
+        MonitoringPlanPanel             matlab.ui.container.Panel
+        MonitoringPlanGrid              matlab.ui.container.GridLayout
+        MonitoringPlanReasonsList       matlab.ui.control.ListBox
+        MonitoringPlanReasonsListLabel  matlab.ui.control.Label
+        MonitoringPlanLevel             matlab.ui.control.NumericEditField
+        MonitoringPlanLevelLabel        matlab.ui.control.Label
+        MonitoringPlanDistance          matlab.ui.control.NumericEditField
+        MonitoringPlanDistanceLabel     matlab.ui.control.Label
+        MonitoringPlanLabel             matlab.ui.control.Label
+        AnalysisTitle                   matlab.ui.control.Label
+        GeneralGrid                     matlab.ui.container.GridLayout
         openAuxiliarApp2Debug           matlab.ui.control.CheckBox
         openAuxiliarAppAsDocked         matlab.ui.control.CheckBox
-        imgResolution                   matlab.ui.control.DropDown
-        imgResolutionLabel              matlab.ui.control.Label
-        imgFormat                       matlab.ui.control.DropDown
-        imgFormatLabel                  matlab.ui.control.Label
         gpuType                         matlab.ui.control.DropDown
         gpuTypeLabel                    matlab.ui.control.Label
-        graphics_Refresh                matlab.ui.control.Image
-        general_GraphicsLabel           matlab.ui.control.Label
-        general_FilePanel               matlab.ui.container.Panel
-        general_FileGrid                matlab.ui.container.GridLayout
-        mergeDistance                   matlab.ui.control.Spinner
-        mergeLabel2                     matlab.ui.control.Label
-        mergeAntenna                    matlab.ui.control.CheckBox
-        mergeDataType                   matlab.ui.control.CheckBox
-        mergeLabel1                     matlab.ui.control.Label
-        general_mergeRefresh            matlab.ui.control.Image
-        general_FileLabel               matlab.ui.control.Label
-        general_AppVersionPanel         matlab.ui.container.Panel
-        general_AppVersionGrid          matlab.ui.container.GridLayout
+        AppVersionPanel                 matlab.ui.container.Panel
+        AppVersionGrid                  matlab.ui.container.GridLayout
         AppVersion                      matlab.ui.control.HTML
-        general_AppVersionRefresh       matlab.ui.control.Image
-        general_AppVersionLabel         matlab.ui.control.Label
-        LeftPanel                       matlab.ui.container.Panel
-        LeftPanelGrid                   matlab.ui.container.GridLayout
-        LeftPanelRadioGroup             matlab.ui.container.ButtonGroup
+        AppVersionRefresh               matlab.ui.control.Image
+        AppVersionLabel                 matlab.ui.control.Label
+        ControlPanel                    matlab.ui.container.GridLayout
+        RadioButtonGroupPanel           matlab.ui.container.Panel
+        RadioButtonGroupGrid            matlab.ui.container.GridLayout
+        RadioButtonGroup                matlab.ui.container.ButtonGroup
         btnFolder                       matlab.ui.control.RadioButton
-        btnFiscaliza                    matlab.ui.control.RadioButton
+        btnCustomPlot                   matlab.ui.control.RadioButton
+        btnAnalysis                     matlab.ui.control.RadioButton
         btnGeneral                      matlab.ui.control.RadioButton
-        LeftPanelTitle                  matlab.ui.container.GridLayout
-        menuUnderline                   matlab.ui.control.Image
-        menu_ButtonGrid                 matlab.ui.container.GridLayout
-        menu_ButtonIcon                 matlab.ui.control.Image
-        menu_ButtonLabel                matlab.ui.control.Label
+        ControlPanelGrid                matlab.ui.container.GridLayout
+        ControlPanelTitle               matlab.ui.control.Label
+        ControlPanelIcon                matlab.ui.control.Image
     end
 
     
@@ -174,12 +142,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
     methods (Access = private)
         %-----------------------------------------------------------------%
-        function startup_timerCreation(app)            
-            % A criação desse timer tem como objetivo garantir uma renderização 
-            % mais rápida dos componentes principais da GUI, possibilitando a 
-            % visualização da sua tela inicialpelo usuário. Trata-se de aspecto 
-            % essencial quando o app é compilado como webapp.
-
+        function startup_timerCreation(app)
             app.timerObj = timer("ExecutionMode", "fixedSpacing", ...
                                  "StartDelay",    1.5,            ...
                                  "Period",        .1,             ...
@@ -191,7 +154,8 @@ classdef winConfig_exported < matlab.apps.AppBase
         function startup_timerFcn(app)
             if ccTools.fcn.UIFigureRenderStatus(app.UIFigure)
                 stop(app.timerObj)
-                delete(app.timerObj)                
+                delete(app.timerObj)
+
                 startup_Controller(app)
             end
         end
@@ -204,89 +168,32 @@ classdef winConfig_exported < matlab.apps.AppBase
             % (diretamente em JS).
             jsBackDoor_Customizations(app)
 
-            switch app.CallingApp.executionMode
-                case 'webApp'
-                    app.general_AppVersionRefresh.Enable = 0;
-                    app.openAuxiliarAppAsDocked.Enable   = 0;
-
-                otherwise
-                    if ~app.isDocked
-                        % appUtil.winMinSize(app.UIFigure, class.Constants.WindowMinSize('CONFIG'))
-                    end
+            if ~strcmp(app.CallingApp.executionMode, 'webApp')
+                app.AppVersionRefresh.Enable = 1;
+                app.gpuType.Enable = 1;
+                app.openAuxiliarAppAsDocked.Enable = 1;
             end
 
-            if isdeployed
-                app.openAuxiliarApp2Debug.Enable = 0;
+            if ~isdeployed
+                app.openAuxiliarApp2Debug.Enable = 1;
             end
 
             % Atualização dos painéis...
             app.progressDialog.Visible = 'visible';
 
-            % startup_checkPythonVersion(app)
-            % 
-            % AppVersion_updatePanel(app)
-            % File_updatePanel(app)
-            % Graphics_updatePanel(app)
-            % Elevation_updatePanel(app)
-            % APIFiscaliza_updatePanel(app)
-            % Folder_updatePanel(app)
+            General_updatePanel(app)
+            Analysis_updatePanel(app)
+            CustomPlot_updatePanel(app)
+            Folder_updatePanel(app)
 
             app.progressDialog.Visible = 'hidden';
         end
 
         %-----------------------------------------------------------------%
-        function startup_checkPythonVersion(app)
-            if isempty(app.CallingApp.General.AppVersion.fiscaliza)
-                app.CallingApp.General.AppVersion = fcn.envVersion(app.rootFolder, 'full+Python');
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function AppVersion_updatePanel(app)
+        function General_updatePanel(app)
             % Versão
             htmlContent = auxApp.config.htmlCode_AppVersion(app.CallingApp.General, app.CallingApp.executionMode);
             app.AppVersion.HTMLSource = htmlContent;
-        end
-
-        %-----------------------------------------------------------------%
-        function File_updatePanel(app)
-            % Mesclagem de fluxos espectrais
-            switch app.CallingApp.General.Merge.DataType
-                case 'keep';   app.mergeDataType.Value = 0;
-                case 'remove'; app.mergeDataType.Value = 1;
-            end
-
-            switch app.CallingApp.General.Merge.Antenna
-                case 'keep';   app.mergeAntenna.Value = 0;
-                case 'remove'; app.mergeAntenna.Value = 1;
-            end
-
-            app.mergeDistance.Value = app.CallingApp.General.Merge.Distance;
-
-            if File_checkEdition(app)
-                app.general_mergeRefresh.Visible = 1;
-            else
-                app.general_mergeRefresh.Visible = 0;
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function editionFlag = File_checkEdition(app)
-            editionFlag = false;
-
-            if (app.mergeDataType.Value ~= app.DefaultValues.File.DataType) || ...
-               (app.mergeAntenna.Value  ~= app.DefaultValues.File.Antenna)  || ...
-               (abs(app.mergeDistance.Value - app.DefaultValues.File.Distance) > class.Constants.floatDiffTolerance)
-
-                editionFlag = true;
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function Graphics_updatePanel(app)
-            % Imagem relatório
-            app.imgFormat.Value     = app.CallingApp.General.Image.Format;
-            app.imgResolution.Value = string(app.CallingApp.General.Image.Resolution);
 
             % Renderizador
             graphRender = opengl('data');
@@ -300,100 +207,56 @@ classdef winConfig_exported < matlab.apps.AppBase
             if ~ismember(graphRenderSupport, app.gpuType.Items)
                 app.gpuType.Items{end+1} = graphRenderSupport;
             end
-
             app.gpuType.Value = graphRenderSupport;
 
             % Modo de operação
-            app.openAuxiliarAppAsDocked.Value = app.CallingApp.General.operationMode.Dock;
-            app.openAuxiliarApp2Debug.Value   = app.CallingApp.General.operationMode.Debug;
+            app.openAuxiliarAppAsDocked.Value   = app.CallingApp.General.operationMode.Dock;
+            app.openAuxiliarApp2Debug.Value     = app.CallingApp.General.operationMode.Debug;
+        end
 
-            if Graphics_checkEdition(app)
-                app.graphics_Refresh.Visible = 1;
+        %-----------------------------------------------------------------%
+        function Analysis_updatePanel(app)
+            app.MonitoringPlanDistance.Value    = app.CallingApp.General.MonitoringPlan.Distance_km * 1000;
+            app.MonitoringPlanLevel.Value       = app.CallingApp.General.MonitoringPlan.FieldValue;
+            app.MonitoringPlanReasonsList.Items = app.CallingApp.General.MonitoringPlan.NoMeasureReasons;
+
+            app.ExternalRequestDistance.Value   = app.CallingApp.General.ExternalRequest.Distance_km * 1000;
+            app.ExternalRequestLevel.Value      = app.CallingApp.General.ExternalRequest.FieldValue;
+        end
+
+        %-----------------------------------------------------------------%
+        function CustomPlot_updatePanel(app)
+            app.Basemap.Value              = app.CallingApp.General.Plot.GeographicAxes.Basemap;
+            app.Colormap.Value             = app.CallingApp.General.Plot.GeographicAxes.Colormap;
+            app.Colorbar.Value             = app.CallingApp.General.Plot.GeographicAxes.Colorbar;
+
+            app.StationsColor.Value        = app.CallingApp.General.Plot.Stations.Color;
+            app.StationsSize.Value         = app.CallingApp.General.Plot.Stations.Size;
+
+            app.SelectedStationColor.Value = app.CallingApp.General.Plot.SelectedStation.Color;
+            app.SelectedStationSize.Value  = app.CallingApp.General.Plot.SelectedStation.Size;
+
+            app.CircleColor.Value          = app.CallingApp.General.Plot.CircleRegion.Color;
+            app.CircleFaceAlpha.Value      = app.CallingApp.General.Plot.CircleRegion.FaceAlpha;
+            app.CircleEdgeAlpha.Value      = app.CallingApp.General.Plot.CircleRegion.EdgeAlpha;
+
+            app.AutomaticZoom.Value        = app.CallingApp.General.Plot.SelectedStation.AutomaticZoom;
+            if app.AutomaticZoom.Value
+                set(app.AutomaticZoomFactor, 'Enable', 1, 'Value', app.CallingApp.General.Plot.SelectedStation.AutomaticZoomFactor)
             else
-                app.graphics_Refresh.Visible = 0;
+                set(app.AutomaticZoomFactor, 'Enable', 0, 'Value', 1)
             end
-        end
 
-        %-----------------------------------------------------------------%
-        function editionFlag = Graphics_checkEdition(app)
-            editionFlag = false;
-
-            if ~strcmp(app.gpuType.Value,            app.DefaultValues.Graphics.openGL)     || ...
-               ~strcmp(app.imgFormat.Value,          app.DefaultValues.Graphics.Format)     || ...
-               ~strcmp(app.imgResolution.Value,      app.DefaultValues.Graphics.Resolution) || ...
-               (app.openAuxiliarAppAsDocked.Value ~= app.DefaultValues.Graphics.Dock)
-
-                editionFlag = true;
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function Elevation_updatePanel(app)
-            app.ElevationNPoints.Value     = num2str(app.CallingApp.General.Elevation.Points);
-            app.ElevationForceSearch.Value = app.CallingApp.General.Elevation.ForceSearch;
-            app.ElevationAPIServer.Value   = app.CallingApp.General.Elevation.Server;
-
-            if Elevation_checkEdition(app)
-                app.general_ElevationRefresh.Visible = 1;
-            else
-                app.general_ElevationRefresh.Visible = 0;
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function editionFlag = Elevation_checkEdition(app)
-            editionFlag = false;
-
-            if ~strcmp(app.ElevationNPoints.Value, app.DefaultValues.Elevation.Points)     || ...
-               (app.ElevationForceSearch.Value ~= app.DefaultValues.Elevation.ForceSearch) || ...
-               ~strcmp(app.ElevationAPIServer.Value, app.DefaultValues.Elevation.Server)
-                
-                editionFlag = true;
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function APIFiscaliza_updatePanel(app)
-            switch app.CallingApp.General.fiscaliza.systemVersion
-                case 'PROD'
-                    app.config_FiscalizaPD.Value = 1;
-                case 'HOM'
-                    app.config_FiscalizaHM.Value = 1;
-            end
+            app.PeakColor.Value            = app.CallingApp.General.Plot.FieldPeak.Color;
+            app.PeakSize.Value             = app.CallingApp.General.Plot.FieldPeak.Size;
         end
 
         %-----------------------------------------------------------------%
         function Folder_updatePanel(app)
-            % Na versão webapp, a configuração das pastas não é habilitada.
-
-            switch app.CallingApp.executionMode
-                case 'webApp'
-                    app.btnFolder.Enable = 0;
-
-                otherwise
-                    % DataHub
-                    DataHub_GET  = app.CallingApp.General.fileFolder.DataHub_GET;
-                    DataHub_POST = app.CallingApp.General.fileFolder.DataHub_POST;
-                    if isfolder(DataHub_GET)
-                        app.config_Folder_DataHubGET.Value  = DataHub_GET;
-                    end
-        
-                    if isfolder(DataHub_POST)
-                        app.config_Folder_DataHubPOST.Value = DataHub_POST;
-                    end
-        
-                    % Python
-                    pythonPath = app.CallingApp.General.fileFolder.pythonPath;
-                    if isfile(pythonPath)
-                        app.config_Folder_pythonPath.Value = pythonPath;
-                    else
-                        pyEnv = pyenv;
-                        app.config_Folder_pythonPath.Value = pyEnv.Executable;
-                    end
-    
-                    % userPath & tempPath
-                    app.config_Folder_userPath.Value = app.CallingApp.General.fileFolder.userPath;
-                    app.config_Folder_tempPath.Value = app.CallingApp.General.fileFolder.tempPath;
+            if ~strcmp(app.CallingApp.executionMode, 'webApp')
+                app.btnFolder.Enable = 1;
+                app.userPath.Value = app.CallingApp.General.fileFolder.userPath;
+                app.tempPath.Value = app.CallingApp.General.fileFolder.tempPath;
             end
         end
 
@@ -411,18 +274,15 @@ classdef winConfig_exported < matlab.apps.AppBase
         function startupFcn(app, mainapp)
             
             % A razão de ser deste app é possibilitar visualização/edição 
-            % de algumas das informações do arquivo "GeneralSettings.json",
-            % além de possibilitar o mapeamento do PYTHON, a atualização da
-            % lib FISCALIZA e da ETL RFDATAHUB.
-
+            % de algumas das informações do arquivo "GeneralSettings.json".
             app.CallingApp = mainapp;
-            app.rootFolder = app.CallingApp.rootFolder;
+            app.rootFolder = mainapp.rootFolder;
 
             jsBackDoor_Initialization(app)
-            % LeftPanelRadioGroupSelectionChanged(app)
+            RadioButtonGroupSelectionChanged(app)
 
             if app.isDocked
-                app.GridLayout.Padding(4) = 19;
+                app.GridLayout.Padding(4) = 21;
                 startup_Controller(app)
             else
                 appUtil.winPosition(app.UIFigure)
@@ -449,36 +309,8 @@ classdef winConfig_exported < matlab.apps.AppBase
                 app.Document.ColumnWidth{1} = 0;
             else
                 app.tool_LeftPanelVisibility.ImageSource = 'ArrowLeft_32.png';
-                app.Document.ColumnWidth{1} = 320;
+                app.Document.ColumnWidth{1} = 325;
             end
-
-        end
-
-        % Image clicked function: tool_FiscalizaButton
-        function tool_FiscalizaButtonPushed(app, event)
-            
-            if strcmp(app.CallingApp.General.AppVersion.fiscaliza, app.stableVersion.fiscaliza)
-                app.tool_FiscalizaButton.Enable = 0;
-                appUtil.modalWindow(app.UIFigure, 'warning', 'Módulo fiscaliza já atualizado!');
-                return
-            end
-
-            app.progressDialog.Visible = 'visible';
-
-            try
-                Python = pyenv;
-                system(sprintf('"%s" %s', fullfile(Python.Home, 'Scripts', 'pip'), sprintf('install fiscaliza==%s', app.stableVersion.fiscaliza)));
-
-                app.CallingApp.General.AppVersion.fiscaliza = app.stableVersion.fiscaliza;
-                app.tool_FiscalizaButton.Enable = 0;
-
-                Layout(app)
-
-            catch ME
-                appUtil.modalWindow(app.UIFigure, 'error', ME.message);
-            end
-
-            app.progressDialog.Visible = 'hidden';
 
         end
 
@@ -533,26 +365,27 @@ classdef winConfig_exported < matlab.apps.AppBase
                 appUtil.modalWindow(app.UIFigure, 'error', ME.message);
             end
 
-            AppVersion_updatePanel(app)
+            General_updatePanel(app)
 
             delete(d)
 
         end
 
-        % Selection changed function: LeftPanelRadioGroup
-        function LeftPanelRadioGroupSelectionChanged(app, event)
+        % Selection changed function: RadioButtonGroup
+        function RadioButtonGroupSelectionChanged(app, event)
             
-            selectedButton = app.LeftPanelRadioGroup.SelectedObject;
+            selectedButton = app.RadioButtonGroup.SelectedObject;
             switch selectedButton
-                case app.btnGeneral;   app.Document.ColumnWidth(2:end) = {'1x',0,0};
-                case app.btnFiscaliza; app.Document.ColumnWidth(2:end) = {0,'1x',0};
-                case app.btnFolder;    app.Document.ColumnWidth(2:end) = {0,0,'1x'};
+                case app.btnGeneral;    app.Document.ColumnWidth(2:end) = {'1x',0,0,0};
+                case app.btnAnalysis;   app.Document.ColumnWidth(2:end) = {0,'1x',0,0};
+                case app.btnCustomPlot; app.Document.ColumnWidth(2:end) = {0,0,'1x',0};
+                case app.btnFolder;     app.Document.ColumnWidth(2:end) = {0,0,0,'1x'};
             end
             
         end
 
-        % Image clicked function: general_AppVersionRefresh
-        function AppVersion_refreshButtonPushed(app, event)
+        % Image clicked function: AppVersionRefresh
+        function General_RefreshButtonPushed(app, event)
             
             app.progressDialog.Visible = 'visible';
 
@@ -561,54 +394,15 @@ classdef winConfig_exported < matlab.apps.AppBase
             
             if ~ismember('RFDataHub', updatedModule)
                 app.tool_RFDataHubButton.Enable = 1;
-            end
-
-            if ~ismember('fiscaliza', updatedModule)
-                app.tool_FiscalizaButton.Enable = 1;
-            end            
+            end         
 
             app.progressDialog.Visible = 'hidden';
 
         end
 
-        % Callback function: general_mergeRefresh, mergeAntenna, 
-        % ...and 2 other components
-        function File_ParameterValueChanged(app, event)
-            
-            switch event.Source
-                %---------------------------------------------------------%
-                case {app.mergeDataType, app.mergeAntenna, app.mergeDistance}                    
-                    switch app.mergeDataType.Value
-                        case 0; DataTypeStatus = 'keep';
-                        case 1; DataTypeStatus = 'remove';
-                    end
-                    
-                    switch app.mergeAntenna.Value
-                        case 0; AntennaStatus  = 'keep';
-                        case 1; AntennaStatus  = 'remove';
-                    end
-                                
-                    app.CallingApp.General.Merge.DataType = DataTypeStatus;
-                    app.CallingApp.General.Merge.Antenna  = AntennaStatus;
-                    app.CallingApp.General.Merge.Distance = app.mergeDistance.Value;
-
-                %---------------------------------------------------------%
-                case app.general_mergeRefresh
-                    app.CallingApp.General.Merge = struct('DataType',          app.DefaultValues.File.DataTypeLabel,     ...
-                                                          'Antenna',           app.DefaultValues.File.AntennaLabel,      ...
-                                                          'AntennaAttributes', app.DefaultValues.File.AntennaAttributes, ...
-                                                          'Distance',          app.DefaultValues.File.Distance);
-            end
-
-            app.CallingApp.General_I.Merge = app.CallingApp.General.Merge;            
-            saveGeneralSettings(app)
-            File_updatePanel(app)  
-
-        end
-
-        % Callback function: gpuType, graphics_Refresh, imgFormat, 
-        % ...and 3 other components
-        function Graphics_ParameterValueChanged(app, event)
+        % Value changed function: gpuType, openAuxiliarApp2Debug, 
+        % ...and 1 other component
+        function General_ParameterValueChanged(app, event)
             
             switch event.Source
                 case app.gpuType
@@ -621,155 +415,144 @@ classdef winConfig_exported < matlab.apps.AppBase
                         app.CallingApp.General.AppVersion.OpenGL = rmfield(graphRender, {'MaxTextureSize', 'Visual', 'SupportsGraphicsSmoothing', 'SupportsDepthPeelTransparency', 'SupportsAlignVertexCenters', 'Extensions', 'MaxFrameBufferSize'});
                     end
 
-                case {app.imgFormat, app.imgResolution}
-                    app.CallingApp.General.Image = struct('Format', app.imgFormat.Value, 'Resolution', str2double(app.imgResolution.Value));
-
                 case app.openAuxiliarAppAsDocked
-                    app.CallingApp.General.operationMode.Dock = app.openAuxiliarAppAsDocked.Value;
+                    app.CallingApp.General.operationMode.Dock  = app.openAuxiliarAppAsDocked.Value;
 
                 case app.openAuxiliarApp2Debug
                     app.CallingApp.General.operationMode.Debug = app.openAuxiliarApp2Debug.Value;
-
-                case app.graphics_Refresh
-                    if ~strcmp(app.gpuType.Value, app.DefaultValues.Graphics.openGL)
-                        app.gpuType.Value = app.DefaultValues.Graphics.openGL;
-                        Graphics_ParameterValueChanged(app, struct('Source', app.gpuType))
-                    end
-
-                    app.CallingApp.General.Image = struct('Format', app.DefaultValues.Graphics.Format, 'Resolution', app.DefaultValues.Graphics.Resolution);
-                    app.CallingApp.General.operationMode.Dock  = app.DefaultValues.Graphics.Dock;
             end
 
             app.CallingApp.General_I.openGL        = app.CallingApp.General.openGL;
-            app.CallingApp.General_I.Image         = app.CallingApp.General.Image;
             app.CallingApp.General_I.operationMode = app.CallingApp.General.operationMode;
             saveGeneralSettings(app)
-            Graphics_updatePanel(app)
+            General_updatePanel(app)
 
         end
 
-        % Callback function: ElevationAPIServer, ElevationForceSearch, 
-        % ...and 2 other components
-        function Elevation_ParameterValueChanged(app, event)
-
-            switch event.Source
-                case app.ElevationNPoints
-                    app.CallingApp.General.Elevation.Points      = str2double(app.ElevationNPoints.Value);
-
-                case app.ElevationForceSearch
-                    app.CallingApp.General.Elevation.ForceSearch = app.ElevationForceSearch.Value;
-
-                case app.ElevationAPIServer
-                    app.CallingApp.General.Elevation.Server      = app.ElevationAPIServer.Value;
-
-                case app.general_ElevationRefresh
-                    app.CallingApp.General.Elevation = struct('Points',      str2double(app.DefaultValues.Elevation.Points), ...
-                                                              'ForceSearch', app.DefaultValues.Elevation.ForceSearch,        ...
-                                                              'Server',      app.DefaultValues.Elevation.Server);
-            end
-
-            app.CallingApp.General_I.Elevation = app.CallingApp.General.Elevation;
-            saveGeneralSettings(app)
-            Elevation_updatePanel(app)
-            
-        end
-
-        % Selection changed function: config_FiscalizaVersion
-        function config_FiscalizaMode(app, event)
-            
-            selectedButton = app.config_FiscalizaVersion.SelectedObject;
-            switch selectedButton
-                case app.config_FiscalizaPD
-                    app.CallingApp.General.fiscaliza.systemVersion = 'PROD';
-                case app.config_FiscalizaHM
-                    app.CallingApp.General.fiscaliza.systemVersion = 'HOM';
-            end
-
-            app.CallingApp.General_I.fiscaliza = app.CallingApp.General.fiscaliza;
-            saveGeneralSettings(app)
-            appBackDoor(app.CallingApp, app, 'FiscalizaModeChanged')
-            
-        end
-
-        % Image clicked function: config_Folder_DataHubGETButton, 
+        % Value changed function: ExternalRequestDistance, 
         % ...and 3 other components
-        function config_getFolder(app, event)
+        function Analysis_ParameterValueChanged(app, event)
             
-            try
-                relatedFolder = eval(sprintf('app.config_Folder_%s.Value', event.Source.Tag));                    
-            catch
-                relatedFolder = app.CallingApp.General.fileFolder.(event.Source.Tag);
+            switch event.Source
+                case app.MonitoringPlanDistance
+                    app.CallingApp.General.MonitoringPlan.Distance_km  = app.MonitoringPlanDistance.Value / 1000;
+
+                case app.MonitoringPlanLevel
+                    app.CallingApp.General.MonitoringPlan.FieldValue   = app.MonitoringPlanLevel.Value;
+
+                case app.ExternalRequestDistance
+                    app.CallingApp.General.ExternalRequest.Distance_km = app.ExternalRequestDistance.Value / 1000;
+
+                case app.ExternalRequestLevel
+                    app.CallingApp.General.ExternalRequest.FieldValue  = app.ExternalRequestLevel.Value;
             end
+
+            app.CallingApp.General_I.MonitoringPlan  = app.CallingApp.General.MonitoringPlan;
+            app.CallingApp.General_I.ExternalRequest = app.CallingApp.General.ExternalRequest;
+            saveGeneralSettings(app)
+
+            appBackDoor(app.CallingApp, app, 'updateAnalysis')
             
-            if isfolder(relatedFolder)
-                initialFolder = relatedFolder;
-            elseif isfile(relatedFolder)
-                initialFolder = fileparts(relatedFolder);
-            else
-                initialFolder = app.config_Folder_userPath.Value;
+        end
+
+        % Value changed function: AutomaticZoom, AutomaticZoomFactor, 
+        % ...and 8 other components
+        function CustomPlot_ParameterValueChanged(app, event)
+            
+            switch event.Source
+                case app.Basemap
+                    app.CallingApp.General.Plot.GeographicAxes.Basemap    = app.Basemap.Value;
+
+                case app.Colormap
+                    app.CallingApp.General.Plot.GeographicAxes.Colormap   = app.Colormap.Value;
+
+                case app.Colorbar
+                    app.CallingApp.General.Plot.GeographicAxes.Colorbar   = app.Colorbar.Value;
+
+                case app.StationsSize
+                    app.CallingApp.General.Plot.Stations.Size             = round(app.StationsSize.Value);
+
+                case app.SelectedStationSize
+                    app.CallingApp.General.Plot.SelectedStation.Size      = round(app.SelectedStationSize.Value);
+
+                case app.PeakSize
+                    app.CallingApp.General.Plot.FieldPeak.Size            = round(app.PeakSize.Value);
+
+                case app.CircleFaceAlpha
+                    app.CallingApp.General.Plot.CircleRegion.FaceAlpha    = app.CircleFaceAlpha.Value;
+
+                case app.CircleEdgeAlpha
+                    app.CallingApp.General.Plot.CircleRegion.EdgeAlpha    = app.CircleEdgeAlpha.Value;
+
+                case app.AutomaticZoom
+                    app.CallingApp.General.Plot.SelectedStation.AutomaticZoom = app.AutomaticZoom.Value;
+                    if app.AutomaticZoom.Value
+                        app.AutomaticZoomFactor.Enable = 1;
+                    else
+                        app.AutomaticZoomFactor.Enable = 0;
+                    end
+
+                case app.AutomaticZoomFactor
+                    app.CallingApp.General.Plot.SelectedStation.AutomaticZoomFactor = app.AutomaticZoomFactor.Value;
             end
+
+            app.CallingApp.General_I.Plot = app.CallingApp.General.Plot;
+            saveGeneralSettings(app)
             
-            selectedFolder = uigetdir(initialFolder);
+            appBackDoor(app.CallingApp, app, 'updatePlot')
+            
+        end
+
+        % Value changed function: CircleColor
+        function CustomPlot_CircleColorValueChanged(app, event)
+
+            app.CallingApp.General.Plot.CircleRegion.Color = app.CircleColor.Value;
+
+            app.CallingApp.General_I.Plot = app.CallingApp.General.Plot;
+            saveGeneralSettings(app)
+            
+            appBackDoor(app.CallingApp, app, 'updatePlot')
+            
+        end
+
+        % Callback function: PeakColor, SelectedStationColor, StationsColor
+        function CustomPlot_ColorValueChanged(app, event)
+
+            initialColor  = event.PreviousValue;
+            selectedColor = event.Value;
+
+            if ~isequal(initialColor, selectedColor)
+                selectedColor = rgb2hex(selectedColor);
+    
+                switch event.Source
+                    case app.StationsColor
+                        app.CallingApp.General.Plot.Stations.Color        = selectedColor;
+                    case app.SelectedStationColor
+                        app.CallingApp.General.Plot.SelectedStation.Color = selectedColor;
+                    case app.PeakColor
+                        app.CallingApp.General.Plot.FieldPeak.Color       = selectedColor;
+                end
+            end
+
+            app.CallingApp.General_I.Plot = app.CallingApp.General.Plot;
+            saveGeneralSettings(app)
+
+            appBackDoor(app.CallingApp, app, 'updatePlot')
+            
+        end
+
+        % Image clicked function: userPathButton
+        function Folder_ButtonPushed(app, event)
+            
+            selectedFolder = uigetdir(app.CallingApp.General.fileFolder.userPath);
             figure(app.UIFigure)
 
             if selectedFolder
-                switch event.Source
-                    case app.config_Folder_DataHubGETButton
-                        appName  = class.Constants.appName;
-                        repoName = 'DataHub - GET';
-
-                        if strcmp(app.CallingApp.General.fileFolder.DataHub_GET, selectedFolder) 
-                            return
-                        elseif all(cellfun(@(x) contains(selectedFolder, x), {repoName, appName}))
-                            app.progressDialog.Visible = 'visible';
-
-                            app.config_Folder_DataHubGET.Value = selectedFolder;
-                            app.CallingApp.General.fileFolder.DataHub_GET = selectedFolder;
-                        else
-                            appUtil.modalWindow(app.UIFigure, 'error', sprintf('Não identificado se tratar da pasta "%s" do repositório "%s".', appName, repoName));
-                        end
-
-                    case app.config_Folder_DataHubPOSTButton
-                        appName  = class.Constants.appName;
-                        repoName = 'DataHub - POST';
-
-                        if strcmp(app.CallingApp.General.fileFolder.DataHub_POST, selectedFolder) 
-                            return
-                        elseif all(cellfun(@(x) contains(selectedFolder, x), {repoName, appName}))
-                            app.config_Folder_DataHubPOST.Value = selectedFolder;
-                            app.CallingApp.General.fileFolder.DataHub_POST = selectedFolder;
-                        else
-                            appUtil.modalWindow(app.UIFigure, 'error', sprintf('Não identificado se tratar da pasta "%s" do repositório "%s".', appName, repoName));
-                        end
-
-                    case app.config_Folder_pythonPathButton
-                        pythonPath = fullfile(selectedFolder, ccTools.fcn.OperationSystem('pythonExecutable'));
-                        if isfile(pythonPath)
-                            app.progressDialog.Visible = 'visible';
-
-                            try
-                                pyenv('Version', pythonPath);
-                                app.CallingApp.General.fileFolder.pythonPath = pythonPath;
-
-                            catch ME
-                                appUtil.modalWindow(app.UIFigure, 'error', 'O <i>app</i> deverá ser reinicializado para que a alteração tenha efeito.');
-                            end
-
-                            app.progressDialog.Visible = 'hidden';
-
-                        else
-                            appUtil.modalWindow(app.UIFigure, 'error', 'Não encontrado o arquivo executável do Python.');
-                            return
-                        end
-
-                    case app.config_Folder_userPathButton
-                        app.config_Folder_userPath.Value = selectedFolder;
-                        app.CallingApp.General.fileFolder.userPath = selectedFolder;
-                end
+                app.userPath.Value = selectedFolder;
+                app.CallingApp.General.fileFolder.userPath = selectedFolder;
 
                 app.CallingApp.General_I.fileFolder = app.CallingApp.General.fileFolder;
                 saveGeneralSettings(app)
-                Folder_updatePanel(app)
             end
 
         end
@@ -807,933 +590,680 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.Container);
-            app.GridLayout.ColumnWidth = {22, 22, 22, '1x', 22};
-            app.GridLayout.RowHeight = {'1x', 9, 17, 8};
-            app.GridLayout.ColumnSpacing = 5;
+            app.GridLayout.ColumnWidth = {'1x'};
+            app.GridLayout.RowHeight = {'1x', 34};
             app.GridLayout.RowSpacing = 0;
             app.GridLayout.Padding = [0 0 0 0];
-            app.GridLayout.BackgroundColor = [0.9412 0.9412 0.9412];
 
             % Create Document
             app.Document = uigridlayout(app.GridLayout);
-            app.Document.ColumnWidth = {320, '1x', 0, 0};
-            app.Document.RowHeight = {27, '1x'};
-            app.Document.RowSpacing = 5;
+            app.Document.ColumnWidth = {325, 0, 0, '1x', 0};
+            app.Document.RowHeight = {'1x'};
             app.Document.Padding = [5 5 5 5];
             app.Document.Layout.Row = 1;
-            app.Document.Layout.Column = [1 5];
+            app.Document.Layout.Column = 1;
             app.Document.BackgroundColor = [1 1 1];
 
-            % Create LeftPanelTitle
-            app.LeftPanelTitle = uigridlayout(app.Document);
-            app.LeftPanelTitle.ColumnWidth = {'1x'};
-            app.LeftPanelTitle.RowHeight = {'1x', 3};
-            app.LeftPanelTitle.ColumnSpacing = 1;
-            app.LeftPanelTitle.RowSpacing = 0;
-            app.LeftPanelTitle.Padding = [0 0 0 0];
-            app.LeftPanelTitle.Layout.Row = 1;
-            app.LeftPanelTitle.Layout.Column = 1;
-            app.LeftPanelTitle.BackgroundColor = [1 1 1];
+            % Create ControlPanel
+            app.ControlPanel = uigridlayout(app.Document);
+            app.ControlPanel.ColumnWidth = {'1x'};
+            app.ControlPanel.RowHeight = {22, '1x'};
+            app.ControlPanel.RowSpacing = 5;
+            app.ControlPanel.Padding = [0 0 0 0];
+            app.ControlPanel.Layout.Row = 1;
+            app.ControlPanel.Layout.Column = 1;
+            app.ControlPanel.BackgroundColor = [1 1 1];
 
-            % Create menu_ButtonGrid
-            app.menu_ButtonGrid = uigridlayout(app.LeftPanelTitle);
-            app.menu_ButtonGrid.ColumnWidth = {18, '1x'};
-            app.menu_ButtonGrid.RowHeight = {'1x'};
-            app.menu_ButtonGrid.ColumnSpacing = 3;
-            app.menu_ButtonGrid.Padding = [2 0 0 0];
-            app.menu_ButtonGrid.Layout.Row = 1;
-            app.menu_ButtonGrid.Layout.Column = 1;
-            app.menu_ButtonGrid.BackgroundColor = [0.749 0.749 0.749];
+            % Create ControlPanelGrid
+            app.ControlPanelGrid = uigridlayout(app.ControlPanel);
+            app.ControlPanelGrid.ColumnWidth = {18, '1x'};
+            app.ControlPanelGrid.RowHeight = {'1x'};
+            app.ControlPanelGrid.ColumnSpacing = 3;
+            app.ControlPanelGrid.Padding = [2 0 0 0];
+            app.ControlPanelGrid.Layout.Row = 1;
+            app.ControlPanelGrid.Layout.Column = 1;
+            app.ControlPanelGrid.BackgroundColor = [0.749 0.749 0.749];
 
-            % Create menu_ButtonLabel
-            app.menu_ButtonLabel = uilabel(app.menu_ButtonGrid);
-            app.menu_ButtonLabel.FontSize = 11;
-            app.menu_ButtonLabel.Layout.Row = 1;
-            app.menu_ButtonLabel.Layout.Column = 2;
-            app.menu_ButtonLabel.Text = 'CONFIGURAÇÕES';
+            % Create ControlPanelIcon
+            app.ControlPanelIcon = uiimage(app.ControlPanelGrid);
+            app.ControlPanelIcon.ScaleMethod = 'none';
+            app.ControlPanelIcon.Tag = '1';
+            app.ControlPanelIcon.Layout.Row = 1;
+            app.ControlPanelIcon.Layout.Column = 1;
+            app.ControlPanelIcon.HorizontalAlignment = 'left';
+            app.ControlPanelIcon.ImageSource = 'Settings_18.png';
 
-            % Create menu_ButtonIcon
-            app.menu_ButtonIcon = uiimage(app.menu_ButtonGrid);
-            app.menu_ButtonIcon.ScaleMethod = 'none';
-            app.menu_ButtonIcon.Tag = '1';
-            app.menu_ButtonIcon.Layout.Row = 1;
-            app.menu_ButtonIcon.Layout.Column = 1;
-            app.menu_ButtonIcon.HorizontalAlignment = 'left';
-            app.menu_ButtonIcon.ImageSource = 'Settings_18.png';
+            % Create ControlPanelTitle
+            app.ControlPanelTitle = uilabel(app.ControlPanelGrid);
+            app.ControlPanelTitle.FontSize = 11;
+            app.ControlPanelTitle.Layout.Row = 1;
+            app.ControlPanelTitle.Layout.Column = 2;
+            app.ControlPanelTitle.Text = 'CONFIGURAÇÕES';
 
-            % Create menuUnderline
-            app.menuUnderline = uiimage(app.LeftPanelTitle);
-            app.menuUnderline.ScaleMethod = 'scaleup';
-            app.menuUnderline.Layout.Row = 2;
-            app.menuUnderline.Layout.Column = 1;
-            app.menuUnderline.ImageSource = 'LineH.png';
+            % Create RadioButtonGroupPanel
+            app.RadioButtonGroupPanel = uipanel(app.ControlPanel);
+            app.RadioButtonGroupPanel.Layout.Row = 2;
+            app.RadioButtonGroupPanel.Layout.Column = 1;
 
-            % Create LeftPanel
-            app.LeftPanel = uipanel(app.Document);
-            app.LeftPanel.Layout.Row = 2;
-            app.LeftPanel.Layout.Column = 1;
+            % Create RadioButtonGroupGrid
+            app.RadioButtonGroupGrid = uigridlayout(app.RadioButtonGroupPanel);
+            app.RadioButtonGroupGrid.ColumnWidth = {'1x'};
+            app.RadioButtonGroupGrid.RowHeight = {100, '1x'};
+            app.RadioButtonGroupGrid.Padding = [0 0 0 0];
+            app.RadioButtonGroupGrid.BackgroundColor = [1 1 1];
 
-            % Create LeftPanelGrid
-            app.LeftPanelGrid = uigridlayout(app.LeftPanel);
-            app.LeftPanelGrid.ColumnWidth = {'1x'};
-            app.LeftPanelGrid.RowHeight = {100, '1x'};
-            app.LeftPanelGrid.Padding = [0 0 0 0];
-            app.LeftPanelGrid.BackgroundColor = [1 1 1];
-
-            % Create LeftPanelRadioGroup
-            app.LeftPanelRadioGroup = uibuttongroup(app.LeftPanelGrid);
-            app.LeftPanelRadioGroup.AutoResizeChildren = 'off';
-            app.LeftPanelRadioGroup.SelectionChangedFcn = createCallbackFcn(app, @LeftPanelRadioGroupSelectionChanged, true);
-            app.LeftPanelRadioGroup.BorderType = 'none';
-            app.LeftPanelRadioGroup.BackgroundColor = [1 1 1];
-            app.LeftPanelRadioGroup.Layout.Row = 1;
-            app.LeftPanelRadioGroup.Layout.Column = 1;
-            app.LeftPanelRadioGroup.FontSize = 11;
+            % Create RadioButtonGroup
+            app.RadioButtonGroup = uibuttongroup(app.RadioButtonGroupGrid);
+            app.RadioButtonGroup.AutoResizeChildren = 'off';
+            app.RadioButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @RadioButtonGroupSelectionChanged, true);
+            app.RadioButtonGroup.BorderType = 'none';
+            app.RadioButtonGroup.BackgroundColor = [1 1 1];
+            app.RadioButtonGroup.Layout.Row = 1;
+            app.RadioButtonGroup.Layout.Column = 1;
+            app.RadioButtonGroup.FontSize = 11;
 
             % Create btnGeneral
-            app.btnGeneral = uiradiobutton(app.LeftPanelRadioGroup);
+            app.btnGeneral = uiradiobutton(app.RadioButtonGroup);
             app.btnGeneral.Text = 'Aspectos gerais';
             app.btnGeneral.FontSize = 11;
-            app.btnGeneral.Position = [11 69 100 22];
+            app.btnGeneral.Position = [11 70 100 22];
             app.btnGeneral.Value = true;
 
-            % Create btnFiscaliza
-            app.btnFiscaliza = uiradiobutton(app.LeftPanelRadioGroup);
-            app.btnFiscaliza.Text = 'API Fiscaliza';
-            app.btnFiscaliza.FontSize = 11;
-            app.btnFiscaliza.Position = [11 47 86 22];
+            % Create btnAnalysis
+            app.btnAnalysis = uiradiobutton(app.RadioButtonGroup);
+            app.btnAnalysis.Text = 'Análise';
+            app.btnAnalysis.FontSize = 11;
+            app.btnAnalysis.Position = [11 47 168 22];
+
+            % Create btnCustomPlot
+            app.btnCustomPlot = uiradiobutton(app.RadioButtonGroup);
+            app.btnCustomPlot.Text = 'Customização do plot';
+            app.btnCustomPlot.FontSize = 11;
+            app.btnCustomPlot.Position = [11 25 128 22];
 
             % Create btnFolder
-            app.btnFolder = uiradiobutton(app.LeftPanelRadioGroup);
+            app.btnFolder = uiradiobutton(app.RadioButtonGroup);
+            app.btnFolder.Enable = 'off';
             app.btnFolder.Text = 'Mapeamento de pastas';
             app.btnFolder.FontSize = 11;
-            app.btnFolder.Position = [11 25 137 22];
+            app.btnFolder.Position = [11 3 161 22];
 
-            % Create General_Grid
-            app.General_Grid = uigridlayout(app.Document);
-            app.General_Grid.ColumnWidth = {'1x', 16, 254, 16};
-            app.General_Grid.RowHeight = {27, 150, 22, 198, 22, '1x'};
-            app.General_Grid.RowSpacing = 5;
-            app.General_Grid.Padding = [0 0 0 0];
-            app.General_Grid.Layout.Row = [1 2];
-            app.General_Grid.Layout.Column = 2;
-            app.General_Grid.BackgroundColor = [1 1 1];
+            % Create GeneralGrid
+            app.GeneralGrid = uigridlayout(app.Document);
+            app.GeneralGrid.ColumnWidth = {'1x', 16};
+            app.GeneralGrid.RowHeight = {22, 150, 22, '1x', 17, 22, 1, 22, 15};
+            app.GeneralGrid.RowSpacing = 5;
+            app.GeneralGrid.Padding = [0 0 0 0];
+            app.GeneralGrid.Layout.Row = 1;
+            app.GeneralGrid.Layout.Column = 2;
+            app.GeneralGrid.BackgroundColor = [1 1 1];
 
-            % Create general_AppVersionLabel
-            app.general_AppVersionLabel = uilabel(app.General_Grid);
-            app.general_AppVersionLabel.VerticalAlignment = 'bottom';
-            app.general_AppVersionLabel.FontSize = 10;
-            app.general_AppVersionLabel.Layout.Row = 1;
-            app.general_AppVersionLabel.Layout.Column = 1;
-            app.general_AppVersionLabel.Text = 'ASPECTOS GERAIS';
+            % Create AppVersionLabel
+            app.AppVersionLabel = uilabel(app.GeneralGrid);
+            app.AppVersionLabel.VerticalAlignment = 'bottom';
+            app.AppVersionLabel.FontSize = 10;
+            app.AppVersionLabel.Layout.Row = 1;
+            app.AppVersionLabel.Layout.Column = 1;
+            app.AppVersionLabel.Text = 'ASPECTOS GERAIS';
 
-            % Create general_AppVersionRefresh
-            app.general_AppVersionRefresh = uiimage(app.General_Grid);
-            app.general_AppVersionRefresh.ImageClickedFcn = createCallbackFcn(app, @AppVersion_refreshButtonPushed, true);
-            app.general_AppVersionRefresh.Tooltip = {'Verifica atualizações'};
-            app.general_AppVersionRefresh.Layout.Row = 1;
-            app.general_AppVersionRefresh.Layout.Column = 2;
-            app.general_AppVersionRefresh.VerticalAlignment = 'bottom';
-            app.general_AppVersionRefresh.ImageSource = 'Refresh_18.png';
+            % Create AppVersionRefresh
+            app.AppVersionRefresh = uiimage(app.GeneralGrid);
+            app.AppVersionRefresh.ImageClickedFcn = createCallbackFcn(app, @General_RefreshButtonPushed, true);
+            app.AppVersionRefresh.Enable = 'off';
+            app.AppVersionRefresh.Tooltip = {'Verifica atualizações'};
+            app.AppVersionRefresh.Layout.Row = 1;
+            app.AppVersionRefresh.Layout.Column = 2;
+            app.AppVersionRefresh.VerticalAlignment = 'bottom';
+            app.AppVersionRefresh.ImageSource = 'Refresh_18.png';
 
-            % Create general_AppVersionPanel
-            app.general_AppVersionPanel = uipanel(app.General_Grid);
-            app.general_AppVersionPanel.BackgroundColor = [0.9412 0.9412 0.9412];
-            app.general_AppVersionPanel.Layout.Row = [2 6];
-            app.general_AppVersionPanel.Layout.Column = [1 2];
+            % Create AppVersionPanel
+            app.AppVersionPanel = uipanel(app.GeneralGrid);
+            app.AppVersionPanel.BackgroundColor = [0.9412 0.9412 0.9412];
+            app.AppVersionPanel.Layout.Row = [2 4];
+            app.AppVersionPanel.Layout.Column = [1 2];
 
-            % Create general_AppVersionGrid
-            app.general_AppVersionGrid = uigridlayout(app.general_AppVersionPanel);
-            app.general_AppVersionGrid.ColumnWidth = {'1x'};
-            app.general_AppVersionGrid.RowHeight = {'1x'};
-            app.general_AppVersionGrid.Padding = [0 0 0 0];
-            app.general_AppVersionGrid.BackgroundColor = [1 1 1];
+            % Create AppVersionGrid
+            app.AppVersionGrid = uigridlayout(app.AppVersionPanel);
+            app.AppVersionGrid.ColumnWidth = {'1x'};
+            app.AppVersionGrid.RowHeight = {'1x'};
+            app.AppVersionGrid.Padding = [0 0 0 0];
+            app.AppVersionGrid.BackgroundColor = [1 1 1];
 
             % Create AppVersion
-            app.AppVersion = uihtml(app.general_AppVersionGrid);
+            app.AppVersion = uihtml(app.AppVersionGrid);
             app.AppVersion.HTMLSource = ' ';
             app.AppVersion.Layout.Row = 1;
             app.AppVersion.Layout.Column = 1;
 
-            % Create general_FileLabel
-            app.general_FileLabel = uilabel(app.General_Grid);
-            app.general_FileLabel.VerticalAlignment = 'bottom';
-            app.general_FileLabel.FontSize = 10;
-            app.general_FileLabel.Layout.Row = 1;
-            app.general_FileLabel.Layout.Column = 3;
-            app.general_FileLabel.Text = 'LEITURA DE ARQUIVOS';
-
-            % Create general_mergeRefresh
-            app.general_mergeRefresh = uiimage(app.General_Grid);
-            app.general_mergeRefresh.ImageClickedFcn = createCallbackFcn(app, @File_ParameterValueChanged, true);
-            app.general_mergeRefresh.Visible = 'off';
-            app.general_mergeRefresh.Tooltip = {'Volta à configuração inicial'};
-            app.general_mergeRefresh.Layout.Row = 1;
-            app.general_mergeRefresh.Layout.Column = 4;
-            app.general_mergeRefresh.VerticalAlignment = 'bottom';
-            app.general_mergeRefresh.ImageSource = 'Refresh_18.png';
-
-            % Create general_FilePanel
-            app.general_FilePanel = uipanel(app.General_Grid);
-            app.general_FilePanel.Layout.Row = 2;
-            app.general_FilePanel.Layout.Column = [3 4];
-
-            % Create general_FileGrid
-            app.general_FileGrid = uigridlayout(app.general_FilePanel);
-            app.general_FileGrid.ColumnWidth = {110, '1x'};
-            app.general_FileGrid.RowHeight = {27, 22, 40, 22};
-            app.general_FileGrid.RowSpacing = 5;
-            app.general_FileGrid.BackgroundColor = [1 1 1];
-
-            % Create mergeLabel1
-            app.mergeLabel1 = uilabel(app.general_FileGrid);
-            app.mergeLabel1.VerticalAlignment = 'bottom';
-            app.mergeLabel1.WordWrap = 'on';
-            app.mergeLabel1.FontSize = 10;
-            app.mergeLabel1.Layout.Row = 1;
-            app.mergeLabel1.Layout.Column = [1 2];
-            app.mergeLabel1.Text = 'Lista de metadados a ignorar no processo de mesclagem de fluxos espectrais:';
-
-            % Create mergeDataType
-            app.mergeDataType = uicheckbox(app.general_FileGrid);
-            app.mergeDataType.ValueChangedFcn = createCallbackFcn(app, @File_ParameterValueChanged, true);
-            app.mergeDataType.Text = 'DataType';
-            app.mergeDataType.FontSize = 11;
-            app.mergeDataType.FontColor = [0.149 0.149 0.149];
-            app.mergeDataType.Layout.Row = 2;
-            app.mergeDataType.Layout.Column = 1;
-            app.mergeDataType.Value = true;
-
-            % Create mergeAntenna
-            app.mergeAntenna = uicheckbox(app.general_FileGrid);
-            app.mergeAntenna.ValueChangedFcn = createCallbackFcn(app, @File_ParameterValueChanged, true);
-            app.mergeAntenna.Text = 'Antenna';
-            app.mergeAntenna.FontSize = 11;
-            app.mergeAntenna.FontColor = [0.149 0.149 0.149];
-            app.mergeAntenna.Layout.Row = 2;
-            app.mergeAntenna.Layout.Column = 2;
-            app.mergeAntenna.Value = true;
-
-            % Create mergeLabel2
-            app.mergeLabel2 = uilabel(app.general_FileGrid);
-            app.mergeLabel2.VerticalAlignment = 'bottom';
-            app.mergeLabel2.WordWrap = 'on';
-            app.mergeLabel2.FontSize = 10;
-            app.mergeLabel2.Layout.Row = 3;
-            app.mergeLabel2.Layout.Column = [1 2];
-            app.mergeLabel2.Text = 'Distância máxima entre locais de monitoração registrados em diferentes arquivos para que os fluxos espectrais possam ser mesclados (metros):';
-
-            % Create mergeDistance
-            app.mergeDistance = uispinner(app.general_FileGrid);
-            app.mergeDistance.Step = 50;
-            app.mergeDistance.Limits = [50 Inf];
-            app.mergeDistance.RoundFractionalValues = 'on';
-            app.mergeDistance.ValueDisplayFormat = '%.0f';
-            app.mergeDistance.ValueChangedFcn = createCallbackFcn(app, @File_ParameterValueChanged, true);
-            app.mergeDistance.FontSize = 11;
-            app.mergeDistance.FontColor = [0.149 0.149 0.149];
-            app.mergeDistance.Layout.Row = 4;
-            app.mergeDistance.Layout.Column = 1;
-            app.mergeDistance.Value = 100;
-
-            % Create general_GraphicsLabel
-            app.general_GraphicsLabel = uilabel(app.General_Grid);
-            app.general_GraphicsLabel.VerticalAlignment = 'bottom';
-            app.general_GraphicsLabel.FontSize = 10;
-            app.general_GraphicsLabel.Layout.Row = 3;
-            app.general_GraphicsLabel.Layout.Column = 3;
-            app.general_GraphicsLabel.Text = 'GRÁFICO';
-
-            % Create graphics_Refresh
-            app.graphics_Refresh = uiimage(app.General_Grid);
-            app.graphics_Refresh.ImageClickedFcn = createCallbackFcn(app, @Graphics_ParameterValueChanged, true);
-            app.graphics_Refresh.Visible = 'off';
-            app.graphics_Refresh.Tooltip = {'Volta à configuração inicial'};
-            app.graphics_Refresh.Layout.Row = 3;
-            app.graphics_Refresh.Layout.Column = 4;
-            app.graphics_Refresh.VerticalAlignment = 'bottom';
-            app.graphics_Refresh.ImageSource = 'Refresh_18.png';
-
-            % Create general_GraphicsPanel
-            app.general_GraphicsPanel = uipanel(app.General_Grid);
-            app.general_GraphicsPanel.Layout.Row = 4;
-            app.general_GraphicsPanel.Layout.Column = [3 4];
-
-            % Create general_GraphicsGrid
-            app.general_GraphicsGrid = uigridlayout(app.general_GraphicsPanel);
-            app.general_GraphicsGrid.ColumnWidth = {'1x', 70};
-            app.general_GraphicsGrid.RowHeight = {22, 22, 27, 22, 42, 22};
-            app.general_GraphicsGrid.RowSpacing = 5;
-            app.general_GraphicsGrid.Padding = [10 10 10 5];
-            app.general_GraphicsGrid.BackgroundColor = [1 1 1];
-
             % Create gpuTypeLabel
-            app.gpuTypeLabel = uilabel(app.general_GraphicsGrid);
+            app.gpuTypeLabel = uilabel(app.GeneralGrid);
             app.gpuTypeLabel.VerticalAlignment = 'bottom';
             app.gpuTypeLabel.FontSize = 10;
             app.gpuTypeLabel.FontColor = [0.149 0.149 0.149];
-            app.gpuTypeLabel.Layout.Row = 1;
+            app.gpuTypeLabel.Layout.Row = 5;
             app.gpuTypeLabel.Layout.Column = [1 2];
             app.gpuTypeLabel.Text = 'Unidade gráfica:';
 
             % Create gpuType
-            app.gpuType = uidropdown(app.general_GraphicsGrid);
+            app.gpuType = uidropdown(app.GeneralGrid);
             app.gpuType.Items = {'hardwarebasic', 'hardware', 'software'};
-            app.gpuType.ValueChangedFcn = createCallbackFcn(app, @Graphics_ParameterValueChanged, true);
+            app.gpuType.ValueChangedFcn = createCallbackFcn(app, @General_ParameterValueChanged, true);
+            app.gpuType.Enable = 'off';
             app.gpuType.FontSize = 11;
             app.gpuType.BackgroundColor = [1 1 1];
-            app.gpuType.Layout.Row = 2;
+            app.gpuType.Layout.Row = 6;
             app.gpuType.Layout.Column = [1 2];
             app.gpuType.Value = 'hardware';
 
-            % Create imgFormatLabel
-            app.imgFormatLabel = uilabel(app.general_GraphicsGrid);
-            app.imgFormatLabel.VerticalAlignment = 'bottom';
-            app.imgFormatLabel.WordWrap = 'on';
-            app.imgFormatLabel.FontSize = 10;
-            app.imgFormatLabel.Layout.Row = 3;
-            app.imgFormatLabel.Layout.Column = 1;
-            app.imgFormatLabel.Text = 'Formato da imagem a ser criada no relatório:';
-
-            % Create imgFormat
-            app.imgFormat = uidropdown(app.general_GraphicsGrid);
-            app.imgFormat.Items = {'jpeg', 'png'};
-            app.imgFormat.ValueChangedFcn = createCallbackFcn(app, @Graphics_ParameterValueChanged, true);
-            app.imgFormat.FontSize = 11;
-            app.imgFormat.BackgroundColor = [1 1 1];
-            app.imgFormat.Layout.Row = 4;
-            app.imgFormat.Layout.Column = 1;
-            app.imgFormat.Value = 'jpeg';
-
-            % Create imgResolutionLabel
-            app.imgResolutionLabel = uilabel(app.general_GraphicsGrid);
-            app.imgResolutionLabel.VerticalAlignment = 'bottom';
-            app.imgResolutionLabel.WordWrap = 'on';
-            app.imgResolutionLabel.FontSize = 10;
-            app.imgResolutionLabel.Layout.Row = 3;
-            app.imgResolutionLabel.Layout.Column = 2;
-            app.imgResolutionLabel.Text = {'Resolução'; 'imagem (dpi):'};
-
-            % Create imgResolution
-            app.imgResolution = uidropdown(app.general_GraphicsGrid);
-            app.imgResolution.Items = {'100', '120', '150', '200'};
-            app.imgResolution.ValueChangedFcn = createCallbackFcn(app, @Graphics_ParameterValueChanged, true);
-            app.imgResolution.FontSize = 11;
-            app.imgResolution.BackgroundColor = [1 1 1];
-            app.imgResolution.Layout.Row = 4;
-            app.imgResolution.Layout.Column = 2;
-            app.imgResolution.Value = '120';
-
             % Create openAuxiliarAppAsDocked
-            app.openAuxiliarAppAsDocked = uicheckbox(app.general_GraphicsGrid);
-            app.openAuxiliarAppAsDocked.ValueChangedFcn = createCallbackFcn(app, @Graphics_ParameterValueChanged, true);
-            app.openAuxiliarAppAsDocked.Text = 'Modo DOCK: módulos auxiliares abertos na própria janela do appAnalise.';
+            app.openAuxiliarAppAsDocked = uicheckbox(app.GeneralGrid);
+            app.openAuxiliarAppAsDocked.ValueChangedFcn = createCallbackFcn(app, @General_ParameterValueChanged, true);
+            app.openAuxiliarAppAsDocked.Enable = 'off';
+            app.openAuxiliarAppAsDocked.Text = 'Modo DOCK: módulos auxiliares abertos na janela principal do app.';
             app.openAuxiliarAppAsDocked.WordWrap = 'on';
             app.openAuxiliarAppAsDocked.FontSize = 11;
-            app.openAuxiliarAppAsDocked.Layout.Row = 5;
+            app.openAuxiliarAppAsDocked.Layout.Row = 8;
             app.openAuxiliarAppAsDocked.Layout.Column = [1 2];
 
             % Create openAuxiliarApp2Debug
-            app.openAuxiliarApp2Debug = uicheckbox(app.general_GraphicsGrid);
-            app.openAuxiliarApp2Debug.ValueChangedFcn = createCallbackFcn(app, @Graphics_ParameterValueChanged, true);
+            app.openAuxiliarApp2Debug = uicheckbox(app.GeneralGrid);
+            app.openAuxiliarApp2Debug.ValueChangedFcn = createCallbackFcn(app, @General_ParameterValueChanged, true);
+            app.openAuxiliarApp2Debug.Enable = 'off';
             app.openAuxiliarApp2Debug.Text = 'Modo DEBUG';
             app.openAuxiliarApp2Debug.FontSize = 11;
-            app.openAuxiliarApp2Debug.Layout.Row = 6;
+            app.openAuxiliarApp2Debug.Layout.Row = 9;
             app.openAuxiliarApp2Debug.Layout.Column = [1 2];
 
-            % Create general_ElevationLabel
-            app.general_ElevationLabel = uilabel(app.General_Grid);
-            app.general_ElevationLabel.VerticalAlignment = 'bottom';
-            app.general_ElevationLabel.FontSize = 10;
-            app.general_ElevationLabel.Layout.Row = 5;
-            app.general_ElevationLabel.Layout.Column = [3 4];
-            app.general_ElevationLabel.Text = 'ELEVAÇÃO';
+            % Create AnalysisGrid
+            app.AnalysisGrid = uigridlayout(app.Document);
+            app.AnalysisGrid.ColumnWidth = {'1x'};
+            app.AnalysisGrid.RowHeight = {22, '1x'};
+            app.AnalysisGrid.RowSpacing = 5;
+            app.AnalysisGrid.Padding = [0 0 0 0];
+            app.AnalysisGrid.Layout.Row = 1;
+            app.AnalysisGrid.Layout.Column = 3;
+            app.AnalysisGrid.BackgroundColor = [1 1 1];
 
-            % Create general_ElevationRefresh
-            app.general_ElevationRefresh = uiimage(app.General_Grid);
-            app.general_ElevationRefresh.ImageClickedFcn = createCallbackFcn(app, @Elevation_ParameterValueChanged, true);
-            app.general_ElevationRefresh.Visible = 'off';
-            app.general_ElevationRefresh.Layout.Row = 5;
-            app.general_ElevationRefresh.Layout.Column = 4;
-            app.general_ElevationRefresh.VerticalAlignment = 'bottom';
-            app.general_ElevationRefresh.ImageSource = 'Refresh_18.png';
+            % Create AnalysisTitle
+            app.AnalysisTitle = uilabel(app.AnalysisGrid);
+            app.AnalysisTitle.VerticalAlignment = 'bottom';
+            app.AnalysisTitle.FontSize = 10;
+            app.AnalysisTitle.Layout.Row = 1;
+            app.AnalysisTitle.Layout.Column = 1;
+            app.AnalysisTitle.Text = 'ANÁLISE';
 
-            % Create general_ElevationPanel
-            app.general_ElevationPanel = uipanel(app.General_Grid);
-            app.general_ElevationPanel.AutoResizeChildren = 'off';
-            app.general_ElevationPanel.Layout.Row = 6;
-            app.general_ElevationPanel.Layout.Column = [3 4];
+            % Create AnalysisPanel
+            app.AnalysisPanel = uipanel(app.AnalysisGrid);
+            app.AnalysisPanel.Layout.Row = 2;
+            app.AnalysisPanel.Layout.Column = 1;
 
-            % Create general_ElevationGrid
-            app.general_ElevationGrid = uigridlayout(app.general_ElevationPanel);
-            app.general_ElevationGrid.ColumnWidth = {'1x', 70};
-            app.general_ElevationGrid.RowHeight = {17, 22, 42};
-            app.general_ElevationGrid.RowSpacing = 5;
-            app.general_ElevationGrid.Padding = [10 10 10 5];
-            app.general_ElevationGrid.BackgroundColor = [1 1 1];
+            % Create AnalysisPanelGrid
+            app.AnalysisPanelGrid = uigridlayout(app.AnalysisPanel);
+            app.AnalysisPanelGrid.ColumnWidth = {'1x'};
+            app.AnalysisPanelGrid.RowHeight = {17, '1x', 22, '1x'};
+            app.AnalysisPanelGrid.RowSpacing = 5;
+            app.AnalysisPanelGrid.Padding = [10 10 10 5];
+            app.AnalysisPanelGrid.BackgroundColor = [1 1 1];
 
-            % Create ElevationAPIServerLabel
-            app.ElevationAPIServerLabel = uilabel(app.general_ElevationGrid);
-            app.ElevationAPIServerLabel.VerticalAlignment = 'bottom';
-            app.ElevationAPIServerLabel.FontSize = 10;
-            app.ElevationAPIServerLabel.Layout.Row = 1;
-            app.ElevationAPIServerLabel.Layout.Column = 1;
-            app.ElevationAPIServerLabel.Text = 'Fonte:';
+            % Create MonitoringPlanLabel
+            app.MonitoringPlanLabel = uilabel(app.AnalysisPanelGrid);
+            app.MonitoringPlanLabel.VerticalAlignment = 'bottom';
+            app.MonitoringPlanLabel.FontSize = 10;
+            app.MonitoringPlanLabel.Layout.Row = 1;
+            app.MonitoringPlanLabel.Layout.Column = 1;
+            app.MonitoringPlanLabel.Text = 'PM-RNI';
 
-            % Create ElevationAPIServer
-            app.ElevationAPIServer = uidropdown(app.general_ElevationGrid);
-            app.ElevationAPIServer.Items = {'Open-Elevation', 'MathWorks WMS Server'};
-            app.ElevationAPIServer.ValueChangedFcn = createCallbackFcn(app, @Elevation_ParameterValueChanged, true);
-            app.ElevationAPIServer.FontSize = 11;
-            app.ElevationAPIServer.BackgroundColor = [1 1 1];
-            app.ElevationAPIServer.Layout.Row = 2;
-            app.ElevationAPIServer.Layout.Column = 1;
-            app.ElevationAPIServer.Value = 'MathWorks WMS Server';
+            % Create MonitoringPlanPanel
+            app.MonitoringPlanPanel = uipanel(app.AnalysisPanelGrid);
+            app.MonitoringPlanPanel.Layout.Row = 2;
+            app.MonitoringPlanPanel.Layout.Column = 1;
 
-            % Create ElevationNPointsLabel
-            app.ElevationNPointsLabel = uilabel(app.general_ElevationGrid);
-            app.ElevationNPointsLabel.VerticalAlignment = 'bottom';
-            app.ElevationNPointsLabel.FontSize = 10;
-            app.ElevationNPointsLabel.Layout.Row = 1;
-            app.ElevationNPointsLabel.Layout.Column = 2;
-            app.ElevationNPointsLabel.Text = 'Pontos enlace:';
+            % Create MonitoringPlanGrid
+            app.MonitoringPlanGrid = uigridlayout(app.MonitoringPlanPanel);
+            app.MonitoringPlanGrid.ColumnWidth = {190, 90, '1x'};
+            app.MonitoringPlanGrid.RowHeight = {22, 22, 22, '1x'};
+            app.MonitoringPlanGrid.RowSpacing = 5;
+            app.MonitoringPlanGrid.BackgroundColor = [1 1 1];
 
-            % Create ElevationNPoints
-            app.ElevationNPoints = uidropdown(app.general_ElevationGrid);
-            app.ElevationNPoints.Items = {'64', '128', '256', '512', '1024'};
-            app.ElevationNPoints.ValueChangedFcn = createCallbackFcn(app, @Elevation_ParameterValueChanged, true);
-            app.ElevationNPoints.FontSize = 11;
-            app.ElevationNPoints.BackgroundColor = [1 1 1];
-            app.ElevationNPoints.Layout.Row = 2;
-            app.ElevationNPoints.Layout.Column = 2;
-            app.ElevationNPoints.Value = '256';
+            % Create MonitoringPlanDistanceLabel
+            app.MonitoringPlanDistanceLabel = uilabel(app.MonitoringPlanGrid);
+            app.MonitoringPlanDistanceLabel.WordWrap = 'on';
+            app.MonitoringPlanDistanceLabel.FontSize = 10;
+            app.MonitoringPlanDistanceLabel.Layout.Row = 1;
+            app.MonitoringPlanDistanceLabel.Layout.Column = [1 2];
+            app.MonitoringPlanDistanceLabel.Text = {'Distância limite entre ponto de medição e '; 'a estação sob análise (m):'};
 
-            % Create ElevationForceSearch
-            app.ElevationForceSearch = uicheckbox(app.general_ElevationGrid);
-            app.ElevationForceSearch.ValueChangedFcn = createCallbackFcn(app, @Elevation_ParameterValueChanged, true);
-            app.ElevationForceSearch.Text = 'Força consulta ao servidor (ignorando eventual informação em cache).';
-            app.ElevationForceSearch.WordWrap = 'on';
-            app.ElevationForceSearch.FontSize = 11;
-            app.ElevationForceSearch.Layout.Row = 3;
-            app.ElevationForceSearch.Layout.Column = [1 2];
+            % Create MonitoringPlanDistance
+            app.MonitoringPlanDistance = uieditfield(app.MonitoringPlanGrid, 'numeric');
+            app.MonitoringPlanDistance.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
+            app.MonitoringPlanDistance.FontSize = 11;
+            app.MonitoringPlanDistance.Layout.Row = 1;
+            app.MonitoringPlanDistance.Layout.Column = 2;
+            app.MonitoringPlanDistance.Value = 200;
 
-            % Create APIFiscaliza_Grid
-            app.APIFiscaliza_Grid = uigridlayout(app.Document);
-            app.APIFiscaliza_Grid.ColumnWidth = {'1x', 20};
-            app.APIFiscaliza_Grid.RowHeight = {27, 5, 68, 15, 12, 5, '1x', 1};
-            app.APIFiscaliza_Grid.RowSpacing = 0;
-            app.APIFiscaliza_Grid.Padding = [0 0 0 0];
-            app.APIFiscaliza_Grid.Layout.Row = [1 2];
-            app.APIFiscaliza_Grid.Layout.Column = 3;
-            app.APIFiscaliza_Grid.BackgroundColor = [1 1 1];
+            % Create MonitoringPlanLevelLabel
+            app.MonitoringPlanLevelLabel = uilabel(app.MonitoringPlanGrid);
+            app.MonitoringPlanLevelLabel.WordWrap = 'on';
+            app.MonitoringPlanLevelLabel.FontSize = 10;
+            app.MonitoringPlanLevelLabel.Layout.Row = 2;
+            app.MonitoringPlanLevelLabel.Layout.Column = 1;
+            app.MonitoringPlanLevelLabel.Text = 'Nível de referência de campo elétrico: (V/m)';
 
-            % Create config_FiscalizaVersionLabel
-            app.config_FiscalizaVersionLabel = uilabel(app.APIFiscaliza_Grid);
-            app.config_FiscalizaVersionLabel.VerticalAlignment = 'bottom';
-            app.config_FiscalizaVersionLabel.FontSize = 10;
-            app.config_FiscalizaVersionLabel.Layout.Row = 1;
-            app.config_FiscalizaVersionLabel.Layout.Column = 1;
-            app.config_FiscalizaVersionLabel.Text = 'API FISCALIZA';
+            % Create MonitoringPlanLevel
+            app.MonitoringPlanLevel = uieditfield(app.MonitoringPlanGrid, 'numeric');
+            app.MonitoringPlanLevel.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
+            app.MonitoringPlanLevel.FontSize = 11;
+            app.MonitoringPlanLevel.Layout.Row = 2;
+            app.MonitoringPlanLevel.Layout.Column = 2;
+            app.MonitoringPlanLevel.Value = 14;
 
-            % Create config_FiscalizaVersion
-            app.config_FiscalizaVersion = uibuttongroup(app.APIFiscaliza_Grid);
-            app.config_FiscalizaVersion.SelectionChangedFcn = createCallbackFcn(app, @config_FiscalizaMode, true);
-            app.config_FiscalizaVersion.BackgroundColor = [1 1 1];
-            app.config_FiscalizaVersion.Layout.Row = 3;
-            app.config_FiscalizaVersion.Layout.Column = [1 2];
+            % Create MonitoringPlanReasonsListLabel
+            app.MonitoringPlanReasonsListLabel = uilabel(app.MonitoringPlanGrid);
+            app.MonitoringPlanReasonsListLabel.VerticalAlignment = 'bottom';
+            app.MonitoringPlanReasonsListLabel.FontSize = 10;
+            app.MonitoringPlanReasonsListLabel.Layout.Row = 3;
+            app.MonitoringPlanReasonsListLabel.Layout.Column = 1;
+            app.MonitoringPlanReasonsListLabel.Text = 'Lista de jutificativas:';
 
-            % Create config_FiscalizaPD
-            app.config_FiscalizaPD = uiradiobutton(app.config_FiscalizaVersion);
-            app.config_FiscalizaPD.Text = 'FISCALIZA PRODUÇÃO';
-            app.config_FiscalizaPD.FontSize = 11;
-            app.config_FiscalizaPD.Position = [10 36 146 22];
+            % Create MonitoringPlanReasonsList
+            app.MonitoringPlanReasonsList = uilistbox(app.MonitoringPlanGrid);
+            app.MonitoringPlanReasonsList.Items = {''};
+            app.MonitoringPlanReasonsList.FontSize = 11;
+            app.MonitoringPlanReasonsList.Layout.Row = 4;
+            app.MonitoringPlanReasonsList.Layout.Column = [1 3];
+            app.MonitoringPlanReasonsList.Value = '';
 
-            % Create config_FiscalizaHM
-            app.config_FiscalizaHM = uiradiobutton(app.config_FiscalizaVersion);
-            app.config_FiscalizaHM.Text = 'FISCALIZA <font style="color: red;">HOMOLOGAÇÃO</font> (versão destinada a testes)';
-            app.config_FiscalizaHM.FontSize = 11;
-            app.config_FiscalizaHM.Interpreter = 'html';
-            app.config_FiscalizaHM.Position = [10 10 310 22];
-            app.config_FiscalizaHM.Value = true;
+            % Create ExternalRequestLabel
+            app.ExternalRequestLabel = uilabel(app.AnalysisPanelGrid);
+            app.ExternalRequestLabel.VerticalAlignment = 'bottom';
+            app.ExternalRequestLabel.FontSize = 10;
+            app.ExternalRequestLabel.Layout.Row = 3;
+            app.ExternalRequestLabel.Layout.Column = 1;
+            app.ExternalRequestLabel.Text = 'DEMANDA EXTERNA';
 
-            % Create Folders_Grid
-            app.Folders_Grid = uigridlayout(app.Document);
-            app.Folders_Grid.ColumnWidth = {'1x'};
-            app.Folders_Grid.RowHeight = {27, 5, '1x', 1};
-            app.Folders_Grid.RowSpacing = 0;
-            app.Folders_Grid.Padding = [0 0 0 0];
-            app.Folders_Grid.Layout.Row = [1 2];
-            app.Folders_Grid.Layout.Column = 4;
-            app.Folders_Grid.BackgroundColor = [1 1 1];
+            % Create ExternalRequestPanel
+            app.ExternalRequestPanel = uipanel(app.AnalysisPanelGrid);
+            app.ExternalRequestPanel.Layout.Row = 4;
+            app.ExternalRequestPanel.Layout.Column = 1;
 
-            % Create config_FolderMapLabel
-            app.config_FolderMapLabel = uilabel(app.Folders_Grid);
-            app.config_FolderMapLabel.VerticalAlignment = 'bottom';
-            app.config_FolderMapLabel.FontSize = 10;
-            app.config_FolderMapLabel.Layout.Row = 1;
-            app.config_FolderMapLabel.Layout.Column = 1;
-            app.config_FolderMapLabel.Text = 'MAPEAMENTO DE PASTAS';
+            % Create ExternalRequestGrid
+            app.ExternalRequestGrid = uigridlayout(app.ExternalRequestPanel);
+            app.ExternalRequestGrid.ColumnWidth = {190, 90, '1x'};
+            app.ExternalRequestGrid.RowHeight = {22, 22};
+            app.ExternalRequestGrid.RowSpacing = 5;
+            app.ExternalRequestGrid.BackgroundColor = [1 1 1];
 
-            % Create config_FolderMapPanel
-            app.config_FolderMapPanel = uipanel(app.Folders_Grid);
-            app.config_FolderMapPanel.AutoResizeChildren = 'off';
-            app.config_FolderMapPanel.Layout.Row = 3;
-            app.config_FolderMapPanel.Layout.Column = 1;
+            % Create ExternalRequestDistanceLabel
+            app.ExternalRequestDistanceLabel = uilabel(app.ExternalRequestGrid);
+            app.ExternalRequestDistanceLabel.WordWrap = 'on';
+            app.ExternalRequestDistanceLabel.FontSize = 10;
+            app.ExternalRequestDistanceLabel.Layout.Row = 1;
+            app.ExternalRequestDistanceLabel.Layout.Column = [1 2];
+            app.ExternalRequestDistanceLabel.Text = {'Distância limite entre ponto de medição e '; 'a estação sob análise (m):'};
 
-            % Create config_FolderMapGrid
-            app.config_FolderMapGrid = uigridlayout(app.config_FolderMapPanel);
-            app.config_FolderMapGrid.ColumnWidth = {'1x', 20};
-            app.config_FolderMapGrid.RowHeight = {17, 22, 17, 22, 17, 22, 17, 22, 17, 22, '1x'};
-            app.config_FolderMapGrid.ColumnSpacing = 5;
-            app.config_FolderMapGrid.RowSpacing = 5;
-            app.config_FolderMapGrid.BackgroundColor = [1 1 1];
+            % Create ExternalRequestDistance
+            app.ExternalRequestDistance = uieditfield(app.ExternalRequestGrid, 'numeric');
+            app.ExternalRequestDistance.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
+            app.ExternalRequestDistance.FontSize = 11;
+            app.ExternalRequestDistance.Layout.Row = 1;
+            app.ExternalRequestDistance.Layout.Column = 2;
+            app.ExternalRequestDistance.Value = 200;
 
-            % Create config_Folder_DataHubGETLabel
-            app.config_Folder_DataHubGETLabel = uilabel(app.config_FolderMapGrid);
-            app.config_Folder_DataHubGETLabel.VerticalAlignment = 'bottom';
-            app.config_Folder_DataHubGETLabel.FontSize = 10;
-            app.config_Folder_DataHubGETLabel.Layout.Row = 1;
-            app.config_Folder_DataHubGETLabel.Layout.Column = 1;
-            app.config_Folder_DataHubGETLabel.Text = 'DataHub - GET:';
+            % Create ExternalRequestLevelLabel
+            app.ExternalRequestLevelLabel = uilabel(app.ExternalRequestGrid);
+            app.ExternalRequestLevelLabel.WordWrap = 'on';
+            app.ExternalRequestLevelLabel.FontSize = 10;
+            app.ExternalRequestLevelLabel.Layout.Row = 2;
+            app.ExternalRequestLevelLabel.Layout.Column = 1;
+            app.ExternalRequestLevelLabel.Text = 'Nível de referência de campo elétrico: (V/m)';
 
-            % Create config_Folder_DataHubGET
-            app.config_Folder_DataHubGET = uieditfield(app.config_FolderMapGrid, 'text');
-            app.config_Folder_DataHubGET.Editable = 'off';
-            app.config_Folder_DataHubGET.FontSize = 11;
-            app.config_Folder_DataHubGET.Layout.Row = 2;
-            app.config_Folder_DataHubGET.Layout.Column = 1;
+            % Create ExternalRequestLevel
+            app.ExternalRequestLevel = uieditfield(app.ExternalRequestGrid, 'numeric');
+            app.ExternalRequestLevel.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
+            app.ExternalRequestLevel.FontSize = 11;
+            app.ExternalRequestLevel.Layout.Row = 2;
+            app.ExternalRequestLevel.Layout.Column = 2;
+            app.ExternalRequestLevel.Value = 14;
 
-            % Create config_Folder_DataHubGETButton
-            app.config_Folder_DataHubGETButton = uiimage(app.config_FolderMapGrid);
-            app.config_Folder_DataHubGETButton.ImageClickedFcn = createCallbackFcn(app, @config_getFolder, true);
-            app.config_Folder_DataHubGETButton.Tag = 'DataHub_GET';
-            app.config_Folder_DataHubGETButton.Layout.Row = 2;
-            app.config_Folder_DataHubGETButton.Layout.Column = 2;
-            app.config_Folder_DataHubGETButton.ImageSource = 'OpenFile_36x36.png';
+            % Create CustomPlotGrid
+            app.CustomPlotGrid = uigridlayout(app.Document);
+            app.CustomPlotGrid.ColumnWidth = {'1x', 16};
+            app.CustomPlotGrid.RowHeight = {22, '1x'};
+            app.CustomPlotGrid.RowSpacing = 5;
+            app.CustomPlotGrid.Padding = [0 0 0 0];
+            app.CustomPlotGrid.Layout.Row = 1;
+            app.CustomPlotGrid.Layout.Column = 4;
+            app.CustomPlotGrid.BackgroundColor = [1 1 1];
 
-            % Create config_Folder_DataHubPOSTLabel
-            app.config_Folder_DataHubPOSTLabel = uilabel(app.config_FolderMapGrid);
-            app.config_Folder_DataHubPOSTLabel.VerticalAlignment = 'bottom';
-            app.config_Folder_DataHubPOSTLabel.FontSize = 10;
-            app.config_Folder_DataHubPOSTLabel.Layout.Row = 3;
-            app.config_Folder_DataHubPOSTLabel.Layout.Column = 1;
-            app.config_Folder_DataHubPOSTLabel.Text = 'DataHub - POST:';
+            % Create CustomPlotTitle
+            app.CustomPlotTitle = uilabel(app.CustomPlotGrid);
+            app.CustomPlotTitle.VerticalAlignment = 'bottom';
+            app.CustomPlotTitle.FontSize = 10;
+            app.CustomPlotTitle.Layout.Row = 1;
+            app.CustomPlotTitle.Layout.Column = 1;
+            app.CustomPlotTitle.Text = 'CUSTOMIZAÇÃO DO PLOT';
 
-            % Create config_Folder_DataHubPOST
-            app.config_Folder_DataHubPOST = uieditfield(app.config_FolderMapGrid, 'text');
-            app.config_Folder_DataHubPOST.Editable = 'off';
-            app.config_Folder_DataHubPOST.FontSize = 11;
-            app.config_Folder_DataHubPOST.Layout.Row = 4;
-            app.config_Folder_DataHubPOST.Layout.Column = 1;
+            % Create CustomPlotPanel
+            app.CustomPlotPanel = uipanel(app.CustomPlotGrid);
+            app.CustomPlotPanel.Layout.Row = 2;
+            app.CustomPlotPanel.Layout.Column = [1 2];
 
-            % Create config_Folder_DataHubPOSTButton
-            app.config_Folder_DataHubPOSTButton = uiimage(app.config_FolderMapGrid);
-            app.config_Folder_DataHubPOSTButton.ImageClickedFcn = createCallbackFcn(app, @config_getFolder, true);
-            app.config_Folder_DataHubPOSTButton.Tag = 'DataHub_POST';
-            app.config_Folder_DataHubPOSTButton.Layout.Row = 4;
-            app.config_Folder_DataHubPOSTButton.Layout.Column = 2;
-            app.config_Folder_DataHubPOSTButton.ImageSource = 'OpenFile_36x36.png';
+            % Create CustomPlotPanelGrid
+            app.CustomPlotPanelGrid = uigridlayout(app.CustomPlotPanel);
+            app.CustomPlotPanelGrid.ColumnWidth = {190, 36, 44, 90, '1x'};
+            app.CustomPlotPanelGrid.RowHeight = {22, 22, 22, 22, 22, 22, 22, 22, 1, 22, 22, 22};
+            app.CustomPlotPanelGrid.RowSpacing = 5;
+            app.CustomPlotPanelGrid.BackgroundColor = [1 1 1];
 
-            % Create config_Folder_pythonPathLabel
-            app.config_Folder_pythonPathLabel = uilabel(app.config_FolderMapGrid);
-            app.config_Folder_pythonPathLabel.VerticalAlignment = 'bottom';
-            app.config_Folder_pythonPathLabel.FontSize = 10;
-            app.config_Folder_pythonPathLabel.Layout.Row = 5;
-            app.config_Folder_pythonPathLabel.Layout.Column = 1;
-            app.config_Folder_pythonPathLabel.Text = 'Pasta do ambiente virtual Python (lib fiscaliza):';
+            % Create BasemapLabel
+            app.BasemapLabel = uilabel(app.CustomPlotPanelGrid);
+            app.BasemapLabel.FontSize = 10;
+            app.BasemapLabel.Layout.Row = 1;
+            app.BasemapLabel.Layout.Column = 1;
+            app.BasemapLabel.Text = 'Basemap:';
 
-            % Create config_Folder_pythonPath
-            app.config_Folder_pythonPath = uieditfield(app.config_FolderMapGrid, 'text');
-            app.config_Folder_pythonPath.Editable = 'off';
-            app.config_Folder_pythonPath.FontSize = 11;
-            app.config_Folder_pythonPath.Layout.Row = 6;
-            app.config_Folder_pythonPath.Layout.Column = 1;
+            % Create Basemap
+            app.Basemap = uidropdown(app.CustomPlotPanelGrid);
+            app.Basemap.Items = {'darkwater', 'streets-light', 'streets-dark', 'satellite', 'topographic', 'grayterrain'};
+            app.Basemap.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.Basemap.FontSize = 11;
+            app.Basemap.BackgroundColor = [1 1 1];
+            app.Basemap.Layout.Row = 1;
+            app.Basemap.Layout.Column = [2 4];
+            app.Basemap.Value = 'streets-light';
 
-            % Create config_Folder_pythonPathButton
-            app.config_Folder_pythonPathButton = uiimage(app.config_FolderMapGrid);
-            app.config_Folder_pythonPathButton.ImageClickedFcn = createCallbackFcn(app, @config_getFolder, true);
-            app.config_Folder_pythonPathButton.Tag = 'pythonPath';
-            app.config_Folder_pythonPathButton.Layout.Row = 6;
-            app.config_Folder_pythonPathButton.Layout.Column = 2;
-            app.config_Folder_pythonPathButton.ImageSource = 'OpenFile_36x36.png';
+            % Create ColormapLabel
+            app.ColormapLabel = uilabel(app.CustomPlotPanelGrid);
+            app.ColormapLabel.FontSize = 10;
+            app.ColormapLabel.Layout.Row = 2;
+            app.ColormapLabel.Layout.Column = 1;
+            app.ColormapLabel.Text = 'Mapa de cor:';
 
-            % Create config_Folder_userPathLabel
-            app.config_Folder_userPathLabel = uilabel(app.config_FolderMapGrid);
-            app.config_Folder_userPathLabel.VerticalAlignment = 'bottom';
-            app.config_Folder_userPathLabel.FontSize = 10;
-            app.config_Folder_userPathLabel.Layout.Row = 7;
-            app.config_Folder_userPathLabel.Layout.Column = 1;
-            app.config_Folder_userPathLabel.Text = 'Pasta do usuário:';
+            % Create Colormap
+            app.Colormap = uidropdown(app.CustomPlotPanelGrid);
+            app.Colormap.Items = {'winter', 'parula', 'turbo', 'gray', 'hot', 'jet', 'summer'};
+            app.Colormap.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.Colormap.FontSize = 11;
+            app.Colormap.BackgroundColor = [1 1 1];
+            app.Colormap.Layout.Row = 2;
+            app.Colormap.Layout.Column = [2 4];
+            app.Colormap.Value = 'winter';
 
-            % Create config_Folder_userPath
-            app.config_Folder_userPath = uieditfield(app.config_FolderMapGrid, 'text');
-            app.config_Folder_userPath.Editable = 'off';
-            app.config_Folder_userPath.FontSize = 11;
-            app.config_Folder_userPath.Layout.Row = 8;
-            app.config_Folder_userPath.Layout.Column = 1;
+            % Create ColorbarLabel
+            app.ColorbarLabel = uilabel(app.CustomPlotPanelGrid);
+            app.ColorbarLabel.FontSize = 10;
+            app.ColorbarLabel.Layout.Row = 3;
+            app.ColorbarLabel.Layout.Column = 1;
+            app.ColorbarLabel.Text = 'Legenda de cor:';
 
-            % Create config_Folder_userPathButton
-            app.config_Folder_userPathButton = uiimage(app.config_FolderMapGrid);
-            app.config_Folder_userPathButton.ImageClickedFcn = createCallbackFcn(app, @config_getFolder, true);
-            app.config_Folder_userPathButton.Tag = 'userPath';
-            app.config_Folder_userPathButton.Layout.Row = 8;
-            app.config_Folder_userPathButton.Layout.Column = 2;
-            app.config_Folder_userPathButton.ImageSource = 'OpenFile_36x36.png';
+            % Create Colorbar
+            app.Colorbar = uidropdown(app.CustomPlotPanelGrid);
+            app.Colorbar.Items = {'off', 'east', 'eastoutside', 'south', 'southoutside'};
+            app.Colorbar.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.Colorbar.FontSize = 11;
+            app.Colorbar.BackgroundColor = [1 1 1];
+            app.Colorbar.Layout.Row = 3;
+            app.Colorbar.Layout.Column = [2 4];
+            app.Colorbar.Value = 'off';
 
-            % Create config_Folder_tempPathLabel
-            app.config_Folder_tempPathLabel = uilabel(app.config_FolderMapGrid);
-            app.config_Folder_tempPathLabel.VerticalAlignment = 'bottom';
-            app.config_Folder_tempPathLabel.FontSize = 10;
-            app.config_Folder_tempPathLabel.Layout.Row = 9;
-            app.config_Folder_tempPathLabel.Layout.Column = 1;
-            app.config_Folder_tempPathLabel.Text = 'Pasta temporária:';
+            % Create StationsLabel
+            app.StationsLabel = uilabel(app.CustomPlotPanelGrid);
+            app.StationsLabel.WordWrap = 'on';
+            app.StationsLabel.FontSize = 10;
+            app.StationsLabel.Layout.Row = 4;
+            app.StationsLabel.Layout.Column = [1 2];
+            app.StationsLabel.Text = 'Estações de referência:';
 
-            % Create config_Folder_tempPath
-            app.config_Folder_tempPath = uieditfield(app.config_FolderMapGrid, 'text');
-            app.config_Folder_tempPath.Editable = 'off';
-            app.config_Folder_tempPath.FontSize = 11;
-            app.config_Folder_tempPath.Layout.Row = 10;
-            app.config_Folder_tempPath.Layout.Column = 1;
+            % Create StationsColor
+            app.StationsColor = uicolorpicker(app.CustomPlotPanelGrid);
+            app.StationsColor.Value = [0 1 1];
+            app.StationsColor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ColorValueChanged, true);
+            app.StationsColor.Layout.Row = 4;
+            app.StationsColor.Layout.Column = 2;
+            app.StationsColor.BackgroundColor = [1 1 1];
+
+            % Create StationsSize
+            app.StationsSize = uislider(app.CustomPlotPanelGrid);
+            app.StationsSize.Limits = [1 36];
+            app.StationsSize.MajorTicks = [];
+            app.StationsSize.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.StationsSize.MinorTicks = [];
+            app.StationsSize.FontSize = 10;
+            app.StationsSize.Tooltip = {'Tamanho do marcador'};
+            app.StationsSize.Layout.Row = 4;
+            app.StationsSize.Layout.Column = [3 4];
+            app.StationsSize.Value = 1;
+
+            % Create SelectedStationLabel
+            app.SelectedStationLabel = uilabel(app.CustomPlotPanelGrid);
+            app.SelectedStationLabel.WordWrap = 'on';
+            app.SelectedStationLabel.FontSize = 10;
+            app.SelectedStationLabel.Layout.Row = 5;
+            app.SelectedStationLabel.Layout.Column = 1;
+            app.SelectedStationLabel.Text = 'Estação sob análise:';
+
+            % Create SelectedStationColor
+            app.SelectedStationColor = uicolorpicker(app.CustomPlotPanelGrid);
+            app.SelectedStationColor.Value = [0.7882 0.2784 0.3412];
+            app.SelectedStationColor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ColorValueChanged, true);
+            app.SelectedStationColor.Layout.Row = 5;
+            app.SelectedStationColor.Layout.Column = 2;
+            app.SelectedStationColor.BackgroundColor = [1 1 1];
+
+            % Create SelectedStationSize
+            app.SelectedStationSize = uislider(app.CustomPlotPanelGrid);
+            app.SelectedStationSize.Limits = [1 36];
+            app.SelectedStationSize.MajorTicks = [];
+            app.SelectedStationSize.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.SelectedStationSize.MinorTicks = [];
+            app.SelectedStationSize.FontSize = 10;
+            app.SelectedStationSize.Tooltip = {'Tamanho do marcador'};
+            app.SelectedStationSize.Layout.Row = 5;
+            app.SelectedStationSize.Layout.Column = [3 4];
+            app.SelectedStationSize.Value = 1;
+
+            % Create PeakLabel
+            app.PeakLabel = uilabel(app.CustomPlotPanelGrid);
+            app.PeakLabel.WordWrap = 'on';
+            app.PeakLabel.FontSize = 10;
+            app.PeakLabel.Layout.Row = 6;
+            app.PeakLabel.Layout.Column = 1;
+            app.PeakLabel.Text = 'Pico em torno da estação:';
+
+            % Create PeakColor
+            app.PeakColor = uicolorpicker(app.CustomPlotPanelGrid);
+            app.PeakColor.Value = [0.7882 0.2784 0.3373];
+            app.PeakColor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ColorValueChanged, true);
+            app.PeakColor.Layout.Row = 6;
+            app.PeakColor.Layout.Column = 2;
+            app.PeakColor.BackgroundColor = [1 1 1];
+
+            % Create PeakSize
+            app.PeakSize = uislider(app.CustomPlotPanelGrid);
+            app.PeakSize.Limits = [1 36];
+            app.PeakSize.MajorTicks = [];
+            app.PeakSize.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.PeakSize.MinorTicks = [];
+            app.PeakSize.FontSize = 10;
+            app.PeakSize.Tooltip = {'Tamanho do marcador'};
+            app.PeakSize.Layout.Row = 6;
+            app.PeakSize.Layout.Column = [3 4];
+            app.PeakSize.Value = 1;
+
+            % Create CircleColorLabel
+            app.CircleColorLabel = uilabel(app.CustomPlotPanelGrid);
+            app.CircleColorLabel.WordWrap = 'on';
+            app.CircleColorLabel.FontSize = 10;
+            app.CircleColorLabel.Layout.Row = 7;
+            app.CircleColorLabel.Layout.Column = 1;
+            app.CircleColorLabel.Text = {'Região circular em torno da estação: '; '(cor)'};
+
+            % Create CircleColor
+            app.CircleColor = uidropdown(app.CustomPlotPanelGrid);
+            app.CircleColor.Items = {'black', 'blue', 'cyan', 'green', 'magenta', 'red', 'white', 'yellow'};
+            app.CircleColor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_CircleColorValueChanged, true);
+            app.CircleColor.FontSize = 11;
+            app.CircleColor.BackgroundColor = [1 1 1];
+            app.CircleColor.Layout.Row = 7;
+            app.CircleColor.Layout.Column = [2 4];
+            app.CircleColor.Value = 'black';
+
+            % Create CircleColorAlphaLabel
+            app.CircleColorAlphaLabel = uilabel(app.CustomPlotPanelGrid);
+            app.CircleColorAlphaLabel.WordWrap = 'on';
+            app.CircleColorAlphaLabel.FontSize = 10;
+            app.CircleColorAlphaLabel.Layout.Row = 8;
+            app.CircleColorAlphaLabel.Layout.Column = 1;
+            app.CircleColorAlphaLabel.Text = {'Região circular em torno da estação: '; '(transparência da face e borda)'};
+
+            % Create CircleFaceAlpha
+            app.CircleFaceAlpha = uispinner(app.CustomPlotPanelGrid);
+            app.CircleFaceAlpha.Step = 0.05;
+            app.CircleFaceAlpha.Limits = [0 1];
+            app.CircleFaceAlpha.ValueDisplayFormat = '%.2f';
+            app.CircleFaceAlpha.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.CircleFaceAlpha.FontSize = 11;
+            app.CircleFaceAlpha.Layout.Row = 8;
+            app.CircleFaceAlpha.Layout.Column = [2 3];
+
+            % Create CircleEdgeAlpha
+            app.CircleEdgeAlpha = uispinner(app.CustomPlotPanelGrid);
+            app.CircleEdgeAlpha.Step = 0.05;
+            app.CircleEdgeAlpha.Limits = [0 1];
+            app.CircleEdgeAlpha.ValueDisplayFormat = '%.2f';
+            app.CircleEdgeAlpha.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.CircleEdgeAlpha.FontSize = 11;
+            app.CircleEdgeAlpha.Layout.Row = 8;
+            app.CircleEdgeAlpha.Layout.Column = 4;
+
+            % Create AutomaticZoom
+            app.AutomaticZoom = uicheckbox(app.CustomPlotPanelGrid);
+            app.AutomaticZoom.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.AutomaticZoom.Text = 'Habilitar zoom automático em torno da estação sob análise.';
+            app.AutomaticZoom.FontSize = 11;
+            app.AutomaticZoom.Layout.Row = 10;
+            app.AutomaticZoom.Layout.Column = [1 5];
+
+            % Create AutomaticZoomFactorLabel
+            app.AutomaticZoomFactorLabel = uilabel(app.CustomPlotPanelGrid);
+            app.AutomaticZoomFactorLabel.FontSize = 10;
+            app.AutomaticZoomFactorLabel.Layout.Row = 11;
+            app.AutomaticZoomFactorLabel.Layout.Column = 1;
+            app.AutomaticZoomFactorLabel.Text = {'Fator do zoom: '; '(distância referência)'};
+
+            % Create AutomaticZoomFactor
+            app.AutomaticZoomFactor = uispinner(app.CustomPlotPanelGrid);
+            app.AutomaticZoomFactor.Limits = [1 10];
+            app.AutomaticZoomFactor.RoundFractionalValues = 'on';
+            app.AutomaticZoomFactor.ValueDisplayFormat = '%d';
+            app.AutomaticZoomFactor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.AutomaticZoomFactor.FontSize = 11;
+            app.AutomaticZoomFactor.Enable = 'off';
+            app.AutomaticZoomFactor.Layout.Row = 11;
+            app.AutomaticZoomFactor.Layout.Column = [2 3];
+            app.AutomaticZoomFactor.Value = 1;
+
+            % Create FolderGrid
+            app.FolderGrid = uigridlayout(app.Document);
+            app.FolderGrid.ColumnWidth = {'1x'};
+            app.FolderGrid.RowHeight = {22, 5, '1x', 1};
+            app.FolderGrid.RowSpacing = 0;
+            app.FolderGrid.Padding = [0 0 0 0];
+            app.FolderGrid.Layout.Row = 1;
+            app.FolderGrid.Layout.Column = 5;
+            app.FolderGrid.BackgroundColor = [1 1 1];
+
+            % Create FolderTitle
+            app.FolderTitle = uilabel(app.FolderGrid);
+            app.FolderTitle.VerticalAlignment = 'bottom';
+            app.FolderTitle.FontSize = 10;
+            app.FolderTitle.Layout.Row = 1;
+            app.FolderTitle.Layout.Column = 1;
+            app.FolderTitle.Text = 'MAPEAMENTO DE PASTAS';
+
+            % Create FolderPanel
+            app.FolderPanel = uipanel(app.FolderGrid);
+            app.FolderPanel.AutoResizeChildren = 'off';
+            app.FolderPanel.Layout.Row = 3;
+            app.FolderPanel.Layout.Column = 1;
+
+            % Create FolderPanelGrid
+            app.FolderPanelGrid = uigridlayout(app.FolderPanel);
+            app.FolderPanelGrid.ColumnWidth = {'1x', 20};
+            app.FolderPanelGrid.RowHeight = {17, 22, 17, 22, '1x'};
+            app.FolderPanelGrid.ColumnSpacing = 5;
+            app.FolderPanelGrid.RowSpacing = 5;
+            app.FolderPanelGrid.BackgroundColor = [1 1 1];
+
+            % Create userPathLabel
+            app.userPathLabel = uilabel(app.FolderPanelGrid);
+            app.userPathLabel.VerticalAlignment = 'bottom';
+            app.userPathLabel.FontSize = 10;
+            app.userPathLabel.Layout.Row = 1;
+            app.userPathLabel.Layout.Column = 1;
+            app.userPathLabel.Text = 'Pasta do usuário:';
+
+            % Create userPath
+            app.userPath = uieditfield(app.FolderPanelGrid, 'text');
+            app.userPath.Editable = 'off';
+            app.userPath.FontSize = 11;
+            app.userPath.Layout.Row = 2;
+            app.userPath.Layout.Column = 1;
+
+            % Create userPathButton
+            app.userPathButton = uiimage(app.FolderPanelGrid);
+            app.userPathButton.ImageClickedFcn = createCallbackFcn(app, @Folder_ButtonPushed, true);
+            app.userPathButton.Tag = 'userPath';
+            app.userPathButton.Layout.Row = 2;
+            app.userPathButton.Layout.Column = 2;
+            app.userPathButton.ImageSource = 'OpenFile_36x36.png';
+
+            % Create tempPathLabel
+            app.tempPathLabel = uilabel(app.FolderPanelGrid);
+            app.tempPathLabel.VerticalAlignment = 'bottom';
+            app.tempPathLabel.FontSize = 10;
+            app.tempPathLabel.Layout.Row = 3;
+            app.tempPathLabel.Layout.Column = 1;
+            app.tempPathLabel.Text = 'Pasta temporária:';
+
+            % Create tempPath
+            app.tempPath = uieditfield(app.FolderPanelGrid, 'text');
+            app.tempPath.Editable = 'off';
+            app.tempPath.FontSize = 11;
+            app.tempPath.Layout.Row = 4;
+            app.tempPath.Layout.Column = 1;
+
+            % Create Toolbar
+            app.Toolbar = uigridlayout(app.GridLayout);
+            app.Toolbar.ColumnWidth = {22, 22, '1x', 22};
+            app.Toolbar.RowHeight = {4, 17, '1x'};
+            app.Toolbar.ColumnSpacing = 5;
+            app.Toolbar.RowSpacing = 0;
+            app.Toolbar.Padding = [0 5 5 5];
+            app.Toolbar.Layout.Row = 2;
+            app.Toolbar.Layout.Column = 1;
+            app.Toolbar.BackgroundColor = [0.9412 0.9412 0.9412];
 
             % Create tool_LeftPanelVisibility
-            app.tool_LeftPanelVisibility = uiimage(app.GridLayout);
+            app.tool_LeftPanelVisibility = uiimage(app.Toolbar);
             app.tool_LeftPanelVisibility.ImageClickedFcn = createCallbackFcn(app, @tool_LeftPanelVisibilityClicked, true);
-            app.tool_LeftPanelVisibility.Layout.Row = 3;
+            app.tool_LeftPanelVisibility.Layout.Row = 2;
             app.tool_LeftPanelVisibility.Layout.Column = 1;
             app.tool_LeftPanelVisibility.ImageSource = 'ArrowLeft_32.png';
 
-            % Create tool_FiscalizaButton
-            app.tool_FiscalizaButton = uiimage(app.GridLayout);
-            app.tool_FiscalizaButton.ImageClickedFcn = createCallbackFcn(app, @tool_FiscalizaButtonPushed, true);
-            app.tool_FiscalizaButton.Enable = 'off';
-            app.tool_FiscalizaButton.Tooltip = {'Atualiza biblioteca fiscaliza'};
-            app.tool_FiscalizaButton.Layout.Row = 3;
-            app.tool_FiscalizaButton.Layout.Column = 2;
-            app.tool_FiscalizaButton.ImageSource = 'Redmine_32.png';
-
             % Create tool_RFDataHubButton
-            app.tool_RFDataHubButton = uiimage(app.GridLayout);
+            app.tool_RFDataHubButton = uiimage(app.Toolbar);
             app.tool_RFDataHubButton.ImageClickedFcn = createCallbackFcn(app, @tool_RFDataHubButtonPushed, true);
             app.tool_RFDataHubButton.Enable = 'off';
             app.tool_RFDataHubButton.Tooltip = {'Atualiza RFDataHub'};
-            app.tool_RFDataHubButton.Layout.Row = 3;
-            app.tool_RFDataHubButton.Layout.Column = 3;
+            app.tool_RFDataHubButton.Layout.Row = 2;
+            app.tool_RFDataHubButton.Layout.Column = 2;
             app.tool_RFDataHubButton.ImageSource = 'mosaic_32.png';
 
             % Create jsBackDoor
-            app.jsBackDoor = uihtml(app.GridLayout);
-            app.jsBackDoor.Layout.Row = 3;
-            app.jsBackDoor.Layout.Column = 5;
-
-            % Create Panel
-            app.Panel = uipanel(app.UIFigure);
-            app.Panel.AutoResizeChildren = 'off';
-            app.Panel.Title = 'Panel';
-            app.Panel.Position = [1331 250 510 551];
-
-            % Create Tab3_Grid
-            app.Tab3_Grid = uigridlayout(app.Panel);
-            app.Tab3_Grid.ColumnWidth = {'1x', 16};
-            app.Tab3_Grid.RowHeight = {22, 112, 22, 72, 22, '1x'};
-            app.Tab3_Grid.ColumnSpacing = 5;
-            app.Tab3_Grid.RowSpacing = 5;
-            app.Tab3_Grid.Padding = [0 0 0 0];
-            app.Tab3_Grid.BackgroundColor = [1 1 1];
-
-            % Create config_geoAxesLabel
-            app.config_geoAxesLabel = uilabel(app.Tab3_Grid);
-            app.config_geoAxesLabel.VerticalAlignment = 'bottom';
-            app.config_geoAxesLabel.WordWrap = 'on';
-            app.config_geoAxesLabel.FontSize = 10;
-            app.config_geoAxesLabel.Layout.Row = 1;
-            app.config_geoAxesLabel.Layout.Column = [1 2];
-            app.config_geoAxesLabel.Text = 'MAPA';
-
-            % Create config_Refresh
-            app.config_Refresh = uiimage(app.Tab3_Grid);
-            app.config_Refresh.Visible = 'off';
-            app.config_Refresh.Tooltip = {'Volta à configuração inicial'};
-            app.config_Refresh.Layout.Row = 1;
-            app.config_Refresh.Layout.Column = 2;
-            app.config_Refresh.VerticalAlignment = 'bottom';
-            app.config_Refresh.ImageSource = 'Refresh_18.png';
-
-            % Create ANLISELabel
-            app.ANLISELabel = uilabel(app.Tab3_Grid);
-            app.ANLISELabel.VerticalAlignment = 'bottom';
-            app.ANLISELabel.FontSize = 10;
-            app.ANLISELabel.Layout.Row = 3;
-            app.ANLISELabel.Layout.Column = 1;
-            app.ANLISELabel.Text = 'ANÁLISE';
-
-            % Create misc_ElevationSourcePanel
-            app.misc_ElevationSourcePanel = uipanel(app.Tab3_Grid);
-            app.misc_ElevationSourcePanel.AutoResizeChildren = 'off';
-            app.misc_ElevationSourcePanel.Layout.Row = 4;
-            app.misc_ElevationSourcePanel.Layout.Column = [1 2];
-
-            % Create GridLayout8
-            app.GridLayout8 = uigridlayout(app.misc_ElevationSourcePanel);
-            app.GridLayout8.ColumnWidth = {'1x', 110};
-            app.GridLayout8.RowHeight = {22, 22};
-            app.GridLayout8.RowSpacing = 5;
-            app.GridLayout8.BackgroundColor = [1 1 1];
-
-            % Create DisMedicoesLabel
-            app.DisMedicoesLabel = uilabel(app.GridLayout8);
-            app.DisMedicoesLabel.WordWrap = 'on';
-            app.DisMedicoesLabel.FontSize = 10;
-            app.DisMedicoesLabel.Layout.Row = 1;
-            app.DisMedicoesLabel.Layout.Column = 1;
-            app.DisMedicoesLabel.Text = 'Distância limite entre ponto de medição e estação sob análise (m):';
-
-            % Create DistPARNILabel
-            app.DistPARNILabel = uilabel(app.GridLayout8);
-            app.DistPARNILabel.WordWrap = 'on';
-            app.DistPARNILabel.FontSize = 10;
-            app.DistPARNILabel.Layout.Row = 2;
-            app.DistPARNILabel.Layout.Column = 1;
-            app.DistPARNILabel.Text = 'Distância da estação (PA_RNI) (m):';
-
-            % Create EditFieldDistMedicoes
-            app.EditFieldDistMedicoes = uieditfield(app.GridLayout8, 'numeric');
-            app.EditFieldDistMedicoes.FontSize = 11;
-            app.EditFieldDistMedicoes.Layout.Row = 1;
-            app.EditFieldDistMedicoes.Layout.Column = 2;
-            app.EditFieldDistMedicoes.Value = 200;
-
-            % Create EditFieldDist_PARNI
-            app.EditFieldDist_PARNI = uieditfield(app.GridLayout8, 'numeric');
-            app.EditFieldDist_PARNI.FontSize = 11;
-            app.EditFieldDist_PARNI.Layout.Row = 2;
-            app.EditFieldDist_PARNI.Layout.Column = 2;
-            app.EditFieldDist_PARNI.Value = 200;
-
-            % Create config_FolderMapPanel_2
-            app.config_FolderMapPanel_2 = uipanel(app.Tab3_Grid);
-            app.config_FolderMapPanel_2.AutoResizeChildren = 'off';
-            app.config_FolderMapPanel_2.Layout.Row = 6;
-            app.config_FolderMapPanel_2.Layout.Column = [1 2];
-
-            % Create config_FolderMapGrid_2
-            app.config_FolderMapGrid_2 = uigridlayout(app.config_FolderMapPanel_2);
-            app.config_FolderMapGrid_2.ColumnWidth = {'1x', 20};
-            app.config_FolderMapGrid_2.RowHeight = {17, 22, 17, 22, 17, 22, 17, 22};
-            app.config_FolderMapGrid_2.ColumnSpacing = 5;
-            app.config_FolderMapGrid_2.RowSpacing = 5;
-            app.config_FolderMapGrid_2.Padding = [10 10 10 5];
-            app.config_FolderMapGrid_2.BackgroundColor = [1 1 1];
-
-            % Create config_Folder_DataHubGETLabel_2
-            app.config_Folder_DataHubGETLabel_2 = uilabel(app.config_FolderMapGrid_2);
-            app.config_Folder_DataHubGETLabel_2.VerticalAlignment = 'bottom';
-            app.config_Folder_DataHubGETLabel_2.FontSize = 10;
-            app.config_Folder_DataHubGETLabel_2.Layout.Row = 1;
-            app.config_Folder_DataHubGETLabel_2.Layout.Column = 1;
-            app.config_Folder_DataHubGETLabel_2.Text = 'DataHub - GET:';
-
-            % Create config_Folder_DataHubGET_2
-            app.config_Folder_DataHubGET_2 = uieditfield(app.config_FolderMapGrid_2, 'text');
-            app.config_Folder_DataHubGET_2.Editable = 'off';
-            app.config_Folder_DataHubGET_2.FontSize = 11;
-            app.config_Folder_DataHubGET_2.Layout.Row = 2;
-            app.config_Folder_DataHubGET_2.Layout.Column = 1;
-
-            % Create config_Folder_DataHubGETButton_2
-            app.config_Folder_DataHubGETButton_2 = uiimage(app.config_FolderMapGrid_2);
-            app.config_Folder_DataHubGETButton_2.Tag = 'DataHub_GET';
-            app.config_Folder_DataHubGETButton_2.Layout.Row = 2;
-            app.config_Folder_DataHubGETButton_2.Layout.Column = 2;
-            app.config_Folder_DataHubGETButton_2.ImageSource = 'OpenFile_36x36.png';
-
-            % Create config_Folder_DataHubPOSTLabel_2
-            app.config_Folder_DataHubPOSTLabel_2 = uilabel(app.config_FolderMapGrid_2);
-            app.config_Folder_DataHubPOSTLabel_2.VerticalAlignment = 'bottom';
-            app.config_Folder_DataHubPOSTLabel_2.FontSize = 10;
-            app.config_Folder_DataHubPOSTLabel_2.Layout.Row = 3;
-            app.config_Folder_DataHubPOSTLabel_2.Layout.Column = 1;
-            app.config_Folder_DataHubPOSTLabel_2.Text = 'DataHub - POST:';
-
-            % Create config_Folder_DataHubPOST_2
-            app.config_Folder_DataHubPOST_2 = uieditfield(app.config_FolderMapGrid_2, 'text');
-            app.config_Folder_DataHubPOST_2.Editable = 'off';
-            app.config_Folder_DataHubPOST_2.FontSize = 11;
-            app.config_Folder_DataHubPOST_2.Layout.Row = 4;
-            app.config_Folder_DataHubPOST_2.Layout.Column = 1;
-
-            % Create config_Folder_DataHubPOSTButton_2
-            app.config_Folder_DataHubPOSTButton_2 = uiimage(app.config_FolderMapGrid_2);
-            app.config_Folder_DataHubPOSTButton_2.Tag = 'DataHub_POST';
-            app.config_Folder_DataHubPOSTButton_2.Layout.Row = 4;
-            app.config_Folder_DataHubPOSTButton_2.Layout.Column = 2;
-            app.config_Folder_DataHubPOSTButton_2.ImageSource = 'OpenFile_36x36.png';
-
-            % Create config_Folder_pythonPathLabel_2
-            app.config_Folder_pythonPathLabel_2 = uilabel(app.config_FolderMapGrid_2);
-            app.config_Folder_pythonPathLabel_2.VerticalAlignment = 'bottom';
-            app.config_Folder_pythonPathLabel_2.FontSize = 10;
-            app.config_Folder_pythonPathLabel_2.Layout.Row = 5;
-            app.config_Folder_pythonPathLabel_2.Layout.Column = 1;
-            app.config_Folder_pythonPathLabel_2.Text = 'Pasta do ambiente virtual Python (lib fiscaliza):';
-
-            % Create config_Folder_pythonPath_2
-            app.config_Folder_pythonPath_2 = uieditfield(app.config_FolderMapGrid_2, 'text');
-            app.config_Folder_pythonPath_2.Editable = 'off';
-            app.config_Folder_pythonPath_2.FontSize = 11;
-            app.config_Folder_pythonPath_2.Layout.Row = 6;
-            app.config_Folder_pythonPath_2.Layout.Column = 1;
-
-            % Create config_Folder_pythonPathButton_2
-            app.config_Folder_pythonPathButton_2 = uiimage(app.config_FolderMapGrid_2);
-            app.config_Folder_pythonPathButton_2.Tag = 'pythonPath';
-            app.config_Folder_pythonPathButton_2.Layout.Row = 6;
-            app.config_Folder_pythonPathButton_2.Layout.Column = 2;
-            app.config_Folder_pythonPathButton_2.ImageSource = 'OpenFile_36x36.png';
-
-            % Create config_Folder_userPathLabel_2
-            app.config_Folder_userPathLabel_2 = uilabel(app.config_FolderMapGrid_2);
-            app.config_Folder_userPathLabel_2.VerticalAlignment = 'bottom';
-            app.config_Folder_userPathLabel_2.FontSize = 10;
-            app.config_Folder_userPathLabel_2.Layout.Row = 7;
-            app.config_Folder_userPathLabel_2.Layout.Column = 1;
-            app.config_Folder_userPathLabel_2.Text = 'Pasta do usuário:';
-
-            % Create config_Folder_userPath_2
-            app.config_Folder_userPath_2 = uidropdown(app.config_FolderMapGrid_2);
-            app.config_Folder_userPath_2.Items = {''};
-            app.config_Folder_userPath_2.FontSize = 11;
-            app.config_Folder_userPath_2.BackgroundColor = [1 1 1];
-            app.config_Folder_userPath_2.Layout.Row = 8;
-            app.config_Folder_userPath_2.Layout.Column = 1;
-            app.config_Folder_userPath_2.Value = '';
-
-            % Create config_Folder_userPathButton_2
-            app.config_Folder_userPathButton_2 = uiimage(app.config_FolderMapGrid_2);
-            app.config_Folder_userPathButton_2.Tag = 'userPath';
-            app.config_Folder_userPathButton_2.Layout.Row = 8;
-            app.config_Folder_userPathButton_2.Layout.Column = 2;
-            app.config_Folder_userPathButton_2.ImageSource = 'OpenFile_36x36.png';
-
-            % Create config_FolderMapLabel_2
-            app.config_FolderMapLabel_2 = uilabel(app.Tab3_Grid);
-            app.config_FolderMapLabel_2.VerticalAlignment = 'bottom';
-            app.config_FolderMapLabel_2.FontSize = 10;
-            app.config_FolderMapLabel_2.Layout.Row = 5;
-            app.config_FolderMapLabel_2.Layout.Column = 1;
-            app.config_FolderMapLabel_2.Text = 'MAPEAMENTO DE PASTAS';
-
-            % Create config_geoAxesSubPanel
-            app.config_geoAxesSubPanel = uipanel(app.Tab3_Grid);
-            app.config_geoAxesSubPanel.Layout.Row = 2;
-            app.config_geoAxesSubPanel.Layout.Column = [1 2];
-
-            % Create config_geoAxesSubGrid
-            app.config_geoAxesSubGrid = uigridlayout(app.config_geoAxesSubPanel);
-            app.config_geoAxesSubGrid.RowHeight = {17, 22, 17, 22};
-            app.config_geoAxesSubGrid.RowSpacing = 5;
-            app.config_geoAxesSubGrid.Padding = [10 10 10 5];
-            app.config_geoAxesSubGrid.BackgroundColor = [1 1 1];
-
-            % Create config_BasemapLabel
-            app.config_BasemapLabel = uilabel(app.config_geoAxesSubGrid);
-            app.config_BasemapLabel.VerticalAlignment = 'bottom';
-            app.config_BasemapLabel.FontSize = 10;
-            app.config_BasemapLabel.Layout.Row = 1;
-            app.config_BasemapLabel.Layout.Column = 1;
-            app.config_BasemapLabel.Text = 'Basemap:';
-
-            % Create config_Basemap
-            app.config_Basemap = uidropdown(app.config_geoAxesSubGrid);
-            app.config_Basemap.Items = {'none', 'darkwater', 'streets-light', 'streets-dark', 'satellite', 'topographic', 'grayterrain'};
-            app.config_Basemap.FontSize = 11;
-            app.config_Basemap.BackgroundColor = [1 1 1];
-            app.config_Basemap.Layout.Row = 2;
-            app.config_Basemap.Layout.Column = 1;
-            app.config_Basemap.Value = 'none';
-
-            % Create config_ColormapLabel
-            app.config_ColormapLabel = uilabel(app.config_geoAxesSubGrid);
-            app.config_ColormapLabel.VerticalAlignment = 'bottom';
-            app.config_ColormapLabel.FontSize = 10;
-            app.config_ColormapLabel.Layout.Row = 1;
-            app.config_ColormapLabel.Layout.Column = 2;
-            app.config_ColormapLabel.Text = 'Mapa de cor:';
-
-            % Create config_Colormap
-            app.config_Colormap = uidropdown(app.config_geoAxesSubGrid);
-            app.config_Colormap.Items = {'winter', 'parula', 'turbo', 'gray', 'hot', 'jet', 'summer'};
-            app.config_Colormap.FontSize = 11;
-            app.config_Colormap.BackgroundColor = [1 1 1];
-            app.config_Colormap.Layout.Row = 2;
-            app.config_Colormap.Layout.Column = 2;
-            app.config_Colormap.Value = 'winter';
-
-            % Create DropDownLocalBarra
-            app.DropDownLocalBarra = uidropdown(app.config_geoAxesSubGrid);
-            app.DropDownLocalBarra.Items = {'off', 'east', 'eastoutside', 'south', 'southoutside'};
-            app.DropDownLocalBarra.FontSize = 11;
-            app.DropDownLocalBarra.BackgroundColor = [1 1 1];
-            app.DropDownLocalBarra.Layout.Row = 4;
-            app.DropDownLocalBarra.Layout.Column = 1;
-            app.DropDownLocalBarra.Value = 'off';
-
-            % Create LegendadecorLabel
-            app.LegendadecorLabel = uilabel(app.config_geoAxesSubGrid);
-            app.LegendadecorLabel.VerticalAlignment = 'bottom';
-            app.LegendadecorLabel.FontSize = 10;
-            app.LegendadecorLabel.Layout.Row = 3;
-            app.LegendadecorLabel.Layout.Column = 1;
-            app.LegendadecorLabel.Text = 'Legenda de cor:';
-
-            % Create LimitesLabel
-            app.LimitesLabel = uilabel(app.config_geoAxesSubGrid);
-            app.LimitesLabel.VerticalAlignment = 'bottom';
-            app.LimitesLabel.FontSize = 10;
-            app.LimitesLabel.Layout.Row = 3;
-            app.LimitesLabel.Layout.Column = 2;
-            app.LimitesLabel.Text = 'Limites:';
-
-            % Create play_Persistance_cLim_Grid2
-            app.play_Persistance_cLim_Grid2 = uigridlayout(app.config_geoAxesSubGrid);
-            app.play_Persistance_cLim_Grid2.ColumnWidth = {'1x', 10, '1x'};
-            app.play_Persistance_cLim_Grid2.RowHeight = {'1x'};
-            app.play_Persistance_cLim_Grid2.ColumnSpacing = 0;
-            app.play_Persistance_cLim_Grid2.RowSpacing = 5;
-            app.play_Persistance_cLim_Grid2.Padding = [0 0 0 0];
-            app.play_Persistance_cLim_Grid2.Layout.Row = 4;
-            app.play_Persistance_cLim_Grid2.Layout.Column = 2;
-            app.play_Persistance_cLim_Grid2.BackgroundColor = [1 1 1];
-
-            % Create play_Persistance_cLim1
-            app.play_Persistance_cLim1 = uispinner(app.play_Persistance_cLim_Grid2);
-            app.play_Persistance_cLim1.Step = 0.1;
-            app.play_Persistance_cLim1.Limits = [0 Inf];
-            app.play_Persistance_cLim1.ValueDisplayFormat = '%.3f';
-            app.play_Persistance_cLim1.FontSize = 11;
-            app.play_Persistance_cLim1.Enable = 'off';
-            app.play_Persistance_cLim1.Tooltip = {''};
-            app.play_Persistance_cLim1.Layout.Row = 1;
-            app.play_Persistance_cLim1.Layout.Column = 1;
-
-            % Create play_Persistance_cLim2
-            app.play_Persistance_cLim2 = uispinner(app.play_Persistance_cLim_Grid2);
-            app.play_Persistance_cLim2.Limits = [0 Inf];
-            app.play_Persistance_cLim2.ValueDisplayFormat = '%.3f';
-            app.play_Persistance_cLim2.FontSize = 11;
-            app.play_Persistance_cLim2.Enable = 'off';
-            app.play_Persistance_cLim2.Tooltip = {''};
-            app.play_Persistance_cLim2.Layout.Row = 1;
-            app.play_Persistance_cLim2.Layout.Column = 3;
-            app.play_Persistance_cLim2.Value = 1;
-
-            % Create Label
-            app.Label = uilabel(app.play_Persistance_cLim_Grid2);
-            app.Label.HorizontalAlignment = 'center';
-            app.Label.FontSize = 10;
-            app.Label.Enable = 'off';
-            app.Label.Layout.Row = 1;
-            app.Label.Layout.Column = 2;
-            app.Label.Text = '-';
+            app.jsBackDoor = uihtml(app.Toolbar);
+            app.jsBackDoor.Layout.Row = 2;
+            app.jsBackDoor.Layout.Column = 4;
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

@@ -377,6 +377,16 @@ classdef winRNI_exported < matlab.apps.AppBase
                                 auxAppTag = varargin{1};
                                 closeModule(app.tabGroupController, auxAppTag, app.General)
 
+                            case 'updatePlot'
+                                % ...
+                                % Forçar atualização de eventuais plots
+                                % apresentados nos módulos abertos...
+                                % ...
+                                pause(1)
+
+                            case 'updateAnalysis'
+                                % ...
+
                             otherwise
                                 error('UnexpectedCall')
                         end
@@ -630,7 +640,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.file_Grid.ColumnWidth = {'1x', 325};
             app.file_Grid.RowHeight = {'1x', 34};
             app.file_Grid.RowSpacing = 5;
-            app.file_Grid.Padding = [0 0 0 24];
+            app.file_Grid.Padding = [0 0 0 26];
             app.file_Grid.BackgroundColor = [1 1 1];
 
             % Create file_toolGrid
@@ -654,7 +664,7 @@ classdef winRNI_exported < matlab.apps.AppBase
 
             % Create file_docGrid
             app.file_docGrid = uigridlayout(app.file_Grid);
-            app.file_docGrid.ColumnWidth = {320, '1x'};
+            app.file_docGrid.ColumnWidth = {325, '1x'};
             app.file_docGrid.RowHeight = {22, 22, '1x'};
             app.file_docGrid.ColumnSpacing = 5;
             app.file_docGrid.RowSpacing = 5;
