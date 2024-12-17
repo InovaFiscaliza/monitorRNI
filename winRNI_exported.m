@@ -525,10 +525,10 @@ classdef winRNI_exported < matlab.apps.AppBase
             % período, limites, nível máximo etc.
             % !! PONTO DE EVOLUÇÃO !!
 
-            idx = app.file_Tree.SelectedNodes.NodeData;            
+          idx = app.file_Tree.SelectedNodes.NodeData;            
             app.file_Metadata.HTMLSource = sprintf(['<p style="font-family: Helvetica, Arial, sans-serif; font-size: 11; text-align: justify; ' ...
                                                     'line-height: 12px; margin: 5px; word-break: break-all;">Arquivo: %s<br>Sensor: %s<br>'     ...
-                                                    'Localidade: %s</p>'], app.measData(idx).Filename, app.measData(idx).Sensor, app.measData(idx).Location);
+                                                    'Localidade: %s<br>Medidas úteis: %s<br>Latitude (Limites): %s e %s<br>Longitude (Limites): %s e %s</p>'], app.measData(idx).Filename, app.measData(idx).Sensor, app.measData(idx).Location, num2str(app.measData(idx).Measures), num2str(app.measData(idx).LatitudeLimits(1)), num2str(app.measData(idx).LatitudeLimits(2)), num2str(app.measData(idx).LongitudeLimits(1)), num2str(app.measData(idx).LongitudeLimits(2)));
             
         end
 
@@ -574,8 +574,16 @@ classdef winRNI_exported < matlab.apps.AppBase
                     % Extrai do arquivo a informação sobre o tipo de sonda que gerou o arquivo de medição
                     Type_Meas_Probes = fcn.TypeMeasProbe(app, fileFullName{ii});
     
-                    % Obtém todas os dados relavantes dos arquivos das medições de RNI
-                    app.cacheData(end+1) = fcn.ReadFile_Meas_Probes(app, Type_Meas_Probes, fileFullName{ii}, ii, numel(fileFullName));
+                  % Obtém todas os dados relavantes dos arquivos das medições de RNI
+                    %app.cacheData(end+1) = fcn.ReadFile_Meas_Probes(app, Type_Meas_Probes, fileFullName{ii}, ii, numel(fileFullName));
+                    switch Type_Meas_Probes
+                        case 'Narda'
+                            app.cacheData(end+1) = fileReader.Narda(app, Type_Meas_Probes, fileFullName{ii}, ii, numel(fileFullName));
+                        case 'Monitem'
+                            app.cacheData(end+1) = fileReader.Monitem(app, Type_Meas_Probes, fileFullName{ii}, ii, numel(fileFullName));
+                        otherwise
+                            error('UnexpectedFileFormat')
+                    end
                     idxCache = numel(app.cacheData);
                 end
 

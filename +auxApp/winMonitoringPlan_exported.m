@@ -36,7 +36,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         isDocked = false
 
         CallingApp
-        General
         rootFolder
         
         % A função do timer é executada uma única vez após a renderização
@@ -154,7 +153,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function startup_AppProperties(app)
             if isempty(app.CallingApp.stationTable)
-                app.CallingApp.stationTable = fileReader.MonitoringPlanStations(fullfile(app.rootFolder, 'DataBase', 'PA_RNI', 'Dados_PA_RNI.csv'), app.General);
+                app.CallingApp.stationTable = fileReader.MonitoringPlanStations(fullfile(app.rootFolder, 'DataBase', 'PA_RNI', 'Dados_PA_RNI.csv'), app.CallingApp.General);
             end
         end
 
@@ -172,7 +171,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.plotPanel.AutoResizeChildren = 'off';
             app.UIAxes = plot.axes.Creation(app.plotPanel, 'Geographic', {'Units',    'normalized',             ...
                                                                            'Position', [0 0 1 1 ],               ...
-                                                                           'Basemap',  app.General.Plot.GeographicAxes.Basemap, ...
+                                                                           'Basemap',  app.CallingApp.General.Plot.GeographicAxes.Basemap, ...
                                                                            'UserData', struct('CLimMode', 'auto', 'Colormap', '')});
 
             set(app.UIAxes.LatitudeAxis,  'TickLabels', {}, 'Color', 'none')
@@ -181,8 +180,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             geolimits(app.UIAxes, 'auto')
             app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
 
-            plot.axes.Colormap(app.UIAxes, app.General.Plot.GeographicAxes.Colormap)
-            plot.axes.Colorbar(app.UIAxes, app.General.Plot.GeographicAxes.Colorbar)
+            plot.axes.Colormap(app.UIAxes, app.CallingApp.General.Plot.GeographicAxes.Colormap)
+            plot.axes.Colorbar(app.UIAxes, app.CallingApp.General.Plot.GeographicAxes.Colorbar)
 
             % Legenda
             legend(app.UIAxes, 'Location', 'southwest', 'Color', [.94,.94,.94], 'EdgeColor', [.9,.9,.9], 'NumColumns', 4, 'LineWidth', .5, 'FontSize', 7.5)
@@ -222,7 +221,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 
                 % Identifica localidades relacionadas à monitoração sob análise.
                 listOfLocations = {};
-                DIST_km = app.General.MonitoringPlan.Distance_km;
+                DIST_km = app.CallingApp.General.MonitoringPlan.Distance_km;
     
                 for ii = idxFile
                     % Limites de latitude e longitude relacionados à rota, acrescentando 
@@ -313,9 +312,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 longitudeArray = app.CallingApp.stationTable.("Longitude da Estação")(idxStations);
 
                 geoscatter(app.UIAxes, latitudeArray, longitudeArray, ...
-                    'Marker', '^', 'MarkerFaceColor', app.General.Plot.Stations.Color, ...
-                    'MarkerEdgeColor', app.General.Plot.Stations.Color,           ...
-                    'SizeData',        app.General.Plot.Stations.Size,            ...
+                    'Marker', '^', 'MarkerFaceColor', app.CallingApp.General.Plot.Stations.Color, ...
+                    'MarkerEdgeColor', app.CallingApp.General.Plot.Stations.Color,           ...
+                    'SizeData',        app.CallingApp.General.Plot.Stations.Size,            ...
                     'DisplayName',     'Estações de referência PM-RNI',           ...
                     'Tag',             'Stations');
             end
@@ -336,19 +335,19 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
                 geoscatter(app.UIAxes, stationLatitude, stationLongitude,      ...
                     'Marker',          '^',                                    ...
-                    'MarkerFaceColor', app.General.Plot.SelectedStation.Color, ...
-                    'MarkerEdgeColor', app.General.Plot.SelectedStation.Color, ...
-                    'SizeData',        app.General.Plot.SelectedStation.Size,  ...
+                    'MarkerFaceColor', app.CallingApp.General.Plot.SelectedStation.Color, ...
+                    'MarkerEdgeColor', app.CallingApp.General.Plot.SelectedStation.Color, ...
+                    'SizeData',        app.CallingApp.General.Plot.SelectedStation.Size,  ...
                     'DisplayName',     stationNumber,                          ...
                     'Tag',             'SelectedStation');
     
                 % (b) Círculo entorno da estação
                 drawcircle(app.UIAxes,                                                 ...
                     'Position',        [stationLatitude, stationLongitude],            ...
-                    'Radius',          km2deg(app.General.MonitoringPlan.Distance_km), ...
-                    'Color',           app.General.Plot.CircleRegion.Color,            ...
-                    'FaceAlpha',       app.General.Plot.CircleRegion.FaceAlpha,        ...
-                    'EdgeAlpha',       app.General.Plot.CircleRegion.EdgeAlpha,        ...
+                    'Radius',          km2deg(app.CallingApp.General.MonitoringPlan.Distance_km), ...
+                    'Color',           app.CallingApp.General.Plot.CircleRegion.Color,            ...
+                    'FaceAlpha',       app.CallingApp.General.Plot.CircleRegion.FaceAlpha,        ...
+                    'EdgeAlpha',       app.CallingApp.General.Plot.CircleRegion.EdgeAlpha,        ...
                     'FaceSelectable',  0, 'InteractionsAllowed', 'none',               ...
                     'Tag',            'SelectedStation');
     
@@ -360,15 +359,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
     
                     geoscatter(app.UIAxes, maxFieldLatitude, maxFieldLongitude, maxFieldValue, ...
                         'Marker',          'square',                          ...
-                        'MarkerFaceColor', app.General.Plot.FieldPeak.Color,  ...
-                        'SizeData',        app.General.Plot.FieldPeak.Size,   ...
+                        'MarkerFaceColor', app.CallingApp.General.Plot.FieldPeak.Color,  ...
+                        'SizeData',        app.CallingApp.General.Plot.FieldPeak.Size,   ...
                         'DisplayName',     'Maior nível em torno da estação', ...
                         'Tag',             'FieldPeak');
                 end
 
                 % Zoom automático em torno da estação
-                if app.General.Plot.SelectedStation.AutomaticZoom
-                    arclen         = km2deg(app.General.Plot.SelectedStation.AutomaticZoomFactor * app.General.MonitoringPlan.Distance_km);
+                if app.CallingApp.General.Plot.SelectedStation.AutomaticZoom
+                    arclen         = km2deg(app.CallingApp.General.Plot.SelectedStation.AutomaticZoomFactor * app.CallingApp.General.MonitoringPlan.Distance_km);
                     [~, lim_long1] = reckon(stationLatitude, stationLongitude, arclen, -90);
                     [~, lim_long2] = reckon(stationLatitude, stationLongitude, arclen,  90);    
                     [lim_lat1, ~]  = reckon(stationLatitude, stationLongitude, arclen, 180);
@@ -398,7 +397,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     [maxFieldValue, idxMaxFieldValue] = max(stationMeasures.FieldValue);
 
                     app.CallingApp.stationTable.numberOfMeasures(ii)     = height(stationMeasures);
-                    app.CallingApp.stationTable.numberOfRiskMeasures(ii) = sum(stationMeasures.FieldValue > app.General.MonitoringPlan.FieldValue);
+                    app.CallingApp.stationTable.numberOfRiskMeasures(ii) = sum(stationMeasures.FieldValue > app.CallingApp.General.MonitoringPlan.FieldValue);
                     app.CallingApp.stationTable.minFieldValue(ii)        = min(stationMeasures.FieldValue);
                     app.CallingApp.stationTable.meanFieldValue(ii)       = mean(stationMeasures.FieldValue);
                     app.CallingApp.stationTable.maxFieldValue(ii)        = maxFieldValue;
@@ -457,7 +456,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function startupFcn(app, mainapp)
             
             app.CallingApp = mainapp;
-            app.General    = mainapp.General;
             app.rootFolder = mainapp.rootFolder;            
             app.measData   = mainapp.measData;
 
@@ -532,7 +530,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Usuário escolhe nome do arquivo a ser salvo...       
             nameFormatMap = {'*.zip', 'RNI (*.zip)'};
-            defaultName   = appUtil.DefaultFileName(app.General.fileFolder.userPath, 'RNI', '-1');
+            defaultName   = appUtil.DefaultFileName(app.CallingApp.General.fileFolder.userPath, 'RNI', '-1');
             fileZIP       = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', nameFormatMap, defaultName);
             if isempty(fileZIP)
                 return
@@ -541,7 +539,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.progressDialog.Visible = 'visible';
 
             try
-                fileBasename = appUtil.DefaultFileName(app.General.fileFolder.userPath, 'RNI', '-1');
+                fileBasename = appUtil.DefaultFileName(app.CallingApp.General.fileFolder.userPath, 'RNI', '-1');
                 hPlot = findobj(app.UIAxes.Children, 'Tag', 'Measures');
                 msgWarning = fileWriter.KML(app.CallingApp.stationTable, app.UITable.UserData, app.measTable, fileBasename, fileZIP, hPlot);
                 appUtil.modalWindow(app.UIFigure, 'info', msgWarning);
