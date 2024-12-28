@@ -113,9 +113,8 @@ classdef winRNI_exported < matlab.apps.AppBase
                 case 'BackgroundColorTurnedInvisible'
                     switch event.HTMLEventData
                         case 'SplashScreen'
-                            if isvalid(app.SplashScreen)
-                                delete(app.SplashScreen)
-                                app.popupContainerGrid.Visible = 0;
+                            if isvalid(app.popupContainerGrid)
+                                delete(app.popupContainerGrid)
                             end
                         otherwise
                             % ...
@@ -228,10 +227,9 @@ classdef winRNI_exported < matlab.apps.AppBase
                 drawnow
     
                 % Força a exclusão do SplashScreen.
-                if isvalid(app.SplashScreen)
+                if isvalid(app.popupContainerGrid)
                     pause(1)
-                    delete(app.SplashScreen)
-                    app.popupContainerGrid.Visible = 0;
+                    delete(app.popupContainerGrid)
                 end
             end
         end
@@ -332,7 +330,14 @@ classdef winRNI_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function file_TreeBuilding(app)
-            delete(app.file_Tree.Children);
+            initialSelection = '';
+            if ~isempty(app.file_Tree.Children)
+                if ~isempty(app.file_Tree.SelectedNodes)
+                    initialSelection = app.file_Tree.SelectedNodes(1).Text;
+                end
+
+                delete(app.file_Tree.Children)
+            end
 
             for ii = 1:numel(app.measData)
                 uitreenode(app.file_Tree, 'Text',        app.measData(ii).Filename, ...
@@ -341,7 +346,12 @@ classdef winRNI_exported < matlab.apps.AppBase
             end
 
             if ~isempty(app.measData)
-                app.file_Tree.SelectedNodes = app.file_Tree.Children(1);
+                if ~isempty(initialSelection) && ismember(initialSelection, {app.file_Tree.Children.Text})
+                    [~, idxSelection] = ismember(initialSelection, {app.file_Tree.Children.Text});
+                    app.file_Tree.SelectedNodes = app.file_Tree.Children(idxSelection);
+                else
+                    app.file_Tree.SelectedNodes = app.file_Tree.Children(1);
+                end
                 file_TreeSelectionChanged(app)
 
                 app.menu_Button2.Enable = 1;
@@ -518,17 +528,13 @@ classdef winRNI_exported < matlab.apps.AppBase
 
         % Selection changed function: file_Tree
         function file_TreeSelectionChanged(app, event)
-            
-            % !! PONTO DE EVOLUÇÃO !!
-            % Criar um HTML destacando informações relevantes do arquivo -
-            % tamanho, por exemplo - e da campanha de medição - sensor,
-            % período, limites, nível máximo etc.
-            % !! PONTO DE EVOLUÇÃO !!
 
-          idx = app.file_Tree.SelectedNodes.NodeData;            
-            app.file_Metadata.HTMLSource = sprintf(['<p style="font-family: Helvetica, Arial, sans-serif; font-size: 11; text-align: justify; ' ...
-                                                    'line-height: 12px; margin: 5px; word-break: break-all;">Arquivo: %s<br>Sensor: %s<br>'     ...
-                                                    'Localidade: %s<br>Medidas úteis: %s<br>Latitude (Limites): %s e %s<br>Longitude (Limites): %s e %s</p>'], app.measData(idx).Filename, app.measData(idx).Sensor, app.measData(idx).Location, num2str(app.measData(idx).Measures), num2str(app.measData(idx).LatitudeLimits(1)), num2str(app.measData(idx).LatitudeLimits(2)), num2str(app.measData(idx).LongitudeLimits(1)), num2str(app.measData(idx).LongitudeLimits(2)));
+            if isscalar(app.file_Tree.SelectedNodes)
+                idx = app.file_Tree.SelectedNodes.NodeData;
+                app.file_Metadata.HTMLSource = fcn.htmlCode_selectedFile(app.measData(idx));
+            else
+                app.file_Metadata.HTMLSource = ' ';
+            end
             
         end
 
@@ -536,7 +542,7 @@ classdef winRNI_exported < matlab.apps.AppBase
         function file_ContextMenu_delTreeNodeSelected(app, event)
             
             if ~isempty(app.file_Tree.SelectedNodes)
-                idx = app.file_Tree.SelectedNodes.NodeData;
+                idx = [app.file_Tree.SelectedNodes.NodeData];
                 app.measData(idx) = [];
                 file_TreeBuilding(app)
             end
@@ -557,53 +563,57 @@ classdef winRNI_exported < matlab.apps.AppBase
             end
             misc_updateLastVisitedFolder(app, filePath)            
 
-            % !! PONTO DE EVOLUÇÃO !!
-            % O progressdialog deve ser único. E não ser criado por arquivo... 
-            % as coisas relacionadas à GUI devem, preferencialmente, permanecer 
-            % no MLAPP.
-            % !! PONTO DE EVOLUÇÃO !!
+            d = appUtil.modalWindow(app.UIFigure, "progressdlg", "Em andamento...");
             
             fileFullName = fullfile(filePath, fileName);
             filesInCache = {};
+            filesError   = struct('File', {}, 'Error', {});
 
             for ii = 1:numel(fileFullName)
-                % (a) Verifica se arquivo já foi lido, comparando o seu
-                %     nome com a variável app.cacheData.
-                [~, idxCache] = ismember(fileFullName{ii}, {app.cacheData.Filename});
+                d.Message = sprintf('Em andamento a leitura do arquivo %d de %d:<br>• <b>%s</b>', ii, numel(fileFullName), fileName{ii});
+
+                % Verifica se arquivo já foi lido, comparando o seu nome com 
+                % a variável app.cacheData.
+                [~, idxCache] = ismember(fileName{ii}, {app.cacheData.Filename});
                 if ~idxCache
-                    % Extrai do arquivo a informação sobre o tipo de sonda que gerou o arquivo de medição
-                    Type_Meas_Probes = fcn.TypeMeasProbe(app, fileFullName{ii});
-    
-                  % Obtém todas os dados relavantes dos arquivos das medições de RNI
-                    %app.cacheData(end+1) = fcn.ReadFile_Meas_Probes(app, Type_Meas_Probes, fileFullName{ii}, ii, numel(fileFullName));
-                    switch Type_Meas_Probes
-                        case 'Narda'
-                            app.cacheData(end+1) = fileReader.Narda(app, Type_Meas_Probes, fileFullName{ii}, ii, numel(fileFullName));
-                        case 'Monitem'
-                            app.cacheData(end+1) = fileReader.Monitem(app, Type_Meas_Probes, fileFullName{ii}, ii, numel(fileFullName));
-                        otherwise
-                            error('UnexpectedFileFormat')
+                    try
+                        app.cacheData(end+1) = fileReader.CSV.Controller(fileFullName{ii});
+                    catch ME
+                        filesError(end+1) = struct('File', fileName{ii}, 'Error', ME.message);
+                        % ccTools.fcn.OperationSystem('openFile', fileFullName{ii})
+                        continue
                     end
                     idxCache = numel(app.cacheData);
                 end
 
-                % (b) Verifica se arquivo já está ativo, comparando o seu
-                %     nome com a variável app.measData.
-                [~, idxFile] = ismember(fileFullName{ii}, {app.measData.Filename});
+                % Verifica se arquivo já está ativo, comparando o seu nome com 
+                % a variável app.measData.
+                [~, idxFile] = ismember(fileName{ii}, {app.measData.Filename});
                 if ~idxFile
                     app.measData(end+1) = app.cacheData(idxCache);
                 else
-                    filesInCache{end+1} = fileFullName{ii};
+                    filesInCache{end+1} = fileName{ii};
                 end
             end
 
+            % LOG
+            msgWarning = '';
+            if ~isempty(filesError)
+                msgWarning = sprintf('Arquivos que apresentaram erro na leitura:\n%s\n\n', strjoin(strcat({'•&thinsp;'}, {filesError.File}, {': '}, {filesError.Error}), '\n'));
+            end
+
             if ~isempty(filesInCache)
-                msgWarning = sprintf('Arquivos já lidos:\n%s', textFormatGUI.cellstr2Bullets(filesInCache));
+                msgWarning = [msgWarning, sprintf('Arquivos já lidos:\n%s', textFormatGUI.cellstr2Bullets(filesInCache))];
+            end
+
+            if ~isempty(msgWarning)
                 appUtil.modalWindow(app.UIFigure, "warning", msgWarning);
             end
             
             % Atualiza app.file_Tree.
             file_TreeBuilding(app)
+
+            delete(d)
 
         end
     end
@@ -717,6 +727,7 @@ classdef winRNI_exported < matlab.apps.AppBase
 
             % Create file_Tree
             app.file_Tree = uitree(app.file_docGrid);
+            app.file_Tree.Multiselect = 'on';
             app.file_Tree.SelectionChangedFcn = createCallbackFcn(app, @file_TreeSelectionChanged, true);
             app.file_Tree.FontSize = 10;
             app.file_Tree.Layout.Row = 3;
@@ -901,7 +912,6 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.popupContainerGrid = uigridlayout(app.GridLayout);
             app.popupContainerGrid.ColumnWidth = {'1x', 880, '1x'};
             app.popupContainerGrid.RowHeight = {'1x', 300, '1x'};
-            app.popupContainerGrid.Padding = [10 31 10 10];
             app.popupContainerGrid.Layout.Row = 3;
             app.popupContainerGrid.Layout.Column = 1;
             app.popupContainerGrid.BackgroundColor = [1 1 1];

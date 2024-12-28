@@ -1,5 +1,5 @@
 {
-    "version": 0.14,
+    "version": 0.19,
     "operationMode": {
         "Debug": false,
         "Dock": false,
@@ -24,13 +24,17 @@
             "Colormap": "winter",
             "Colorbar": "off"
         },
+        "RiskMeasures": {
+            "Color": "red",
+            "Size": 32
+        },
         "Stations": {
             "Color": "#00ffff",
             "Size": 12
         },
         "SelectedStation": {
             "Color": "red",
-            "Size": 32,            
+            "Size": 32,
             "AutomaticZoom": true,
             "AutomaticZoomFactor": 2
         },
@@ -45,13 +49,27 @@
         }
     },
     "MonitoringPlan": {
+        "ReferenceFile": "PM-RNI - Lista de estações.xlsx",
+        "Period": [
+            2024,
+            2025
+        ],
         "Distance_km": 0.2,
         "FieldValue": 14,
         "NoMeasureReasons": [
             "-1",
-            "Justificativa A",
-            "Justificativa B"
-            ]
+            "Estação inoperante",
+            "Estação não instalada nas coordenadas cadastradas",
+            "Estação operando em coordenadas distintas das cadastradas",
+            "Estação não medida - local com restrição de acesso",
+            "Estação não medida - local de risco",
+            "Estação não medida - local de difícil acesso",
+            "Outros (especificar no campo observações)"
+        ],
+        "ReasonsThatRequireObservation": [
+            "Estação operando em coordenadas distintas das cadastradas",
+            "Outros (especificar no campo observações)"
+        ]
     },
     "ExternalRequest": {
         "Distance_km": 1,
