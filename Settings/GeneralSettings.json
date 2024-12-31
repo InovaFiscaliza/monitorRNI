@@ -1,5 +1,5 @@
 {
-    "version": 0.19,
+    "version": 0.26,
     "operationMode": {
         "Debug": false,
         "Dock": false,
@@ -59,17 +59,23 @@
         "NoMeasureReasons": [
             "-1",
             "Estação inoperante",
-            "Estação não instalada nas coordenadas cadastradas",
-            "Estação operando em coordenadas distintas das cadastradas",
-            "Estação não medida - local com restrição de acesso",
-            "Estação não medida - local de risco",
-            "Estação não medida - local de difícil acesso",
-            "Outros (especificar no campo observações)"
+            "Estação não medida - acesso restrito",            
+            "Estação não medida - local perigoso",
+            "Estação não medida - difícil acesso",
+            "Estação operando em local desconhecido",
+            "Estação operando em local diferente (especificar)",
+            "Outra (especificar)"
         ],
         "ReasonsThatRequireObservation": [
-            "Estação operando em coordenadas distintas das cadastradas",
-            "Outros (especificar no campo observações)"
-        ]
+            "Outra (especificar)"
+        ],
+        "ReasonsThatRequireEditionOfLocation": [
+            "Estação operando em local diferente (especificar)"
+        ],
+        "Export": {
+            "XLSX": true,
+            "KML": true
+        }
     },
     "ExternalRequest": {
         "Distance_km": 1,

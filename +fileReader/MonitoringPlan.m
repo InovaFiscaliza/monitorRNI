@@ -21,9 +21,13 @@ function stationTable = MonitoringPlan(fileFullPath, appGeneral)
     % "Fistel", "Nº estação", "Lat" e "Long"):
     strHashBase = cellstr(string(stationTable.Fistel) + "; " + string(stationTable.("N° estacao")) + "; " + string(stationTable.Lat) + "; " + string(stationTable.Long));
     stationTable.Base64Hash               = cellfun(@(x) Base64Hash.encode(x), strHashBase, 'UniformOutput', false);
+    [~, idxUnique] = unique(stationTable.Base64Hash, 'stable');
+    stationTable = stationTable(idxUnique, :);
     
     % Novas colunas:
     stationTable.Location                 = strcat(stationTable.("Município"), '/', stationTable.UF);
+    stationTable.Latitude                 = stationTable.Lat;
+    stationTable.Longitude                = stationTable.Long;
     
     stationTable.numberOfMeasures(:)      = 0;
     stationTable.numberOfRiskMeasures(:)  = 0;

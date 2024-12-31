@@ -228,6 +228,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
     methods (Access = private)
         %-----------------------------------------------------------------%
         function Analysis(app)
+            app.progressDialog.Visible = 'visible';
+
             if ~isempty(app.UITree.CheckedNodes)
                 selectedLocations = {app.UITree.CheckedNodes.Text};
                 idxFile = find(ismember({app.measData.Location}, selectedLocations));
@@ -249,10 +251,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     [maxLatitude, maxLongitude] = reckon(app.measData(ii).LatitudeLimits(2), app.measData(ii).LongitudeLimits(2), km2deg(DIST_km), 45);
                     [minLatitude, minLongitude] = reckon(app.measData(ii).LatitudeLimits(1), app.measData(ii).LongitudeLimits(1), km2deg(DIST_km), 225);
     
-                    idxLogicalStation = app.mainApp.stationTable.Lat  >= minLatitude  & ...
-                                        app.mainApp.stationTable.Lat  <= maxLatitude  & ...
-                                        app.mainApp.stationTable.Long >= minLongitude & ...
-                                        app.mainApp.stationTable.Long <= maxLongitude;
+                    idxLogicalStation = app.mainApp.stationTable.Latitude  >= minLatitude  & ...
+                                        app.mainApp.stationTable.Latitude  <= maxLatitude  & ...
+                                        app.mainApp.stationTable.Longitude >= minLongitude & ...
+                                        app.mainApp.stationTable.Longitude <= maxLongitude;
     
                     if any(idxLogicalStation)
                         listOfLocations = [listOfLocations; unique(app.mainApp.stationTable.Location(idxLogicalStation))];
@@ -266,7 +268,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 end
     
                 idxStations = find(ismember(app.mainApp.stationTable.Location, listOfLocations));
-                identifyMeasuresForEachStation(app, idxStations, DIST_km)
+                identifyMeasuresForEachStation(app, idxStations)
                 updateTable(app, idxStations)
                 
                 % Atualiza painel com quantitativo de estações...
@@ -293,25 +295,34 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 app.UITable.UserData  = [];
             end
 
-            layout_ToolbarButtonVisibility(app)
+            layout_TableStyle(app)
+            app.progressDialog.Visible = 'hidden';
         end
 
         %-----------------------------------------------------------------%
         function updateTable(app, idxStations)
-            [table2Render, ...
-             table2RenderIndex] = sortrows(app.mainApp.stationTable(idxStations, {'N° estacao',           ...
-                                                                                  'Location',             ...
-                                                                                  'Serviço',              ...                                                                                      
-                                                                                  'numberOfMeasures',     ...
-                                                                                  'numberOfRiskMeasures', ...
-                                                                                  'minFieldValue',        ...
-                                                                                  'meanFieldValue',       ...
-                                                                                  'maxFieldValue',        ...
-                                                                                  'Justificativa'}), 'numberOfMeasures', 'descend');
-            set(app.UITable, 'Data', table2Render, 'UserData', idxStations(table2RenderIndex))
-    
-            % Aplica estilo à tabela...
-            layout_TableStyle(app)
+            % [table2Render, ...
+            %  table2RenderIndex] = sortrows(app.mainApp.stationTable(idxStations, {'N° estacao',           ...
+            %                                                                       'Location',             ...
+            %                                                                       'Serviço',              ...                                                                                      
+            %                                                                       'numberOfMeasures',     ...
+            %                                                                       'numberOfRiskMeasures', ...
+            %                                                                       'minFieldValue',        ...
+            %                                                                       'meanFieldValue',       ...
+            %                                                                       'maxFieldValue',        ...
+            %                                                                       'Justificativa'}), 'numberOfMeasures', 'descend');
+            % set(app.UITable, 'Data', table2Render, 'UserData', idxStations(table2RenderIndex))
+
+            table2Render = app.mainApp.stationTable(idxStations, {'N° estacao',           ...
+                                                                  'Location',             ...
+                                                                  'Serviço',              ...                                                                                      
+                                                                  'numberOfMeasures',     ...
+                                                                  'numberOfRiskMeasures', ...
+                                                                  'minFieldValue',        ...
+                                                                  'meanFieldValue',       ...
+                                                                  'maxFieldValue',        ...
+                                                                  'Justificativa'});
+            set(app.UITable, 'Data', table2Render, 'UserData', idxStations)
         end
 
         %-----------------------------------------------------------------%
@@ -361,8 +372,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function plot_Stations(app)            
             if ~isempty(app.UITable.Data)
                 idxStations    = app.UITable.UserData;
-                latitudeArray  = app.mainApp.stationTable.Lat(idxStations);
-                longitudeArray = app.mainApp.stationTable.Long(idxStations);
+                latitudeArray  = app.mainApp.stationTable.Latitude(idxStations);
+                longitudeArray = app.mainApp.stationTable.Longitude(idxStations);
 
                 geoscatter(app.UIAxes, latitudeArray, longitudeArray,                  ...
                     'Marker', '^', 'MarkerFaceColor', app.mainApp.General.Plot.Stations.Color, ...
@@ -382,8 +393,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
                 % (a) Estação selecionada
                 idxSelectedStation = app.UITable.UserData(idxTable);
-                stationLatitude    = app.mainApp.stationTable.Lat(idxSelectedStation);
-                stationLongitude   = app.mainApp.stationTable.Long(idxSelectedStation);
+                stationLatitude    = app.mainApp.stationTable.Latitude(idxSelectedStation);
+                stationLongitude   = app.mainApp.stationTable.Longitude(idxSelectedStation);
                 stationNumber      = sprintf('Estação nº %d', app.mainApp.stationTable.("N° estacao")(idxSelectedStation));
 
                 geoscatter(app.UIAxes, stationLatitude, stationLongitude,      ...
@@ -432,7 +443,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
         
         %-----------------------------------------------------------------%
-        function identifyMeasuresForEachStation(app, idxStations, DIST_km)
+        function identifyMeasuresForEachStation(app, idxStations)
+            DIST_km = app.mainApp.General.MonitoringPlan.Distance_km;
+
             for ii = idxStations'
                 if app.mainApp.stationTable.AnalysisFlag(ii)
                     continue
@@ -442,7 +455,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
                 % Inicialmente, afere a distância da estação a cada uma das
                 % medidas, identificando aquelas no entorno.
-                stationDistance    = deg2km(distance(app.mainApp.stationTable.Lat(ii), app.mainApp.stationTable.Long(ii), app.measTable.Latitude, app.measTable.Longitude));                
+                stationDistance    = deg2km(distance(app.mainApp.stationTable.Latitude(ii), app.mainApp.stationTable.Longitude(ii), app.measTable.Latitude, app.measTable.Longitude));                
                 idxLogicalMeasures = stationDistance <= DIST_km;
 
                 if any(idxLogicalMeasures)
@@ -456,31 +469,51 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     app.mainApp.stationTable.maxFieldValue(ii)        = maxFieldValue;
                     app.mainApp.stationTable.maxFieldTimestamp(ii)    = stationMeasures.Timestamp(idxMaxFieldValue);
                     app.mainApp.stationTable.maxFieldLatitude(ii)     = stationMeasures.Latitude(idxMaxFieldValue);
-                    app.mainApp.stationTable.maxFieldLongitude(ii)    = stationMeasures.Longitude(idxMaxFieldValue);        
+                    app.mainApp.stationTable.maxFieldLongitude(ii)    = stationMeasures.Longitude(idxMaxFieldValue);
+
+                else
+                  % app.mainApp.stationTable(ii, 19:26)               = table(0, 0, 0, 0, 0, NaT, 0, 0);
+                    app.mainApp.stationTable.numberOfMeasures(ii)     = 0;
+                    app.mainApp.stationTable.numberOfRiskMeasures(ii) = 0;
+                    app.mainApp.stationTable.minFieldValue(ii)        = 0;
+                    app.mainApp.stationTable.meanFieldValue(ii)       = 0;
+                    app.mainApp.stationTable.maxFieldValue(ii)        = 0;                
+                    app.mainApp.stationTable.maxFieldTimestamp(ii)    = NaT;
+                    app.mainApp.stationTable.maxFieldLatitude(ii)     = 0;
+                    app.mainApp.stationTable.maxFieldLongitude(ii)    = 0;
                 end
             end
         end
 
         %-----------------------------------------------------------------%
-        function idxTableRow = layout_searchUnexpectedTableValues(app, operationType)
-            idxTableRow = [];
+        function [idxMissingInfo, idxManualEdition, idxRiskMeasures] = layout_searchUnexpectedTableValues(app)
+            idxMissingInfo   = [];
+            idxManualEdition = [];
+            idxRiskMeasures  = [];
 
             if ~isempty(app.UITable.Data)
-                idxStations         = app.UITable.UserData;
-                relatedStationTable = app.mainApp.stationTable(idxStations, :);                
+                % Tabela sob análise.                
+                idxStations = app.UITable.UserData;
+                relatedStationTable = app.mainApp.stationTable(idxStations, :);
+
+                % "Registros anotados" por meio da inclusão de uma observação 
+                % ou da edição das coordenadas geográficas da estação.
+                addedObservationLogical = cellfun(@(x) ~isempty(x), relatedStationTable.("Observações"));
+                editedLocationLogical   = (relatedStationTable.("Lat") ~= relatedStationTable.("Latitude")) | (relatedStationTable.("Long") ~= relatedStationTable.("Longitude"));                
+
+                % Registros ainda pendentes de edição, seja por não ter sido 
+                % especificada uma "Justificativa" válida (precisa ser diferente 
+                % de "-1" quando não identificada medição no entorno da estação) 
+                % ou porque foi especificada uma válida, porém que demanda a 
+                % inclusão de uma observação ou a edição das coordenadas da estação.
                 reasonsThatRequireObservation = app.mainApp.General.MonitoringPlan.ReasonsThatRequireObservation;
-    
-                switch operationType
-                    case 'TableLayout'
-                        idxTableRow = find(relatedStationTable.numberOfRiskMeasures > 0                                                | ...
-                                         ((relatedStationTable.numberOfMeasures == 0) & (relatedStationTable.Justificativa == "-1"))   | ...
-                                         (ismember(relatedStationTable.Justificativa, reasonsThatRequireObservation) & cellfun(@(x) isempty(x), relatedStationTable.("Observações"))));
-    
-    
-                    case 'TableExport'
-                        idxTableRow = find(((relatedStationTable.numberOfMeasures == 0) & (relatedStationTable.Justificativa == "-1")) | ...
-                                           ((relatedStationTable.Justificativa == reasonsThatRequireObservation) & cellfun(@(x) isempty(x), relatedStationTable.("Observações"))));
-                end
+                reasonsThatRequireNewLocation = app.mainApp.General.MonitoringPlan.ReasonsThatRequireEditionOfLocation;
+
+                idxMissingInfo   = find(((relatedStationTable.numberOfMeasures == 0) & (relatedStationTable.("Justificativa") == "-1"))             | ...
+                                        (ismember(relatedStationTable.("Justificativa"), reasonsThatRequireObservation) & ~addedObservationLogical) | ...
+                                        (ismember(relatedStationTable.("Justificativa"), reasonsThatRequireNewLocation) & ~editedLocationLogical));
+                idxManualEdition = find(addedObservationLogical | editedLocationLogical);
+                idxRiskMeasures  = find(relatedStationTable.numberOfRiskMeasures > 0);
             end
         end
 
@@ -488,42 +521,42 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function layout_TableStyle(app)
             removeStyle(app.UITable)
 
+            if ~isempty(app.UITable.Selection)
+                addStyle(app.UITable, uistyle('BackgroundColor', '#def0ff'), "row", app.UITable.Selection(1))
+                app.tool_EditRow.Enable = 1;
+            else
+                app.tool_EditRow.Enable = 0;
+            end
+
             if ~isempty(app.UITable.Data)
                 % Identifica estações que NÃO tiveram medições no seu entorno, 
                 % apesar da rota englobar o município em que está instalada a
                 % estação. Ou estações que apresentaram medições com níveis
                 % acima de 14 V/m.
-                idxTableRow = layout_searchUnexpectedTableValues(app, 'TableLayout');
+                [idxMissingInfo, idxManualEdition, idxRiskMeasures] = layout_searchUnexpectedTableValues(app);
 
-                if ~isempty(idxTableRow)
-                    columnIndex = find(ismember(app.UITable.Data.Properties.VariableNames, 'Justificativa'));
-                    
-                    % Neste caso, passa a ser obrigatório o preenchimento do campo
-                    % "Justificativa" da tabela.
-                    s1 = uistyle('Icon', 'Warn_18.png', 'IconAlignment', 'leftmargin');
-                    s2 = uistyle('BackgroundColor', '#c80b0f', 'FontColor', 'white');                
-                    addStyle(app.UITable, s1, "cell", [idxTableRow, ones(numel(idxTableRow), 1)])
-                    addStyle(app.UITable, s2, "cell", [idxTableRow, repmat(columnIndex, numel(idxTableRow), 1)])
+                if ~isempty(idxMissingInfo)
+                    columnIndex1 = find(ismember(app.UITable.Data.Properties.VariableNames, 'Justificativa'));
+                    s1 = uistyle('BackgroundColor', '#c80b0f', 'FontColor', 'white');                
+                    addStyle(app.UITable, s1, "cell", [idxMissingInfo, repmat(columnIndex1, numel(idxMissingInfo), 1)])
                 end
-            end
-        end
 
-        %-----------------------------------------------------------------%
-        function layout_ToolbarButtonVisibility(app)
-            if isempty(app.UITable.Data)
-                app.tool_ExportFiles.Enable = 0;
-            else
+                if ~isempty(idxManualEdition)
+                    s2 = uistyle('Icon', 'Edit_18Gray.png', 'IconAlignment', 'leftmargin');
+                    addStyle(app.UITable, s2, "cell", [idxManualEdition, ones(numel(idxManualEdition), 1)])
+                end
+
+                if ~isempty(idxRiskMeasures)
+                    columnIndex2 = find(ismember(app.UITable.Data.Properties.VariableNames, 'numberOfRiskMeasures'));
+
+                    s3 = uistyle('BackgroundColor', '#c80b0f', 'FontColor', 'white');
+                    addStyle(app.UITable, s3, "cell", [idxRiskMeasures, repmat(columnIndex2, numel(idxRiskMeasures), 1)])
+                end
+
                 app.tool_ExportFiles.Enable = 1;
-            end        
-        end
-
-        %-----------------------------------------------------------------%
-        function layout_ToolbarButtonEdit(app)
-            if isempty(app.UITable.Selection)
-                app.tool_EditRow.Enable = 0;
             else
-                app.tool_EditRow.Enable = 1;
-            end  
+                app.tool_ExportFiles.Enable = 0;
+            end
         end
     end
 
@@ -533,27 +566,52 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function appBackDoor(app, callingApp, operationType, varargin)
             try
                 switch class(callingApp)
-                    case {'auxApp.dockStationInfo', 'auxApp.dockStationInfo_exported'}                        
+                    case {'auxApp.dockStationInfo', 'auxApp.dockStationInfo_exported'}
+                        % Chamadas implementadas:
+                        % (a) 'StationTableValueChanged: ReasonOrNote'
+                        %     Atualizam-se as colunas "Justificativa" e "Observações" da "tabela mãe"
+                        %     (app.mainApp.stationTable), além da coluna "Justificativa" da uitable 
+                        %     (já que a coluna "Observações" não é renderizada na uitable).
+                        %
+                        % (b) 'StationTableValueChanged: Location'
+                        %     Atualizam-se as colunas "Latitude", "Longitude" e "AnalysisFlag" da "tabela mãe"
+                        %     (app.mainApp.stationTable), executando-se novamente a análise.
+                        %
+                        % (c) 'UITableSelectionChanged'
+                        %     Troca-se a seleção da uitable.
+
                         updateFlag = varargin{1};
                         returnFlag = varargin{2};
 
                         if updateFlag
                             switch operationType
-                                case 'StationTableValueChanged'
+                                case 'StationTableValueChanged: ReasonOrNote'
                                     newReason      = varargin{3};
                                     newObservation = varargin{4};
 
                                     [idxStation, idxRow] = selectedStation(app);
                                     app.mainApp.stationTable.("Justificativa")(idxStation) = newReason;
                                     app.mainApp.stationTable.("Observações"){idxStation}   = newObservation;
-                                    app.UITable.Data.("Justificativa")(idxRow) = newReason;
-
+                                    app.UITable.Data.("Justificativa")(idxRow)             = newReason;
                                     layout_TableStyle(app)
+
+                                case 'StationTableValueChanged: Location'
+                                    newLatitude  = varargin{3};
+                                    newLongitude = varargin{4};
+
+                                    idxStation   = selectedStation(app);
+                                    app.mainApp.stationTable.("Latitude")(idxStation)  = newLatitude;
+                                    app.mainApp.stationTable.("Longitude")(idxStation) = newLongitude;
+                                    app.mainApp.stationTable.AnalysisFlag(idxStation)  = false;
+
+                                    Analysis(app)
 
                                 case 'UITableSelectionChanged'
                                     newRowSelection = varargin{3};
                                     app.UITable.Selection = [newRowSelection, 1];
-                                    UITableSelectionChanged(app)
+                                    scroll(app.UITable, 'row', newRowSelection)
+
+                                    UITableSelectionChanged(app)         
                             end
                         end
 
@@ -643,19 +701,22 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             
             % Inicialmente, verifica se o campo "Justificativa" foi devidamente 
             % preenchido...
-            if ~isempty(layout_searchUnexpectedTableValues(app, 'TableExport'))
+            if ~isempty(layout_searchUnexpectedTableValues(app))
                 msgQuestion   = ['Há registro de estações instaladas na(s) localidade(s) sob análise para as quais '     ...
                                  'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
-                                 'o campo "Justificativa".<br><br>Deseja ignorar esse alerta, exportando plot e tabela como arquivos (.KML e .XLSX)?'];
+                                 'o campo "Justificativa" e eventualmente anotar os registros, caso aplicável.'          ...
+                                 '<br><br>Deseja ignorar esse alerta, exportando o resultado?'];
                 userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
                 if userSelection == "Não"
                     return
                 end
             end
 
+            appName       = class.Constants.appName;
+
             % Usuário escolhe nome do arquivo a ser salvo...       
             nameFormatMap = {'*.zip', 'RNI (*.zip)'};
-            defaultName   = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, 'RNI', '-1');
+            defaultName   = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, appName, '-1');
             fileZIP       = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', nameFormatMap, defaultName);
             if isempty(fileZIP)
                 return
@@ -664,9 +725,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.progressDialog.Visible = 'visible';
 
             try
-                fileBasename = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, 'RNI', '-1');
+                fileBasename = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, appName, '-1');
                 hPlot = findobj(app.UIAxes.Children, 'Tag', 'Measures');
-                msgWarning = fileWriter.KML(app.mainApp.stationTable, app.UITable.UserData, app.measTable, fileBasename, fileZIP, hPlot);
+                msgWarning = fileWriter.Summary(app.mainApp.stationTable, app.UITable.UserData, app.measTable, fileBasename, fileZIP, hPlot, app.mainApp.General);
                 appUtil.modalWindow(app.UIFigure, 'info', msgWarning);
             catch ME
                 appUtil.modalWindow(app.UIFigure, 'error', ME.message);
@@ -692,9 +753,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Callback function: UITree
         function UITreeCheckedNodesChanged(app, event)
             
-            app.progressDialog.Visible = 'visible';
             Analysis(app)
-            app.progressDialog.Visible = 'hidden';
 
         end
 
@@ -711,8 +770,12 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Selection changed function: UITable
         function UITableSelectionChanged(app, event)
             
+            if exist('event', 'var') && ~isempty(event.PreviousSelection) && (event.Selection(1) == event.PreviousSelection(1))
+                return
+            end
+    
             delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedStation', '-or', 'Tag', 'FieldPeak'))
-            layout_ToolbarButtonEdit(app)
+            layout_TableStyle(app)
             
         end
 
@@ -720,7 +783,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function UITableDoubleClicked(app, event)
             
             plot_SelectedStation(app)
-            layout_ToolbarButtonEdit(app)
+            layout_TableStyle(app)
 
         end
 
@@ -733,7 +796,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 % 
                 % else
                     if isempty(app.popupContainer)
-                        popupContainerGrid = uigridlayout(app.UIFigure, [1, 1], "BackgroundColor", "white", "ColumnWidth", {'1x', 480, '1x'}, "RowHeight", {'1x', 360, '1x'}, "Visible", "off");
+                        popupContainerGrid = uigridlayout(app.UIFigure, [1, 1], "BackgroundColor", "white", "ColumnWidth", {'1x', 540, '1x'}, "RowHeight", {'1x', 440, '1x'}, "Visible", "off");
                         app.popupContainer = uipanel(popupContainerGrid, "Title", "");
                         app.popupContainer.Layout.Row = 2;
                         app.popupContainer.Layout.Column = 2;

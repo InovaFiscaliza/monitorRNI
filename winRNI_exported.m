@@ -631,7 +631,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.AutoResizeChildren = 'off';
             app.UIFigure.Position = [100 100 1244 660];
-            app.UIFigure.Name = 'RNI';
+            app.UIFigure.Name = 'monitorRNI';
             app.UIFigure.Icon = 'icon_48.png';
             app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @closeFcn, true);
 
