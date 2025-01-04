@@ -4,20 +4,10 @@ function mlapp2m(MLAPPFiles, showDiffApp)
                                'winMonitoringPlan',  ...
                                'winExternalRequest', ...
                                'winConfig',          ...
-                               'dockStationInfo'}
+                               'dockStationInfo',    ...
+                               'dockListOfLocation'}
         showDiffApp logical = false
     end
-
-    % Essa função manipula alguns dos arquivos .MLAPP do projeto, gerando
-    % versões .M.
-    % - "winAppColeta.mlapp"
-    %   A versão .M facilita acompanhamento da evolução do projeto por meio 
-    %   do GitHub Desktop (ao invés de executar a comparação linha a linha 
-    %   no próprio Matlab).
-    %
-    % - Outros
-    %   A versão .M  traz manipulações que possibilitam que esses módulos do 
-    %   appAnalise possam ser renderizados na figura de "winAppAnalise".
      
     fileFolder = fileparts(mfilename('fullpath'));    
     

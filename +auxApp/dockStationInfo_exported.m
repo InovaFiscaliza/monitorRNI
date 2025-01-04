@@ -112,7 +112,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function [idxStation, idxRow] = selectedStation(app)
-            idxRow     = app.callingApp.UITable.Selection(1);
+            idxRow     = app.callingApp.UITable.Selection;
             idxStation = app.callingApp.UITable.UserData(idxRow);
         end
 

@@ -81,12 +81,14 @@ classdef winRNI_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         % ESPECIFICIDADES
         %-----------------------------------------------------------------%
+        projectData
+
         % Instância da classe class.measData contendo a organização da
         % informação lida dos arquivos de medida. O cacheData armazena tudo
         % o que foi lido, e o measData apenas aquilo que consta na lista de
         % arquivos.
-        cacheData = class.measData.empty
-        measData  = class.measData.empty
+        cacheData   = class.measData.empty
+        measData    = class.measData.empty
 
         % Dados das estações do Plano Anual de RNI:
         % (pendente criar possibilidade de atualizar planilha, no módulo
@@ -299,6 +301,9 @@ classdef winRNI_exported < matlab.apps.AppBase
 
             % app.rfDataHubSummary
             app.rfDataHubSummary = summary(RFDataHub);
+
+            % app.projectData
+            app.projectData = projectLib(app);
         end
 
         %-----------------------------------------------------------------%

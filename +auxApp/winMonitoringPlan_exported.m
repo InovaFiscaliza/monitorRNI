@@ -6,19 +6,18 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         GridLayout                   matlab.ui.container.GridLayout
         toolGrid                     matlab.ui.container.GridLayout
         Image                        matlab.ui.control.Image
-        tool_EditRow                 matlab.ui.control.Image
         jsBackDoor                   matlab.ui.control.HTML
         tool_ExportFiles             matlab.ui.control.Image
         tool_TableVisibility         matlab.ui.control.Image
         tool_ControlPanelVisibility  matlab.ui.control.Image
         Document                     matlab.ui.container.GridLayout
+        LocationListLabel            matlab.ui.control.Label
+        LocationListEdit             matlab.ui.control.Image
+        LocationList                 matlab.ui.control.TextArea
         Card4_stationsOutRoute       matlab.ui.control.Label
         Card3_stationsOnRoute        matlab.ui.control.Label
         Card2_numberOfRiskStations   matlab.ui.control.Label
         Card1_numberOfStations       matlab.ui.control.Label
-        Locations                    matlab.ui.control.TextArea
-        LocationsAdd                 matlab.ui.control.Image
-        LocationsLabel               matlab.ui.control.Label
         UITree                       matlab.ui.container.CheckBoxTree
         config_geoAxesLabel_2        matlab.ui.control.Label
         play_ControlsTab1Grid_2      matlab.ui.container.GridLayout
@@ -29,9 +28,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         axesTool_RegionZoom          matlab.ui.control.Image
         axesTool_RestoreView         matlab.ui.control.Image
         plotPanel                    matlab.ui.container.Panel
-        filter_ContextMenu           matlab.ui.container.ContextMenu
-        filter_delButton             matlab.ui.container.Menu
-        filter_delAllButton          matlab.ui.container.Menu
+        ContextMenu                  matlab.ui.container.ContextMenu
+        EditSelectedUITableRow       matlab.ui.container.Menu
     end
 
     
@@ -59,6 +57,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         % ESPECIFICIDADES
         %-----------------------------------------------------------------%
+        projectData
+
         % Instância da classe class.metaData contendo a organização da
         % informação lida dos arquivos de medida. 
         measData  = class.measData.empty
@@ -78,17 +78,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % JSBACKDOOR
         %-----------------------------------------------------------------%
         function jsBackDoor_Initialization(app)
-            app.jsBackDoor.HTMLSource           = appUtil.jsBackDoorHTMLSource();
-            app.jsBackDoor.HTMLEventReceivedFcn = @(~, evt)jsBackDoor_Listener(app, evt);
+            app.jsBackDoor.HTMLSource = appUtil.jsBackDoorHTMLSource();
+            % app.jsBackDoor.HTMLEventReceivedFcn = @(~, evt)jsBackDoor_Listener(app, evt);
         end
 
         %-----------------------------------------------------------------%
-        function jsBackDoor_Listener(app, event)
-            switch event.HTMLEventName
-                case 'customForm'
-                    event.HTMLEventData
-            end
-        end
+        % function jsBackDoor_Listener(app, event)
+        %     % ...
+        % end
 
         %-----------------------------------------------------------------%
         function jsBackDoor_Customizations(app)
@@ -260,59 +257,51 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                         listOfLocations = [listOfLocations; unique(app.mainApp.stationTable.Location(idxLogicalStation))];
                     end
                 end
-
-                if ~isempty(listOfLocations)
-                    app.Locations.Value = unique(listOfLocations);
-                else
-                    app.Locations.Value = '';
-                end
-    
-                idxStations = find(ismember(app.mainApp.stationTable.Location, listOfLocations));
-                identifyMeasuresForEachStation(app, idxStations)
-                updateTable(app, idxStations)
-                
-                % Atualiza painel com quantitativo de estações...
-                nStations         = numel(idxStations);
-                nRiskStations     = sum(app.UITable.Data.numberOfRiskMeasures > 0);
-                nStationsOnRoute  = sum(app.UITable.Data.numberOfMeasures > 0);
-                nStationsOutRoute = nStations - nStationsOnRoute;
-    
-                app.Card1_numberOfStations.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: black;   font-size: 32px;">%d</font>\nESTAÇÕES LOCALIZADAS NOS MUNICÍPIOS SOB ANÁLISE</p>',                nStations);
-                app.Card2_numberOfRiskStations.Text = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES NO ENTORNO DE REGISTROS DE NÍVEIS ACIMA DE 14 V/m</p></p>', nRiskStations);
-                app.Card3_stationsOnRoute .Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: black;   font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS NO ENTORNO DA ROTA</p>',                         nStationsOnRoute);
-                app.Card4_stationsOutRoute.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS FORA DA ROTA</p>',                               nStationsOutRoute);
-    
-                % PLOT
-                prePlot(app)
-                plot_Measures(app)
-                plot_RiskMeasures(app)
-                plot_Stations(app)
+                listOfLocation = unique(listOfLocations);
+                app.projectData.listOfLocations.Automatic = listOfLocation;
 
             else
-                prePlot(app)
-                app.Locations.Value   = '';
-                app.UITable.Data(:,:) = [];
-                app.UITable.UserData  = [];
+                app.measTable = [];
+                app.projectData.listOfLocations.Automatic = {};
             end
 
+            fullListOfLocation = union(app.projectData.listOfLocations.Manual, app.projectData.listOfLocations.Automatic);
+
+            idxStations = find(ismember(app.mainApp.stationTable.Location, fullListOfLocation));
+            if ~isempty(app.measTable)
+                identifyMeasuresForEachStation(app, idxStations)
+            end
+            updateTable(app, idxStations)
             layout_TableStyle(app)
+
+            if ~isempty(fullListOfLocation)
+                app.LocationList.Value = fullListOfLocation;
+            else
+                app.LocationList.Value = '';
+            end
+            
+            nStations         = numel(idxStations);
+            nRiskStations     = sum(app.UITable.Data.numberOfRiskMeasures > 0);
+            nStationsOnRoute  = sum(app.UITable.Data.numberOfMeasures > 0);
+            nStationsOutRoute = nStations - nStationsOnRoute;
+
+            % Atualiza painel com quantitativo de estações...
+            app.Card1_numberOfStations.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: black;   font-size: 32px;">%d</font>\nESTAÇÕES LOCALIZADAS NOS MUNICÍPIOS SOB ANÁLISE</p>',                nStations);
+            app.Card2_numberOfRiskStations.Text = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES NO ENTORNO DE REGISTROS DE NÍVEIS ACIMA DE 14 V/m</p></p>', nRiskStations);
+            app.Card3_stationsOnRoute .Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: black;   font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS NO ENTORNO DA ROTA</p>',                         nStationsOnRoute);
+            app.Card4_stationsOutRoute.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS FORA DA ROTA</p>',                               nStationsOutRoute);
+
+            % PLOT
+            prePlot(app)
+            plot_Measures(app)
+            plot_RiskMeasures(app)
+            plot_Stations(app)
+
             app.progressDialog.Visible = 'hidden';
         end
 
         %-----------------------------------------------------------------%
         function updateTable(app, idxStations)
-            % [table2Render, ...
-            %  table2RenderIndex] = sortrows(app.mainApp.stationTable(idxStations, {'N° estacao',           ...
-            %                                                                       'Location',             ...
-            %                                                                       'Serviço',              ...                                                                                      
-            %                                                                       'numberOfMeasures',     ...
-            %                                                                       'numberOfRiskMeasures', ...
-            %                                                                       'minFieldValue',        ...
-            %                                                                       'meanFieldValue',       ...
-            %                                                                       'maxFieldValue',        ...
-            %                                                                       'Justificativa'}), 'numberOfMeasures', 'descend');
-            % set(app.UITable, 'Data', table2Render, 'UserData', idxStations(table2RenderIndex))
-
             table2Render = app.mainApp.stationTable(idxStations, {'N° estacao',           ...
                                                                   'Location',             ...
                                                                   'Serviço',              ...                                                                                      
@@ -327,7 +316,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function [idxStation, idxRow] = selectedStation(app)
-            idxRow     = app.UITable.Selection(1);
+            idxRow     = app.UITable.Selection;
             idxStation = app.UITable.UserData(idxRow);
         end
 
@@ -340,48 +329,54 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function plot_Measures(app)
-            hPlot = geoscatter(app.UIAxes, app.measTable.Latitude, app.measTable.Longitude, [], app.measTable.FieldValue, 'filled', 'DisplayName', 'Medidas', 'Tag', 'Measures');
-            hPlot.DataTipTemplate.DataTipRows(3).Label  = 'Nivel';
-            hPlot.DataTipTemplate.DataTipRows(3).Format = '%0.2f V/m';
+            if ~isempty(app.measTable)
+                hPlot = geoscatter(app.UIAxes, app.measTable.Latitude, app.measTable.Longitude, [], app.measTable.FieldValue, 'filled', 'DisplayName', 'Medidas', 'Tag', 'Measures');
+                hPlot.DataTipTemplate.DataTipRows(3).Label  = 'Nivel';
+                hPlot.DataTipTemplate.DataTipRows(3).Format = '%0.2f V/m';
 
-            % Abaixo estabelece como limites do eixo os limites atuais,
-            % configurados automaticamente pelo MATLAB. Ao fazer isso,
-            % contudo, esses limites serão orientados às medidas e não às
-            % estações.
-            geolimits(app.UIAxes, app.UIAxes.LatitudeLimits, app.UIAxes.LongitudeLimits)
-            app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
-        end
-
-        %-----------------------------------------------------------------%
-        function plot_RiskMeasures(app)
-            idxRisk = find(app.measTable.FieldValue > app.mainApp.General.MonitoringPlan.FieldValue);
-            if ~isempty(idxRisk)
-                latitudeArray  = app.measTable.Latitude(idxRisk);
-                longitudeArray = app.measTable.Longitude(idxRisk);
-
-                geoscatter(app.UIAxes, latitudeArray, longitudeArray,                      ...
-                    'Marker', '^', 'MarkerFaceColor', app.mainApp.General.Plot.RiskMeasures.Color, ...
-                    'MarkerEdgeColor', app.mainApp.General.Plot.RiskMeasures.Color,                ...
-                    'SizeData',        app.mainApp.General.Plot.RiskMeasures.Size,                 ...
-                    'DisplayName',     sprintf('> %.0f V/m', app.mainApp.General.MonitoringPlan.FieldValue), ...
-                    'Tag',             'RiskMeasures');
+                % Abaixo estabelece como limites do eixo os limites atuais,
+                % configurados automaticamente pelo MATLAB. Ao fazer isso,
+                % contudo, esses limites serão orientados às medidas e não às
+                % estações.
+                plot_AxesDefaultLimits(app, 'measures')
             end
         end
 
         %-----------------------------------------------------------------%
-        function plot_Stations(app)            
+        function plot_RiskMeasures(app)
+            if ~isempty(app.measTable)
+                idxRisk = find(app.measTable.FieldValue > app.mainApp.General.MonitoringPlan.FieldValue);
+
+                if ~isempty(idxRisk)
+                    latitudeArray  = app.measTable.Latitude(idxRisk);
+                    longitudeArray = app.measTable.Longitude(idxRisk);
+    
+                    geoscatter(app.UIAxes, latitudeArray, longitudeArray,                      ...
+                        'Marker', '^', 'MarkerFaceColor', app.mainApp.General.Plot.RiskMeasures.Color, ...
+                        'MarkerEdgeColor', app.mainApp.General.Plot.RiskMeasures.Color,                ...
+                        'SizeData',        app.mainApp.General.Plot.RiskMeasures.Size,                 ...
+                        'DisplayName',     sprintf('> %.0f V/m', app.mainApp.General.MonitoringPlan.FieldValue), ...
+                        'Tag',             'RiskMeasures');
+                end
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function plot_Stations(app)
             if ~isempty(app.UITable.Data)
                 idxStations    = app.UITable.UserData;
                 latitudeArray  = app.mainApp.stationTable.Latitude(idxStations);
                 longitudeArray = app.mainApp.stationTable.Longitude(idxStations);
 
-                geoscatter(app.UIAxes, latitudeArray, longitudeArray,                  ...
+                geoscatter(app.UIAxes, latitudeArray, longitudeArray,                          ...
                     'Marker', '^', 'MarkerFaceColor', app.mainApp.General.Plot.Stations.Color, ...
                     'MarkerEdgeColor', app.mainApp.General.Plot.Stations.Color,                ...
                     'SizeData',        app.mainApp.General.Plot.Stations.Size,                 ...
-                    'DisplayName',     'Estações de referência PM-RNI',                ...
+                    'DisplayName',     'Estações de referência PM-RNI',                        ...
                     'Tag',             'Stations');
             end
+
+            plot_AxesDefaultLimits(app, 'stations')
         end
 
         %-----------------------------------------------------------------%
@@ -389,7 +384,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedStation', '-or', 'Tag', 'FieldPeak'))
 
             if ~isempty(app.UITable.Selection)
-                idxTable = app.UITable.Selection(1);
+                idxTable = app.UITable.Selection;
 
                 % (a) Estação selecionada
                 idxSelectedStation = app.UITable.UserData(idxTable);
@@ -439,6 +434,19 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         
                     geolimits(app.UIAxes, [lim_lat1, lim_lat2], [lim_long1, lim_long2]);
                 end
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function plot_AxesDefaultLimits(app, zoomOrientation)
+            arguments
+                app
+                zoomOrientation {mustBeMember(zoomOrientation, {'stations', 'measures'})}
+            end
+
+            if strcmp(app.mainApp.General.Plot.GeographicAxes.ZoomOrientation, zoomOrientation) || (isempty(app.measTable) && strcmp(app.mainApp.General.Plot.GeographicAxes.ZoomOrientation, 'measures'))
+                geolimits(app.UIAxes, app.UIAxes.LatitudeLimits, app.UIAxes.LongitudeLimits)
+                app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
             end
         end
         
@@ -521,13 +529,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function layout_TableStyle(app)
             removeStyle(app.UITable)
 
-            if ~isempty(app.UITable.Selection)
-                addStyle(app.UITable, uistyle('BackgroundColor', '#def0ff'), "row", app.UITable.Selection(1))
-                app.tool_EditRow.Enable = 1;
-            else
-                app.tool_EditRow.Enable = 0;
-            end
-
             if ~isempty(app.UITable.Data)
                 % Identifica estações que NÃO tiveram medições no seu entorno, 
                 % apesar da rota englobar o município em que está instalada a
@@ -566,7 +567,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function appBackDoor(app, callingApp, operationType, varargin)
             try
                 switch class(callingApp)
-                    case {'auxApp.dockStationInfo', 'auxApp.dockStationInfo_exported'}
+                    case {'auxApp.dockStationInfo',    'auxApp.dockStationInfo_exported', ...
+                          'auxApp.dockListOfLocation', 'auxApp.dockListOfLocation_exported'}
+
                         % Chamadas implementadas:
                         % (a) 'StationTableValueChanged: ReasonOrNote'
                         %     Atualizam-se as colunas "Justificativa" e "Observações" da "tabela mãe"
@@ -608,10 +611,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
                                 case 'UITableSelectionChanged'
                                     newRowSelection = varargin{3};
-                                    app.UITable.Selection = [newRowSelection, 1];
+                                    app.UITable.Selection = newRowSelection;
                                     scroll(app.UITable, 'row', newRowSelection)
 
-                                    UITableSelectionChanged(app)         
+                                    UITableSelectionChanged(app)
+
+                                case 'ListOfLocationChanged'
+                                    Analysis(app)
                             end
                         end
 
@@ -638,9 +644,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app, callingApp)
 
-            app.mainApp    = callingApp;
-            app.rootFolder = callingApp.rootFolder;            
-            app.measData   = callingApp.measData;
+            app.mainApp     = callingApp;
+            app.rootFolder  = callingApp.rootFolder;
+            app.projectData = callingApp.projectData;
+            app.measData    = callingApp.measData;
 
             jsBackDoor_Initialization(app)
 
@@ -770,24 +777,19 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Selection changed function: UITable
         function UITableSelectionChanged(app, event)
             
-            if exist('event', 'var') && ~isempty(event.PreviousSelection) && (event.Selection(1) == event.PreviousSelection(1))
+            if exist('event', 'var') && ~isempty(event.PreviousSelection) && (event.Selection == event.PreviousSelection)
                 return
             end
-    
-            delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedStation', '-or', 'Tag', 'FieldPeak'))
-            layout_TableStyle(app)
-            
-        end
 
-        % Double-clicked callback: UITable
-        function UITableDoubleClicked(app, event)
-            
+            if isempty(app.UITable.ContextMenu)
+                app.UITable.ContextMenu = app.ContextMenu;
+            end
+
             plot_SelectedStation(app)
-            layout_TableStyle(app)
-
+            
         end
 
-        % Image clicked function: tool_EditRow
+        % Menu selected function: EditSelectedUITableRow
         function tool_EditRowImageClicked(app, event)
             
             if ~isempty(app.UITable.Selection)
@@ -822,12 +824,27 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
         end
 
-        % Image clicked function: LocationsAdd
-        function LocationsAddClicked(app, event)
+        % Image clicked function: LocationListEdit
+        function LocationListEditClicked(app, event)
             
-            dialogBox    = struct('id', 'City',  'label', 'Município: ', 'type', 'text');
-            dialogBox(2) = struct('id', 'State', 'label', 'UF: ',        'type', 'text');
-            sendEventToHTMLSource(app.jsBackDoor, "customForm", struct('UUID', char(matlab.lang.internal.uuid()), 'Fields', dialogBox))
+            % if app.mainApp.General.operationMode.Debug
+            %     auxApp.dockListOfLocation(app)
+            % 
+            % else
+                if isempty(app.popupContainer)
+                    popupContainerGrid = uigridlayout(app.UIFigure, [1, 1], "BackgroundColor", "white", "ColumnWidth", {'1x', 540, '1x'}, "RowHeight", {'1x', 440, '1x'}, "Visible", "off");
+                    app.popupContainer = uipanel(popupContainerGrid, "Title", "");
+                    app.popupContainer.Layout.Row = 2;
+                    app.popupContainer.Layout.Column = 2;
+                    drawnow
+
+                    ccTools.compCustomizationV2(app.jsBackDoor, popupContainerGrid, 'backgroundColor', 'rgba(255,255,255,0.65)')
+                    sendEventToHTMLSource(app.jsBackDoor, "panelDialog", struct('componentDataTag', struct(app.popupContainer).Controller.ViewModel.Id))
+                end
+
+                auxApp.dockListOfLocation_exported(app.popupContainer, app)
+                app.popupContainer.Parent.Visible = "on";
+            % end
 
         end
     end
@@ -910,9 +927,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.UITable.ColumnWidth = {90, 150, 'auto', 70, 70, 70, 70, 70, 'auto'};
             app.UITable.RowName = {};
             app.UITable.ColumnSortable = [true true true true true true true true false];
+            app.UITable.SelectionType = 'row';
             app.UITable.ColumnEditable = [false false false false false false false false true];
             app.UITable.CellEditCallback = createCallbackFcn(app, @UITableCellEdit, true);
-            app.UITable.DoubleClickedFcn = createCallbackFcn(app, @UITableDoubleClicked, true);
             app.UITable.SelectionChangedFcn = createCallbackFcn(app, @UITableSelectionChanged, true);
             app.UITable.Multiselect = 'off';
             app.UITable.ForegroundColor = [0.149 0.149 0.149];
@@ -922,7 +939,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create Document
             app.Document = uigridlayout(app.GridLayout);
-            app.Document.ColumnWidth = {160, '1x', 10};
+            app.Document.ColumnWidth = {160, '1x', 16};
             app.Document.RowHeight = {22, 22, '1x', 32, '1x', 85, 85};
             app.Document.ColumnSpacing = 5;
             app.Document.RowSpacing = 5;
@@ -963,7 +980,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.config_geoAxesLabel_2.WordWrap = 'on';
             app.config_geoAxesLabel_2.FontSize = 10;
             app.config_geoAxesLabel_2.Layout.Row = 2;
-            app.config_geoAxesLabel_2.Layout.Column = 1;
+            app.config_geoAxesLabel_2.Layout.Column = [1 2];
             app.config_geoAxesLabel_2.Text = 'LOCALIDADES:';
 
             % Create UITree
@@ -974,30 +991,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Assign Checked Nodes
             app.UITree.CheckedNodesChangedFcn = createCallbackFcn(app, @UITreeCheckedNodesChanged, true);
-
-            % Create LocationsLabel
-            app.LocationsLabel = uilabel(app.Document);
-            app.LocationsLabel.VerticalAlignment = 'bottom';
-            app.LocationsLabel.FontSize = 10;
-            app.LocationsLabel.Layout.Row = 4;
-            app.LocationsLabel.Layout.Column = [1 2];
-            app.LocationsLabel.Interpreter = 'html';
-            app.LocationsLabel.Text = {'LOCALIDADES SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
-
-            % Create LocationsAdd
-            app.LocationsAdd = uiimage(app.Document);
-            app.LocationsAdd.ImageClickedFcn = createCallbackFcn(app, @LocationsAddClicked, true);
-            app.LocationsAdd.Layout.Row = 4;
-            app.LocationsAdd.Layout.Column = 3;
-            app.LocationsAdd.VerticalAlignment = 'bottom';
-            app.LocationsAdd.ImageSource = 'addSymbol_32.png';
-
-            % Create Locations
-            app.Locations = uitextarea(app.Document);
-            app.Locations.Editable = 'off';
-            app.Locations.FontSize = 11;
-            app.Locations.Layout.Row = 5;
-            app.Locations.Layout.Column = [1 3];
 
             % Create Card1_numberOfStations
             app.Card1_numberOfStations = uilabel(app.Document);
@@ -1047,9 +1040,34 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card4_stationsOutRoute.Interpreter = 'html';
             app.Card4_stationsOutRoute.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS FORA DA ROTA</p>'};
 
+            % Create LocationList
+            app.LocationList = uitextarea(app.Document);
+            app.LocationList.Editable = 'off';
+            app.LocationList.FontSize = 11;
+            app.LocationList.Layout.Row = 5;
+            app.LocationList.Layout.Column = [1 3];
+
+            % Create LocationListEdit
+            app.LocationListEdit = uiimage(app.Document);
+            app.LocationListEdit.ImageClickedFcn = createCallbackFcn(app, @LocationListEditClicked, true);
+            app.LocationListEdit.Tooltip = {'Edita lista de localidades'};
+            app.LocationListEdit.Layout.Row = 4;
+            app.LocationListEdit.Layout.Column = 3;
+            app.LocationListEdit.VerticalAlignment = 'bottom';
+            app.LocationListEdit.ImageSource = 'Edit_32.png';
+
+            % Create LocationListLabel
+            app.LocationListLabel = uilabel(app.Document);
+            app.LocationListLabel.VerticalAlignment = 'bottom';
+            app.LocationListLabel.FontSize = 10;
+            app.LocationListLabel.Layout.Row = 4;
+            app.LocationListLabel.Layout.Column = [1 2];
+            app.LocationListLabel.Interpreter = 'html';
+            app.LocationListLabel.Text = {'LOCALIDADES SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
+
             % Create toolGrid
             app.toolGrid = uigridlayout(app.GridLayout);
-            app.toolGrid.ColumnWidth = {22, 22, 22, '1x', 22, 22, 22};
+            app.toolGrid.ColumnWidth = {22, 22, 22, '1x', 22, 22};
             app.toolGrid.RowHeight = {4, 17, '1x'};
             app.toolGrid.ColumnSpacing = 5;
             app.toolGrid.RowSpacing = 0;
@@ -1089,33 +1107,20 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.jsBackDoor.Layout.Row = 2;
             app.jsBackDoor.Layout.Column = 5;
 
-            % Create tool_EditRow
-            app.tool_EditRow = uiimage(app.toolGrid);
-            app.tool_EditRow.ScaleMethod = 'scaledown';
-            app.tool_EditRow.ImageClickedFcn = createCallbackFcn(app, @tool_EditRowImageClicked, true);
-            app.tool_EditRow.Enable = 'off';
-            app.tool_EditRow.Tooltip = {'VIsualiza formulário'};
-            app.tool_EditRow.Layout.Row = [2 3];
-            app.tool_EditRow.Layout.Column = 6;
-            app.tool_EditRow.ImageSource = 'Edit_32.png';
-
             % Create Image
             app.Image = uiimage(app.toolGrid);
             app.Image.ImageClickedFcn = createCallbackFcn(app, @ImageClicked, true);
             app.Image.Layout.Row = 2;
-            app.Image.Layout.Column = 7;
+            app.Image.Layout.Column = 6;
             app.Image.ImageSource = 'Info_32.png';
 
-            % Create filter_ContextMenu
-            app.filter_ContextMenu = uicontextmenu(app.UIFigure);
+            % Create ContextMenu
+            app.ContextMenu = uicontextmenu(app.UIFigure);
 
-            % Create filter_delButton
-            app.filter_delButton = uimenu(app.filter_ContextMenu);
-            app.filter_delButton.Text = 'Excluir';
-
-            % Create filter_delAllButton
-            app.filter_delAllButton = uimenu(app.filter_ContextMenu);
-            app.filter_delAllButton.Text = 'Excluir todos';
+            % Create EditSelectedUITableRow
+            app.EditSelectedUITableRow = uimenu(app.ContextMenu);
+            app.EditSelectedUITableRow.MenuSelectedFcn = createCallbackFcn(app, @tool_EditRowImageClicked, true);
+            app.EditSelectedUITableRow.Text = 'Editar';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

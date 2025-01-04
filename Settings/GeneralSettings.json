@@ -1,5 +1,5 @@
 {
-    "version": 0.26,
+    "version": 0.28,
     "operationMode": {
         "Debug": false,
         "Dock": false,
@@ -22,7 +22,8 @@
         "GeographicAxes": {
             "Basemap": "satellite",
             "Colormap": "winter",
-            "Colorbar": "off"
+            "Colorbar": "off",
+            "ZoomOrientation": "stations"
         },
         "RiskMeasures": {
             "Color": "red",
@@ -35,7 +36,7 @@
         "SelectedStation": {
             "Color": "red",
             "Size": 32,
-            "AutomaticZoom": true,
+            "AutomaticZoom": false,
             "AutomaticZoomFactor": 2
         },
         "CircleRegion": {
