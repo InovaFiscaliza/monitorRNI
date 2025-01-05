@@ -166,6 +166,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function startup_AppProperties(app)
             if isempty(app.mainApp.stationTable)
                 app.mainApp.stationTable = fileReader.MonitoringPlan(fullfile(app.rootFolder, 'DataBase', 'PM-RNI - Lista de estações.xlsx'), app.mainApp.General);
+                
+                % Ordenando lista (evitando que "Águas Claras" seja apresentada 
+                % depois dos municípios que se iniciam com a letra "z")
+                referenceList = unique(app.mainApp.stationTable.Location);
+                referenceEditedList = textAnalysis.normalizeWords(lower(referenceList));
+                [~, idxSort] = sort(referenceEditedList);
+
+                app.projectData.referenceListOfLocations = referenceList(idxSort);
             end
         end
 

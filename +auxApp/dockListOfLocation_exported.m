@@ -31,9 +31,9 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
     methods (Access = private)
         %-----------------------------------------------------------------%
         function updateForm(app)
-            currentListOfLocations = union(app.projectData.listOfLocations.Manual, app.projectData.listOfLocations.Automatic);
+            currentListOfLocations = sort(union(app.projectData.listOfLocations.Manual, app.projectData.listOfLocations.Automatic));
 
-            app.RefLocation.Items = setdiff(unique(app.mainApp.stationTable.Location), currentListOfLocations);
+            app.RefLocation.Items = setdiff(app.projectData.referenceListOfLocations, currentListOfLocations, 'stable');
             app.Location.Items    = currentListOfLocations;
         end
 
