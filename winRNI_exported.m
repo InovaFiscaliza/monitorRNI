@@ -162,7 +162,7 @@ classdef winRNI_exported < matlab.apps.AppBase
                         switch tabIndex
                             case 1 % FILE
                                 app.file_Tree.UserData = struct(app.file_Tree).Controller.ViewModel.Id;
-                                sendEventToHTMLSource(app.jsBackDoor, 'addKeyDownListener', struct('componentName', 'app.file_Tree', 'componentDataTag', app.file_Tree.UserData, 'keyEvents', "Delete"))
+                                sendEventToHTMLSource(app.jsBackDoor, 'addKeyDownListener', struct('componentName', 'app.file_Tree', 'componentDataTag', app.file_Tree.UserData, 'keyEvents', ["Delete", "Backspace"]))
 
                             otherwise
                                 % ...
