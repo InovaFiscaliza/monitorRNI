@@ -5,7 +5,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         UIFigure                     matlab.ui.Figure
         GridLayout                   matlab.ui.container.GridLayout
         toolGrid                     matlab.ui.container.GridLayout
-        Image                        matlab.ui.control.Image
         jsBackDoor                   matlab.ui.control.HTML
         tool_ExportFiles             matlab.ui.control.Image
         tool_TableVisibility         matlab.ui.control.Image
@@ -174,6 +173,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 [~, idxSort] = sort(referenceEditedList);
 
                 app.projectData.referenceListOfLocations = referenceList(idxSort);
+                app.projectData.referenceListOfStates    = unique(app.mainApp.stationTable.UF);
             end
         end
 
@@ -236,8 +236,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.progressDialog.Visible = 'visible';
 
             if ~isempty(app.UITree.CheckedNodes)
-                selectedLocations = {app.UITree.CheckedNodes.Text};
-                idxFile = find(ismember({app.measData.Location}, selectedLocations));
+                idxFile = FileIndex(app);
     
                 % Concatena as tabelas de LATITUDE, LONGITUDE E NÍVEL de cada um
                 % dos arquivos cuja localidade coincide com o que foi selecionado
@@ -309,15 +308,26 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
+        function idxFile = FileIndex(app)
+            if ~isempty(app.UITree.CheckedNodes)
+                selectedLocations = {app.UITree.CheckedNodes.Text};
+                idxFile = find(ismember({app.measData.Location}, selectedLocations));
+            else
+                idxFile = [];
+            end
+        end
+
+        %-----------------------------------------------------------------%
         function updateTable(app, idxStations)
-            table2Render = app.mainApp.stationTable(idxStations, {'N° estacao',           ...
-                                                                  'Location',             ...
-                                                                  'Serviço',              ...                                                                                      
-                                                                  'numberOfMeasures',     ...
-                                                                  'numberOfRiskMeasures', ...
-                                                                  'minFieldValue',        ...
-                                                                  'meanFieldValue',       ...
-                                                                  'maxFieldValue',        ...
+            table2Render = app.mainApp.stationTable(idxStations, {'N° estacao',            ...
+                                                                  'Location',              ...
+                                                                  'Serviço',               ...                                                                                      
+                                                                  'numberOfMeasures',      ...
+                                                                  'numberOfRiskMeasures',  ...
+                                                                  'minDistanceForMeasure', ...
+                                                                  'minFieldValue',         ...
+                                                                  'meanFieldValue',        ...
+                                                                  'maxFieldValue',         ...
                                                                   'Justificativa'});
             set(app.UITable, 'Data', table2Render, 'UserData', idxStations)
         end
@@ -488,7 +498,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     app.mainApp.stationTable.maxFieldLongitude(ii)    = stationMeasures.Longitude(idxMaxFieldValue);
 
                 else
-                  % app.mainApp.stationTable(ii, 19:26)               = table(0, 0, 0, 0, 0, NaT, 0, 0);
                     app.mainApp.stationTable.numberOfMeasures(ii)     = 0;
                     app.mainApp.stationTable.numberOfRiskMeasures(ii) = 0;
                     app.mainApp.stationTable.minFieldValue(ii)        = 0;
@@ -498,6 +507,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     app.mainApp.stationTable.maxFieldLatitude(ii)     = 0;
                     app.mainApp.stationTable.maxFieldLongitude(ii)    = 0;
                 end
+
+                app.mainApp.stationTable.minDistanceForMeasure(ii)= min(stationDistance); % km
             end
         end
 
@@ -714,12 +725,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Image clicked function: tool_ExportFiles
         function tool_ExportTableAsExcelSheet(app, event)
             
-            % Inicialmente, verifica se o campo "Justificativa" foi devidamente 
-            % preenchido...
+            % VALIDAÇÕES
+            % (a) Inicialmente, verifica se o campo "Justificativa" foi devidamente 
+            %     preenchido...
             if ~isempty(layout_searchUnexpectedTableValues(app))
                 msgQuestion   = ['Há registro de estações instaladas na(s) localidade(s) sob análise para as quais '     ...
                                  'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
-                                 'o campo "Justificativa" e eventualmente anotar os registros, caso aplicável.'          ...
+                                 'o campo "Justificativa" e anotar os registros, caso aplicável.'          ...
                                  '<br><br>Deseja ignorar esse alerta, exportando o resultado?'];
                 userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
                 if userSelection == "Não"
@@ -727,28 +739,80 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 end
             end
 
+            % (b) Solicita ao usuário nome do arquivo de saída...
             appName       = class.Constants.appName;
-
-            % Usuário escolhe nome do arquivo a ser salvo...       
-            nameFormatMap = {'*.zip', 'RNI (*.zip)'};
+            nameFormatMap = {'*.zip', [appName, ' (*.zip)']};
             defaultName   = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, appName, '-1');
             fileZIP       = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', nameFormatMap, defaultName);
             if isempty(fileZIP)
                 return
             end
 
-            app.progressDialog.Visible = 'visible';
+            % ARQUIVOS DE SAÍDA
+            d = appUtil.modalWindow(app.UIFigure, 'progressdlg', 'Em andamento a criação do arquivo de medidas no formato "xlsx".');
 
-            try
-                fileBasename = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, appName, '-1');
-                hPlot = findobj(app.UIAxes.Children, 'Tag', 'Measures');
-                msgWarning = fileWriter.Summary(app.mainApp.stationTable, app.UITable.UserData, app.measTable, fileBasename, fileZIP, hPlot, app.mainApp.General);
-                appUtil.modalWindow(app.UIFigure, 'info', msgWarning);
-            catch ME
-                appUtil.modalWindow(app.UIFigure, 'error', ME.message);
+            savedFiles   = {};
+            errorFiles   = {};
+
+            baseName     = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, appName, '-1');
+            idxStations  = app.UITable.UserData;
+
+            % (a) Arquivo no formato .XLSX
+            %     (um único arquivo de saída)
+            fileName_XLSX = [baseName '.xlsx'];
+            [status, msgError] = fileWriter.XLSX(fileName_XLSX, app.mainApp.stationTable(idxStations, :), timetable2table(app.measTable), app.mainApp.General);
+            if status
+                savedFiles{end+1} = fileName_XLSX;
+            else
+                errorFiles{end+1} = msgError;
+            end
+    
+            % (b) Arquivos no formato .KML: "Measures" e "Route"
+            %     (um único arquivo de medições, além de um arquivo de rota 
+            %      por arquivo de medição)
+            if app.mainApp.General.MonitoringPlan.Export.KML
+                hMeasPlot = findobj(app.UIAxes.Children, 'Tag', 'Measures');
+
+                % (b.1) KML:Measures
+                d.Message = 'Em andamento a criação do arquivo de medidas no formato "kml".';
+
+                fileName_KML1 = sprintf('%s_Measures.kml', baseName);
+                [status, msgError] = fileWriter.KML(fileName_KML1, 'Measures', timetable2table(app.measTable), hMeasPlot);
+                if status
+                    savedFiles{end+1} = fileName_KML1;
+                else
+                    errorFiles{end+1} = msgError;
+                end
+
+                % (b.2) KML:Route
+                d.Message = 'Em andamento a criação do arquivo de rotas no formato "kml".';
+
+                idxFile = FileIndex(app);
+                for ii = 1:numel(idxFile)
+                    fileName_KML2 = sprintf('%s_Route (%d).kml', baseName, ii);
+                    [status, msgError] = fileWriter.KML(fileName_KML2, 'Route', timetable2table(app.measData(idxFile(ii)).Data));
+                    if status
+                        savedFiles{end+1} = fileName_KML2;
+                    else
+                        errorFiles{end+1} = msgError;
+                    end
+                end
             end
 
-            app.progressDialog.Visible = 'hidden';
+            % (c) Arquivo no formato .ZIP
+            if ~isempty(savedFiles)
+                zip(fileZIP, savedFiles)
+
+                fileFolder = fileparts(baseName);
+                savedFiles = replace(savedFiles, fileFolder, '.');
+                appUtil.modalWindow(app.UIFigure, 'info', sprintf('Lista de arquivos criados na pasta de trabalho:\n%s', strjoin(savedFiles, '\n')));
+            end
+
+            if ~isempty(errorFiles)
+                appUtil.modalWindow(app.UIFigure, 'error', strjoin(errorFiles, '\n'));
+            end
+
+            delete(d)
 
         end
 
@@ -820,15 +884,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     app.popupContainer.Parent.Visible = "on";
                 % end
             end
-
-        end
-
-        % Image clicked function: Image
-        function ImageClicked(app, event)
-            
-            % Explica que planilha de referência é preparda pelo
-            % centralizador do plano... possibilita abrir externamente.
-            pause(1)
 
         end
 
@@ -931,16 +986,17 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create UITable
             app.UITable = uitable(app.GridLayout);
-            app.UITable.ColumnName = {'Estação'; 'Localidade'; 'Serviço'; 'Qtd.|Medidas'; 'Qtd.|> 14 V/m'; 'Emin|(V/m)'; 'Emean|(V/m)'; 'Emax|(V/m)'; 'Justificativa'};
-            app.UITable.ColumnWidth = {90, 150, 'auto', 70, 70, 70, 70, 70, 'auto'};
+            app.UITable.ColumnName = {'Estação'; 'Localidade'; 'Serviço'; 'Qtd.|Medidas'; 'Qtd.|> 14 V/m'; 'Dmin|(km)'; 'Emin|(V/m)'; 'Emean|(V/m)'; 'Emax|(V/m)'; 'Justificativa'};
+            app.UITable.ColumnWidth = {90, 150, 'auto', 70, 70, 70, 70, 70, 70, 'auto'};
             app.UITable.RowName = {};
-            app.UITable.ColumnSortable = [true true true true true true true true false];
+            app.UITable.ColumnSortable = [true true true true true true true true true false];
             app.UITable.SelectionType = 'row';
-            app.UITable.ColumnEditable = [false false false false false false false false true];
+            app.UITable.ColumnEditable = [false false false false false false false false false true];
             app.UITable.CellEditCallback = createCallbackFcn(app, @UITableCellEdit, true);
             app.UITable.SelectionChangedFcn = createCallbackFcn(app, @UITableSelectionChanged, true);
             app.UITable.Multiselect = 'off';
             app.UITable.ForegroundColor = [0.149 0.149 0.149];
+            app.UITable.FontName = 'MS Sans Serif';
             app.UITable.Layout.Row = 5;
             app.UITable.Layout.Column = [4 6];
             app.UITable.FontSize = 10;
@@ -1075,7 +1131,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create toolGrid
             app.toolGrid = uigridlayout(app.GridLayout);
-            app.toolGrid.ColumnWidth = {22, 22, 22, '1x', 22, 22};
+            app.toolGrid.ColumnWidth = {22, 22, 22, '1x', 22};
             app.toolGrid.RowHeight = {4, 17, '1x'};
             app.toolGrid.ColumnSpacing = 5;
             app.toolGrid.RowSpacing = 0;
@@ -1114,13 +1170,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.jsBackDoor = uihtml(app.toolGrid);
             app.jsBackDoor.Layout.Row = 2;
             app.jsBackDoor.Layout.Column = 5;
-
-            % Create Image
-            app.Image = uiimage(app.toolGrid);
-            app.Image.ImageClickedFcn = createCallbackFcn(app, @ImageClicked, true);
-            app.Image.Layout.Row = 2;
-            app.Image.Layout.Column = 6;
-            app.Image.ImageSource = 'Info_32.png';
 
             % Create ContextMenu
             app.ContextMenu = uicontextmenu(app.UIFigure);

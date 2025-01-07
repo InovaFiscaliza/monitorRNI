@@ -5,6 +5,10 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         UIFigure          matlab.ui.Figure
         GridLayout        matlab.ui.container.GridLayout
         LocationPanel     matlab.ui.container.GridLayout
+        Filter            matlab.ui.control.DropDown
+        FilterLabel       matlab.ui.control.Label
+        FilterIcon        matlab.ui.control.Image
+        jsBackDoor        matlab.ui.control.HTML
         btnOK             matlab.ui.control.Button
         Location          matlab.ui.control.ListBox
         LocationLabel     matlab.ui.control.Label
@@ -26,6 +30,32 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
 
         projectData
     end
+
+
+    methods (Access = private)
+        %-----------------------------------------------------------------%
+        % JSBACKDOOR
+        %-----------------------------------------------------------------%
+        function jsBackDoor_Initialization(app)
+            app.jsBackDoor.HTMLSource = appUtil.jsBackDoorHTMLSource();
+            app.jsBackDoor.HTMLEventReceivedFcn = @(~, evt)jsBackDoor_Listener(app, evt);
+        end
+
+        %-----------------------------------------------------------------%
+        function jsBackDoor_Listener(app, event)
+            switch event.HTMLEventName
+                case 'app.Location'
+                    Callbacks(app, struct('Source', app.Delete))
+            end
+            drawnow
+        end
+
+        %-----------------------------------------------------------------%
+        function jsBackDoor_Customizations(app)
+            app.Location.UserData = struct(app.Location).Controller.ViewModel.Id;
+            sendEventToHTMLSource(app.jsBackDoor, 'addKeyDownListener', struct('componentName', 'app.Location', 'componentDataTag', app.Location.UserData, 'keyEvents', ["Delete", "Backspace"]))
+        end
+    end
     
     
     methods (Access = private)
@@ -33,8 +63,13 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         function updateForm(app)
             currentListOfLocations = sort(union(app.projectData.listOfLocations.Manual, app.projectData.listOfLocations.Automatic));
 
-            app.RefLocation.Items = setdiff(app.projectData.referenceListOfLocations, currentListOfLocations, 'stable');
-            app.Location.Items    = currentListOfLocations;
+            refListOfLocations     = setdiff(app.projectData.referenceListOfLocations, currentListOfLocations, 'stable');
+            if ~isempty(app.Filter.Value)
+                refListOfLocations = refListOfLocations(endsWith(refListOfLocations, app.Filter.Value));
+            end
+
+            app.RefLocation.Items  = refListOfLocations;
+            app.Location.Items     = currentListOfLocations;
         end
 
         %-----------------------------------------------------------------%
@@ -71,11 +106,16 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app, callingApp)
             
-            app.mainApp     = callingApp.mainApp;
-            app.callingApp  = callingApp;
-            app.projectData = callingApp.mainApp.projectData;
-            
+            app.mainApp      = callingApp.mainApp;
+            app.callingApp   = callingApp;
+            app.projectData  = callingApp.mainApp.projectData;
+
+            jsBackDoor_Initialization(app)
+            app.Filter.Items = [{''}; app.projectData.referenceListOfStates];
             updateForm(app)
+
+            drawnow
+            jsBackDoor_Customizations(app)
             
         end
 
@@ -115,6 +155,13 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
                         CallingMainApp(app, 'ListOfLocationChanged', true, true)
                     end
             end
+            
+        end
+
+        % Value changed function: Filter
+        function FilterValueChanged(app, event)
+            
+            updateForm(app)
             
         end
     end
@@ -169,7 +216,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
 
             % Create LocationPanel
             app.LocationPanel = uigridlayout(app.GridLayout);
-            app.LocationPanel.ColumnWidth = {247, 16, '1x', 90};
+            app.LocationPanel.ColumnWidth = {22, 110, '1x', 16, '1x', 42, 90};
             app.LocationPanel.RowHeight = {32, 22, 22, '1x', 22};
             app.LocationPanel.ColumnSpacing = 5;
             app.LocationPanel.RowSpacing = 5;
@@ -182,7 +229,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.RefLocationLabel.VerticalAlignment = 'bottom';
             app.RefLocationLabel.FontSize = 10;
             app.RefLocationLabel.Layout.Row = 1;
-            app.RefLocationLabel.Layout.Column = 1;
+            app.RefLocationLabel.Layout.Column = [1 3];
             app.RefLocationLabel.Interpreter = 'html';
             app.RefLocationLabel.Text = {'LOCALIDADES DE REFERÊNCIA:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
 
@@ -193,7 +240,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.RefLocation.ValueChangedFcn = createCallbackFcn(app, @Callbacks, true);
             app.RefLocation.FontSize = 11;
             app.RefLocation.Layout.Row = [2 4];
-            app.RefLocation.Layout.Column = 1;
+            app.RefLocation.Layout.Column = [1 3];
             app.RefLocation.Value = {};
 
             % Create Add
@@ -202,7 +249,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.Add.Enable = 'off';
             app.Add.Tooltip = {'Adiciona localidades selecionadas'};
             app.Add.Layout.Row = 2;
-            app.Add.Layout.Column = 2;
+            app.Add.Layout.Column = 4;
             app.Add.ImageSource = 'play_32.png';
 
             % Create Delete
@@ -211,7 +258,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.Delete.Enable = 'off';
             app.Delete.Tooltip = {'Exclui localidades selecionadas'};
             app.Delete.Layout.Row = 3;
-            app.Delete.Layout.Column = 2;
+            app.Delete.Layout.Column = 4;
             app.Delete.ImageSource = 'Delete_32Red.png';
 
             % Create LocationLabel
@@ -219,7 +266,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.LocationLabel.VerticalAlignment = 'bottom';
             app.LocationLabel.FontSize = 10;
             app.LocationLabel.Layout.Row = 1;
-            app.LocationLabel.Layout.Column = [3 4];
+            app.LocationLabel.Layout.Column = [5 7];
             app.LocationLabel.Interpreter = 'html';
             app.LocationLabel.Text = {'LOCALIDADES SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
 
@@ -230,7 +277,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.Location.ValueChangedFcn = createCallbackFcn(app, @Callbacks, true);
             app.Location.FontSize = 11;
             app.Location.Layout.Row = [2 4];
-            app.Location.Layout.Column = [3 4];
+            app.Location.Layout.Column = [5 7];
             app.Location.Value = {};
 
             % Create btnOK
@@ -240,8 +287,38 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.btnOK.IconAlignment = 'right';
             app.btnOK.BackgroundColor = [0.9804 0.9804 0.9804];
             app.btnOK.Layout.Row = 5;
-            app.btnOK.Layout.Column = 4;
+            app.btnOK.Layout.Column = 7;
             app.btnOK.Text = 'OK';
+
+            % Create jsBackDoor
+            app.jsBackDoor = uihtml(app.LocationPanel);
+            app.jsBackDoor.Layout.Row = 5;
+            app.jsBackDoor.Layout.Column = 6;
+
+            % Create FilterIcon
+            app.FilterIcon = uiimage(app.LocationPanel);
+            app.FilterIcon.ScaleMethod = 'none';
+            app.FilterIcon.Layout.Row = 5;
+            app.FilterIcon.Layout.Column = 1;
+            app.FilterIcon.ImageSource = 'Filter_18.png';
+
+            % Create FilterLabel
+            app.FilterLabel = uilabel(app.LocationPanel);
+            app.FilterLabel.WordWrap = 'on';
+            app.FilterLabel.FontSize = 10;
+            app.FilterLabel.Layout.Row = 5;
+            app.FilterLabel.Layout.Column = 2;
+            app.FilterLabel.Text = 'Unidade da Federação:';
+
+            % Create Filter
+            app.Filter = uidropdown(app.LocationPanel);
+            app.Filter.Items = {};
+            app.Filter.ValueChangedFcn = createCallbackFcn(app, @FilterValueChanged, true);
+            app.Filter.FontSize = 11;
+            app.Filter.BackgroundColor = [1 1 1];
+            app.Filter.Layout.Row = 5;
+            app.Filter.Layout.Column = 3;
+            app.Filter.Value = {};
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

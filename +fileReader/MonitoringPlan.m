@@ -31,6 +31,7 @@ function stationTable = MonitoringPlan(fileFullPath, appGeneral)
     
     stationTable.numberOfMeasures(:)      = 0;
     stationTable.numberOfRiskMeasures(:)  = 0;
+    stationTable.minDistanceForMeasure(:) = 0;
     stationTable.minFieldValue(:)         = 0;
     stationTable.meanFieldValue(:)        = 0;
     stationTable.maxFieldValue(:)         = 0;

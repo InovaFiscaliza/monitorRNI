@@ -109,9 +109,6 @@ classdef winRNI_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function jsBackDoor_Listener(app, event)
             switch event.HTMLEventName
-                case 'credentialDialog'
-                    fiscalizaLibConnection.report_Connect(app, event.HTMLEventData, 'OpenConnection')
-
                 case 'BackgroundColorTurnedInvisible'
                     switch event.HTMLEventData
                         case 'SplashScreen'
