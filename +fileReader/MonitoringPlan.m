@@ -1,5 +1,16 @@
-function stationTable = MonitoringPlan(fileFullPath, appGeneral)
-    stationTable = readtable(fileFullPath, 'VariableNamingRule', 'preserve');
+function stationTable = MonitoringPlan(appName, rootFolder, appGeneral)
+    
+    [projectFolder, ...
+     programDataFolder] = appUtil.Path(appName, rootFolder);
+
+    projectFilePath     = fullfile(projectFolder,     appGeneral.MonitoringPlan.ReferenceFile);
+    programDataFilePath = fullfile(programDataFolder, appGeneral.MonitoringPlan.ReferenceFile);
+
+    if isfile(programDataFilePath)
+        stationTable = readtable(programDataFilePath, 'VariableNamingRule', 'preserve');
+    else
+        stationTable = readtable(projectFilePath,     'VariableNamingRule', 'preserve');
+    end
 
     % Dados inválidos (Coordenada geográficas):
     idxInvalid = isnan(stationTable.Lat) | isnan(stationTable.Long);

@@ -7,6 +7,7 @@ classdef winRNI_exported < matlab.apps.AppBase
         popupContainerGrid    matlab.ui.container.GridLayout
         SplashScreen          matlab.ui.control.Image
         menu_Grid             matlab.ui.container.GridLayout
+        DataHubLamp           matlab.ui.control.Lamp
         dockModule_Undock     matlab.ui.control.Image
         dockModule_Close      matlab.ui.control.Image
         AppInfo               matlab.ui.control.Image
@@ -202,7 +203,7 @@ classdef winRNI_exported < matlab.apps.AppBase
     
                     otherwise
                         % Configura o tamanho mínimo da janela.
-                        app.FigurePosition.Visible = 1;
+                        app.FigurePosition.Enable = 1;
                         appUtil.winMinSize(app.UIFigure, class.Constants.windowMinSize)
                 end
     
@@ -278,7 +279,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             end
 
             app.General            = app.General_I;
-            app.General.AppVersion = fcn.envVersion(app.rootFolder, 'full');
+            app.General.AppVersion = fcn.envVersion(app.rootFolder, 'full', app.General.fileFolder.tempPath);
         end
 
         %-----------------------------------------------------------------%
@@ -312,6 +313,17 @@ classdef winRNI_exported < matlab.apps.AppBase
             addComponent(app.tabGroupController, "External", "auxApp.winMonitoringPlan",  app.menu_Button2, "AlwaysOn", struct('On', 'DriveTestDensity_32Yellow.png', 'Off', 'DriveTestDensity_32White.png'),  app.menu_Button1,                    2)
             addComponent(app.tabGroupController, "External", "auxApp.winExternalRequest", app.menu_Button3, "AlwaysOn", struct('On', 'Report_32Yellow.png',           'Off', 'Report_32White.png'),            app.menu_Button1,                    3)
             addComponent(app.tabGroupController, "External", "auxApp.winConfig",          app.menu_Button4, "AlwaysOn", struct('On', 'Settings_36Yellow.png',         'Off', 'Settings_36White.png'),          app.menu_Button1,                    4)
+
+            DataHubWarningLamp(app)
+        end
+
+        %-----------------------------------------------------------------%
+        function DataHubWarningLamp(app)
+            if isfolder(app.General.fileFolder.DataHub_POST)
+                app.DataHubLamp.Visible = 0;
+            else
+                app.DataHubLamp.Visible = 1;
+            end
         end
     end
 
@@ -398,6 +410,9 @@ classdef winRNI_exported < matlab.apps.AppBase
 
                             case 'updateAnalysis'
                                 % ...
+
+                            case 'updateDataHubWarningLamp'
+                                DataHubWarningLamp(app)
 
                             otherwise
                                 error('UnexpectedCall')
@@ -787,7 +802,7 @@ classdef winRNI_exported < matlab.apps.AppBase
 
             % Create menu_Grid
             app.menu_Grid = uigridlayout(app.GridLayout);
-            app.menu_Grid.ColumnWidth = {28, 5, 28, 28, 5, 28, '1x', 20, 20, 20, 0, 0};
+            app.menu_Grid.ColumnWidth = {28, 5, 28, 28, 5, 28, '1x', 20, 20, 20, 20, 0, 0};
             app.menu_Grid.RowHeight = {7, '1x', 7};
             app.menu_Grid.ColumnSpacing = 5;
             app.menu_Grid.RowSpacing = 0;
@@ -878,16 +893,16 @@ classdef winRNI_exported < matlab.apps.AppBase
             % Create FigurePosition
             app.FigurePosition = uiimage(app.menu_Grid);
             app.FigurePosition.ImageClickedFcn = createCallbackFcn(app, @menu_ToolbarImageCliced, true);
-            app.FigurePosition.Visible = 'off';
+            app.FigurePosition.Enable = 'off';
             app.FigurePosition.Layout.Row = 2;
-            app.FigurePosition.Layout.Column = 9;
+            app.FigurePosition.Layout.Column = 10;
             app.FigurePosition.ImageSource = fullfile(pathToMLAPP, 'Icons', 'layout1_32White.png');
 
             % Create AppInfo
             app.AppInfo = uiimage(app.menu_Grid);
             app.AppInfo.ImageClickedFcn = createCallbackFcn(app, @menu_ToolbarImageCliced, true);
             app.AppInfo.Layout.Row = 2;
-            app.AppInfo.Layout.Column = 10;
+            app.AppInfo.Layout.Column = 11;
             app.AppInfo.ImageSource = fullfile(pathToMLAPP, 'Icons', 'Dots_32White.png');
 
             % Create dockModule_Close
@@ -897,7 +912,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.dockModule_Close.Tag = 'DRIVETEST';
             app.dockModule_Close.Tooltip = {'Fecha módulo'};
             app.dockModule_Close.Layout.Row = 2;
-            app.dockModule_Close.Layout.Column = 12;
+            app.dockModule_Close.Layout.Column = 13;
             app.dockModule_Close.ImageSource = fullfile(pathToMLAPP, 'Icons', 'Delete_12SVG_white.svg');
 
             % Create dockModule_Undock
@@ -907,8 +922,17 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.dockModule_Undock.Tag = 'DRIVETEST';
             app.dockModule_Undock.Tooltip = {'Reabre módulo em outra janela'};
             app.dockModule_Undock.Layout.Row = 2;
-            app.dockModule_Undock.Layout.Column = 11;
+            app.dockModule_Undock.Layout.Column = 12;
             app.dockModule_Undock.ImageSource = fullfile(pathToMLAPP, 'Icons', 'Undock_18White.png');
+
+            % Create DataHubLamp
+            app.DataHubLamp = uilamp(app.menu_Grid);
+            app.DataHubLamp.Enable = 'off';
+            app.DataHubLamp.Visible = 'off';
+            app.DataHubLamp.Tooltip = {'Pendente mapear pasta do Sharepoint'};
+            app.DataHubLamp.Layout.Row = 2;
+            app.DataHubLamp.Layout.Column = 9;
+            app.DataHubLamp.Color = [1 0 0];
 
             % Create popupContainerGrid
             app.popupContainerGrid = uigridlayout(app.GridLayout);

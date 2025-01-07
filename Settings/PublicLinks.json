@@ -1,12 +1,16 @@
 {
-  "VersionFile": "https://raw.githubusercontent.com/InovaFiscaliza/.github/main/releases/VersionFile.json",
-  "monitorRNI": {
-      "Sharepoint": "https://anatel365.sharepoint.com/sites/InovaFiscaliza/SitePages/monitorRNI.aspx"
-  },
-  "RFDataHub": {
-      "Sharepoint": "https://anatel365.sharepoint.com/sites/InovaFiscaliza/SitePages/RFDataHub.aspx",
-      "Table": "https://github.com/InovaFiscaliza/.github/releases/download/rfdatahub/estacoes.parquet.gzip",
-      "Log": "https://github.com/InovaFiscaliza/.github/releases/download/rfdatahub/log.parquet.gzip",
-      "Release": "https://github.com/InovaFiscaliza/.github/releases/download/rfdatahub/Release.json"
-  }
+    "VersionFile": "https://raw.githubusercontent.com/InovaFiscaliza/.github/main/releases/VersionFile.json",
+    "monitorRNI": {
+        "Sharepoint": "https://anatel365.sharepoint.com/sites/InovaFiscaliza/SitePages/monitorRNI.aspx"
+    },
+    "RFDataHub": {
+        "Sharepoint": "https://anatel365.sharepoint.com/sites/InovaFiscaliza/SitePages/RFDataHub.aspx",
+        "Table": "https://github.com/InovaFiscaliza/.github/releases/download/rfdatahub/estacoes.parquet.gzip",
+        "Log": "https://github.com/InovaFiscaliza/.github/releases/download/rfdatahub/log.parquet.gzip",
+        "Release": "https://github.com/InovaFiscaliza/.github/releases/download/rfdatahub/Release.json"
+    },
+    "Sharepoint": {
+        "DataHubGET": "https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20GET/Forms/AllItems.aspx",
+        "DataHubPOST": "https://anatel365.sharepoint.com/sites/InovaFiscaliza/DataHub%20%20POST/Forms/AllItems.aspx"
+    }
 }

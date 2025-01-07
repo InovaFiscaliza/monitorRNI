@@ -1,5 +1,5 @@
 {
-    "version": 0.29,
+    "version": 0.35,
     "operationMode": {
         "Debug": false,
         "Dock": false,
@@ -74,8 +74,8 @@
             "Estação operando em local diferente (especificar)"
         ],
         "Export": {
-            "XLSX": true,
-            "KML": true
+            "XLSX": false,
+            "KML": false
         }
     },
     "ExternalRequest": {
