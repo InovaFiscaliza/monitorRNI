@@ -1,8 +1,9 @@
-function appVersion = envVersion(rootFolder, versionType)
+function appVersion = envVersion(rootFolder, versionType, tempDir)
 
     arguments
         rootFolder  char
         versionType char {mustBeMember(versionType, {'full', 'full+Python'})} = 'full'
+        tempDir     char = ''
     end
 
     appName = class.Constants.appName;
@@ -43,7 +44,7 @@ function appVersion = envVersion(rootFolder, versionType)
     global RFDataHub_info
 
     if isempty(RFDataHub) || isempty(RFDataHub_info)
-        class.RFDataHub.read(rootFolder)
+        RF.RFDataHub.read(appName, rootFolder, tempDir)
     end
     appVersion.RFDataHub = RFDataHub_info;   
 

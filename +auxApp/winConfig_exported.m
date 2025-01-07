@@ -17,6 +17,9 @@ classdef winConfig_exported < matlab.apps.AppBase
         userPathButton                  matlab.ui.control.Image
         userPath                        matlab.ui.control.EditField
         userPathLabel                   matlab.ui.control.Label
+        DataHubPOSTButton               matlab.ui.control.Image
+        DataHubPOST                     matlab.ui.control.EditField
+        DataHubPOSTLabel                matlab.ui.control.Label
         FolderTitle                     matlab.ui.control.Label
         CustomPlotGrid                  matlab.ui.container.GridLayout
         CustomPlotPanel                 matlab.ui.container.Panel
@@ -57,6 +60,11 @@ classdef winConfig_exported < matlab.apps.AppBase
         ExternalRequestLabel            matlab.ui.control.Label
         MonitoringPlanPanel             matlab.ui.container.Panel
         MonitoringPlanGrid              matlab.ui.container.GridLayout
+        Image                           matlab.ui.control.Image
+        AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox  matlab.ui.control.CheckBox
+        CheckBox                        matlab.ui.control.CheckBox
+        EditField                       matlab.ui.control.EditField
+        MonitoringPlanReasonsListLabel_2  matlab.ui.control.Label
         MonitoringPlanReasonsList       matlab.ui.control.ListBox
         MonitoringPlanReasonsListLabel  matlab.ui.control.Label
         MonitoringPlanLevel             matlab.ui.control.NumericEditField
@@ -94,7 +102,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         Container
         isDocked = false
         
-        CallingApp
+        mainApp
         rootFolder
 
         % A função do timer é executada uma única vez após a renderização
@@ -132,7 +140,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function jsBackDoor_Customizations(app)
             if app.isDocked
-                app.progressDialog = app.CallingApp.progressDialog;
+                app.progressDialog = app.mainApp.progressDialog;
             else
                 app.progressDialog = ccTools.ProgressDialog(app.jsBackDoor);
             end
@@ -168,7 +176,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % (diretamente em JS).
             jsBackDoor_Customizations(app)
 
-            if ~strcmp(app.CallingApp.executionMode, 'webApp')
+            if ~strcmp(app.mainApp.executionMode, 'webApp')
                 app.AppVersionRefresh.Enable = 1;
                 app.gpuType.Enable = 1;
                 app.openAuxiliarAppAsDocked.Enable = 1;
@@ -192,7 +200,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function General_updatePanel(app)
             % Versão
-            htmlContent = auxApp.config.htmlCode_AppVersion(app.CallingApp.General, app.CallingApp.executionMode);
+            htmlContent = auxApp.config.htmlCode_AppVersion(app.mainApp.General, app.mainApp.executionMode);
             app.AppVersion.HTMLSource = htmlContent;
 
             % Renderizador
@@ -210,59 +218,60 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.gpuType.Value = graphRenderSupport;
 
             % Modo de operação
-            app.openAuxiliarAppAsDocked.Value   = app.CallingApp.General.operationMode.Dock;
-            app.openAuxiliarApp2Debug.Value     = app.CallingApp.General.operationMode.Debug;
+            app.openAuxiliarAppAsDocked.Value   = app.mainApp.General.operationMode.Dock;
+            app.openAuxiliarApp2Debug.Value     = app.mainApp.General.operationMode.Debug;
         end
 
         %-----------------------------------------------------------------%
         function Analysis_updatePanel(app)
-            app.MonitoringPlanDistance.Value    = app.CallingApp.General.MonitoringPlan.Distance_km * 1000;
-            app.MonitoringPlanLevel.Value       = app.CallingApp.General.MonitoringPlan.FieldValue;
-            app.MonitoringPlanReasonsList.Items = app.CallingApp.General.MonitoringPlan.NoMeasureReasons;
+            app.MonitoringPlanDistance.Value    = app.mainApp.General.MonitoringPlan.Distance_km * 1000;
+            app.MonitoringPlanLevel.Value       = app.mainApp.General.MonitoringPlan.FieldValue;
+            app.MonitoringPlanReasonsList.Items = app.mainApp.General.MonitoringPlan.NoMeasureReasons;
 
-            app.ExternalRequestDistance.Value   = app.CallingApp.General.ExternalRequest.Distance_km * 1000;
-            app.ExternalRequestLevel.Value      = app.CallingApp.General.ExternalRequest.FieldValue;
+            app.ExternalRequestDistance.Value   = app.mainApp.General.ExternalRequest.Distance_km * 1000;
+            app.ExternalRequestLevel.Value      = app.mainApp.General.ExternalRequest.FieldValue;
         end
 
         %-----------------------------------------------------------------%
         function CustomPlot_updatePanel(app)
-            app.Basemap.Value              = app.CallingApp.General.Plot.GeographicAxes.Basemap;
-            app.Colormap.Value             = app.CallingApp.General.Plot.GeographicAxes.Colormap;
-            app.Colorbar.Value             = app.CallingApp.General.Plot.GeographicAxes.Colorbar;
+            app.Basemap.Value              = app.mainApp.General.Plot.GeographicAxes.Basemap;
+            app.Colormap.Value             = app.mainApp.General.Plot.GeographicAxes.Colormap;
+            app.Colorbar.Value             = app.mainApp.General.Plot.GeographicAxes.Colorbar;
 
-            app.StationsColor.Value        = app.CallingApp.General.Plot.Stations.Color;
-            app.StationsSize.Value         = app.CallingApp.General.Plot.Stations.Size;
+            app.StationsColor.Value        = app.mainApp.General.Plot.Stations.Color;
+            app.StationsSize.Value         = app.mainApp.General.Plot.Stations.Size;
 
-            app.SelectedStationColor.Value = app.CallingApp.General.Plot.SelectedStation.Color;
-            app.SelectedStationSize.Value  = app.CallingApp.General.Plot.SelectedStation.Size;
+            app.SelectedStationColor.Value = app.mainApp.General.Plot.SelectedStation.Color;
+            app.SelectedStationSize.Value  = app.mainApp.General.Plot.SelectedStation.Size;
 
-            app.CircleColor.Value          = app.CallingApp.General.Plot.CircleRegion.Color;
-            app.CircleFaceAlpha.Value      = app.CallingApp.General.Plot.CircleRegion.FaceAlpha;
-            app.CircleEdgeAlpha.Value      = app.CallingApp.General.Plot.CircleRegion.EdgeAlpha;
+            app.CircleColor.Value          = app.mainApp.General.Plot.CircleRegion.Color;
+            app.CircleFaceAlpha.Value      = app.mainApp.General.Plot.CircleRegion.FaceAlpha;
+            app.CircleEdgeAlpha.Value      = app.mainApp.General.Plot.CircleRegion.EdgeAlpha;
 
-            app.AutomaticZoom.Value        = app.CallingApp.General.Plot.SelectedStation.AutomaticZoom;
+            app.AutomaticZoom.Value        = app.mainApp.General.Plot.SelectedStation.AutomaticZoom;
             if app.AutomaticZoom.Value
-                set(app.AutomaticZoomFactor, 'Enable', 1, 'Value', app.CallingApp.General.Plot.SelectedStation.AutomaticZoomFactor)
+                set(app.AutomaticZoomFactor, 'Enable', 1, 'Value', app.mainApp.General.Plot.SelectedStation.AutomaticZoomFactor)
             else
                 set(app.AutomaticZoomFactor, 'Enable', 0, 'Value', 1)
             end
 
-            app.PeakColor.Value            = app.CallingApp.General.Plot.FieldPeak.Color;
-            app.PeakSize.Value             = app.CallingApp.General.Plot.FieldPeak.Size;
+            app.PeakColor.Value            = app.mainApp.General.Plot.FieldPeak.Color;
+            app.PeakSize.Value             = app.mainApp.General.Plot.FieldPeak.Size;
         end
 
         %-----------------------------------------------------------------%
         function Folder_updatePanel(app)
-            if ~strcmp(app.CallingApp.executionMode, 'webApp')
-                app.btnFolder.Enable = 1;
-                app.userPath.Value = app.CallingApp.General.fileFolder.userPath;
-                app.tempPath.Value = app.CallingApp.General.fileFolder.tempPath;
+            if ~strcmp(app.mainApp.executionMode, 'webApp')
+                app.btnFolder.Enable       = 1;
+                app.DataHubPOST.Value      = app.mainApp.General.fileFolder.DataHub_POST;
+                app.userPath.Value         = app.mainApp.General.fileFolder.userPath;
+                app.tempPath.Value         = app.mainApp.General.fileFolder.tempPath;
             end
         end
 
         %-----------------------------------------------------------------%
         function saveGeneralSettings(app)
-            appUtil.generalSettingsSave(class.Constants.appName, app.rootFolder, app.CallingApp.General_I, app.CallingApp.executionMode)
+            appUtil.generalSettingsSave(class.Constants.appName, app.rootFolder, app.mainApp.General_I, app.mainApp.executionMode)
         end
     end
     
@@ -275,7 +284,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             
             % A razão de ser deste app é possibilitar visualização/edição 
             % de algumas das informações do arquivo "GeneralSettings.json".
-            app.CallingApp = mainapp;
+            app.mainApp    = mainapp;
             app.rootFolder = mainapp.rootFolder;
 
             jsBackDoor_Initialization(app)
@@ -294,7 +303,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         % Close request function: UIFigure
         function closeFcn(app, event)
             
-            appBackDoor(app.CallingApp, app, 'closeFcn', 'CONFIG')
+            appBackDoor(app.mainApp, app, 'closeFcn', 'CONFIG')
             delete(app)
             
         end
@@ -317,7 +326,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         % Image clicked function: tool_RFDataHubButton
         function tool_RFDataHubButtonPushed(app, event)
             
-            if isequal(app.CallingApp.General.AppVersion.RFDataHub,  app.stableVersion.RFDataHub)
+            if isequal(app.mainApp.General.AppVersion.RFDataHub,  app.stableVersion.RFDataHub)
                 app.tool_RFDataHubButton.Enable = 0;
                 appUtil.modalWindow(app.UIFigure, 'warning', 'Módulo RFDataHub já atualizado!');
                 return
@@ -327,38 +336,32 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             try
                 [~, ~, rfdatahubLink] = fcn.PublicLinks(app.rootFolder);
-
-                tempDir = tempname;
-                mkdir(tempDir)
-
+                tempDir = app.mainApp.General.fileFolder.tempPath;
                 websave(fullfile(tempDir, 'estacoes.parquet.gzip'), rfdatahubLink.Table);
                 websave(fullfile(tempDir, 'log.parquet.gzip'),      rfdatahubLink.Log);
                 websave(fullfile(tempDir, 'Release.json'),          rfdatahubLink.Release);
 
-                if isfile(fullfile(app.rootFolder, 'DataBase', 'RFDataHub_old.mat'))
-                    delete(fullfile(app.rootFolder, 'DataBase', 'RFDataHub_old.mat'))
+                appName = class.Constants.appName;
+                [~, ...
+                 programDataFolder] = appUtil.Path(appName, app.rootFolder);
+
+                if isfile(fullfile(programDataFolder, 'RFDataHub_old.mat'))
+                    delete(fullfile(programDataFolder, 'RFDataHub_old.mat'))
                 end
 
-                while true
-                    status = system(sprintf('rename "%s" "%s"', fullfile(app.rootFolder, 'DataBase', 'RFDataHub.mat'), 'RFDataHub_old.mat'));
-                    if ~status
-                        break
-                    end
-                    pause(.1)
+                if isfile(fullfile(programDataFolder, 'RFDataHub.mat'))
+                    movefile(fullfile(programDataFolder, 'RFDataHub.mat'), fullfile(programDataFolder, 'RFDataHub_old.mat'), 'f');
                 end
 
                 % Apaga as variáveis globais, lendo os novos arquivos.
                 clear global RFDataHub
                 clear global RFDataHubLog
                 clear global RFDataHub_info
-                class.RFDataHub.read(app.rootFolder, tempDir)
-
-                % Apaga os arquivos temporários.
-                rmdir(tempDir, 's')
+                RF.RFDataHub.read(appName, app.rootFolder, tempDir)
 
                 % Atualiza versão.
                 global RFDataHub_info
-                app.CallingApp.General.AppVersion.RFDataHub = RFDataHub_info;
+                app.mainApp.General.AppVersion.RFDataHub = RFDataHub_info;
                 app.tool_RFDataHubButton.Enable = 0;
                 
             catch ME
@@ -389,7 +392,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             
             app.progressDialog.Visible = 'visible';
 
-            [htmlContent, app.stableVersion, updatedModule] = auxApp.config.htmlCode_CheckAvailableUpdate(app.CallingApp.General, app.rootFolder);
+            [htmlContent, app.stableVersion, updatedModule] = auxApp.config.htmlCode_CheckAvailableUpdate(app.mainApp.General, app.rootFolder);
             appUtil.modalWindow(app.UIFigure, "info", htmlContent);
             
             if ~ismember('RFDataHub', updatedModule)
@@ -411,19 +414,19 @@ classdef winConfig_exported < matlab.apps.AppBase
 
                         graphRender = opengl('data');
                         
-                        app.CallingApp.General.openGL = app.gpuType.Value;
-                        app.CallingApp.General.AppVersion.OpenGL = rmfield(graphRender, {'MaxTextureSize', 'Visual', 'SupportsGraphicsSmoothing', 'SupportsDepthPeelTransparency', 'SupportsAlignVertexCenters', 'Extensions', 'MaxFrameBufferSize'});
+                        app.mainApp.General.openGL = app.gpuType.Value;
+                        app.mainApp.General.AppVersion.OpenGL = rmfield(graphRender, {'MaxTextureSize', 'Visual', 'SupportsGraphicsSmoothing', 'SupportsDepthPeelTransparency', 'SupportsAlignVertexCenters', 'Extensions', 'MaxFrameBufferSize'});
                     end
 
                 case app.openAuxiliarAppAsDocked
-                    app.CallingApp.General.operationMode.Dock  = app.openAuxiliarAppAsDocked.Value;
+                    app.mainApp.General.operationMode.Dock  = app.openAuxiliarAppAsDocked.Value;
 
                 case app.openAuxiliarApp2Debug
-                    app.CallingApp.General.operationMode.Debug = app.openAuxiliarApp2Debug.Value;
+                    app.mainApp.General.operationMode.Debug = app.openAuxiliarApp2Debug.Value;
             end
 
-            app.CallingApp.General_I.openGL        = app.CallingApp.General.openGL;
-            app.CallingApp.General_I.operationMode = app.CallingApp.General.operationMode;
+            app.mainApp.General_I.openGL        = app.mainApp.General.openGL;
+            app.mainApp.General_I.operationMode = app.mainApp.General.operationMode;
             saveGeneralSettings(app)
             General_updatePanel(app)
 
@@ -435,23 +438,23 @@ classdef winConfig_exported < matlab.apps.AppBase
             
             switch event.Source
                 case app.MonitoringPlanDistance
-                    app.CallingApp.General.MonitoringPlan.Distance_km  = app.MonitoringPlanDistance.Value / 1000;
+                    app.mainApp.General.MonitoringPlan.Distance_km  = app.MonitoringPlanDistance.Value / 1000;
 
                 case app.MonitoringPlanLevel
-                    app.CallingApp.General.MonitoringPlan.FieldValue   = app.MonitoringPlanLevel.Value;
+                    app.mainApp.General.MonitoringPlan.FieldValue   = app.MonitoringPlanLevel.Value;
 
                 case app.ExternalRequestDistance
-                    app.CallingApp.General.ExternalRequest.Distance_km = app.ExternalRequestDistance.Value / 1000;
+                    app.mainApp.General.ExternalRequest.Distance_km = app.ExternalRequestDistance.Value / 1000;
 
                 case app.ExternalRequestLevel
-                    app.CallingApp.General.ExternalRequest.FieldValue  = app.ExternalRequestLevel.Value;
+                    app.mainApp.General.ExternalRequest.FieldValue  = app.ExternalRequestLevel.Value;
             end
 
-            app.CallingApp.General_I.MonitoringPlan  = app.CallingApp.General.MonitoringPlan;
-            app.CallingApp.General_I.ExternalRequest = app.CallingApp.General.ExternalRequest;
+            app.mainApp.General_I.MonitoringPlan  = app.mainApp.General.MonitoringPlan;
+            app.mainApp.General_I.ExternalRequest = app.mainApp.General.ExternalRequest;
             saveGeneralSettings(app)
 
-            appBackDoor(app.CallingApp, app, 'updateAnalysis')
+            appBackDoor(app.mainApp, app, 'updateAnalysis')
             
         end
 
@@ -461,31 +464,31 @@ classdef winConfig_exported < matlab.apps.AppBase
             
             switch event.Source
                 case app.Basemap
-                    app.CallingApp.General.Plot.GeographicAxes.Basemap    = app.Basemap.Value;
+                    app.mainApp.General.Plot.GeographicAxes.Basemap    = app.Basemap.Value;
 
                 case app.Colormap
-                    app.CallingApp.General.Plot.GeographicAxes.Colormap   = app.Colormap.Value;
+                    app.mainApp.General.Plot.GeographicAxes.Colormap   = app.Colormap.Value;
 
                 case app.Colorbar
-                    app.CallingApp.General.Plot.GeographicAxes.Colorbar   = app.Colorbar.Value;
+                    app.mainApp.General.Plot.GeographicAxes.Colorbar   = app.Colorbar.Value;
 
                 case app.StationsSize
-                    app.CallingApp.General.Plot.Stations.Size             = round(app.StationsSize.Value);
+                    app.mainApp.General.Plot.Stations.Size             = round(app.StationsSize.Value);
 
                 case app.SelectedStationSize
-                    app.CallingApp.General.Plot.SelectedStation.Size      = round(app.SelectedStationSize.Value);
+                    app.mainApp.General.Plot.SelectedStation.Size      = round(app.SelectedStationSize.Value);
 
                 case app.PeakSize
-                    app.CallingApp.General.Plot.FieldPeak.Size            = round(app.PeakSize.Value);
+                    app.mainApp.General.Plot.FieldPeak.Size            = round(app.PeakSize.Value);
 
                 case app.CircleFaceAlpha
-                    app.CallingApp.General.Plot.CircleRegion.FaceAlpha    = app.CircleFaceAlpha.Value;
+                    app.mainApp.General.Plot.CircleRegion.FaceAlpha    = app.CircleFaceAlpha.Value;
 
                 case app.CircleEdgeAlpha
-                    app.CallingApp.General.Plot.CircleRegion.EdgeAlpha    = app.CircleEdgeAlpha.Value;
+                    app.mainApp.General.Plot.CircleRegion.EdgeAlpha    = app.CircleEdgeAlpha.Value;
 
                 case app.AutomaticZoom
-                    app.CallingApp.General.Plot.SelectedStation.AutomaticZoom = app.AutomaticZoom.Value;
+                    app.mainApp.General.Plot.SelectedStation.AutomaticZoom = app.AutomaticZoom.Value;
                     if app.AutomaticZoom.Value
                         app.AutomaticZoomFactor.Enable = 1;
                     else
@@ -493,25 +496,25 @@ classdef winConfig_exported < matlab.apps.AppBase
                     end
 
                 case app.AutomaticZoomFactor
-                    app.CallingApp.General.Plot.SelectedStation.AutomaticZoomFactor = app.AutomaticZoomFactor.Value;
+                    app.mainApp.General.Plot.SelectedStation.AutomaticZoomFactor = app.AutomaticZoomFactor.Value;
             end
 
-            app.CallingApp.General_I.Plot = app.CallingApp.General.Plot;
+            app.mainApp.General_I.Plot = app.mainApp.General.Plot;
             saveGeneralSettings(app)
             
-            appBackDoor(app.CallingApp, app, 'updatePlot')
+            appBackDoor(app.mainApp, app, 'updatePlot')
             
         end
 
         % Value changed function: CircleColor
         function CustomPlot_CircleColorValueChanged(app, event)
 
-            app.CallingApp.General.Plot.CircleRegion.Color = app.CircleColor.Value;
+            app.mainApp.General.Plot.CircleRegion.Color = app.CircleColor.Value;
 
-            app.CallingApp.General_I.Plot = app.CallingApp.General.Plot;
+            app.mainApp.General_I.Plot = app.mainApp.General.Plot;
             saveGeneralSettings(app)
             
-            appBackDoor(app.CallingApp, app, 'updatePlot')
+            appBackDoor(app.mainApp, app, 'updatePlot')
             
         end
 
@@ -526,32 +529,73 @@ classdef winConfig_exported < matlab.apps.AppBase
     
                 switch event.Source
                     case app.StationsColor
-                        app.CallingApp.General.Plot.Stations.Color        = selectedColor;
+                        app.mainApp.General.Plot.Stations.Color        = selectedColor;
                     case app.SelectedStationColor
-                        app.CallingApp.General.Plot.SelectedStation.Color = selectedColor;
+                        app.mainApp.General.Plot.SelectedStation.Color = selectedColor;
                     case app.PeakColor
-                        app.CallingApp.General.Plot.FieldPeak.Color       = selectedColor;
+                        app.mainApp.General.Plot.FieldPeak.Color       = selectedColor;
                 end
             end
 
-            app.CallingApp.General_I.Plot = app.CallingApp.General.Plot;
+            app.mainApp.General_I.Plot = app.mainApp.General.Plot;
             saveGeneralSettings(app)
 
-            appBackDoor(app.CallingApp, app, 'updatePlot')
+            appBackDoor(app.mainApp, app, 'updatePlot')
             
         end
 
-        % Image clicked function: userPathButton
+        % Image clicked function: DataHubPOSTButton, userPathButton
         function Folder_ButtonPushed(app, event)
             
-            selectedFolder = uigetdir(app.CallingApp.General.fileFolder.userPath);
+            try
+                relatedFolder = eval(sprintf('app.%s.Value', event.Source.Tag));
+            catch
+                relatedFolder = app.mainApp.General.fileFolder.(event.Source.Tag);
+            end
+            
+            if isfolder(relatedFolder)
+                initialFolder = relatedFolder;
+            elseif isfile(relatedFolder)
+                initialFolder = fileparts(relatedFolder);
+            else
+                initialFolder = app.userPath.Value;
+            end
+
+            selectedFolder = uigetdir(initialFolder);
             figure(app.UIFigure)
 
             if selectedFolder
-                app.userPath.Value = selectedFolder;
-                app.CallingApp.General.fileFolder.userPath = selectedFolder;
+                switch event.Source
+                    case app.DataHubPOSTButton
+                        if strcmp(app.mainApp.General.fileFolder.DataHub_POST, selectedFolder) 
+                            return
+                        else
+                            appName  = class.Constants.appName;
+                            repoName = 'DataHub - POST';
 
-                app.CallingApp.General_I.fileFolder = app.CallingApp.General.fileFolder;
+                            if all(cellfun(@(x) contains(selectedFolder, x), {repoName, appName})) || contains(selectedFolder, appName)
+                                % .\OneDrive - ANATEL\DataHub - POST\monitorRNI
+                                % .\OneDrive - ANATEL\monitorRNI
+
+                                app.DataHubPOST.Value = selectedFolder;
+                                app.mainApp.General.fileFolder.DataHub_POST = selectedFolder;
+                                appBackDoor(app.mainApp, app, 'updateDataHubWarningLamp')
+                            else
+                                appUtil.modalWindow(app.UIFigure, 'error', sprintf('Não identificado se tratar da pasta "%s" do repositório "%s".', appName, repoName));
+                                return
+                            end
+                        end
+
+                    case app.userPathButton
+                        if strcmp(app.mainApp.General.fileFolder.userPath, selectedFolder) 
+                            return
+                        else
+                            app.userPath.Value = selectedFolder;
+                            app.mainApp.General.fileFolder.userPath = selectedFolder;
+                        end
+                end
+
+                app.mainApp.General_I.fileFolder = app.mainApp.General.fileFolder;
                 saveGeneralSettings(app)
             end
 
@@ -572,7 +616,7 @@ classdef winConfig_exported < matlab.apps.AppBase
                 app.UIFigure = uifigure('Visible', 'off');
                 app.UIFigure.AutoResizeChildren = 'off';
                 app.UIFigure.Position = [100 100 1244 660];
-                app.UIFigure.Name = 'RNI';
+                app.UIFigure.Name = 'monitorRNI';
                 app.UIFigure.Icon = 'icon_48.png';
                 app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @closeFcn, true);
 
@@ -597,7 +641,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create Document
             app.Document = uigridlayout(app.GridLayout);
-            app.Document.ColumnWidth = {325, 0, 0, '1x', 0};
+            app.Document.ColumnWidth = {325, 0, '1x', 0, 0};
             app.Document.RowHeight = {'1x'};
             app.Document.Padding = [5 5 5 5];
             app.Document.Layout.Row = 1;
@@ -800,7 +844,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create AnalysisPanelGrid
             app.AnalysisPanelGrid = uigridlayout(app.AnalysisPanel);
             app.AnalysisPanelGrid.ColumnWidth = {'1x'};
-            app.AnalysisPanelGrid.RowHeight = {17, '1x', 22, '1x'};
+            app.AnalysisPanelGrid.RowHeight = {22, '1x', 22, '1x'};
             app.AnalysisPanelGrid.RowSpacing = 5;
             app.AnalysisPanelGrid.Padding = [10 10 10 5];
             app.AnalysisPanelGrid.BackgroundColor = [1 1 1];
@@ -820,8 +864,9 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create MonitoringPlanGrid
             app.MonitoringPlanGrid = uigridlayout(app.MonitoringPlanPanel);
-            app.MonitoringPlanGrid.ColumnWidth = {190, 90, '1x'};
-            app.MonitoringPlanGrid.RowHeight = {22, 22, 22, '1x'};
+            app.MonitoringPlanGrid.ColumnWidth = {300, 90, '1x', 22};
+            app.MonitoringPlanGrid.RowHeight = {22, 22, 22, 22, '1x', 17, 17};
+            app.MonitoringPlanGrid.ColumnSpacing = 5;
             app.MonitoringPlanGrid.RowSpacing = 5;
             app.MonitoringPlanGrid.BackgroundColor = [1 1 1];
 
@@ -831,7 +876,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.MonitoringPlanDistanceLabel.FontSize = 10;
             app.MonitoringPlanDistanceLabel.Layout.Row = 1;
             app.MonitoringPlanDistanceLabel.Layout.Column = [1 2];
-            app.MonitoringPlanDistanceLabel.Text = {'Distância limite entre ponto de medição e '; 'a estação sob análise (m):'};
+            app.MonitoringPlanDistanceLabel.Text = 'Distância limite entre ponto de medição e a estação sob análise (m):';
 
             % Create MonitoringPlanDistance
             app.MonitoringPlanDistance = uieditfield(app.MonitoringPlanGrid, 'numeric');
@@ -859,9 +904,8 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create MonitoringPlanReasonsListLabel
             app.MonitoringPlanReasonsListLabel = uilabel(app.MonitoringPlanGrid);
-            app.MonitoringPlanReasonsListLabel.VerticalAlignment = 'bottom';
             app.MonitoringPlanReasonsListLabel.FontSize = 10;
-            app.MonitoringPlanReasonsListLabel.Layout.Row = 3;
+            app.MonitoringPlanReasonsListLabel.Layout.Row = 4;
             app.MonitoringPlanReasonsListLabel.Layout.Column = 1;
             app.MonitoringPlanReasonsListLabel.Text = 'Lista de jutificativas:';
 
@@ -869,9 +913,42 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.MonitoringPlanReasonsList = uilistbox(app.MonitoringPlanGrid);
             app.MonitoringPlanReasonsList.Items = {''};
             app.MonitoringPlanReasonsList.FontSize = 11;
-            app.MonitoringPlanReasonsList.Layout.Row = 4;
-            app.MonitoringPlanReasonsList.Layout.Column = [1 3];
+            app.MonitoringPlanReasonsList.Layout.Row = [4 5];
+            app.MonitoringPlanReasonsList.Layout.Column = [2 3];
             app.MonitoringPlanReasonsList.Value = '';
+
+            % Create MonitoringPlanReasonsListLabel_2
+            app.MonitoringPlanReasonsListLabel_2 = uilabel(app.MonitoringPlanGrid);
+            app.MonitoringPlanReasonsListLabel_2.FontSize = 10;
+            app.MonitoringPlanReasonsListLabel_2.Layout.Row = 3;
+            app.MonitoringPlanReasonsListLabel_2.Layout.Column = 1;
+            app.MonitoringPlanReasonsListLabel_2.Text = 'Arquivo de referência:';
+
+            % Create EditField
+            app.EditField = uieditfield(app.MonitoringPlanGrid, 'text');
+            app.EditField.FontSize = 11;
+            app.EditField.Layout.Row = 3;
+            app.EditField.Layout.Column = [2 3];
+
+            % Create CheckBox
+            app.CheckBox = uicheckbox(app.MonitoringPlanGrid);
+            app.CheckBox.Text = 'Ao exportar a tabela de dados, cria uma segunda aba na planilha com as medidas brutas.';
+            app.CheckBox.FontSize = 11;
+            app.CheckBox.Layout.Row = 6;
+            app.CheckBox.Layout.Column = [1 3];
+
+            % Create AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox
+            app.AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox = uicheckbox(app.MonitoringPlanGrid);
+            app.AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox.Text = 'Ao exportar a tabela de dados, cria arquivos no formato "kml".';
+            app.AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox.FontSize = 11;
+            app.AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox.Layout.Row = 7;
+            app.AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox.Layout.Column = [1 3];
+
+            % Create Image
+            app.Image = uiimage(app.MonitoringPlanGrid);
+            app.Image.Layout.Row = 3;
+            app.Image.Layout.Column = 4;
+            app.Image.ImageSource = 'OpenFile_36x36.png';
 
             % Create ExternalRequestLabel
             app.ExternalRequestLabel = uilabel(app.AnalysisPanelGrid);
@@ -888,7 +965,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create ExternalRequestGrid
             app.ExternalRequestGrid = uigridlayout(app.ExternalRequestPanel);
-            app.ExternalRequestGrid.ColumnWidth = {190, 90, '1x'};
+            app.ExternalRequestGrid.ColumnWidth = {300, 90, '1x'};
             app.ExternalRequestGrid.RowHeight = {22, 22};
             app.ExternalRequestGrid.RowSpacing = 5;
             app.ExternalRequestGrid.BackgroundColor = [1 1 1];
@@ -899,7 +976,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.ExternalRequestDistanceLabel.FontSize = 10;
             app.ExternalRequestDistanceLabel.Layout.Row = 1;
             app.ExternalRequestDistanceLabel.Layout.Column = [1 2];
-            app.ExternalRequestDistanceLabel.Text = {'Distância limite entre ponto de medição e '; 'a estação sob análise (m):'};
+            app.ExternalRequestDistanceLabel.Text = 'Distância limite entre ponto de medição e a estação sob análise (m):';
 
             % Create ExternalRequestDistance
             app.ExternalRequestDistance = uieditfield(app.ExternalRequestGrid, 'numeric');
@@ -1190,16 +1267,39 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create FolderPanelGrid
             app.FolderPanelGrid = uigridlayout(app.FolderPanel);
             app.FolderPanelGrid.ColumnWidth = {'1x', 20};
-            app.FolderPanelGrid.RowHeight = {17, 22, 17, 22, '1x'};
+            app.FolderPanelGrid.RowHeight = {22, 22, 22, 22, 22, 22, '1x'};
             app.FolderPanelGrid.ColumnSpacing = 5;
             app.FolderPanelGrid.RowSpacing = 5;
             app.FolderPanelGrid.BackgroundColor = [1 1 1];
+
+            % Create DataHubPOSTLabel
+            app.DataHubPOSTLabel = uilabel(app.FolderPanelGrid);
+            app.DataHubPOSTLabel.VerticalAlignment = 'bottom';
+            app.DataHubPOSTLabel.FontSize = 10;
+            app.DataHubPOSTLabel.Layout.Row = 1;
+            app.DataHubPOSTLabel.Layout.Column = 1;
+            app.DataHubPOSTLabel.Text = 'DataHub - POST:';
+
+            % Create DataHubPOST
+            app.DataHubPOST = uieditfield(app.FolderPanelGrid, 'text');
+            app.DataHubPOST.Editable = 'off';
+            app.DataHubPOST.FontSize = 11;
+            app.DataHubPOST.Layout.Row = 2;
+            app.DataHubPOST.Layout.Column = 1;
+
+            % Create DataHubPOSTButton
+            app.DataHubPOSTButton = uiimage(app.FolderPanelGrid);
+            app.DataHubPOSTButton.ImageClickedFcn = createCallbackFcn(app, @Folder_ButtonPushed, true);
+            app.DataHubPOSTButton.Tag = 'DataHub_POST';
+            app.DataHubPOSTButton.Layout.Row = 2;
+            app.DataHubPOSTButton.Layout.Column = 2;
+            app.DataHubPOSTButton.ImageSource = 'OpenFile_36x36.png';
 
             % Create userPathLabel
             app.userPathLabel = uilabel(app.FolderPanelGrid);
             app.userPathLabel.VerticalAlignment = 'bottom';
             app.userPathLabel.FontSize = 10;
-            app.userPathLabel.Layout.Row = 1;
+            app.userPathLabel.Layout.Row = 3;
             app.userPathLabel.Layout.Column = 1;
             app.userPathLabel.Text = 'Pasta do usuário:';
 
@@ -1207,14 +1307,14 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.userPath = uieditfield(app.FolderPanelGrid, 'text');
             app.userPath.Editable = 'off';
             app.userPath.FontSize = 11;
-            app.userPath.Layout.Row = 2;
+            app.userPath.Layout.Row = 4;
             app.userPath.Layout.Column = 1;
 
             % Create userPathButton
             app.userPathButton = uiimage(app.FolderPanelGrid);
             app.userPathButton.ImageClickedFcn = createCallbackFcn(app, @Folder_ButtonPushed, true);
             app.userPathButton.Tag = 'userPath';
-            app.userPathButton.Layout.Row = 2;
+            app.userPathButton.Layout.Row = 4;
             app.userPathButton.Layout.Column = 2;
             app.userPathButton.ImageSource = 'OpenFile_36x36.png';
 
@@ -1222,7 +1322,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.tempPathLabel = uilabel(app.FolderPanelGrid);
             app.tempPathLabel.VerticalAlignment = 'bottom';
             app.tempPathLabel.FontSize = 10;
-            app.tempPathLabel.Layout.Row = 3;
+            app.tempPathLabel.Layout.Row = 5;
             app.tempPathLabel.Layout.Column = 1;
             app.tempPathLabel.Text = 'Pasta temporária:';
 
@@ -1230,7 +1330,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.tempPath = uieditfield(app.FolderPanelGrid, 'text');
             app.tempPath.Editable = 'off';
             app.tempPath.FontSize = 11;
-            app.tempPath.Layout.Row = 4;
+            app.tempPath.Layout.Row = 6;
             app.tempPath.Layout.Column = 1;
 
             % Create Toolbar

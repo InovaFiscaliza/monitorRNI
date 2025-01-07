@@ -7,6 +7,7 @@ classdef winRNI_exported < matlab.apps.AppBase
         popupContainerGrid    matlab.ui.container.GridLayout
         SplashScreen          matlab.ui.control.Image
         menu_Grid             matlab.ui.container.GridLayout
+        DataHubLamp           matlab.ui.control.Lamp
         dockModule_Undock     matlab.ui.control.Image
         dockModule_Close      matlab.ui.control.Image
         AppInfo               matlab.ui.control.Image
@@ -81,12 +82,14 @@ classdef winRNI_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         % ESPECIFICIDADES
         %-----------------------------------------------------------------%
+        projectData
+
         % Instância da classe class.measData contendo a organização da
         % informação lida dos arquivos de medida. O cacheData armazena tudo
         % o que foi lido, e o measData apenas aquilo que consta na lista de
         % arquivos.
-        cacheData = class.measData.empty
-        measData  = class.measData.empty
+        cacheData   = class.measData.empty
+        measData    = class.measData.empty
 
         % Dados das estações do Plano Anual de RNI:
         % (pendente criar possibilidade de atualizar planilha, no módulo
@@ -107,15 +110,11 @@ classdef winRNI_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function jsBackDoor_Listener(app, event)
             switch event.HTMLEventName
-                case 'credentialDialog'
-                    fiscalizaLibConnection.report_Connect(app, event.HTMLEventData, 'OpenConnection')
-
                 case 'BackgroundColorTurnedInvisible'
                     switch event.HTMLEventData
                         case 'SplashScreen'
-                            if isvalid(app.SplashScreen)
-                                delete(app.SplashScreen)
-                                app.popupContainerGrid.Visible = 0;
+                            if isvalid(app.popupContainerGrid)
+                                delete(app.popupContainerGrid)
                             end
                         otherwise
                             % ...
@@ -161,7 +160,7 @@ classdef winRNI_exported < matlab.apps.AppBase
                         switch tabIndex
                             case 1 % FILE
                                 app.file_Tree.UserData = struct(app.file_Tree).Controller.ViewModel.Id;
-                                sendEventToHTMLSource(app.jsBackDoor, 'addKeyDownListener', struct('componentName', 'app.file_Tree', 'componentDataTag', app.file_Tree.UserData, 'keyEvents', "Delete"))
+                                sendEventToHTMLSource(app.jsBackDoor, 'addKeyDownListener', struct('componentName', 'app.file_Tree', 'componentDataTag', app.file_Tree.UserData, 'keyEvents', ["Delete", "Backspace"]))
 
                             otherwise
                                 % ...
@@ -204,7 +203,7 @@ classdef winRNI_exported < matlab.apps.AppBase
     
                     otherwise
                         % Configura o tamanho mínimo da janela.
-                        app.FigurePosition.Visible = 1;
+                        app.FigurePosition.Enable = 1;
                         appUtil.winMinSize(app.UIFigure, class.Constants.windowMinSize)
                 end
     
@@ -228,10 +227,9 @@ classdef winRNI_exported < matlab.apps.AppBase
                 drawnow
     
                 % Força a exclusão do SplashScreen.
-                if isvalid(app.SplashScreen)
+                if isvalid(app.popupContainerGrid)
                     pause(1)
-                    delete(app.SplashScreen)
-                    app.popupContainerGrid.Visible = 0;
+                    delete(app.popupContainerGrid)
                 end
             end
         end
@@ -281,7 +279,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             end
 
             app.General            = app.General_I;
-            app.General.AppVersion = fcn.envVersion(app.rootFolder, 'full');
+            app.General.AppVersion = fcn.envVersion(app.rootFolder, 'full', app.General.fileFolder.tempPath);
         end
 
         %-----------------------------------------------------------------%
@@ -301,6 +299,9 @@ classdef winRNI_exported < matlab.apps.AppBase
 
             % app.rfDataHubSummary
             app.rfDataHubSummary = summary(RFDataHub);
+
+            % app.projectData
+            app.projectData = projectLib(app);
         end
 
         %-----------------------------------------------------------------%
@@ -312,6 +313,17 @@ classdef winRNI_exported < matlab.apps.AppBase
             addComponent(app.tabGroupController, "External", "auxApp.winMonitoringPlan",  app.menu_Button2, "AlwaysOn", struct('On', 'DriveTestDensity_32Yellow.png', 'Off', 'DriveTestDensity_32White.png'),  app.menu_Button1,                    2)
             addComponent(app.tabGroupController, "External", "auxApp.winExternalRequest", app.menu_Button3, "AlwaysOn", struct('On', 'Report_32Yellow.png',           'Off', 'Report_32White.png'),            app.menu_Button1,                    3)
             addComponent(app.tabGroupController, "External", "auxApp.winConfig",          app.menu_Button4, "AlwaysOn", struct('On', 'Settings_36Yellow.png',         'Off', 'Settings_36White.png'),          app.menu_Button1,                    4)
+
+            DataHubWarningLamp(app)
+        end
+
+        %-----------------------------------------------------------------%
+        function DataHubWarningLamp(app)
+            if isfolder(app.General.fileFolder.DataHub_POST)
+                app.DataHubLamp.Visible = 0;
+            else
+                app.DataHubLamp.Visible = 1;
+            end
         end
     end
 
@@ -332,7 +344,14 @@ classdef winRNI_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function file_TreeBuilding(app)
-            delete(app.file_Tree.Children);
+            initialSelection = '';
+            if ~isempty(app.file_Tree.Children)
+                if ~isempty(app.file_Tree.SelectedNodes)
+                    initialSelection = app.file_Tree.SelectedNodes(1).Text;
+                end
+
+                delete(app.file_Tree.Children)
+            end
 
             for ii = 1:numel(app.measData)
                 uitreenode(app.file_Tree, 'Text',        app.measData(ii).Filename, ...
@@ -341,7 +360,12 @@ classdef winRNI_exported < matlab.apps.AppBase
             end
 
             if ~isempty(app.measData)
-                app.file_Tree.SelectedNodes = app.file_Tree.Children(1);
+                if ~isempty(initialSelection) && ismember(initialSelection, {app.file_Tree.Children.Text})
+                    [~, idxSelection] = ismember(initialSelection, {app.file_Tree.Children.Text});
+                    app.file_Tree.SelectedNodes = app.file_Tree.Children(idxSelection);
+                else
+                    app.file_Tree.SelectedNodes = app.file_Tree.Children(1);
+                end
                 file_TreeSelectionChanged(app)
 
                 app.menu_Button2.Enable = 1;
@@ -386,6 +410,9 @@ classdef winRNI_exported < matlab.apps.AppBase
 
                             case 'updateAnalysis'
                                 % ...
+
+                            case 'updateDataHubWarningLamp'
+                                DataHubWarningLamp(app)
 
                             otherwise
                                 error('UnexpectedCall')
@@ -518,17 +545,13 @@ classdef winRNI_exported < matlab.apps.AppBase
 
         % Selection changed function: file_Tree
         function file_TreeSelectionChanged(app, event)
-            
-            % !! PONTO DE EVOLUÇÃO !!
-            % Criar um HTML destacando informações relevantes do arquivo -
-            % tamanho, por exemplo - e da campanha de medição - sensor,
-            % período, limites, nível máximo etc.
-            % !! PONTO DE EVOLUÇÃO !!
 
-          idx = app.file_Tree.SelectedNodes.NodeData;            
-            app.file_Metadata.HTMLSource = sprintf(['<p style="font-family: Helvetica, Arial, sans-serif; font-size: 11; text-align: justify; ' ...
-                                                    'line-height: 12px; margin: 5px; word-break: break-all;">Arquivo: %s<br>Sensor: %s<br>'     ...
-                                                    'Localidade: %s<br>Medidas úteis: %s<br>Latitude (Limites): %s e %s<br>Longitude (Limites): %s e %s</p>'], app.measData(idx).Filename, app.measData(idx).Sensor, app.measData(idx).Location, num2str(app.measData(idx).Measures), num2str(app.measData(idx).LatitudeLimits(1)), num2str(app.measData(idx).LatitudeLimits(2)), num2str(app.measData(idx).LongitudeLimits(1)), num2str(app.measData(idx).LongitudeLimits(2)));
+            if isscalar(app.file_Tree.SelectedNodes)
+                idx = app.file_Tree.SelectedNodes.NodeData;
+                app.file_Metadata.HTMLSource = fcn.htmlCode_selectedFile(app.measData(idx));
+            else
+                app.file_Metadata.HTMLSource = ' ';
+            end
             
         end
 
@@ -536,7 +559,7 @@ classdef winRNI_exported < matlab.apps.AppBase
         function file_ContextMenu_delTreeNodeSelected(app, event)
             
             if ~isempty(app.file_Tree.SelectedNodes)
-                idx = app.file_Tree.SelectedNodes.NodeData;
+                idx = [app.file_Tree.SelectedNodes.NodeData];
                 app.measData(idx) = [];
                 file_TreeBuilding(app)
             end
@@ -557,53 +580,57 @@ classdef winRNI_exported < matlab.apps.AppBase
             end
             misc_updateLastVisitedFolder(app, filePath)            
 
-            % !! PONTO DE EVOLUÇÃO !!
-            % O progressdialog deve ser único. E não ser criado por arquivo... 
-            % as coisas relacionadas à GUI devem, preferencialmente, permanecer 
-            % no MLAPP.
-            % !! PONTO DE EVOLUÇÃO !!
+            d = appUtil.modalWindow(app.UIFigure, "progressdlg", "Em andamento...");
             
             fileFullName = fullfile(filePath, fileName);
             filesInCache = {};
+            filesError   = struct('File', {}, 'Error', {});
 
             for ii = 1:numel(fileFullName)
-                % (a) Verifica se arquivo já foi lido, comparando o seu
-                %     nome com a variável app.cacheData.
-                [~, idxCache] = ismember(fileFullName{ii}, {app.cacheData.Filename});
+                d.Message = sprintf('Em andamento a leitura do arquivo %d de %d:<br>• <b>%s</b>', ii, numel(fileFullName), fileName{ii});
+
+                % Verifica se arquivo já foi lido, comparando o seu nome com 
+                % a variável app.cacheData.
+                [~, idxCache] = ismember(fileName{ii}, {app.cacheData.Filename});
                 if ~idxCache
-                    % Extrai do arquivo a informação sobre o tipo de sonda que gerou o arquivo de medição
-                    Type_Meas_Probes = fcn.TypeMeasProbe(app, fileFullName{ii});
-    
-                  % Obtém todas os dados relavantes dos arquivos das medições de RNI
-                    %app.cacheData(end+1) = fcn.ReadFile_Meas_Probes(app, Type_Meas_Probes, fileFullName{ii}, ii, numel(fileFullName));
-                    switch Type_Meas_Probes
-                        case 'Narda'
-                            app.cacheData(end+1) = fileReader.Narda(app, Type_Meas_Probes, fileFullName{ii}, ii, numel(fileFullName));
-                        case 'Monitem'
-                            app.cacheData(end+1) = fileReader.Monitem(app, Type_Meas_Probes, fileFullName{ii}, ii, numel(fileFullName));
-                        otherwise
-                            error('UnexpectedFileFormat')
+                    try
+                        app.cacheData(end+1) = fileReader.CSV.Controller(fileFullName{ii});
+                    catch ME
+                        filesError(end+1) = struct('File', fileName{ii}, 'Error', ME.message);
+                        % ccTools.fcn.OperationSystem('openFile', fileFullName{ii})
+                        continue
                     end
                     idxCache = numel(app.cacheData);
                 end
 
-                % (b) Verifica se arquivo já está ativo, comparando o seu
-                %     nome com a variável app.measData.
-                [~, idxFile] = ismember(fileFullName{ii}, {app.measData.Filename});
+                % Verifica se arquivo já está ativo, comparando o seu nome com 
+                % a variável app.measData.
+                [~, idxFile] = ismember(fileName{ii}, {app.measData.Filename});
                 if ~idxFile
                     app.measData(end+1) = app.cacheData(idxCache);
                 else
-                    filesInCache{end+1} = fileFullName{ii};
+                    filesInCache{end+1} = fileName{ii};
                 end
             end
 
+            % LOG
+            msgWarning = '';
+            if ~isempty(filesError)
+                msgWarning = sprintf('Arquivos que apresentaram erro na leitura:\n%s\n\n', strjoin(strcat({'•&thinsp;'}, {filesError.File}, {': '}, {filesError.Error}), '\n'));
+            end
+
             if ~isempty(filesInCache)
-                msgWarning = sprintf('Arquivos já lidos:\n%s', textFormatGUI.cellstr2Bullets(filesInCache));
+                msgWarning = [msgWarning, sprintf('Arquivos já lidos:\n%s', textFormatGUI.cellstr2Bullets(filesInCache))];
+            end
+
+            if ~isempty(msgWarning)
                 appUtil.modalWindow(app.UIFigure, "warning", msgWarning);
             end
             
             % Atualiza app.file_Tree.
             file_TreeBuilding(app)
+
+            delete(d)
 
         end
     end
@@ -621,7 +648,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.AutoResizeChildren = 'off';
             app.UIFigure.Position = [100 100 1244 660];
-            app.UIFigure.Name = 'RNI';
+            app.UIFigure.Name = 'monitorRNI';
             app.UIFigure.Icon = 'icon_48.png';
             app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @closeFcn, true);
 
@@ -717,6 +744,7 @@ classdef winRNI_exported < matlab.apps.AppBase
 
             % Create file_Tree
             app.file_Tree = uitree(app.file_docGrid);
+            app.file_Tree.Multiselect = 'on';
             app.file_Tree.SelectionChangedFcn = createCallbackFcn(app, @file_TreeSelectionChanged, true);
             app.file_Tree.FontSize = 10;
             app.file_Tree.Layout.Row = 3;
@@ -774,7 +802,7 @@ classdef winRNI_exported < matlab.apps.AppBase
 
             % Create menu_Grid
             app.menu_Grid = uigridlayout(app.GridLayout);
-            app.menu_Grid.ColumnWidth = {28, 5, 28, 28, 5, 28, '1x', 20, 20, 20, 0, 0};
+            app.menu_Grid.ColumnWidth = {28, 5, 28, 28, 5, 28, '1x', 20, 20, 20, 20, 0, 0};
             app.menu_Grid.RowHeight = {7, '1x', 7};
             app.menu_Grid.ColumnSpacing = 5;
             app.menu_Grid.RowSpacing = 0;
@@ -865,16 +893,16 @@ classdef winRNI_exported < matlab.apps.AppBase
             % Create FigurePosition
             app.FigurePosition = uiimage(app.menu_Grid);
             app.FigurePosition.ImageClickedFcn = createCallbackFcn(app, @menu_ToolbarImageCliced, true);
-            app.FigurePosition.Visible = 'off';
+            app.FigurePosition.Enable = 'off';
             app.FigurePosition.Layout.Row = 2;
-            app.FigurePosition.Layout.Column = 9;
+            app.FigurePosition.Layout.Column = 10;
             app.FigurePosition.ImageSource = fullfile(pathToMLAPP, 'Icons', 'layout1_32White.png');
 
             % Create AppInfo
             app.AppInfo = uiimage(app.menu_Grid);
             app.AppInfo.ImageClickedFcn = createCallbackFcn(app, @menu_ToolbarImageCliced, true);
             app.AppInfo.Layout.Row = 2;
-            app.AppInfo.Layout.Column = 10;
+            app.AppInfo.Layout.Column = 11;
             app.AppInfo.ImageSource = fullfile(pathToMLAPP, 'Icons', 'Dots_32White.png');
 
             % Create dockModule_Close
@@ -884,7 +912,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.dockModule_Close.Tag = 'DRIVETEST';
             app.dockModule_Close.Tooltip = {'Fecha módulo'};
             app.dockModule_Close.Layout.Row = 2;
-            app.dockModule_Close.Layout.Column = 12;
+            app.dockModule_Close.Layout.Column = 13;
             app.dockModule_Close.ImageSource = fullfile(pathToMLAPP, 'Icons', 'Delete_12SVG_white.svg');
 
             % Create dockModule_Undock
@@ -894,14 +922,22 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.dockModule_Undock.Tag = 'DRIVETEST';
             app.dockModule_Undock.Tooltip = {'Reabre módulo em outra janela'};
             app.dockModule_Undock.Layout.Row = 2;
-            app.dockModule_Undock.Layout.Column = 11;
+            app.dockModule_Undock.Layout.Column = 12;
             app.dockModule_Undock.ImageSource = fullfile(pathToMLAPP, 'Icons', 'Undock_18White.png');
+
+            % Create DataHubLamp
+            app.DataHubLamp = uilamp(app.menu_Grid);
+            app.DataHubLamp.Enable = 'off';
+            app.DataHubLamp.Visible = 'off';
+            app.DataHubLamp.Tooltip = {'Pendente mapear pasta do Sharepoint'};
+            app.DataHubLamp.Layout.Row = 2;
+            app.DataHubLamp.Layout.Column = 9;
+            app.DataHubLamp.Color = [1 0 0];
 
             % Create popupContainerGrid
             app.popupContainerGrid = uigridlayout(app.GridLayout);
             app.popupContainerGrid.ColumnWidth = {'1x', 880, '1x'};
             app.popupContainerGrid.RowHeight = {'1x', 300, '1x'};
-            app.popupContainerGrid.Padding = [10 31 10 10];
             app.popupContainerGrid.Layout.Row = 3;
             app.popupContainerGrid.Layout.Column = 1;
             app.popupContainerGrid.BackgroundColor = [1 1 1];

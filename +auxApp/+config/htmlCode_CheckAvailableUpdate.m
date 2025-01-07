@@ -17,7 +17,7 @@ function [htmlContent, stableVersion, updatedModule] = htmlCode_CheckAvailableUp
         % Validação:
         updatedModule    = {};
         if isequal(presentVersion, stableVersion)
-            msgWarning   = 'O appAnalise e os seus módulos - fiscaliza e RFDataHub - estão atualizados.';
+            msgWarning   = 'O monitorRNI e o seu módulo - RFDataHub - estão atualizados.';
             
         else            
             nonUpdatedModule = {};

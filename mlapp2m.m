@@ -3,20 +3,11 @@ function mlapp2m(MLAPPFiles, showDiffApp)
         MLAPPFiles  cell    = {'winRNI',             ...
                                'winMonitoringPlan',  ...
                                'winExternalRequest', ...
-                               'winConfig'}
+                               'winConfig',          ...
+                               'dockStationInfo',    ...
+                               'dockListOfLocation'}
         showDiffApp logical = false
     end
-
-    % Essa função manipula alguns dos arquivos .MLAPP do projeto, gerando
-    % versões .M.
-    % - "winAppColeta.mlapp"
-    %   A versão .M facilita acompanhamento da evolução do projeto por meio 
-    %   do GitHub Desktop (ao invés de executar a comparação linha a linha 
-    %   no próprio Matlab).
-    %
-    % - Outros
-    %   A versão .M  traz manipulações que possibilitam que esses módulos do 
-    %   appAnalise possam ser renderizados na figura de "winAppAnalise".
      
     fileFolder = fileparts(mfilename('fullpath'));    
     
@@ -46,13 +37,7 @@ function mlapp2m(MLAPPFiles, showDiffApp)
                     writematrix(matlabCode, [fileBaseName '_exported.m'], 'FileType', 'text', 'WriteMode', 'overwrite', 'QuoteStrings', 'none')
 
                 otherwise
-                    switch oldClassName
-                        case 'winRFDataHub'
-                            fileBaseName = fullfile(fileFolder, oldClassName);
-                        otherwise
-                            fileBaseName = fullfile(fileFolder, '+auxApp', oldClassName);
-                    end
-                    
+                    fileBaseName = fullfile(fileFolder, '+auxApp', oldClassName);                    
                     matlabCode   = getMFileContent(fileBaseName);
 
                     % Salva a versão original do .M em pasta temporária, de
