@@ -95,6 +95,9 @@ classdef winRNI_exported < matlab.apps.AppBase
         % (pendente criar possibilidade de atualizar planilha, no módulo
         % auxApp.winConfig)
         stationTable
+
+        % Dados de pontos relacionados a demandas externas:
+        pointsTable = fileReader.ExternalRequest()
     end
 
     

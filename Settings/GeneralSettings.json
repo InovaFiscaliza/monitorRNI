@@ -1,5 +1,5 @@
 {
-    "version": 0.35,
+    "version": 0.37,
     "operationMode": {
         "Debug": false,
         "Dock": false,
@@ -80,6 +80,15 @@
     },
     "ExternalRequest": {
         "Distance_km": 1,
-        "FieldValue": 14
+        "FieldValue": 14,
+        "TypeOfLocation": [
+            "Estação",
+            "Escola",
+            "Hospital",
+            "Creche",
+            "Casa", 
+            "Apartamento",
+            "Outro"
+        ]
     }
 }
