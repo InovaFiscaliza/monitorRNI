@@ -97,7 +97,7 @@ classdef winRNI_exported < matlab.apps.AppBase
         stationTable
 
         % Dados de pontos relacionados a demandas externas:
-        pointsTable = fileReader.ExternalRequest()
+        pointsTable
     end
 
     
@@ -306,6 +306,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             % app.projectData
             app.projectData  = projectLib(app);
             ReadStationTable(app)
+            app.pointsTable  = fileReader.ExternalRequest(app.General);
         end
 
         %-----------------------------------------------------------------%

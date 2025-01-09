@@ -170,7 +170,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function startup_GUIComponents(app)
             if app.mainApp.General.MonitoringPlan.FieldValue ~= 14
-                app.UITable.ColumnName{5} = sprintf('Qtd.|Medidas\nQtd.|> %.0f V/m', app.mainApp.General.MonitoringPlan.FieldValue);
+                app.UITable.ColumnName{5} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.MonitoringPlan.FieldValue);
             end
 
             startup_AxesCreation(app)
@@ -610,6 +610,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                 Analysis(app)
 
                             case 'PM-RNI: updateAnalysis'
+                                app.UITable.ColumnName{5} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.MonitoringPlan.FieldValue);
+
                                 idxStations = app.UITable.UserData;
                                 if ~isempty(idxStations)
                                     app.mainApp.stationTable.AnalysisFlag(idxStations) = false;
