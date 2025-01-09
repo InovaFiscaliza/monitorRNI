@@ -297,14 +297,15 @@ classdef winRNI_exported < matlab.apps.AppBase
             % pontos estivessem internos ao ROI, quando as coordenadas
             % estão em float32. No float64 isso não acontece... aberto BUG
             % na Mathworks, que indicou estar ciente.
-            app.rfDataHub.Latitude    = double(app.rfDataHub.Latitude);
-            app.rfDataHub.Longitude   = double(app.rfDataHub.Longitude);
+            app.rfDataHub.Latitude  = double(app.rfDataHub.Latitude);
+            app.rfDataHub.Longitude = double(app.rfDataHub.Longitude);
 
             % app.rfDataHubSummary
             app.rfDataHubSummary = summary(RFDataHub);
 
             % app.projectData
-            app.projectData = projectLib(app);
+            app.projectData  = projectLib(app);
+            ReadStationTable(app)
         end
 
         %-----------------------------------------------------------------%
@@ -328,6 +329,15 @@ classdef winRNI_exported < matlab.apps.AppBase
                 app.DataHubLamp.Visible = 1;
             end
         end
+
+        %-----------------------------------------------------------------%
+        function ReadStationTable(app)
+            % app.stationTable (PM-RNI)
+            [app.stationTable,                        ...
+            app.projectData.rawListOfYears,           ...
+            app.projectData.referenceListOfLocations, ...
+            app.projectData.referenceListOfStates] = fileReader.MonitoringPlan(class.Constants.appName, app.rootFolder, app.General);
+        end
     end
 
 
@@ -342,6 +352,43 @@ classdef winRNI_exported < matlab.apps.AppBase
             switch auxAppName
                 case {'FILE', 'MONITORINGPLAN', 'EXTERNALREQUEST', 'CONFIG'}
                     inputArguments = {app};
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function hAuxApp = auxAppHandle(app, auxAppName)
+            arguments
+                app
+                auxAppName string {mustBeMember(auxAppName, ["MONITORINGPLAN", "EXTERNALREQUEST", "CONFIG"])}
+            end
+
+            hAuxApp = app.tabGroupController.Components.appHandle{app.tabGroupController.Components.Tag == auxAppName};
+        end
+
+        %-----------------------------------------------------------------%
+        function userSelection = misc_checkIfAuxiliarAppIsOpen(app, operationType)
+            userSelection    = 'Sim';
+
+            hMonitoringPlan  = auxAppHandle(app, "MONITORINGPLAN");
+            hExternalRequest = auxAppHandle(app, "EXTERNALREQUEST");
+
+            if (~isempty(hMonitoringPlan)  && isvalid(hMonitoringPlan)) || ...
+               (~isempty(hExternalRequest) && isvalid(hExternalRequest))
+
+                msgQuestion   = sprintf(['A operação "%s" demanda que os módulos auxiliares "PM-RNI" e "DEMANDA EXTERNA" sejam fechados, '          ...
+                                         'caso abertos, pois as informações espectrais consumidas por esses módulos poderão ficar desatualizadas. ' ...
+                                         'Deseja continuar?'], operationType);
+                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
+
+                if userSelection == "Sim"
+                    if ~isempty(hMonitoringPlan)  && isvalid(hMonitoringPlan)
+                        closeModule(app.tabGroupController, "MONITORINGPLAN",  app.General)
+                    end
+        
+                    if ~isempty(hExternalRequest) && isvalid(hExternalRequest)
+                        closeModule(app.tabGroupController, "EXTERNALREQUEST", app.General)
+                    end
+                end
             end
         end
 
@@ -375,6 +422,7 @@ classdef winRNI_exported < matlab.apps.AppBase
                 app.menu_Button3.Enable = 1;
             else
                 app.file_Metadata.HTMLSource = ' ';
+
                 app.menu_Button2.Enable = 0;
                 app.menu_Button3.Enable = 0;
             end
@@ -404,15 +452,25 @@ classdef winRNI_exported < matlab.apps.AppBase
                                 auxAppTag = varargin{1};
                                 closeModule(app.tabGroupController, auxAppTag, app.General)
 
-                            case 'updatePlot'
-                                % ...
-                                % Forçar atualização de eventuais plots
-                                % apresentados nos módulos abertos...
-                                % ...
-                                pause(1)
+                            case 'PM-RNI: updateReferenceTable'
+                                ReadStationTable(app)
 
-                            case 'updateAnalysis'
-                                % ...
+                                hAuxApp = auxAppHandle(app, "MONITORINGPLAN");
+                                if ~isempty(hAuxApp)
+                                    appBackDoor(hAuxApp, app, operationType)
+                                end
+
+                            case {'PM-RNI: updateAnalysis', 'PM-RNI: updatePlot', 'PM-RNI: updateAxes'}
+                                hAuxApp = auxAppHandle(app, "MONITORINGPLAN");
+                                if ~isempty(hAuxApp)
+                                    appBackDoor(hAuxApp, app, operationType)
+                                end
+
+                            case {'ExternalRequest: updateAnalysis', 'ExternalRequest: updatePlot', 'ExternalRequest: updateAxes'}
+                                hAuxApp = auxAppHandle(app, "EXTERNALREQUEST");
+                                if ~isempty(hAuxApp)
+                                    appBackDoor(hAuxApp, app, operationType)
+                                end
 
                             case 'updateDataHubWarningLamp'
                                 DataHubWarningLamp(app)
@@ -562,6 +620,12 @@ classdef winRNI_exported < matlab.apps.AppBase
         function file_ContextMenu_delTreeNodeSelected(app, event)
             
             if ~isempty(app.file_Tree.SelectedNodes)
+                % VALIDAÇÃO
+                if strcmp(misc_checkIfAuxiliarAppIsOpen(app, 'EXCLUIR ARQUIVO'), 'Não')
+                    return
+                end
+
+                % EXCLUIR ARQUIVO(S)
                 idx = [app.file_Tree.SelectedNodes.NodeData];
                 app.measData(idx) = [];
                 file_TreeBuilding(app)
@@ -572,6 +636,12 @@ classdef winRNI_exported < matlab.apps.AppBase
         % Image clicked function: file_OpenFileButton
         function file_OpenFileButtonImageClicked(app, event)
 
+            % VALIDAÇÃO
+            if strcmp(misc_checkIfAuxiliarAppIsOpen(app, 'INCLUIR ARQUIVO'), 'Não')
+                return
+            end
+
+            % SELEÇÃO DE ARQUIVO(S)
             [fileName, filePath] = uigetfile({'*.txt';'*.csv';'*.mat';'*.*'}, ...
                                               '', app.General.fileFolder.lastVisited, 'MultiSelect', 'on');
             figure(app.UIFigure)
@@ -652,7 +722,7 @@ classdef winRNI_exported < matlab.apps.AppBase
             app.UIFigure.AutoResizeChildren = 'off';
             app.UIFigure.Position = [100 100 1244 660];
             app.UIFigure.Name = 'monitorRNI';
-            app.UIFigure.Icon = 'icon_48.png';
+            app.UIFigure.Icon = fullfile(pathToMLAPP, 'Icons', 'icon_48.png');
             app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @closeFcn, true);
 
             % Create GridLayout

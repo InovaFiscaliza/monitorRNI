@@ -1,18 +1,22 @@
 function Colorbar(hAxes, Location)
     arguments
         hAxes
-        Location char {mustBeMember(Location, {'off', 'west', 'east', 'south', 'eastoutside', 'southoutside', 'westoutside'})}
+        Location char {mustBeMember(Location, {'off', 'on', 'west', 'east', 'north', 'south', 'eastoutside', 'southoutside', 'westoutside'})}
     end
 
     switch Location
         case 'off'
             colorbar(hAxes,'off')
         otherwise
+            if strcmp(Location, 'on')
+                Location = 'east';
+            end
+
             cb = findobj(hAxes.Parent.Children, 'Type', 'colorbar');
             if ~isempty(cb)
                 cb.Location = Location;
             else
-                colorbar(hAxes, 'Location', Location, 'Color', 'white', 'HitTest', 'off');
+                colorbar(hAxes, 'Location', Location, 'Color', 'white', 'HitTest', 'off', 'FontSize', 7);
             end
     end
 end

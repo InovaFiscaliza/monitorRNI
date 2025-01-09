@@ -2,98 +2,95 @@ classdef winConfig_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                        matlab.ui.Figure
-        GridLayout                      matlab.ui.container.GridLayout
-        Toolbar                         matlab.ui.container.GridLayout
-        jsBackDoor                      matlab.ui.control.HTML
-        tool_RFDataHubButton            matlab.ui.control.Image
-        tool_LeftPanelVisibility        matlab.ui.control.Image
-        Document                        matlab.ui.container.GridLayout
-        FolderGrid                      matlab.ui.container.GridLayout
-        FolderPanel                     matlab.ui.container.Panel
-        FolderPanelGrid                 matlab.ui.container.GridLayout
-        tempPath                        matlab.ui.control.EditField
-        tempPathLabel                   matlab.ui.control.Label
-        userPathButton                  matlab.ui.control.Image
-        userPath                        matlab.ui.control.EditField
-        userPathLabel                   matlab.ui.control.Label
-        DataHubPOSTButton               matlab.ui.control.Image
-        DataHubPOST                     matlab.ui.control.EditField
-        DataHubPOSTLabel                matlab.ui.control.Label
-        FolderTitle                     matlab.ui.control.Label
-        CustomPlotGrid                  matlab.ui.container.GridLayout
-        CustomPlotPanel                 matlab.ui.container.Panel
-        CustomPlotPanelGrid             matlab.ui.container.GridLayout
-        AutomaticZoomFactor             matlab.ui.control.Spinner
-        AutomaticZoomFactorLabel        matlab.ui.control.Label
-        AutomaticZoom                   matlab.ui.control.CheckBox
-        CircleEdgeAlpha                 matlab.ui.control.Spinner
-        CircleFaceAlpha                 matlab.ui.control.Spinner
-        CircleColorAlphaLabel           matlab.ui.control.Label
-        CircleColor                     matlab.ui.control.DropDown
-        CircleColorLabel                matlab.ui.control.Label
-        PeakSize                        matlab.ui.control.Slider
-        PeakColor                       matlab.ui.control.ColorPicker
-        PeakLabel                       matlab.ui.control.Label
-        SelectedStationSize             matlab.ui.control.Slider
-        SelectedStationColor            matlab.ui.control.ColorPicker
-        SelectedStationLabel            matlab.ui.control.Label
-        StationsSize                    matlab.ui.control.Slider
-        StationsColor                   matlab.ui.control.ColorPicker
-        StationsLabel                   matlab.ui.control.Label
-        Colorbar                        matlab.ui.control.DropDown
-        ColorbarLabel                   matlab.ui.control.Label
-        Colormap                        matlab.ui.control.DropDown
-        ColormapLabel                   matlab.ui.control.Label
-        Basemap                         matlab.ui.control.DropDown
-        BasemapLabel                    matlab.ui.control.Label
-        CustomPlotTitle                 matlab.ui.control.Label
-        AnalysisGrid                    matlab.ui.container.GridLayout
-        AnalysisPanel                   matlab.ui.container.Panel
-        AnalysisPanelGrid               matlab.ui.container.GridLayout
-        ExternalRequestPanel            matlab.ui.container.Panel
-        ExternalRequestGrid             matlab.ui.container.GridLayout
-        ExternalRequestLevel            matlab.ui.control.NumericEditField
-        ExternalRequestLevelLabel       matlab.ui.control.Label
-        ExternalRequestDistance         matlab.ui.control.NumericEditField
-        ExternalRequestDistanceLabel    matlab.ui.control.Label
-        ExternalRequestLabel            matlab.ui.control.Label
-        MonitoringPlanPanel             matlab.ui.container.Panel
-        MonitoringPlanGrid              matlab.ui.container.GridLayout
-        Image                           matlab.ui.control.Image
-        AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox  matlab.ui.control.CheckBox
-        CheckBox                        matlab.ui.control.CheckBox
-        EditField                       matlab.ui.control.EditField
-        MonitoringPlanReasonsListLabel_2  matlab.ui.control.Label
-        MonitoringPlanReasonsList       matlab.ui.control.ListBox
-        MonitoringPlanReasonsListLabel  matlab.ui.control.Label
-        MonitoringPlanLevel             matlab.ui.control.NumericEditField
-        MonitoringPlanLevelLabel        matlab.ui.control.Label
-        MonitoringPlanDistance          matlab.ui.control.NumericEditField
-        MonitoringPlanDistanceLabel     matlab.ui.control.Label
-        MonitoringPlanLabel             matlab.ui.control.Label
-        AnalysisTitle                   matlab.ui.control.Label
-        GeneralGrid                     matlab.ui.container.GridLayout
-        openAuxiliarApp2Debug           matlab.ui.control.CheckBox
-        openAuxiliarAppAsDocked         matlab.ui.control.CheckBox
-        gpuType                         matlab.ui.control.DropDown
-        gpuTypeLabel                    matlab.ui.control.Label
-        AppVersionPanel                 matlab.ui.container.Panel
-        AppVersionGrid                  matlab.ui.container.GridLayout
-        AppVersion                      matlab.ui.control.HTML
-        AppVersionRefresh               matlab.ui.control.Image
-        AppVersionLabel                 matlab.ui.control.Label
-        ControlPanel                    matlab.ui.container.GridLayout
-        RadioButtonGroupPanel           matlab.ui.container.Panel
-        RadioButtonGroupGrid            matlab.ui.container.GridLayout
-        RadioButtonGroup                matlab.ui.container.ButtonGroup
-        btnFolder                       matlab.ui.control.RadioButton
-        btnCustomPlot                   matlab.ui.control.RadioButton
-        btnAnalysis                     matlab.ui.control.RadioButton
-        btnGeneral                      matlab.ui.control.RadioButton
-        ControlPanelGrid                matlab.ui.container.GridLayout
-        ControlPanelTitle               matlab.ui.control.Label
-        ControlPanelIcon                matlab.ui.control.Image
+        UIFigure                      matlab.ui.Figure
+        GridLayout                    matlab.ui.container.GridLayout
+        Toolbar                       matlab.ui.container.GridLayout
+        jsBackDoor                    matlab.ui.control.HTML
+        tool_RFDataHubButton          matlab.ui.control.Image
+        tool_LeftPanelVisibility      matlab.ui.control.Image
+        Document                      matlab.ui.container.GridLayout
+        AnalysisPanelGrid             matlab.ui.container.GridLayout
+        ExternalRequestPanel          matlab.ui.container.Panel
+        ExternalRequestGrid           matlab.ui.container.GridLayout
+        ExternalRequestLevel          matlab.ui.control.NumericEditField
+        ExternalRequestLevelLabel     matlab.ui.control.Label
+        ExternalRequestDistance       matlab.ui.control.NumericEditField
+        ExternalRequestDistanceLabel  matlab.ui.control.Label
+        ExternalRequestLabel          matlab.ui.control.Label
+        MonitoringPlanPanel           matlab.ui.container.Panel
+        MonitoringPlanGrid            matlab.ui.container.GridLayout
+        MonitoringPlanExportKML       matlab.ui.control.CheckBox
+        MonitoringPlanExportXLSX      matlab.ui.control.CheckBox
+        MonitoringPlanPeriod          matlab.ui.container.CheckBoxTree
+        MonitoringPlanOpenFile        matlab.ui.control.Image
+        MonitoringPlanFileName        matlab.ui.control.EditField
+        MonitoringPlanFileLabel       matlab.ui.control.Label
+        MonitoringPlanLevel           matlab.ui.control.NumericEditField
+        MonitoringPlanLevelLabel      matlab.ui.control.Label
+        MonitoringPlanDistance        matlab.ui.control.NumericEditField
+        MonitoringPlanDistanceLabel   matlab.ui.control.Label
+        MonitoringPlanLabel           matlab.ui.control.Label
+        FolderGrid                    matlab.ui.container.GridLayout
+        FolderPanel                   matlab.ui.container.Panel
+        FolderPanelGrid               matlab.ui.container.GridLayout
+        tempPath                      matlab.ui.control.EditField
+        tempPathLabel                 matlab.ui.control.Label
+        userPathButton                matlab.ui.control.Image
+        userPath                      matlab.ui.control.EditField
+        userPathLabel                 matlab.ui.control.Label
+        DataHubPOSTButton             matlab.ui.control.Image
+        DataHubPOST                   matlab.ui.control.EditField
+        DataHubPOSTLabel              matlab.ui.control.Label
+        FolderTitle                   matlab.ui.control.Label
+        CustomPlotGrid                matlab.ui.container.GridLayout
+        CustomPlotPanel               matlab.ui.container.Panel
+        CustomPlotPanelGrid           matlab.ui.container.GridLayout
+        AutomaticZoomFactor           matlab.ui.control.Spinner
+        AutomaticZoomFactorLabel      matlab.ui.control.Label
+        AutomaticZoom                 matlab.ui.control.CheckBox
+        CircleEdgeAlpha               matlab.ui.control.Spinner
+        CircleFaceAlpha               matlab.ui.control.Spinner
+        CircleColorAlphaLabel         matlab.ui.control.Label
+        CircleColor                   matlab.ui.control.DropDown
+        CircleColorLabel              matlab.ui.control.Label
+        PeakSize                      matlab.ui.control.Slider
+        PeakColor                     matlab.ui.control.ColorPicker
+        PeakLabel                     matlab.ui.control.Label
+        SelectedStationSize           matlab.ui.control.Slider
+        SelectedStationColor          matlab.ui.control.ColorPicker
+        SelectedStationLabel          matlab.ui.control.Label
+        StationsSize                  matlab.ui.control.Slider
+        StationsColor                 matlab.ui.control.ColorPicker
+        StationsLabel                 matlab.ui.control.Label
+        Colorbar                      matlab.ui.control.DropDown
+        ColorbarLabel                 matlab.ui.control.Label
+        Colormap                      matlab.ui.control.DropDown
+        ColormapLabel                 matlab.ui.control.Label
+        Basemap                       matlab.ui.control.DropDown
+        BasemapLabel                  matlab.ui.control.Label
+        CustomPlotRefresh             matlab.ui.control.Image
+        CustomPlotTitle               matlab.ui.control.Label
+        GeneralGrid                   matlab.ui.container.GridLayout
+        openAuxiliarApp2Debug         matlab.ui.control.CheckBox
+        openAuxiliarAppAsDocked       matlab.ui.control.CheckBox
+        gpuType                       matlab.ui.control.DropDown
+        gpuTypeLabel                  matlab.ui.control.Label
+        AppVersionPanel               matlab.ui.container.Panel
+        AppVersionGrid                matlab.ui.container.GridLayout
+        AppVersion                    matlab.ui.control.HTML
+        AppVersionRefresh             matlab.ui.control.Image
+        AppVersionLabel               matlab.ui.control.Label
+        ControlPanel                  matlab.ui.container.GridLayout
+        RadioButtonGroupPanel         matlab.ui.container.Panel
+        RadioButtonGroupGrid          matlab.ui.container.GridLayout
+        RadioButtonGroup              matlab.ui.container.ButtonGroup
+        btnFolder                     matlab.ui.control.RadioButton
+        btnCustomPlot                 matlab.ui.control.RadioButton
+        btnAnalysis                   matlab.ui.control.RadioButton
+        btnGeneral                    matlab.ui.control.RadioButton
+        ControlPanelGrid              matlab.ui.container.GridLayout
+        ControlPanelTitle             matlab.ui.control.Label
+        ControlPanelIcon              matlab.ui.control.Image
     end
 
     
@@ -224,10 +221,24 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function Analysis_updatePanel(app)
+            % PM-RNI
             app.MonitoringPlanDistance.Value    = app.mainApp.General.MonitoringPlan.Distance_km * 1000;
             app.MonitoringPlanLevel.Value       = app.mainApp.General.MonitoringPlan.FieldValue;
-            app.MonitoringPlanReasonsList.Items = app.mainApp.General.MonitoringPlan.NoMeasureReasons;
+            app.MonitoringPlanFileName.Value    = app.mainApp.General.MonitoringPlan.ReferenceFile;
+            
+            MonitoringPlanYearsOptions          = app.mainApp.projectData.rawListOfYears;
+            MonitoringPlanYearsValue            = app.mainApp.General.MonitoringPlan.Period;
+            for ii = 1:numel(MonitoringPlanYearsOptions)                
+                treeNode = uitreenode(app.MonitoringPlanPeriod, 'Text', string(MonitoringPlanYearsOptions(ii)));
+                if ismember(MonitoringPlanYearsOptions(ii), MonitoringPlanYearsValue)
+                    app.MonitoringPlanPeriod.CheckedNodes = [app.MonitoringPlanPeriod.CheckedNodes; treeNode];
+                end
+            end
 
+            app.MonitoringPlanExportXLSX.Value  = app.mainApp.General.MonitoringPlan.Export.XLSX;
+            app.MonitoringPlanExportKML.Value   = app.mainApp.General.MonitoringPlan.Export.KML;
+
+            % External Request
             app.ExternalRequestDistance.Value   = app.mainApp.General.ExternalRequest.Distance_km * 1000;
             app.ExternalRequestLevel.Value      = app.mainApp.General.ExternalRequest.FieldValue;
         end
@@ -249,10 +260,11 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.CircleEdgeAlpha.Value      = app.mainApp.General.Plot.CircleRegion.EdgeAlpha;
 
             app.AutomaticZoom.Value        = app.mainApp.General.Plot.SelectedStation.AutomaticZoom;
+            app.AutomaticZoomFactor.Value  = app.mainApp.General.Plot.SelectedStation.AutomaticZoomFactor;
             if app.AutomaticZoom.Value
-                set(app.AutomaticZoomFactor, 'Enable', 1, 'Value', app.mainApp.General.Plot.SelectedStation.AutomaticZoomFactor)
+                app.AutomaticZoomFactor.Enable = 1;
             else
-                set(app.AutomaticZoomFactor, 'Enable', 0, 'Value', 1)
+                app.AutomaticZoomFactor.Enable = 0;
             end
 
             app.PeakColor.Value            = app.mainApp.General.Plot.FieldPeak.Color;
@@ -432,35 +444,91 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         end
 
-        % Value changed function: ExternalRequestDistance, 
-        % ...and 3 other components
+        % Callback function: ExternalRequestDistance, ExternalRequestLevel,
+        % 
+        % ...and 5 other components
         function Analysis_ParameterValueChanged(app, event)
             
+            updateAnalysisName = '';
+
             switch event.Source
                 case app.MonitoringPlanDistance
                     app.mainApp.General.MonitoringPlan.Distance_km  = app.MonitoringPlanDistance.Value / 1000;
+                    updateAnalysisName = 'PM-RNI: updateAnalysis';
 
                 case app.MonitoringPlanLevel
                     app.mainApp.General.MonitoringPlan.FieldValue   = app.MonitoringPlanLevel.Value;
+                    updateAnalysisName = 'PM-RNI: updateAnalysis';
+
+                case app.MonitoringPlanPeriod
+                    if isempty(app.MonitoringPlanPeriod.CheckedNodes)
+                        app.MonitoringPlanPeriod.CheckedNodes = event.PreviousCheckedNodes;
+                        return
+                    end
+                    app.mainApp.General.MonitoringPlan.Period       = str2double({app.MonitoringPlanPeriod.CheckedNodes.Text});
+                    updateAnalysisName = 'PM-RNI: updateReferenceTable';
+
+                case app.MonitoringPlanExportXLSX
+                    app.mainApp.General.MonitoringPlan.Export.XLSX  = app.MonitoringPlanExportXLSX.Value;
+
+                case app.MonitoringPlanExportKML
+                    app.mainApp.General.MonitoringPlan.Export.KML   = app.MonitoringPlanExportKML.Value;
 
                 case app.ExternalRequestDistance
                     app.mainApp.General.ExternalRequest.Distance_km = app.ExternalRequestDistance.Value / 1000;
+                    updateAnalysisName = 'ExternalRequest: updateAnalysis';
 
                 case app.ExternalRequestLevel
                     app.mainApp.General.ExternalRequest.FieldValue  = app.ExternalRequestLevel.Value;
+                    updateAnalysisName = 'ExternalRequest: updateAnalysis';
             end
 
             app.mainApp.General_I.MonitoringPlan  = app.mainApp.General.MonitoringPlan;
             app.mainApp.General_I.ExternalRequest = app.mainApp.General.ExternalRequest;
             saveGeneralSettings(app)
 
-            appBackDoor(app.mainApp, app, 'updateAnalysis')
+            if ~isempty(updateAnalysisName)
+                appBackDoor(app.mainApp, app, updateAnalysisName)
+            end
             
         end
 
-        % Value changed function: AutomaticZoom, AutomaticZoomFactor, 
-        % ...and 8 other components
-        function CustomPlot_ParameterValueChanged(app, event)
+        % Image clicked function: MonitoringPlanOpenFile
+        function Analysis_OpenReferenceFile(app, event)
+            
+            fileName = fullfile(ccTools.fcn.OperationSystem('programData'), 'ANATEL', class.Constants.appName, app.MonitoringPlanFileName.Value);
+            
+            switch app.mainApp.executionMode
+                case 'webApp'
+                    web(fileName, '-new')
+                otherwise
+                    ccTools.fcn.OperationSystem('openFile', fileName)
+            end
+
+        end
+
+        % Image clicked function: CustomPlotRefresh
+        function CustomPlot_RefreshImageClicked(app, event)
+            
+            % Lê a versão de "GeneralSettings.json" que vem junto ao
+            % projeto (e não a versão armazenada em "ProgramData").
+            projectFolder      = appUtil.Path(class.Constants.appName, app.rootFolder);
+            projectFilePath    = fullfile(projectFolder, 'GeneralSettings.json');
+            projectFileContent = jsondecode(fileread(projectFilePath));
+
+            app.mainApp.General.Plot   = projectFileContent.Plot;
+            CustomPlot_updatePanel(app)
+            
+            app.mainApp.General_I.Plot = app.mainApp.General.Plot;
+            saveGeneralSettings(app)
+
+            appBackDoor(app.mainApp, app, 'PM-RNI: updatePlot')
+            appBackDoor(app.mainApp, app, 'ExternalRequest: updatePlot')
+
+        end
+
+        % Value changed function: Basemap, Colorbar, Colormap
+        function CustomPlot_AxesValueChanged(app, event)
             
             switch event.Source
                 case app.Basemap
@@ -471,7 +539,21 @@ classdef winConfig_exported < matlab.apps.AppBase
 
                 case app.Colorbar
                     app.mainApp.General.Plot.GeographicAxes.Colorbar   = app.Colorbar.Value;
+            end
 
+            app.mainApp.General_I.Plot = app.mainApp.General.Plot;
+            saveGeneralSettings(app)
+            
+            appBackDoor(app.mainApp, app, 'PM-RNI: updateAxes')
+            appBackDoor(app.mainApp, app, 'ExternalRequest: updateAxes')
+
+        end
+
+        % Value changed function: AutomaticZoom, AutomaticZoomFactor, 
+        % ...and 9 other components
+        function CustomPlot_ParameterValueChanged(app, event)
+            
+            switch event.Source
                 case app.StationsSize
                     app.mainApp.General.Plot.Stations.Size             = round(app.StationsSize.Value);
 
@@ -480,6 +562,9 @@ classdef winConfig_exported < matlab.apps.AppBase
 
                 case app.PeakSize
                     app.mainApp.General.Plot.FieldPeak.Size            = round(app.PeakSize.Value);
+
+                case app.CircleColor
+                    app.mainApp.General.Plot.CircleRegion.Color        = app.CircleColor.Value;
 
                 case app.CircleFaceAlpha
                     app.mainApp.General.Plot.CircleRegion.FaceAlpha    = app.CircleFaceAlpha.Value;
@@ -497,50 +582,30 @@ classdef winConfig_exported < matlab.apps.AppBase
 
                 case app.AutomaticZoomFactor
                     app.mainApp.General.Plot.SelectedStation.AutomaticZoomFactor = app.AutomaticZoomFactor.Value;
+
+                case {app.PeakColor, app.SelectedStationColor, app.StationsColor}
+                    initialColor  = event.PreviousValue;
+                    selectedColor = event.Value;
+        
+                    if ~isequal(initialColor, selectedColor)
+                        selectedColor = rgb2hex(selectedColor);
+            
+                        switch event.Source
+                            case app.StationsColor
+                                app.mainApp.General.Plot.Stations.Color        = selectedColor;
+                            case app.SelectedStationColor
+                                app.mainApp.General.Plot.SelectedStation.Color = selectedColor;
+                            case app.PeakColor
+                                app.mainApp.General.Plot.FieldPeak.Color       = selectedColor;
+                        end
+                    end
             end
 
             app.mainApp.General_I.Plot = app.mainApp.General.Plot;
             saveGeneralSettings(app)
             
-            appBackDoor(app.mainApp, app, 'updatePlot')
-            
-        end
-
-        % Value changed function: CircleColor
-        function CustomPlot_CircleColorValueChanged(app, event)
-
-            app.mainApp.General.Plot.CircleRegion.Color = app.CircleColor.Value;
-
-            app.mainApp.General_I.Plot = app.mainApp.General.Plot;
-            saveGeneralSettings(app)
-            
-            appBackDoor(app.mainApp, app, 'updatePlot')
-            
-        end
-
-        % Callback function: PeakColor, SelectedStationColor, StationsColor
-        function CustomPlot_ColorValueChanged(app, event)
-
-            initialColor  = event.PreviousValue;
-            selectedColor = event.Value;
-
-            if ~isequal(initialColor, selectedColor)
-                selectedColor = rgb2hex(selectedColor);
-    
-                switch event.Source
-                    case app.StationsColor
-                        app.mainApp.General.Plot.Stations.Color        = selectedColor;
-                    case app.SelectedStationColor
-                        app.mainApp.General.Plot.SelectedStation.Color = selectedColor;
-                    case app.PeakColor
-                        app.mainApp.General.Plot.FieldPeak.Color       = selectedColor;
-                end
-            end
-
-            app.mainApp.General_I.Plot = app.mainApp.General.Plot;
-            saveGeneralSettings(app)
-
-            appBackDoor(app.mainApp, app, 'updatePlot')
+            appBackDoor(app.mainApp, app, 'PM-RNI: updatePlot')
+            appBackDoor(app.mainApp, app, 'ExternalRequest: updatePlot')
             
         end
 
@@ -641,7 +706,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create Document
             app.Document = uigridlayout(app.GridLayout);
-            app.Document.ColumnWidth = {325, 0, '1x', 0, 0};
+            app.Document.ColumnWidth = {325, 0, 0, '1x', 0};
             app.Document.RowHeight = {'1x'};
             app.Document.Padding = [5 5 5 5];
             app.Document.Layout.Row = 1;
@@ -818,190 +883,6 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.openAuxiliarApp2Debug.Layout.Row = 9;
             app.openAuxiliarApp2Debug.Layout.Column = [1 2];
 
-            % Create AnalysisGrid
-            app.AnalysisGrid = uigridlayout(app.Document);
-            app.AnalysisGrid.ColumnWidth = {'1x'};
-            app.AnalysisGrid.RowHeight = {22, '1x'};
-            app.AnalysisGrid.RowSpacing = 5;
-            app.AnalysisGrid.Padding = [0 0 0 0];
-            app.AnalysisGrid.Layout.Row = 1;
-            app.AnalysisGrid.Layout.Column = 3;
-            app.AnalysisGrid.BackgroundColor = [1 1 1];
-
-            % Create AnalysisTitle
-            app.AnalysisTitle = uilabel(app.AnalysisGrid);
-            app.AnalysisTitle.VerticalAlignment = 'bottom';
-            app.AnalysisTitle.FontSize = 10;
-            app.AnalysisTitle.Layout.Row = 1;
-            app.AnalysisTitle.Layout.Column = 1;
-            app.AnalysisTitle.Text = 'ANÁLISE';
-
-            % Create AnalysisPanel
-            app.AnalysisPanel = uipanel(app.AnalysisGrid);
-            app.AnalysisPanel.Layout.Row = 2;
-            app.AnalysisPanel.Layout.Column = 1;
-
-            % Create AnalysisPanelGrid
-            app.AnalysisPanelGrid = uigridlayout(app.AnalysisPanel);
-            app.AnalysisPanelGrid.ColumnWidth = {'1x'};
-            app.AnalysisPanelGrid.RowHeight = {22, '1x', 22, '1x'};
-            app.AnalysisPanelGrid.RowSpacing = 5;
-            app.AnalysisPanelGrid.Padding = [10 10 10 5];
-            app.AnalysisPanelGrid.BackgroundColor = [1 1 1];
-
-            % Create MonitoringPlanLabel
-            app.MonitoringPlanLabel = uilabel(app.AnalysisPanelGrid);
-            app.MonitoringPlanLabel.VerticalAlignment = 'bottom';
-            app.MonitoringPlanLabel.FontSize = 10;
-            app.MonitoringPlanLabel.Layout.Row = 1;
-            app.MonitoringPlanLabel.Layout.Column = 1;
-            app.MonitoringPlanLabel.Text = 'PM-RNI';
-
-            % Create MonitoringPlanPanel
-            app.MonitoringPlanPanel = uipanel(app.AnalysisPanelGrid);
-            app.MonitoringPlanPanel.Layout.Row = 2;
-            app.MonitoringPlanPanel.Layout.Column = 1;
-
-            % Create MonitoringPlanGrid
-            app.MonitoringPlanGrid = uigridlayout(app.MonitoringPlanPanel);
-            app.MonitoringPlanGrid.ColumnWidth = {300, 90, '1x', 22};
-            app.MonitoringPlanGrid.RowHeight = {22, 22, 22, 22, '1x', 17, 17};
-            app.MonitoringPlanGrid.ColumnSpacing = 5;
-            app.MonitoringPlanGrid.RowSpacing = 5;
-            app.MonitoringPlanGrid.BackgroundColor = [1 1 1];
-
-            % Create MonitoringPlanDistanceLabel
-            app.MonitoringPlanDistanceLabel = uilabel(app.MonitoringPlanGrid);
-            app.MonitoringPlanDistanceLabel.WordWrap = 'on';
-            app.MonitoringPlanDistanceLabel.FontSize = 10;
-            app.MonitoringPlanDistanceLabel.Layout.Row = 1;
-            app.MonitoringPlanDistanceLabel.Layout.Column = [1 2];
-            app.MonitoringPlanDistanceLabel.Text = 'Distância limite entre ponto de medição e a estação sob análise (m):';
-
-            % Create MonitoringPlanDistance
-            app.MonitoringPlanDistance = uieditfield(app.MonitoringPlanGrid, 'numeric');
-            app.MonitoringPlanDistance.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
-            app.MonitoringPlanDistance.FontSize = 11;
-            app.MonitoringPlanDistance.Layout.Row = 1;
-            app.MonitoringPlanDistance.Layout.Column = 2;
-            app.MonitoringPlanDistance.Value = 200;
-
-            % Create MonitoringPlanLevelLabel
-            app.MonitoringPlanLevelLabel = uilabel(app.MonitoringPlanGrid);
-            app.MonitoringPlanLevelLabel.WordWrap = 'on';
-            app.MonitoringPlanLevelLabel.FontSize = 10;
-            app.MonitoringPlanLevelLabel.Layout.Row = 2;
-            app.MonitoringPlanLevelLabel.Layout.Column = 1;
-            app.MonitoringPlanLevelLabel.Text = 'Nível de referência de campo elétrico: (V/m)';
-
-            % Create MonitoringPlanLevel
-            app.MonitoringPlanLevel = uieditfield(app.MonitoringPlanGrid, 'numeric');
-            app.MonitoringPlanLevel.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
-            app.MonitoringPlanLevel.FontSize = 11;
-            app.MonitoringPlanLevel.Layout.Row = 2;
-            app.MonitoringPlanLevel.Layout.Column = 2;
-            app.MonitoringPlanLevel.Value = 14;
-
-            % Create MonitoringPlanReasonsListLabel
-            app.MonitoringPlanReasonsListLabel = uilabel(app.MonitoringPlanGrid);
-            app.MonitoringPlanReasonsListLabel.FontSize = 10;
-            app.MonitoringPlanReasonsListLabel.Layout.Row = 4;
-            app.MonitoringPlanReasonsListLabel.Layout.Column = 1;
-            app.MonitoringPlanReasonsListLabel.Text = 'Lista de jutificativas:';
-
-            % Create MonitoringPlanReasonsList
-            app.MonitoringPlanReasonsList = uilistbox(app.MonitoringPlanGrid);
-            app.MonitoringPlanReasonsList.Items = {''};
-            app.MonitoringPlanReasonsList.FontSize = 11;
-            app.MonitoringPlanReasonsList.Layout.Row = [4 5];
-            app.MonitoringPlanReasonsList.Layout.Column = [2 3];
-            app.MonitoringPlanReasonsList.Value = '';
-
-            % Create MonitoringPlanReasonsListLabel_2
-            app.MonitoringPlanReasonsListLabel_2 = uilabel(app.MonitoringPlanGrid);
-            app.MonitoringPlanReasonsListLabel_2.FontSize = 10;
-            app.MonitoringPlanReasonsListLabel_2.Layout.Row = 3;
-            app.MonitoringPlanReasonsListLabel_2.Layout.Column = 1;
-            app.MonitoringPlanReasonsListLabel_2.Text = 'Arquivo de referência:';
-
-            % Create EditField
-            app.EditField = uieditfield(app.MonitoringPlanGrid, 'text');
-            app.EditField.FontSize = 11;
-            app.EditField.Layout.Row = 3;
-            app.EditField.Layout.Column = [2 3];
-
-            % Create CheckBox
-            app.CheckBox = uicheckbox(app.MonitoringPlanGrid);
-            app.CheckBox.Text = 'Ao exportar a tabela de dados, cria uma segunda aba na planilha com as medidas brutas.';
-            app.CheckBox.FontSize = 11;
-            app.CheckBox.Layout.Row = 6;
-            app.CheckBox.Layout.Column = [1 3];
-
-            % Create AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox
-            app.AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox = uicheckbox(app.MonitoringPlanGrid);
-            app.AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox.Text = 'Ao exportar a tabela de dados, cria arquivos no formato "kml".';
-            app.AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox.FontSize = 11;
-            app.AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox.Layout.Row = 7;
-            app.AoexportaratabeladedadoscriaarquivosnoformatokmlCheckBox.Layout.Column = [1 3];
-
-            % Create Image
-            app.Image = uiimage(app.MonitoringPlanGrid);
-            app.Image.Layout.Row = 3;
-            app.Image.Layout.Column = 4;
-            app.Image.ImageSource = 'OpenFile_36x36.png';
-
-            % Create ExternalRequestLabel
-            app.ExternalRequestLabel = uilabel(app.AnalysisPanelGrid);
-            app.ExternalRequestLabel.VerticalAlignment = 'bottom';
-            app.ExternalRequestLabel.FontSize = 10;
-            app.ExternalRequestLabel.Layout.Row = 3;
-            app.ExternalRequestLabel.Layout.Column = 1;
-            app.ExternalRequestLabel.Text = 'DEMANDA EXTERNA';
-
-            % Create ExternalRequestPanel
-            app.ExternalRequestPanel = uipanel(app.AnalysisPanelGrid);
-            app.ExternalRequestPanel.Layout.Row = 4;
-            app.ExternalRequestPanel.Layout.Column = 1;
-
-            % Create ExternalRequestGrid
-            app.ExternalRequestGrid = uigridlayout(app.ExternalRequestPanel);
-            app.ExternalRequestGrid.ColumnWidth = {300, 90, '1x'};
-            app.ExternalRequestGrid.RowHeight = {22, 22};
-            app.ExternalRequestGrid.RowSpacing = 5;
-            app.ExternalRequestGrid.BackgroundColor = [1 1 1];
-
-            % Create ExternalRequestDistanceLabel
-            app.ExternalRequestDistanceLabel = uilabel(app.ExternalRequestGrid);
-            app.ExternalRequestDistanceLabel.WordWrap = 'on';
-            app.ExternalRequestDistanceLabel.FontSize = 10;
-            app.ExternalRequestDistanceLabel.Layout.Row = 1;
-            app.ExternalRequestDistanceLabel.Layout.Column = [1 2];
-            app.ExternalRequestDistanceLabel.Text = 'Distância limite entre ponto de medição e a estação sob análise (m):';
-
-            % Create ExternalRequestDistance
-            app.ExternalRequestDistance = uieditfield(app.ExternalRequestGrid, 'numeric');
-            app.ExternalRequestDistance.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
-            app.ExternalRequestDistance.FontSize = 11;
-            app.ExternalRequestDistance.Layout.Row = 1;
-            app.ExternalRequestDistance.Layout.Column = 2;
-            app.ExternalRequestDistance.Value = 200;
-
-            % Create ExternalRequestLevelLabel
-            app.ExternalRequestLevelLabel = uilabel(app.ExternalRequestGrid);
-            app.ExternalRequestLevelLabel.WordWrap = 'on';
-            app.ExternalRequestLevelLabel.FontSize = 10;
-            app.ExternalRequestLevelLabel.Layout.Row = 2;
-            app.ExternalRequestLevelLabel.Layout.Column = 1;
-            app.ExternalRequestLevelLabel.Text = 'Nível de referência de campo elétrico: (V/m)';
-
-            % Create ExternalRequestLevel
-            app.ExternalRequestLevel = uieditfield(app.ExternalRequestGrid, 'numeric');
-            app.ExternalRequestLevel.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
-            app.ExternalRequestLevel.FontSize = 11;
-            app.ExternalRequestLevel.Layout.Row = 2;
-            app.ExternalRequestLevel.Layout.Column = 2;
-            app.ExternalRequestLevel.Value = 14;
-
             % Create CustomPlotGrid
             app.CustomPlotGrid = uigridlayout(app.Document);
             app.CustomPlotGrid.ColumnWidth = {'1x', 16};
@@ -1019,6 +900,14 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.CustomPlotTitle.Layout.Row = 1;
             app.CustomPlotTitle.Layout.Column = 1;
             app.CustomPlotTitle.Text = 'CUSTOMIZAÇÃO DO PLOT';
+
+            % Create CustomPlotRefresh
+            app.CustomPlotRefresh = uiimage(app.CustomPlotGrid);
+            app.CustomPlotRefresh.ImageClickedFcn = createCallbackFcn(app, @CustomPlot_RefreshImageClicked, true);
+            app.CustomPlotRefresh.Layout.Row = 1;
+            app.CustomPlotRefresh.Layout.Column = 2;
+            app.CustomPlotRefresh.VerticalAlignment = 'bottom';
+            app.CustomPlotRefresh.ImageSource = 'Refresh_18.png';
 
             % Create CustomPlotPanel
             app.CustomPlotPanel = uipanel(app.CustomPlotGrid);
@@ -1042,7 +931,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create Basemap
             app.Basemap = uidropdown(app.CustomPlotPanelGrid);
             app.Basemap.Items = {'darkwater', 'streets-light', 'streets-dark', 'satellite', 'topographic', 'grayterrain'};
-            app.Basemap.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.Basemap.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_AxesValueChanged, true);
             app.Basemap.FontSize = 11;
             app.Basemap.BackgroundColor = [1 1 1];
             app.Basemap.Layout.Row = 1;
@@ -1059,7 +948,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create Colormap
             app.Colormap = uidropdown(app.CustomPlotPanelGrid);
             app.Colormap.Items = {'winter', 'parula', 'turbo', 'gray', 'hot', 'jet', 'summer'};
-            app.Colormap.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.Colormap.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_AxesValueChanged, true);
             app.Colormap.FontSize = 11;
             app.Colormap.BackgroundColor = [1 1 1];
             app.Colormap.Layout.Row = 2;
@@ -1075,8 +964,8 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create Colorbar
             app.Colorbar = uidropdown(app.CustomPlotPanelGrid);
-            app.Colorbar.Items = {'off', 'east', 'eastoutside', 'south', 'southoutside'};
-            app.Colorbar.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.Colorbar.Items = {'off', 'on'};
+            app.Colorbar.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_AxesValueChanged, true);
             app.Colorbar.FontSize = 11;
             app.Colorbar.BackgroundColor = [1 1 1];
             app.Colorbar.Layout.Row = 3;
@@ -1094,7 +983,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create StationsColor
             app.StationsColor = uicolorpicker(app.CustomPlotPanelGrid);
             app.StationsColor.Value = [0 1 1];
-            app.StationsColor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ColorValueChanged, true);
+            app.StationsColor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
             app.StationsColor.Layout.Row = 4;
             app.StationsColor.Layout.Column = 2;
             app.StationsColor.BackgroundColor = [1 1 1];
@@ -1122,7 +1011,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create SelectedStationColor
             app.SelectedStationColor = uicolorpicker(app.CustomPlotPanelGrid);
             app.SelectedStationColor.Value = [0.7882 0.2784 0.3412];
-            app.SelectedStationColor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ColorValueChanged, true);
+            app.SelectedStationColor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
             app.SelectedStationColor.Layout.Row = 5;
             app.SelectedStationColor.Layout.Column = 2;
             app.SelectedStationColor.BackgroundColor = [1 1 1];
@@ -1150,7 +1039,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create PeakColor
             app.PeakColor = uicolorpicker(app.CustomPlotPanelGrid);
             app.PeakColor.Value = [0.7882 0.2784 0.3373];
-            app.PeakColor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ColorValueChanged, true);
+            app.PeakColor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
             app.PeakColor.Layout.Row = 6;
             app.PeakColor.Layout.Column = 2;
             app.PeakColor.BackgroundColor = [1 1 1];
@@ -1178,7 +1067,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create CircleColor
             app.CircleColor = uidropdown(app.CustomPlotPanelGrid);
             app.CircleColor.Items = {'black', 'blue', 'cyan', 'green', 'magenta', 'red', 'white', 'yellow'};
-            app.CircleColor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_CircleColorValueChanged, true);
+            app.CircleColor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
             app.CircleColor.FontSize = 11;
             app.CircleColor.BackgroundColor = [1 1 1];
             app.CircleColor.Layout.Row = 7;
@@ -1270,6 +1159,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.FolderPanelGrid.RowHeight = {22, 22, 22, 22, 22, 22, '1x'};
             app.FolderPanelGrid.ColumnSpacing = 5;
             app.FolderPanelGrid.RowSpacing = 5;
+            app.FolderPanelGrid.Padding = [10 10 10 5];
             app.FolderPanelGrid.BackgroundColor = [1 1 1];
 
             % Create DataHubPOSTLabel
@@ -1332,6 +1222,170 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.tempPath.FontSize = 11;
             app.tempPath.Layout.Row = 6;
             app.tempPath.Layout.Column = 1;
+
+            % Create AnalysisPanelGrid
+            app.AnalysisPanelGrid = uigridlayout(app.Document);
+            app.AnalysisPanelGrid.ColumnWidth = {'1x'};
+            app.AnalysisPanelGrid.RowHeight = {22, '1x', 22, '1x'};
+            app.AnalysisPanelGrid.RowSpacing = 5;
+            app.AnalysisPanelGrid.Padding = [0 0 0 0];
+            app.AnalysisPanelGrid.Layout.Row = 1;
+            app.AnalysisPanelGrid.Layout.Column = 3;
+            app.AnalysisPanelGrid.BackgroundColor = [1 1 1];
+
+            % Create MonitoringPlanLabel
+            app.MonitoringPlanLabel = uilabel(app.AnalysisPanelGrid);
+            app.MonitoringPlanLabel.VerticalAlignment = 'bottom';
+            app.MonitoringPlanLabel.FontSize = 10;
+            app.MonitoringPlanLabel.Layout.Row = 1;
+            app.MonitoringPlanLabel.Layout.Column = 1;
+            app.MonitoringPlanLabel.Text = 'PM-RNI';
+
+            % Create MonitoringPlanPanel
+            app.MonitoringPlanPanel = uipanel(app.AnalysisPanelGrid);
+            app.MonitoringPlanPanel.Layout.Row = 2;
+            app.MonitoringPlanPanel.Layout.Column = 1;
+
+            % Create MonitoringPlanGrid
+            app.MonitoringPlanGrid = uigridlayout(app.MonitoringPlanPanel);
+            app.MonitoringPlanGrid.ColumnWidth = {310, 90, '1x', 16};
+            app.MonitoringPlanGrid.RowHeight = {22, 22, 22, '1x', 1, 22, 22};
+            app.MonitoringPlanGrid.ColumnSpacing = 5;
+            app.MonitoringPlanGrid.RowSpacing = 5;
+            app.MonitoringPlanGrid.BackgroundColor = [1 1 1];
+
+            % Create MonitoringPlanDistanceLabel
+            app.MonitoringPlanDistanceLabel = uilabel(app.MonitoringPlanGrid);
+            app.MonitoringPlanDistanceLabel.WordWrap = 'on';
+            app.MonitoringPlanDistanceLabel.FontSize = 10;
+            app.MonitoringPlanDistanceLabel.Layout.Row = 1;
+            app.MonitoringPlanDistanceLabel.Layout.Column = [1 2];
+            app.MonitoringPlanDistanceLabel.Text = 'Distância limite entre ponto de medição e a estação sob análise (m):';
+
+            % Create MonitoringPlanDistance
+            app.MonitoringPlanDistance = uieditfield(app.MonitoringPlanGrid, 'numeric');
+            app.MonitoringPlanDistance.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
+            app.MonitoringPlanDistance.FontSize = 11;
+            app.MonitoringPlanDistance.Layout.Row = 1;
+            app.MonitoringPlanDistance.Layout.Column = 2;
+            app.MonitoringPlanDistance.Value = 200;
+
+            % Create MonitoringPlanLevelLabel
+            app.MonitoringPlanLevelLabel = uilabel(app.MonitoringPlanGrid);
+            app.MonitoringPlanLevelLabel.WordWrap = 'on';
+            app.MonitoringPlanLevelLabel.FontSize = 10;
+            app.MonitoringPlanLevelLabel.Layout.Row = 2;
+            app.MonitoringPlanLevelLabel.Layout.Column = 1;
+            app.MonitoringPlanLevelLabel.Text = 'Nível de referência de campo elétrico: (V/m)';
+
+            % Create MonitoringPlanLevel
+            app.MonitoringPlanLevel = uieditfield(app.MonitoringPlanGrid, 'numeric');
+            app.MonitoringPlanLevel.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
+            app.MonitoringPlanLevel.FontSize = 11;
+            app.MonitoringPlanLevel.Layout.Row = 2;
+            app.MonitoringPlanLevel.Layout.Column = 2;
+            app.MonitoringPlanLevel.Value = 14;
+
+            % Create MonitoringPlanFileLabel
+            app.MonitoringPlanFileLabel = uilabel(app.MonitoringPlanGrid);
+            app.MonitoringPlanFileLabel.WordWrap = 'on';
+            app.MonitoringPlanFileLabel.FontSize = 10;
+            app.MonitoringPlanFileLabel.Layout.Row = 3;
+            app.MonitoringPlanFileLabel.Layout.Column = 1;
+            app.MonitoringPlanFileLabel.Text = 'Arquivo de referência:';
+
+            % Create MonitoringPlanFileName
+            app.MonitoringPlanFileName = uieditfield(app.MonitoringPlanGrid, 'text');
+            app.MonitoringPlanFileName.Editable = 'off';
+            app.MonitoringPlanFileName.FontSize = 11;
+            app.MonitoringPlanFileName.Layout.Row = 3;
+            app.MonitoringPlanFileName.Layout.Column = [2 3];
+
+            % Create MonitoringPlanOpenFile
+            app.MonitoringPlanOpenFile = uiimage(app.MonitoringPlanGrid);
+            app.MonitoringPlanOpenFile.ImageClickedFcn = createCallbackFcn(app, @Analysis_OpenReferenceFile, true);
+            app.MonitoringPlanOpenFile.Tooltip = {'Abrir no Excel a planilha de referência'};
+            app.MonitoringPlanOpenFile.Layout.Row = 3;
+            app.MonitoringPlanOpenFile.Layout.Column = 4;
+            app.MonitoringPlanOpenFile.ImageSource = 'Sheet_32.png';
+
+            % Create MonitoringPlanPeriod
+            app.MonitoringPlanPeriod = uitree(app.MonitoringPlanGrid, 'checkbox');
+            app.MonitoringPlanPeriod.FontSize = 11;
+            app.MonitoringPlanPeriod.Layout.Row = 4;
+            app.MonitoringPlanPeriod.Layout.Column = [2 3];
+
+            % Assign Checked Nodes
+            app.MonitoringPlanPeriod.CheckedNodesChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
+
+            % Create MonitoringPlanExportXLSX
+            app.MonitoringPlanExportXLSX = uicheckbox(app.MonitoringPlanGrid);
+            app.MonitoringPlanExportXLSX.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
+            app.MonitoringPlanExportXLSX.Text = 'Ao exportar a tabela de dados, cria uma segunda aba na planilha com as medidas brutas.';
+            app.MonitoringPlanExportXLSX.FontSize = 11;
+            app.MonitoringPlanExportXLSX.Layout.Row = 6;
+            app.MonitoringPlanExportXLSX.Layout.Column = [1 3];
+
+            % Create MonitoringPlanExportKML
+            app.MonitoringPlanExportKML = uicheckbox(app.MonitoringPlanGrid);
+            app.MonitoringPlanExportKML.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
+            app.MonitoringPlanExportKML.Text = 'Ao exportar a tabela de dados, cria arquivos no formato "kml".';
+            app.MonitoringPlanExportKML.FontSize = 11;
+            app.MonitoringPlanExportKML.Layout.Row = 7;
+            app.MonitoringPlanExportKML.Layout.Column = [1 3];
+
+            % Create ExternalRequestLabel
+            app.ExternalRequestLabel = uilabel(app.AnalysisPanelGrid);
+            app.ExternalRequestLabel.VerticalAlignment = 'bottom';
+            app.ExternalRequestLabel.FontSize = 10;
+            app.ExternalRequestLabel.Layout.Row = 3;
+            app.ExternalRequestLabel.Layout.Column = 1;
+            app.ExternalRequestLabel.Text = 'DEMANDA EXTERNA';
+
+            % Create ExternalRequestPanel
+            app.ExternalRequestPanel = uipanel(app.AnalysisPanelGrid);
+            app.ExternalRequestPanel.Layout.Row = 4;
+            app.ExternalRequestPanel.Layout.Column = 1;
+
+            % Create ExternalRequestGrid
+            app.ExternalRequestGrid = uigridlayout(app.ExternalRequestPanel);
+            app.ExternalRequestGrid.ColumnWidth = {310, 90};
+            app.ExternalRequestGrid.RowHeight = {22, 22};
+            app.ExternalRequestGrid.RowSpacing = 5;
+            app.ExternalRequestGrid.BackgroundColor = [1 1 1];
+
+            % Create ExternalRequestDistanceLabel
+            app.ExternalRequestDistanceLabel = uilabel(app.ExternalRequestGrid);
+            app.ExternalRequestDistanceLabel.VerticalAlignment = 'top';
+            app.ExternalRequestDistanceLabel.WordWrap = 'on';
+            app.ExternalRequestDistanceLabel.FontSize = 10;
+            app.ExternalRequestDistanceLabel.Layout.Row = [1 2];
+            app.ExternalRequestDistanceLabel.Layout.Column = [1 2];
+            app.ExternalRequestDistanceLabel.Text = {'Distância limite entre ponto de medição e a estação sob análise (m):'; '(valor padrão)'};
+
+            % Create ExternalRequestDistance
+            app.ExternalRequestDistance = uieditfield(app.ExternalRequestGrid, 'numeric');
+            app.ExternalRequestDistance.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
+            app.ExternalRequestDistance.FontSize = 11;
+            app.ExternalRequestDistance.Layout.Row = 1;
+            app.ExternalRequestDistance.Layout.Column = 2;
+            app.ExternalRequestDistance.Value = 1000;
+
+            % Create ExternalRequestLevelLabel
+            app.ExternalRequestLevelLabel = uilabel(app.ExternalRequestGrid);
+            app.ExternalRequestLevelLabel.WordWrap = 'on';
+            app.ExternalRequestLevelLabel.FontSize = 10;
+            app.ExternalRequestLevelLabel.Layout.Row = 2;
+            app.ExternalRequestLevelLabel.Layout.Column = 1;
+            app.ExternalRequestLevelLabel.Text = 'Nível de referência de campo elétrico: (V/m)';
+
+            % Create ExternalRequestLevel
+            app.ExternalRequestLevel = uieditfield(app.ExternalRequestGrid, 'numeric');
+            app.ExternalRequestLevel.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
+            app.ExternalRequestLevel.FontSize = 11;
+            app.ExternalRequestLevel.Layout.Row = 2;
+            app.ExternalRequestLevel.Layout.Column = 2;
+            app.ExternalRequestLevel.Value = 14;
 
             % Create Toolbar
             app.Toolbar = uigridlayout(app.GridLayout);

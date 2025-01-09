@@ -1,5 +1,5 @@
 {
-    "version": 0.37,
+    "version": 0.39,
     "operationMode": {
         "Debug": false,
         "Dock": false,
@@ -37,7 +37,7 @@
             "Color": "red",
             "Size": 32,
             "AutomaticZoom": false,
-            "AutomaticZoomFactor": 2
+            "AutomaticZoomFactor": 4
         },
         "CircleRegion": {
             "Color": "red",

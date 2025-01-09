@@ -1,4 +1,4 @@
-function stationTable = MonitoringPlan(appName, rootFolder, appGeneral)
+function [stationTable, rawListOfYears, refListOfLocations, refListOfStates] = MonitoringPlan(appName, rootFolder, appGeneral)
     
     [projectFolder, ...
      programDataFolder] = appUtil.Path(appName, rootFolder);
@@ -19,6 +19,7 @@ function stationTable = MonitoringPlan(appName, rootFolder, appGeneral)
     end
 
     % Filtro por ano:
+    rawListOfYears = unique(stationTable.Ano);
     idxFilter = ~ismember(stationTable.Ano, appGeneral.MonitoringPlan.Period);
     if any(idxFilter)
         stationTable(idxFilter, :)        = [];
@@ -57,4 +58,13 @@ function stationTable = MonitoringPlan(appName, rootFolder, appGeneral)
 
     stationTable.AnalysisFlag             = false(height(stationTable), 1);
     stationTable.UploadResultFlag         = false(height(stationTable), 1);
+
+    % Ordenando lista (evitando que "Águas Claras" seja apresentada 
+    % depois dos municípios que se iniciam com a letra "z")
+    referenceList = unique(stationTable.Location);
+    referenceEditedList = textAnalysis.normalizeWords(lower(referenceList));
+    [~, idxSort] = sort(referenceEditedList);
+    
+    refListOfLocations = referenceList(idxSort);
+    refListOfStates    = unique(stationTable.UF);
 end

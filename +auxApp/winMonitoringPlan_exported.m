@@ -5,6 +5,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         UIFigure                     matlab.ui.Figure
         GridLayout                   matlab.ui.container.GridLayout
         toolGrid                     matlab.ui.container.GridLayout
+        tool_UploadFinalFile         matlab.ui.control.Image
         jsBackDoor                   matlab.ui.control.HTML
         tool_ExportFiles             matlab.ui.control.Image
         tool_TableVisibility         matlab.ui.control.Image
@@ -154,7 +155,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             app.progressDialog.Visible = 'visible';
 
-            startup_AppProperties(app)
+            % startup_AppProperties(app)
             startup_GUIComponents(app)
             Analysis(app)
 
@@ -162,20 +163,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function startup_AppProperties(app)
-            if isempty(app.mainApp.stationTable)
-                app.mainApp.stationTable = fileReader.MonitoringPlan(class.Constants.appName, app.rootFolder, app.mainApp.General);
-                
-                % Ordenando lista (evitando que "Águas Claras" seja apresentada 
-                % depois dos municípios que se iniciam com a letra "z")
-                referenceList = unique(app.mainApp.stationTable.Location);
-                referenceEditedList = textAnalysis.normalizeWords(lower(referenceList));
-                [~, idxSort] = sort(referenceEditedList);
-
-                app.projectData.referenceListOfLocations = referenceList(idxSort);
-                app.projectData.referenceListOfStates    = unique(app.mainApp.stationTable.UF);
-            end
-        end
+        % function startup_AppProperties(app)
+        %     % ...
+        % end
 
         %-----------------------------------------------------------------%
         function startup_GUIComponents(app)
@@ -278,7 +268,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             if ~isempty(app.measTable)
                 identifyMeasuresForEachStation(app, idxStations)
             end
-            updateTable(app, idxStations)
+            initialSelection = updateTable(app, idxStations);
             layout_TableStyle(app)
 
             if ~isempty(fullListOfLocation)
@@ -304,6 +294,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             plot_RiskMeasures(app)
             plot_Stations(app)
 
+            if ~isempty(initialSelection)
+                [~, idxRow] = ismember(initialSelection, app.UITable.UserData);
+                if idxRow
+                    app.UITable.Selection = idxRow;
+                    UITableSelectionChanged(app, struct('PreviousSelection', 0, 'Selection', idxRow))
+                end
+            end
+
             app.progressDialog.Visible = 'hidden';
         end
 
@@ -318,7 +316,12 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function updateTable(app, idxStations)
+        function initialSelection = updateTable(app, idxStations)
+            initialSelection = [];
+            if ~isempty(app.UITable.Selection)
+                initialSelection = app.UITable.UserData(app.UITable.Selection);
+            end
+
             table2Render = app.mainApp.stationTable(idxStations, {'N° estacao',            ...
                                                                   'Location',              ...
                                                                   'Serviço',               ...                                                                                      
@@ -330,6 +333,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                                                   'maxFieldValue',         ...
                                                                   'Justificativa'});
             set(app.UITable, 'Data', table2Render, 'UserData', idxStations)
+            app.UITable.Selection = [];
         end
 
         %-----------------------------------------------------------------%
@@ -513,10 +517,11 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function [idxMissingInfo, idxManualEdition, idxRiskMeasures] = layout_searchUnexpectedTableValues(app)
+        function [idxMissingInfo, idxManualEdition, idxRiskMeasures, idxUpload2POST] = layout_searchUnexpectedTableValues(app)
             idxMissingInfo   = [];
             idxManualEdition = [];
             idxRiskMeasures  = [];
+            idxUpload2POST   = [];
 
             if ~isempty(app.UITable.Data)
                 % Tabela sob análise.                
@@ -541,6 +546,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                         (ismember(relatedStationTable.("Justificativa"), reasonsThatRequireNewLocation) & ~editedLocationLogical));
                 idxManualEdition = find(addedObservationLogical | editedLocationLogical);
                 idxRiskMeasures  = find(relatedStationTable.numberOfRiskMeasures > 0);
+                idxUpload2POST   = find(relatedStationTable.UploadResultFlag);
             end
         end
 
@@ -553,7 +559,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 % apesar da rota englobar o município em que está instalada a
                 % estação. Ou estações que apresentaram medições com níveis
                 % acima de 14 V/m.
-                [idxMissingInfo, idxManualEdition, idxRiskMeasures] = layout_searchUnexpectedTableValues(app);
+                [idxMissingInfo, idxManualEdition, idxRiskMeasures, idxUpload2POST] = layout_searchUnexpectedTableValues(app);
 
                 if ~isempty(idxMissingInfo)
                     columnIndex1 = find(ismember(app.UITable.Data.Properties.VariableNames, 'Justificativa'));
@@ -573,9 +579,21 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     addStyle(app.UITable, s3, "cell", [idxRiskMeasures, repmat(columnIndex2, numel(idxRiskMeasures), 1)])
                 end
 
+                if ~isempty(idxUpload2POST)
+                    s4 = uistyle('FontColor', [.5,.5,.5]);
+                    addStyle(app.UITable, s4, "row", idxUpload2POST)
+                end
+
                 app.tool_ExportFiles.Enable = 1;
+                if isempty(idxMissingInfo)
+                    app.tool_UploadFinalFile.Enable = 1;
+                else
+                    app.tool_UploadFinalFile.Enable = 0;
+                end
+
             else
-                app.tool_ExportFiles.Enable = 0;
+                app.tool_ExportFiles.Enable     = 0;
+                app.tool_UploadFinalFile.Enable = 0;
             end
         end
     end
@@ -586,6 +604,30 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function appBackDoor(app, callingApp, operationType, varargin)
             try
                 switch class(callingApp)
+                    case {'winRNI', 'winRNI_exported'}
+                        switch operationType
+                            case {'PM-RNI: updateReferenceTable', 'PM-RNI: updatePlot'}
+                                Analysis(app)
+
+                            case 'PM-RNI: updateAnalysis'
+                                idxStations = app.UITable.UserData;
+                                if ~isempty(idxStations)
+                                    app.mainApp.stationTable.AnalysisFlag(idxStations) = false;
+                                    Analysis(app)
+                                end
+
+                            case 'PM-RNI: updateAxes'
+                                if ~isequal(app.UIAxes.Basemap, app.mainApp.General.Plot.GeographicAxes.Basemap)
+                                    app.UIAxes.Basemap = app.mainApp.General.Plot.GeographicAxes.Basemap;
+                                end
+
+                                plot.axes.Colormap(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colormap)
+                                plot.axes.Colorbar(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colorbar)
+
+                            otherwise
+                                error('UnexpectedCall')
+                        end
+
                     case {'auxApp.dockStationInfo',    'auxApp.dockStationInfo_exported', ...
                           'auxApp.dockListOfLocation', 'auxApp.dockListOfLocation_exported'}
 
@@ -601,6 +643,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                         %
                         % (c) 'UITableSelectionChanged'
                         %     Troca-se a seleção da uitable.
+                        %
+                        % (d) 'ListOfLocationChanged'
 
                         updateFlag = varargin{1};
                         returnFlag = varargin{2};
@@ -637,6 +681,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
                                 case 'ListOfLocationChanged'
                                     Analysis(app)
+
+                                otherwise
+                                    error('UnexpectedCall')
                             end
                         end
 
@@ -651,7 +698,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 end
 
             catch ME
-                appUtil.modalWindow(app.UIFigure, 'error', ME.message);            
+                appUtil.modalWindow(app.UIFigure, 'error', ME.message);
             end
         end
     end
@@ -760,7 +807,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % (a) Arquivo no formato .XLSX
             %     (um único arquivo de saída)
             fileName_XLSX = [baseName '.xlsx'];
-            [status, msgError] = fileWriter.XLSX(fileName_XLSX, app.mainApp.stationTable(idxStations, :), timetable2table(app.measTable), app.mainApp.General);
+            [status, msgError] = fileWriter.XLSX(fileName_XLSX, app.mainApp.stationTable(idxStations, :), timetable2table(app.measTable), app.mainApp.General.MonitoringPlan.FieldValue, app.mainApp.General.MonitoringPlan.Export.XLSX);
             if status
                 savedFiles{end+1} = fileName_XLSX;
             else
@@ -805,7 +852,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
                 fileFolder = fileparts(baseName);
                 savedFiles = replace(savedFiles, fileFolder, '.');
-                appUtil.modalWindow(app.UIFigure, 'info', sprintf('Lista de arquivos criados na pasta de trabalho:\n%s', strjoin(savedFiles, '\n')));
+                appUtil.modalWindow(app.UIFigure, 'info', sprintf('Lista de arquivos criados:\n%s', strjoin(savedFiles, '\n')));
             end
 
             if ~isempty(errorFiles)
@@ -894,6 +941,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             %     auxApp.dockListOfLocation(app)
             % 
             % else
+                app.progressDialog.Visible = 'visible';
+
                 if isempty(app.popupContainer)
                     popupContainerGrid = uigridlayout(app.UIFigure, [1, 1], "BackgroundColor", "white", "ColumnWidth", {'1x', 540, '1x'}, "RowHeight", {'1x', 440, '1x'}, "Visible", "off");
                     app.popupContainer = uipanel(popupContainerGrid, "Title", "");
@@ -907,7 +956,65 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
                 auxApp.dockListOfLocation_exported(app.popupContainer, app)
                 app.popupContainer.Parent.Visible = "on";
+
+                app.progressDialog.Visible = 'hidden';
             % end
+
+        end
+
+        % Image clicked function: tool_UploadFinalFile
+        function tool_UploadFinalFileImageClicked(app, event)
+            
+            % VALIDAÇÕES
+            % (a) O botão app.tool_UploadFinalFile só está ATIVO quando a tabela 
+            %     sob análise é não vazia, e o campo "Justificativa" foi corretamente 
+            %     preenchido. Implementado em layout_TableStyle(app)
+
+            % (b) A pasta "POST" do Sharepoint" deve ter sido mapeada.
+            if ~isfolder(app.mainApp.General.fileFolder.DataHub_POST)
+                appUtil.modalWindow(app.UIFigure, 'warning', 'Pendente mapear pasta do Sharepoint.');
+                return
+            end
+
+            % (c) Verifica se já foi feito o upload de registros da tabela
+            %     na presente sessão do app.
+            idxStations = app.UITable.UserData;
+            relatedStationTable = app.mainApp.stationTable(idxStations, :);
+
+            if     all(relatedStationTable.UploadResultFlag)
+                msgQuestion   = ['Todos os registros de estações já tiveram os seus resultados exportados para a pasta "POST" ' ...
+                                 'do Sharepoint na presente sessão. Esses registros estão destacados com a fonte cinza.' ...
+                                 '<br><br>Deseja realizar uma nova exportação?'];
+                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
+                if userSelection == "Não"
+                    return
+                end
+
+            elseif any(relatedStationTable.UploadResultFlag)
+                msgQuestion   = ['Há registros de estações que já tiveram os seus resultados exportados para a pasta "POST" ' ...
+                                 'do Sharepoint na presente sessão. Esses registros estão destacados com a fonte cinza.' ...
+                                 '<br><br>O que deseja fazer?'];
+                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Exportar tabela completa', 'Exportar novos registros', 'Cancelar'}, 3, 3);
+                switch userSelection
+                    case 'Exportar novos registros'
+                        relatedStationTable(relatedStationTable.UploadResultFlag, :) = [];
+                    case 'Cancelar'
+                        return
+                end
+            end
+
+            % SALVA ARQUIVO NA PASTA "POST" DO SHAREPOINT
+            fileName = [appUtil.DefaultFileName(app.mainApp.General.fileFolder.DataHub_POST, class.Constants.appName, '-1') '.xlsx'];
+
+            [status, msgError] = fileWriter.XLSX(fileName, relatedStationTable, [], app.mainApp.General.MonitoringPlan.FieldValue);
+            if status
+                app.mainApp.stationTable.UploadResultFlag(idxStations) = true;
+                layout_TableStyle(app)
+
+                appUtil.modalWindow(app.UIFigure, 'info', 'Operação concluída com sucesso.');
+            else
+                appUtil.modalWindow(app.UIFigure, 'error', msgError);
+            end
 
         end
     end
@@ -1131,7 +1238,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create toolGrid
             app.toolGrid = uigridlayout(app.GridLayout);
-            app.toolGrid.ColumnWidth = {22, 22, 22, '1x', 22};
+            app.toolGrid.ColumnWidth = {22, 22, 22, '1x', 22, 22};
             app.toolGrid.RowHeight = {4, 17, '1x'};
             app.toolGrid.ColumnSpacing = 5;
             app.toolGrid.RowSpacing = 0;
@@ -1161,7 +1268,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_ExportFiles.ScaleMethod = 'none';
             app.tool_ExportFiles.ImageClickedFcn = createCallbackFcn(app, @tool_ExportTableAsExcelSheet, true);
             app.tool_ExportFiles.Enable = 'off';
-            app.tool_ExportFiles.Tooltip = {'Exporta plot e tabela como arquivos'; '(.KML e .XLSX)'};
+            app.tool_ExportFiles.Tooltip = {'Exporta análise'};
             app.tool_ExportFiles.Layout.Row = 2;
             app.tool_ExportFiles.Layout.Column = 3;
             app.tool_ExportFiles.ImageSource = 'Export_16.png';
@@ -1170,6 +1277,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.jsBackDoor = uihtml(app.toolGrid);
             app.jsBackDoor.Layout.Row = 2;
             app.jsBackDoor.Layout.Column = 5;
+
+            % Create tool_UploadFinalFile
+            app.tool_UploadFinalFile = uiimage(app.toolGrid);
+            app.tool_UploadFinalFile.ImageClickedFcn = createCallbackFcn(app, @tool_UploadFinalFileImageClicked, true);
+            app.tool_UploadFinalFile.Enable = 'off';
+            app.tool_UploadFinalFile.Tooltip = {'Upload do arquivo final para o Sharepoint'};
+            app.tool_UploadFinalFile.Layout.Row = 2;
+            app.tool_UploadFinalFile.Layout.Column = 6;
+            app.tool_UploadFinalFile.ImageSource = 'Up_24.png';
 
             % Create ContextMenu
             app.ContextMenu = uicontextmenu(app.UIFigure);

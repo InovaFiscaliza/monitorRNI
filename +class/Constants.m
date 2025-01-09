@@ -4,7 +4,7 @@ classdef (Abstract) Constants
         %-----------------------------------------------------------------%
         appName        = 'monitorRNI'
         appRelease     = 'R2024a'
-        appVersion     = '0.20'
+        appVersion     = '0.50'
 
         windowSize     = [1244, 660]
         windowMinSize  = [ 880, 660]

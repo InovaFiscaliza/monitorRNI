@@ -1,4 +1,12 @@
-function [status, msgError] = XLSX(fileName, stationTable, measTable, appGeneral)
+function [status, msgError] = XLSX(fileName, stationTable, measTable, ReferenceFielValue, RawMeasuresExportFlag)
+
+    arguments
+        fileName 
+        stationTable 
+        measTable 
+        ReferenceFielValue 
+        RawMeasuresExportFlag = false
+    end
 
     status = true;
     msgError = '';
@@ -27,7 +35,7 @@ function [status, msgError] = XLSX(fileName, stationTable, measTable, appGeneral
     
         % (d) Edita nomes de algumas das colunas da tabela.
         stationTable.Properties.VariableNames(14:22) = {'Qtd. medidas',           ...
-                                                        sprintf('Qtd. medidas > %.1f V/m', appGeneral.MonitoringPlan.FieldValue), ...
+                                                        sprintf('Qtd. medidas > %.1f V/m', ReferenceFielValue), ...
                                                         'Distância mínima (km)',  ...
                                                         'Emin (V/m)',             ...
                                                         'Emean (V/m)',            ...
@@ -39,7 +47,7 @@ function [status, msgError] = XLSX(fileName, stationTable, measTable, appGeneral
         % SALVA ARQUIVO
         writetable(stationTable, fileName, 'FileType', 'spreadsheet', 'WriteMode', 'replacefile', 'Sheet', 'STATIONS')
     
-        if appGeneral.MonitoringPlan.Export.XLSX
+        if RawMeasuresExportFlag
             writetable(measTable, fileName, 'FileType', 'spreadsheet', 'WriteMode', 'overwritesheet', 'Sheet', 'MEASURES')
         end
 
