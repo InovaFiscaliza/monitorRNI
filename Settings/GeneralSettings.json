@@ -1,5 +1,5 @@
 {
-    "version": 0.40,
+    "version": 0.43,
     "operationMode": {
         "Debug": false,
         "Dock": false,
@@ -21,9 +21,9 @@
     "Plot": {
         "GeographicAxes": {
             "Basemap": "satellite",
-            "Colormap": "winter",
-            "Colorbar": "off",
-            "ZoomOrientation": "stations"
+            "Colormap": "turbo",
+            "Colorbar": "on",
+            "ZoomOrientation": "stations/points"
         },
         "RiskMeasures": {
             "Color": "red",
@@ -83,21 +83,18 @@
         "FieldValue": 14,
         "NoMeasureReasons": [
             "-1",
-            "Estação inoperante",
-            "Estação não medida - acesso restrito",            
-            "Estação não medida - local perigoso",
-            "Estação não medida - difícil acesso",
-            "Estação operando em local desconhecido",
-            "Estação operando em local diferente (especificar)",
+            "Acesso restrito",            
+            "Local perigoso",
+            "Difícil acesso",
             "Outra (especificar)"
         ],
         "TypeOfLocation": [
-            "Estação",
-            "Escola",
-            "Hospital",
-            "Creche",
-            "Casa", 
             "Apartamento",
+            "Casa", 
+            "Creche",
+            "Escola",
+            "Estação",            
+            "Hospital",
             "Outro"
         ]
     }

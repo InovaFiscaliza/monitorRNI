@@ -1,4 +1,4 @@
-classdef winRNI_exported < matlab.apps.AppBase
+classdef winMonitorRNI_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
@@ -1039,7 +1039,7 @@ classdef winRNI_exported < matlab.apps.AppBase
     methods (Access = public)
 
         % Construct app
-        function app = winRNI_exported(varargin)
+        function app = winMonitorRNI_exported(varargin)
 
             % Create UIFigure and components
             createComponents(app)

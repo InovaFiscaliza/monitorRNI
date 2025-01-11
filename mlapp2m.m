@@ -1,6 +1,6 @@
 function mlapp2m(MLAPPFiles, showDiffApp)
     arguments
-        MLAPPFiles  cell    = {'winRNI',             ...
+        MLAPPFiles  cell    = {'winMonitorRNI',      ...
                                'winMonitoringPlan',  ...
                                'winExternalRequest', ...
                                'winConfig',          ...
@@ -17,7 +17,7 @@ function mlapp2m(MLAPPFiles, showDiffApp)
             newClassName = [oldClassName '_exported'];
 
             switch oldClassName
-                case 'winRNI'
+                case 'winMonitorRNI'
                     fileBaseName = fullfile(fileFolder, oldClassName);
                     matlabCode   = getMFileContent(fileBaseName);
 

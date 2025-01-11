@@ -1,4 +1,4 @@
-function [status, msgError] = XLSX(fileName, stationTable, measTable, ReferenceFielValue, RawMeasuresExportFlag)
+function [status, msgError] = MonitoringPlan(fileName, stationTable, measTable, ReferenceFielValue, RawMeasuresExportFlag)
 
     arguments
         fileName 

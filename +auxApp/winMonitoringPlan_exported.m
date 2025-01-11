@@ -18,7 +18,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         Card3_stationsOnRoute        matlab.ui.control.Label
         Card2_numberOfRiskStations   matlab.ui.control.Label
         Card1_numberOfStations       matlab.ui.control.Label
-        UITree                       matlab.ui.container.CheckBoxTree
+        TreeFileLocations            matlab.ui.container.CheckBoxTree
         config_geoAxesLabel_2        matlab.ui.control.Label
         play_ControlsTab1Grid_2      matlab.ui.container.GridLayout
         play_ControlsTab1Label_2     matlab.ui.control.Label
@@ -79,13 +79,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function jsBackDoor_Initialization(app)
             app.jsBackDoor.HTMLSource = appUtil.jsBackDoorHTMLSource();
-            % app.jsBackDoor.HTMLEventReceivedFcn = @(~, evt)jsBackDoor_Listener(app, evt);
         end
-
-        %-----------------------------------------------------------------%
-        % function jsBackDoor_Listener(app, event)
-        %     % ...
-        % end
 
         %-----------------------------------------------------------------%
         function jsBackDoor_Customizations(app)
@@ -155,17 +149,11 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             app.progressDialog.Visible = 'visible';
 
-            % startup_AppProperties(app)
             startup_GUIComponents(app)
             Analysis(app)
 
             app.progressDialog.Visible = 'hidden';
         end
-
-        %-----------------------------------------------------------------%
-        % function startup_AppProperties(app)
-        %     % ...
-        % end
 
         %-----------------------------------------------------------------%
         function startup_GUIComponents(app)
@@ -174,7 +162,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             end
 
             startup_AxesCreation(app)
-            startup_TreeBuilding(app)
+            layout_TreeFileLocationBuilding(app)
                         
             app.tool_TableVisibility.UserData = 1;
         end
@@ -183,8 +171,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function startup_AxesCreation(app)
             % Eixo geográfico: MAPA
             app.plotPanel.AutoResizeChildren = 'off';
-            app.UIAxes = plot.axes.Creation(app.plotPanel, 'Geographic', {'Units',    'normalized',                            ...
-                                                                          'Position', [0 0 1 1 ],                              ...
+            app.UIAxes = plot.axes.Creation(app.plotPanel, 'Geographic', {'Units',    'normalized',                                    ...
+                                                                          'Position', [0 0 1 1 ],                                      ...
                                                                           'Basemap',  app.mainApp.General.Plot.GeographicAxes.Basemap, ...
                                                                           'UserData', struct('CLimMode', 'auto', 'Colormap', '')});
 
@@ -203,20 +191,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Axes interactions:
             plot.axes.Interactivity.DefaultCreation(app.UIAxes, [dataTipInteraction, zoomInteraction, panInteraction])
         end
-
-        %-----------------------------------------------------------------%
-        function startup_TreeBuilding(app)
-            if ~isempty(app.UITree.Children)
-                delete(app.UITree.Children)
-            end
-
-            listOfLocations = unique({app.measData.Location});
-            for ii = 1:numel(listOfLocations)
-                uitreenode(app.UITree, 'Text', listOfLocations{ii});
-            end
-
-            app.UITree.CheckedNodes = app.UITree.Children(1);
-        end
     end
 
 
@@ -225,9 +199,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function Analysis(app)
             app.progressDialog.Visible = 'visible';
 
-            if ~isempty(app.UITree.CheckedNodes)
-                idxFile = FileIndex(app);
-    
+            [idxFile, selectedFileLocations] = FileIndex(app);
+
+            if ~isempty(idxFile)
                 % Concatena as tabelas de LATITUDE, LONGITUDE E NÍVEL de cada um
                 % dos arquivos cuja localidade coincide com o que foi selecionado
                 % em tela. 
@@ -255,12 +229,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     end
                 end
                 listOfLocation = unique(listOfLocations);
-                app.projectData.listOfLocations.Automatic = listOfLocation;
-
             else
-                app.measTable = [];
-                app.projectData.listOfLocations.Automatic = {};
+                app.measTable  = [];
+                listOfLocation = {};
             end
+
+            app.projectData.selectedFileLocations     = selectedFileLocations;
+            app.projectData.listOfLocations.Automatic = listOfLocation;
 
             fullListOfLocation = union(app.projectData.listOfLocations.Manual, app.projectData.listOfLocations.Automatic);
 
@@ -306,11 +281,12 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function idxFile = FileIndex(app)
-            if ~isempty(app.UITree.CheckedNodes)
-                selectedLocations = {app.UITree.CheckedNodes.Text};
-                idxFile = find(ismember({app.measData.Location}, selectedLocations));
+        function [idxFile, selectedFileLocations] = FileIndex(app)
+            if ~isempty(app.TreeFileLocations.CheckedNodes)
+                selectedFileLocations = {app.TreeFileLocations.CheckedNodes.Text};
+                idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
             else
+                selectedFileLocations = {};
                 idxFile = [];
             end
         end
@@ -332,14 +308,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                                                   'meanFieldValue',        ...
                                                                   'maxFieldValue',         ...
                                                                   'Justificativa'});
-            set(app.UITable, 'Data', table2Render, 'UserData', idxStations)
-            app.UITable.Selection = [];
-        end
-
-        %-----------------------------------------------------------------%
-        function [idxStation, idxRow] = selectedStation(app)
-            idxRow     = app.UITable.Selection;
-            idxStation = app.UITable.UserData(idxRow);
+            set(app.UITable, 'Data', table2Render, 'UserData', idxStations, 'Selection', [])
         end
 
         %-----------------------------------------------------------------%
@@ -398,7 +367,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     'Tag',             'Stations');
             end
 
-            plot_AxesDefaultLimits(app, 'stations')
+            plot_AxesDefaultLimits(app, 'stations/points')
         end
 
         %-----------------------------------------------------------------%
@@ -406,10 +375,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedStation', '-or', 'Tag', 'FieldPeak'))
 
             if ~isempty(app.UITable.Selection)
-                idxTable = app.UITable.Selection;
-
                 % (a) Estação selecionada
-                idxSelectedStation = app.UITable.UserData(idxTable);
+                idxSelectedStation = app.UITable.UserData(app.UITable.Selection);
                 stationLatitude    = app.mainApp.stationTable.Latitude(idxSelectedStation);
                 stationLongitude   = app.mainApp.stationTable.Longitude(idxSelectedStation);
                 stationNumber      = sprintf('Estação nº %d', app.mainApp.stationTable.("N° estacao")(idxSelectedStation));
@@ -422,7 +389,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     'DisplayName',     stationNumber,                          ...
                     'Tag',             'SelectedStation');
     
-                % (b) Círculo entorno da estação
+                % (b) Círculo entorno do ponto
                 drawcircle(app.UIAxes,                                                 ...
                     'Position',        [stationLatitude, stationLongitude],            ...
                     'Radius',          km2deg(app.mainApp.General.MonitoringPlan.Distance_km), ...
@@ -463,7 +430,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function plot_AxesDefaultLimits(app, zoomOrientation)
             arguments
                 app
-                zoomOrientation {mustBeMember(zoomOrientation, {'stations', 'measures'})}
+                zoomOrientation {mustBeMember(zoomOrientation, {'stations/points', 'measures'})}
             end
 
             if strcmp(app.mainApp.General.Plot.GeographicAxes.ZoomOrientation, zoomOrientation) || (isempty(app.measTable) && strcmp(app.mainApp.General.Plot.GeographicAxes.ZoomOrientation, 'measures'))
@@ -512,7 +479,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     app.mainApp.stationTable.maxFieldLongitude(ii)    = 0;
                 end
 
-                app.mainApp.stationTable.minDistanceForMeasure(ii)= min(stationDistance); % km
+                app.mainApp.stationTable.minDistanceForMeasure(ii)    = min(stationDistance); % km
             end
         end
 
@@ -596,6 +563,32 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 app.tool_UploadFinalFile.Enable = 0;
             end
         end
+
+        %-----------------------------------------------------------------%
+        function layout_TreeFileLocationBuilding(app)
+            if ~isempty(app.TreeFileLocations.Children)
+                delete(app.TreeFileLocations.Children)
+            end
+
+            listOfFileLocations = unique({app.measData.Location});
+            for ii = 1:numel(listOfFileLocations)
+                treeNode = uitreenode(app.TreeFileLocations, 'Text', listOfFileLocations{ii});
+
+                if ismember(listOfFileLocations{ii}, app.projectData.selectedFileLocations)
+                    app.TreeFileLocations.CheckedNodes = [app.TreeFileLocations.CheckedNodes; treeNode];
+                end
+            end
+
+            if isempty(app.TreeFileLocations.CheckedNodes)
+                app.TreeFileLocations.CheckedNodes = app.TreeFileLocations.Children(1);
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function [idxStation, idxRow] = selectedStation(app)
+            idxRow     = app.UITable.Selection;
+            idxStation = app.UITable.UserData(idxRow);
+        end
     end
 
 
@@ -604,7 +597,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function appBackDoor(app, callingApp, operationType, varargin)
             try
                 switch class(callingApp)
-                    case {'winRNI', 'winRNI_exported'}
+                    case {'winMonitorRNI', 'winMonitorRNI_exported'}
                         switch operationType
                             case {'PM-RNI: updateReferenceTable', 'PM-RNI: updatePlot'}
                                 Analysis(app)
@@ -780,7 +773,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             if ~isempty(layout_searchUnexpectedTableValues(app))
                 msgQuestion   = ['Há registro de estações instaladas na(s) localidade(s) sob análise para as quais '     ...
                                  'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
-                                 'o campo "Justificativa" e anotar os registros, caso aplicável.'          ...
+                                 'o campo "Justificativa" e anotar os registros, caso aplicável.'                        ...
                                  '<br><br>Deseja ignorar esse alerta, exportando o resultado?'];
                 userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
                 if userSelection == "Não"
@@ -809,7 +802,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % (a) Arquivo no formato .XLSX
             %     (um único arquivo de saída)
             fileName_XLSX = [baseName '.xlsx'];
-            [status, msgError] = fileWriter.XLSX(fileName_XLSX, app.mainApp.stationTable(idxStations, :), timetable2table(app.measTable), app.mainApp.General.MonitoringPlan.FieldValue, app.mainApp.General.MonitoringPlan.Export.XLSX);
+            [status, msgError] = fileWriter.MonitoringPlan(fileName_XLSX, app.mainApp.stationTable(idxStations, :), timetable2table(app.measTable), app.mainApp.General.MonitoringPlan.FieldValue, app.mainApp.General.MonitoringPlan.Export.XLSX);
             if status
                 savedFiles{end+1} = fileName_XLSX;
             else
@@ -878,9 +871,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
         end
 
-        % Callback function: UITree
-        function UITreeCheckedNodesChanged(app, event)
+        % Callback function: TreeFileLocations
+        function TreeFileLocationsCheckedNodesChanged(app, event)
             
+            if isempty(app.TreeFileLocations.CheckedNodes)
+                app.TreeFileLocations.CheckedNodes = event.PreviousCheckedNodes;
+                return
+            end
+
             Analysis(app)
 
         end
@@ -914,35 +912,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function tool_EditRowImageClicked(app, event)
             
             if ~isempty(app.UITable.Selection)
-                % if app.mainApp.General.operationMode.Debug
-                %     auxApp.dockStationInfo(app)
-                % 
-                % else
-                    if isempty(app.popupContainer)
-                        popupContainerGrid = uigridlayout(app.UIFigure, [1, 1], "BackgroundColor", "white", "ColumnWidth", {'1x', 540, '1x'}, "RowHeight", {'1x', 440, '1x'}, "Visible", "off");
-                        app.popupContainer = uipanel(popupContainerGrid, "Title", "");
-                        app.popupContainer.Layout.Row = 2;
-                        app.popupContainer.Layout.Column = 2;
-                        drawnow
-    
-                        ccTools.compCustomizationV2(app.jsBackDoor, popupContainerGrid, 'backgroundColor', 'rgba(255,255,255,0.65)')
-                        sendEventToHTMLSource(app.jsBackDoor, "panelDialog", struct('componentDataTag', struct(app.popupContainer).Controller.ViewModel.Id))
-                    end
-
-                    auxApp.dockStationInfo_exported(app.popupContainer, app)
-                    app.popupContainer.Parent.Visible = "on";
-                % end
-            end
-
-        end
-
-        % Image clicked function: LocationListEdit
-        function LocationListEditClicked(app, event)
-            
-            % if app.mainApp.General.operationMode.Debug
-            %     auxApp.dockListOfLocation(app)
-            % 
-            % else
                 app.progressDialog.Visible = 'visible';
 
                 if isempty(app.popupContainer)
@@ -956,11 +925,34 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     sendEventToHTMLSource(app.jsBackDoor, "panelDialog", struct('componentDataTag', struct(app.popupContainer).Controller.ViewModel.Id))
                 end
 
-                auxApp.dockListOfLocation_exported(app.popupContainer, app)
+                auxApp.dockStationInfo_exported(app.popupContainer, app)
                 app.popupContainer.Parent.Visible = "on";
 
                 app.progressDialog.Visible = 'hidden';
-            % end
+            end
+
+        end
+
+        % Image clicked function: LocationListEdit
+        function LocationListEditClicked(app, event)
+            
+            app.progressDialog.Visible = 'visible';
+
+            if isempty(app.popupContainer)
+                popupContainerGrid = uigridlayout(app.UIFigure, [1, 1], "BackgroundColor", "white", "ColumnWidth", {'1x', 540, '1x'}, "RowHeight", {'1x', 440, '1x'}, "Visible", "off");
+                app.popupContainer = uipanel(popupContainerGrid, "Title", "");
+                app.popupContainer.Layout.Row = 2;
+                app.popupContainer.Layout.Column = 2;
+                drawnow
+
+                ccTools.compCustomizationV2(app.jsBackDoor, popupContainerGrid, 'backgroundColor', 'rgba(255,255,255,0.65)')
+                sendEventToHTMLSource(app.jsBackDoor, "panelDialog", struct('componentDataTag', struct(app.popupContainer).Controller.ViewModel.Id))
+            end
+
+            auxApp.dockListOfLocation_exported(app.popupContainer, app)
+            app.popupContainer.Parent.Visible = "on";
+
+            app.progressDialog.Visible = 'hidden';
 
         end
 
@@ -1008,7 +1000,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % SALVA ARQUIVO NA PASTA "POST" DO SHAREPOINT
             fileName = [appUtil.DefaultFileName(app.mainApp.General.fileFolder.DataHub_POST, class.Constants.appName, '-1') '.xlsx'];
 
-            [status, msgError] = fileWriter.XLSX(fileName, relatedStationTable, [], app.mainApp.General.MonitoringPlan.FieldValue);
+            [status, msgError] = fileWriter.MonitoringPlan(fileName, relatedStationTable, [], app.mainApp.General.MonitoringPlan.FieldValue);
             if status
                 app.mainApp.stationTable.UploadResultFlag(idxStations) = true;
                 layout_TableStyle(app)
@@ -1113,7 +1105,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Create Document
             app.Document = uigridlayout(app.GridLayout);
             app.Document.ColumnWidth = {160, '1x', 16};
-            app.Document.RowHeight = {22, 22, '1x', 32, '1x', 85, 85};
+            app.Document.RowHeight = {22, 32, '1x', 32, 170, 85, 85};
             app.Document.ColumnSpacing = 5;
             app.Document.RowSpacing = 5;
             app.Document.Padding = [0 0 0 0];
@@ -1154,16 +1146,17 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.config_geoAxesLabel_2.FontSize = 10;
             app.config_geoAxesLabel_2.Layout.Row = 2;
             app.config_geoAxesLabel_2.Layout.Column = [1 2];
-            app.config_geoAxesLabel_2.Text = 'LOCALIDADES:';
+            app.config_geoAxesLabel_2.Interpreter = 'html';
+            app.config_geoAxesLabel_2.Text = {'LOCALIDADES:'; '<font style="color: gray; font-size: 9px;">(relacionadas aos arquivos de medição)</font>'};
 
-            % Create UITree
-            app.UITree = uitree(app.Document, 'checkbox');
-            app.UITree.FontSize = 11;
-            app.UITree.Layout.Row = 3;
-            app.UITree.Layout.Column = [1 3];
+            % Create TreeFileLocations
+            app.TreeFileLocations = uitree(app.Document, 'checkbox');
+            app.TreeFileLocations.FontSize = 11;
+            app.TreeFileLocations.Layout.Row = 3;
+            app.TreeFileLocations.Layout.Column = [1 3];
 
             % Assign Checked Nodes
-            app.UITree.CheckedNodesChangedFcn = createCallbackFcn(app, @UITreeCheckedNodesChanged, true);
+            app.TreeFileLocations.CheckedNodesChangedFcn = createCallbackFcn(app, @TreeFileLocationsCheckedNodesChanged, true);
 
             % Create Card1_numberOfStations
             app.Card1_numberOfStations = uilabel(app.Document);

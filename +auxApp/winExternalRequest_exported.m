@@ -5,25 +5,26 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         UIFigure                     matlab.ui.Figure
         GridLayout                   matlab.ui.container.GridLayout
         GridLayout2                  matlab.ui.container.GridLayout
-        UITree                       matlab.ui.container.CheckBoxTree
+        TreePoints                   matlab.ui.container.Tree
+        AddNewPointPanel             matlab.ui.container.Panel
+        AddNewPointGrid              matlab.ui.container.GridLayout
+        NewPointDescription          matlab.ui.control.EditField
+        NewPointDescriptionLabel     matlab.ui.control.Label
+        NewPointLongitude            matlab.ui.control.NumericEditField
+        NewPointLongitudeLabel       matlab.ui.control.Label
+        NewPointLatitude             matlab.ui.control.NumericEditField
+        NewPointLatitudeLabel        matlab.ui.control.Label
+        NewPointStation              matlab.ui.control.NumericEditField
+        NewPointStationLabel         matlab.ui.control.Label
+        NewPointType                 matlab.ui.control.DropDown
+        NewPointTypeLabel            matlab.ui.control.Label
+        AddNewPointCancel            matlab.ui.control.Image
+        AddNewPointConfirm           matlab.ui.control.Image
+        AddNewPointMode              matlab.ui.control.Image
+        AddPointsFromFile            matlab.ui.control.Image
+        TreePointsLabel              matlab.ui.control.Label
+        TreeFileLocations            matlab.ui.container.CheckBoxTree
         config_geoAxesLabel          matlab.ui.control.Label
-        DistncialimiteentrepontodemedioepontoscrticossobanlisemLabel  matlab.ui.control.Label
-        EditField_DistPont           matlab.ui.control.NumericEditField
-        LocationListLabel            matlab.ui.control.Label
-        Panel_2                      matlab.ui.container.Panel
-        GridLayout5                  matlab.ui.container.GridLayout
-        pointDescription             matlab.ui.control.EditField
-        pointDescriptionLabel        matlab.ui.control.Label
-        pointLongitude               matlab.ui.control.NumericEditField
-        pointLongitudeLabel          matlab.ui.control.Label
-        pointLatitude                matlab.ui.control.NumericEditField
-        pointLatitudeLabel           matlab.ui.control.Label
-        pointStation                 matlab.ui.control.NumericEditField
-        pointStationLabel            matlab.ui.control.Label
-        pointType                    matlab.ui.control.DropDown
-        pointTypeLabel               matlab.ui.control.Label
-        pointTree                    matlab.ui.container.Tree
-        pointAddImage                matlab.ui.control.Image
         play_ControlsTab1Grid_2      matlab.ui.container.GridLayout
         menu_Button1Label            matlab.ui.control.Label
         play_ControlsTab1Image_2     matlab.ui.control.Image
@@ -49,7 +50,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         isDocked = false
 
         mainApp
-        General
         rootFolder
         
         % A função do timer é executada uma única vez após a renderização
@@ -67,6 +67,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         % ESPECIFICIDADES
         %-----------------------------------------------------------------%
+        projectData
+
         % Instância da classe class.metaData contendo a organização da
         % informação lida dos arquivos de medida. 
         measData  = class.measData.empty
@@ -77,13 +79,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         % Handle do eixo e propriedade que armazena os limites automáticos
         UIAxes
-        restoreView = struct('ID', {}, 'xLim', {}, 'yLim', {}, 'cLim', {})
-        Data_Localidades       % Dados da Tabela das Localidades do Brasil
-        Data_Serv_Rad_Tel      % Dados dos serviços de Radiodifusão e de Telecom fiscalizados pela Anatel 
-        %Incremento das estações pontuais
-        IncrPoints = 0;  
-
-        
+        restoreView = struct('ID', {}, 'xLim', {}, 'yLim', {}, 'cLim', {})        
     end
 
     
@@ -163,38 +159,38 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             app.progressDialog.Visible = 'visible';
 
-            startup_AppProperties(app)
             startup_GUIComponents(app)
-            % Analysis(app)
+            Analysis(app)
 
             app.progressDialog.Visible = 'hidden';
         end
 
         %-----------------------------------------------------------------%
-        function startup_AppProperties(app)
-            % ...
-        end
-
-        %-----------------------------------------------------------------%
         function startup_GUIComponents(app)
-            startup_AxesCreation(app)
-            startup_TreeBuilding(app)
-            pointTreeBuilding(app)
+            if app.mainApp.General.MonitoringPlan.FieldValue ~= 14
+                app.UITable.ColumnName{5} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.MonitoringPlan.FieldValue);
+            end
 
+            startup_AxesCreation(app)
+            layout_TreeFileLocationBuilding(app)
+            
             app.tool_TableVisibility.UserData = 1;
 
-            % Insere em app.pointType.Items os tipos de locais
-            app.pointType.Items = [{''}; app.mainApp.General.ExternalRequest.TypeOfLocation];
+            % Especificidades do auxApp.winExternalRequest em relação ao
+            % auxApp.winMonitoringPlan:
+            layout_TreePointsBuilding(app)
+            app.NewPointType.Items = [{''}; app.mainApp.General.ExternalRequest.TypeOfLocation];
+            layout_newPointPanel(app, 'off')
         end
 
         %-----------------------------------------------------------------%
         function startup_AxesCreation(app)
             % Eixo geográfico: MAPA
             app.plotPanel.AutoResizeChildren = 'off';
-            app.UIAxes = plot.axes.Creation(app.plotPanel, 'Geographic', {'Units',    'normalized',             ...
-                                                                           'Position', [0 0 1 1 ],               ...
-                                                                           'Basemap',  app.mainApp.General.Plot.GeographicAxes.Basemap, ...
-                                                                           'UserData', struct('CLimMode', 'auto', 'Colormap', '')});
+            app.UIAxes = plot.axes.Creation(app.plotPanel, 'Geographic', {'Units',    'normalized',                                    ...
+                                                                          'Position', [0 0 1 1 ],                                      ...
+                                                                          'Basemap',  app.mainApp.General.Plot.GeographicAxes.Basemap, ...
+                                                                          'UserData', struct('CLimMode', 'auto', 'Colormap', '')});
 
             set(app.UIAxes.LatitudeAxis,  'TickLabels', {}, 'Color', 'none')
             set(app.UIAxes.LongitudeAxis, 'TickLabels', {}, 'Color', 'none')
@@ -211,20 +207,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % Axes interactions:
             plot.axes.Interactivity.DefaultCreation(app.UIAxes, [dataTipInteraction, zoomInteraction, panInteraction])
         end
-
-        %-----------------------------------------------------------------%
-        function startup_TreeBuilding(app)
-            if ~isempty(app.UITree.Children)
-                delete(app.UITree.Children)
-            end
-
-            listOfLocations = unique({app.measData.Location});
-            for ii = 1:numel(listOfLocations)
-                uitreenode(app.UITree, 'Text', listOfLocations{ii});
-            end
-
-            app.UITree.CheckedNodes = app.UITree.Children(1);
-        end
     end
 
 
@@ -233,9 +215,9 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         function Analysis(app)
             app.progressDialog.Visible = 'visible';
 
-            if ~isempty(app.UITree.CheckedNodes)
-                idxFile = FileIndex(app);
-    
+            [idxFile, selectedFileLocations] = FileIndex(app);
+
+            if ~isempty(idxFile)
                 % Concatena as tabelas de LATITUDE, LONGITUDE E NÍVEL de cada um
                 % dos arquivos cuja localidade coincide com o que foi selecionado
                 % em tela. 
@@ -244,43 +226,60 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             else
                 app.measTable = [];
-                app.projectData.listOfLocations.Automatic = {};
             end
+
+            app.projectData.selectedFileLocations     = selectedFileLocations;
 
             identifyMeasuresForEachPoint(app)
 
-            % Aplica estilo à tabela...
+            initialSelection = updateTable(app);
             layout_TableStyle(app)
 
             % PLOT
             prePlot(app)
             plot_Measures(app)
-            plot_Stations(app)
+            plot_RiskMeasures(app)
+            plot_Points(app)
 
-            layout_ToolbarButtonVisibility(app)
+            if ~isempty(initialSelection)
+                [~, idxRow] = ismember(initialSelection, app.UITable.UserData);
+                if idxRow
+                    app.UITable.Selection = idxRow;
+                    UITableSelectionChanged(app, struct('PreviousSelection', 0, 'Selection', idxRow))
+                end
+            end
 
             app.progressDialog.Visible = 'hidden';
         end
 
         %-----------------------------------------------------------------%
-        function idxFile = FileIndex(app)
-            if ~isempty(app.UITree.CheckedNodes)
-                selectedLocations = {app.UITree.CheckedNodes.Text};
-                idxFile = find(ismember({app.measData.Location}, selectedLocations));
+        function [idxFile, selectedFileLocations] = FileIndex(app)
+            if ~isempty(app.TreeFileLocations.CheckedNodes)
+                selectedFileLocations = {app.TreeFileLocations.CheckedNodes.Text};
+                idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
             else
+                selectedFileLocations = {};
                 idxFile = [];
             end
         end
 
         %-----------------------------------------------------------------%
-        function pointTreeBuilding(app)
-            if ~isempty(app.pointTree.Children)
-                delete(app.pointTree.Children)
+        function initialSelection = updateTable(app)
+            initialSelection = [];
+            if ~isempty(app.UITable.Selection)
+                initialSelection = app.UITable.Selection;
             end
 
-            for ii = 1:height(app.mainApp.pointsTable)
-                uitreenode(app.pointTree, 'Text', app.mainApp.pointsTable.ID{ii});
-            end
+            table2Render = app.mainApp.pointsTable(:, {'ID',                    ...
+                                                       'Description',           ...                                                                                    
+                                                       'numberOfMeasures',      ...
+                                                       'numberOfRiskMeasures',  ...
+                                                       'minDistanceForMeasure', ...
+                                                       'minFieldValue',         ...
+                                                       'meanFieldValue',        ...
+                                                       'maxFieldValue',         ...
+                                                       'Justificativa'});
+            set(app.UITable, 'Data', table2Render, 'Selection', [])
         end
 
         %-----------------------------------------------------------------%
@@ -292,75 +291,94 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function plot_Measures(app)
-            hPlot = geoscatter(app.UIAxes, app.measTable.Latitude, app.measTable.Longitude, [], app.measTable.FieldValue, 'filled', 'DisplayName', 'Medidas', 'Tag', 'Measures');
-            hPlot.DataTipTemplate.DataTipRows(3).Label  = 'Nivel';
-            hPlot.DataTipTemplate.DataTipRows(3).Format = '%0.2f V/m';
+            if ~isempty(app.measTable)
+                hPlot = geoscatter(app.UIAxes, app.measTable.Latitude, app.measTable.Longitude, [], app.measTable.FieldValue, 'filled', 'DisplayName', 'Medidas', 'Tag', 'Measures');
+                hPlot.DataTipTemplate.DataTipRows(3).Label  = 'Nivel';
+                hPlot.DataTipTemplate.DataTipRows(3).Format = '%0.2f V/m';
 
-            % Abaixo estabelece como limites do eixo os limites atuais,
-            % configurados automaticamente pelo MATLAB. Ao fazer isso,
-            % contudo, esses limites serão orientados às medidas e não às
-            % estações.
-            geolimits(app.UIAxes, app.UIAxes.LatitudeLimits, app.UIAxes.LongitudeLimits)
-            app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
+                % Abaixo estabelece como limites do eixo os limites atuais,
+                % configurados automaticamente pelo MATLAB. Ao fazer isso,
+                % contudo, esses limites serão orientados às medidas e não às
+                % estações.
+                plot_AxesDefaultLimits(app, 'measures')
+            end
         end
 
         %-----------------------------------------------------------------%
-        function plot_Stations(app)            
+        function plot_RiskMeasures(app)
+            if ~isempty(app.measTable)
+                idxRisk = find(app.measTable.FieldValue > app.mainApp.General.MonitoringPlan.FieldValue);
+
+                if ~isempty(idxRisk)
+                    latitudeArray  = app.measTable.Latitude(idxRisk);
+                    longitudeArray = app.measTable.Longitude(idxRisk);
+    
+                    geoscatter(app.UIAxes, latitudeArray, longitudeArray,                      ...
+                        'Marker', '^', 'MarkerFaceColor', app.mainApp.General.Plot.RiskMeasures.Color, ...
+                        'MarkerEdgeColor', app.mainApp.General.Plot.RiskMeasures.Color,                ...
+                        'SizeData',        app.mainApp.General.Plot.RiskMeasures.Size,                 ...
+                        'DisplayName',     sprintf('> %.0f V/m', app.mainApp.General.MonitoringPlan.FieldValue), ...
+                        'Tag',             'RiskMeasures');
+                end
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function plot_Points(app)            
             if ~isempty(app.UITable.Data)
-                % idxStations    = app.UITable.UserData;
                 latitudeArray  = app.mainApp.pointsTable.Latitude;
                 longitudeArray = app.mainApp.pointsTable.Longitude;
 
-                geoscatter(app.UIAxes, latitudeArray, longitudeArray, ...
+                geoscatter(app.UIAxes, latitudeArray, longitudeArray,                          ...
                     'Marker', '^', 'MarkerFaceColor', app.mainApp.General.Plot.Stations.Color, ...
-                    'MarkerEdgeColor', app.mainApp.General.Plot.Stations.Color,           ...
-                    'SizeData',        app.mainApp.General.Plot.Stations.Size,            ...
-                    'DisplayName',     'Estações de referência PM-RNI',           ...
-                    'Tag',             'Stations');
+                    'MarkerEdgeColor', app.mainApp.General.Plot.Stations.Color,                ...
+                    'SizeData',        app.mainApp.General.Plot.Stations.Size,                 ...
+                    'DisplayName',     'Pontos críticos',                                      ...
+                    'Tag',             'Points');
             end
+
+            plot_AxesDefaultLimits(app, 'stations/points')
         end
         %-----------------------------------------------------------------%
-        function plot_SelectedStation(app, Station)
-            delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedStation', '-or', 'Tag', 'FieldPeak'))
+        function plot_SelectedPoint(app)
+            delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedPoint', '-or', 'Tag', 'FieldPeak'))
 
             if ~isempty(app.UITable.Selection)
-                idxTable = app.UITable.Selection(1);
+                % (a) Ponto selecionado
+                idxSelectedPoint   = app.UITable.Selection;
+                stationLatitude    = app.mainApp.pointsTable.Latitude(idxSelectedPoint);
+                stationLongitude   = app.mainApp.pointsTable.Longitude(idxSelectedPoint);
+                stationNumber      = sprintf('Ponto ID %s', app.mainApp.pointsTable.ID{idxSelectedPoint});
 
-                % (a) Estação selecionada
-                % idxSelectedStation = app.UITable.UserData(idxTable);
-                stationLatitude    = app.mainApp.pointsTable.Latitude(idxTable);
-                stationLongitude   = app.mainApp.pointsTable.Longitude(idxTable);
-                stationNumber      = sprintf('Estação nº %d', app.mainApp.pointsTable.Station(idxTable));
-
-                geoscatter(app.UIAxes, stationLatitude, stationLongitude,      ...
-                    'Marker',          '^',                                    ...
+                geoscatter(app.UIAxes, stationLatitude, stationLongitude,              ...
+                    'Marker',          '^',                                            ...
                     'MarkerFaceColor', app.mainApp.General.Plot.SelectedStation.Color, ...
                     'MarkerEdgeColor', app.mainApp.General.Plot.SelectedStation.Color, ...
                     'SizeData',        app.mainApp.General.Plot.SelectedStation.Size,  ...
-                    'DisplayName',     stationNumber,                          ...
-                    'Tag',             'SelectedStation');
+                    'DisplayName',     stationNumber,                                  ...
+                    'Tag',             'SelectedPoint');
     
                 % (b) Círculo entorno da estação
-                drawcircle(app.UIAxes,                                                 ...
-                    'Position',        [stationLatitude, stationLongitude],            ...
-                    'Radius',          km2deg(app.mainApp.General.MonitoringPlan.Distance_km), ...
-                    'Color',           app.mainApp.General.Plot.CircleRegion.Color,            ...
-                    'FaceAlpha',       app.mainApp.General.Plot.CircleRegion.FaceAlpha,        ...
-                    'EdgeAlpha',       app.mainApp.General.Plot.CircleRegion.EdgeAlpha,        ...
-                    'FaceSelectable',  0, 'InteractionsAllowed', 'none',               ...
-                    'Tag',            'SelectedStation');
+                drawcircle(app.UIAxes,                                                          ...
+                    'Position',        [stationLatitude, stationLongitude],                     ...
+                    'Radius',          km2deg(app.mainApp.General.ExternalRequest.Distance_km), ...
+                    'Color',           app.mainApp.General.Plot.CircleRegion.Color,             ...
+                    'FaceAlpha',       app.mainApp.General.Plot.CircleRegion.FaceAlpha,         ...
+                    'EdgeAlpha',       app.mainApp.General.Plot.CircleRegion.EdgeAlpha,         ...
+                    'FaceSelectable',  0, 'InteractionsAllowed', 'none',                        ...
+                    'Tag',            'SelectedPoint');
     
                 % (c) Maior nível em torno da estação
-                maxFieldValue      = app.mainApp.pointsTable.maxFieldValue(Station);
+                maxFieldValue      = app.mainApp.pointsTable.maxFieldValue(idxSelectedPoint);
                 if maxFieldValue > 0
-                    maxFieldLatitude   = app.mainApp.pointsTable.maxFieldLatitude(Station);
-                    maxFieldLongitude  = app.mainApp.pointsTable.maxFieldLongitude(Station);
+                    maxFieldLatitude   = app.mainApp.pointsTable.maxFieldLatitude(idxSelectedPoint);
+                    maxFieldLongitude  = app.mainApp.pointsTable.maxFieldLongitude(idxSelectedPoint);
     
                     geoscatter(app.UIAxes, maxFieldLatitude, maxFieldLongitude, maxFieldValue, ...
-                        'Marker',          'square',                          ...
-                        'MarkerFaceColor', app.mainApp.General.Plot.FieldPeak.Color,  ...
-                        'SizeData',        app.mainApp.General.Plot.FieldPeak.Size,   ...
-                        'DisplayName',     'Maior nível em torno da estação', ...
+                        'Marker',          'square',                                           ...
+                        'MarkerFaceColor', app.mainApp.General.Plot.FieldPeak.Color,           ...
+                        'SizeData',        app.mainApp.General.Plot.FieldPeak.Size,            ...
+                        'DisplayName',     'Maior nível em torno da estação',                  ...
                         'Tag',             'FieldPeak');
                 end
 
@@ -376,10 +394,23 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 end
             end
         end
+
+        %-----------------------------------------------------------------%
+        function plot_AxesDefaultLimits(app, zoomOrientation)
+            arguments
+                app
+                zoomOrientation {mustBeMember(zoomOrientation, {'stations/points', 'measures'})}
+            end
+
+            if strcmp(app.mainApp.General.Plot.GeographicAxes.ZoomOrientation, zoomOrientation) || (isempty(app.measTable) && strcmp(app.mainApp.General.Plot.GeographicAxes.ZoomOrientation, 'measures'))
+                geolimits(app.UIAxes, app.UIAxes.LatitudeLimits, app.UIAxes.LongitudeLimits)
+                app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
+            end
+        end
         
         %-----------------------------------------------------------------%
         function identifyMeasuresForEachPoint(app)
-            DIST_km = app.EditField_DistPont.Value / 1000; % m >> km
+            DIST_km = app.mainApp.General.ExternalRequest.Distance_km;
 
             for ii = 1:height(app.mainApp.pointsTable)
                 if app.mainApp.pointsTable.AnalysisFlag(ii)
@@ -390,20 +421,20 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
                 % Inicialmente, afere a distância do ponto a cada uma das
                 % medidas, identificando aquelas no entorno.
-                stationDistance    = deg2km(distance(app.mainApp.pointsTable.Latitude(ii), app.mainApp.pointsTable.Longitude(ii), app.measTable.Latitude, app.measTable.Longitude));                
-                idxLogicalMeasures = stationDistance <= DIST_km;
+                pointDistance      = deg2km(distance(app.mainApp.pointsTable.Latitude(ii), app.mainApp.pointsTable.Longitude(ii), app.measTable.Latitude, app.measTable.Longitude));                
+                idxLogicalMeasures = pointDistance <= DIST_km;
 
                 if any(idxLogicalMeasures)
-                    stationMeasures = app.measTable(idxLogicalMeasures, :);
-                    [maxFieldValue, idxMaxFieldValue] = max(stationMeasures.FieldValue);
+                    pointMeasures = app.measTable(idxLogicalMeasures, :);
+                    [maxFieldValue, idxMaxFieldValue] = max(pointMeasures.FieldValue);
 
-                    app.mainApp.pointsTable.numberOfMeasures(ii)     = height(stationMeasures);
-                    app.mainApp.pointsTable.numberOfRiskMeasures(ii) = sum(stationMeasures.FieldValue > app.mainApp.General.ExternalRequest.FieldValue);
-                    app.mainApp.pointsTable.minFieldValue(ii)        = min(stationMeasures.FieldValue);
-                    app.mainApp.pointsTable.meanFieldValue(ii)       = mean(stationMeasures.FieldValue);
+                    app.mainApp.pointsTable.numberOfMeasures(ii)     = height(pointMeasures);
+                    app.mainApp.pointsTable.numberOfRiskMeasures(ii) = sum(pointMeasures.FieldValue > app.mainApp.General.ExternalRequest.FieldValue);
+                    app.mainApp.pointsTable.minFieldValue(ii)        = min(pointMeasures.FieldValue);
+                    app.mainApp.pointsTable.meanFieldValue(ii)       = mean(pointMeasures.FieldValue);
                     app.mainApp.pointsTable.maxFieldValue(ii)        = maxFieldValue;
-                    app.mainApp.pointsTable.maxFieldLatitude(ii)     = stationMeasures.Latitude(idxMaxFieldValue);
-                    app.mainApp.pointsTable.maxFieldLongitude(ii)    = stationMeasures.Longitude(idxMaxFieldValue);
+                    app.mainApp.pointsTable.maxFieldLatitude(ii)     = pointMeasures.Latitude(idxMaxFieldValue);
+                    app.mainApp.pointsTable.maxFieldLongitude(ii)    = pointMeasures.Longitude(idxMaxFieldValue);
 
                 else
                     app.mainApp.pointsTable.numberOfMeasures(ii)     = 0;
@@ -414,31 +445,19 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                     app.mainApp.pointsTable.maxFieldLatitude(ii)     = 0;
                     app.mainApp.pointsTable.maxFieldLongitude(ii)    = 0;
                 end
-                % app.mainApp.pointsTable.Justificativa(ii) = {-1};
-                app.mainApp.pointsTable.minDistanceForMeasure(ii)= min(stationDistance); % km
-            end
 
-            table2Render = app.mainApp.pointsTable(:, {'ID',                   ...
-                                                      'Description',           ...                                                                                    
-                                                      'numberOfMeasures',      ...
-                                                      'numberOfRiskMeasures',  ...
-                                                      'minDistanceForMeasure', ...
-                                                      'minFieldValue',         ...
-                                                      'meanFieldValue',        ...
-                                                      'maxFieldValue',         ...
-                                                      'Justificativa'});
-            app.UITable.Data = table2Render;
+                app.mainApp.pointsTable.minDistanceForMeasure(ii)    = min(pointDistance); % km
+            end
         end
 
         %-----------------------------------------------------------------%
-        function idxTableRow = layout_searchUnexpectedTableValues(app, operationType)
-            switch operationType
-                case 'TableLayout'
-                    idxTableRow = find(app.UITable.Data.numberOfRiskMeasures > 0 | ...
-                                      ((app.UITable.Data.numberOfMeasures == 0) & (app.UITable.Data.("Justificativa") == "-1")));
+        function [idxMissingInfo, idxRiskMeasures] = layout_searchUnexpectedTableValues(app)
+            idxMissingInfo   = [];
+            idxRiskMeasures  = [];
 
-                case 'TableExport'
-                    idxTableRow = find((app.UITable.Data.numberOfMeasures == 0) & (app.UITable.Data.("Justificativa") == "-1"));
+            if ~isempty(app.UITable.Data)
+                idxMissingInfo  = find(((app.mainApp.pointsTable.numberOfMeasures == 0) & (app.mainApp.pointsTable.("Justificativa") == "-1")));
+                idxRiskMeasures = find(app.mainApp.pointsTable.numberOfRiskMeasures > 0);
             end
         end
 
@@ -446,27 +465,127 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         function layout_TableStyle(app)
             removeStyle(app.UITable)
 
-            % Identifica estações que NÃO tiveram medições no seu entorno, 
-            % apesar da rota englobar o município em que está instalada a
-            % estação. Ou estações que apresentaram medições com níveis
-            % acima de 14 V/m.
-            idxTableRow = layout_searchUnexpectedTableValues(app, 'TableLayout');
-            columnIndex = find(ismember(app.UITable.Data.Properties.VariableNames, 'Justificativa'));
-            cellList    = [idxTableRow, repmat(columnIndex, numel(idxTableRow), 1)];
-            
-            % Neste caso, passa a ser obrigatório o preenchimento do campo
-            % "Justificativa" da tabela.
-            s = uistyle('BackgroundColor', '#c80b0f', 'FontColor', 'white');
-            addStyle(app.UITable, s, "cell", cellList)
+            if ~isempty(app.UITable.Data)
+                % Identifica pontos que NÃO tiveram medições no seu entorno. 
+                % Ou pontos que apresentaram medições com níveis acima de 14 V/m.
+                [idxMissingInfo, idxRiskMeasures] = layout_searchUnexpectedTableValues(app);
+
+                if ~isempty(idxMissingInfo)
+                    columnIndex1 = find(ismember(app.UITable.Data.Properties.VariableNames, 'Justificativa'));
+                    s1 = uistyle('BackgroundColor', '#c80b0f', 'FontColor', 'white');                
+                    addStyle(app.UITable, s1, "cell", [idxMissingInfo, repmat(columnIndex1, numel(idxMissingInfo), 1)])
+                end
+
+                if ~isempty(idxRiskMeasures)
+                    columnIndex2 = find(ismember(app.UITable.Data.Properties.VariableNames, 'numberOfRiskMeasures'));
+
+                    s2 = uistyle('BackgroundColor', '#c80b0f', 'FontColor', 'white');
+                    addStyle(app.UITable, s2, "cell", [idxRiskMeasures, repmat(columnIndex2, numel(idxRiskMeasures), 1)])
+                end
+                
+                app.tool_ExportFiles.Enable = 1;
+
+            else
+                app.tool_ExportFiles.Enable = 0;
+            end
         end
 
         %-----------------------------------------------------------------%
-        function layout_ToolbarButtonVisibility(app)
-            if isempty(app.UITable.Data)
-                app.tool_ExportFiles.Enable = 0;
-            else
-                app.tool_ExportFiles.Enable = 1;
-            end        
+        function layout_TreeFileLocationBuilding(app)
+            if ~isempty(app.TreeFileLocations.Children)
+                delete(app.TreeFileLocations.Children)
+            end
+
+            listOfFileLocations = unique({app.measData.Location});
+            for ii = 1:numel(listOfFileLocations)
+                treeNode = uitreenode(app.TreeFileLocations, 'Text', listOfFileLocations{ii});
+
+                if ismember(listOfFileLocations{ii}, app.projectData.selectedFileLocations)
+                    app.TreeFileLocations.CheckedNodes = [app.TreeFileLocations.CheckedNodes; treeNode];
+                end
+            end
+
+            if isempty(app.TreeFileLocations.CheckedNodes)
+                app.TreeFileLocations.CheckedNodes = app.TreeFileLocations.Children(1);
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function layout_TreePointsBuilding(app)
+            if ~isempty(app.TreePoints.Children)
+                delete(app.TreePoints.Children)
+            end
+
+            for ii = 1:height(app.mainApp.pointsTable)
+                uitreenode(app.TreePoints, 'Text', app.mainApp.pointsTable.ID{ii});
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function layout_newPointPanel(app, editionStatus)
+            arguments
+                app 
+                editionStatus char {mustBeMember(editionStatus, {'on', 'off'})}
+            end            
+
+            switch editionStatus
+                case 'on'
+                    set(app.AddNewPointMode, 'ImageSource', 'addFiles_32Filled.png', 'Tooltip', 'Desabilita painel de inclusão de ponto', 'UserData', true)
+                    
+                    app.GridLayout2.RowHeight{5} = 170;
+                    app.GridLayout2.ColumnWidth(end-1:end) = {16,16};
+                    app.AddNewPointConfirm.Enable = 1;
+                    app.AddNewPointCancel.Enable  = 1;
+
+                case 'off'
+                    set(app.AddNewPointMode, 'ImageSource', 'addFiles_32.png',       'Tooltip', 'Habilita painel de inclusão de ponto',   'UserData', false)
+
+                    app.GridLayout2.RowHeight{5} = 0;
+                    app.GridLayout2.ColumnWidth(end-1:end) = {0,0};
+                    app.AddNewPointConfirm.Enable = 0;
+                    app.AddNewPointCancel.Enable  = 0;
+            end
+        end
+    end
+
+
+    methods
+        %-----------------------------------------------------------------%
+        function appBackDoor(app, callingApp, operationType, varargin)
+            try
+                switch class(callingApp)
+                    case {'winMonitorRNI', 'winMonitorRNI_exported'}
+                        switch operationType
+                            case 'ExternalRequest: updatePlot'
+                                Analysis(app)
+
+                            case 'ExternalRequest: updateAnalysis'
+                                app.UITable.ColumnName{4} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.ExternalRequest.FieldValue);
+
+                                if ~isempty(app.mainApp.pointTable)
+                                    app.mainApp.pointTable.AnalysisFlag(:) = false;
+                                    Analysis(app)
+                                end
+
+                            case 'ExternalRequest: updateAxes'
+                                if ~isequal(app.UIAxes.Basemap, app.mainApp.General.Plot.GeographicAxes.Basemap)
+                                    app.UIAxes.Basemap = app.mainApp.General.Plot.GeographicAxes.Basemap;
+                                end
+
+                                plot.axes.Colormap(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colormap)
+                                plot.axes.Colorbar(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colorbar)
+
+                            otherwise
+                                error('UnexpectedCall')
+                        end
+    
+                    otherwise
+                        error('UnexpectedCall')
+                end
+
+            catch ME
+                appUtil.modalWindow(app.UIFigure, 'error', ME.message);
+            end
         end
     end
     
@@ -475,11 +594,12 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
     methods (Access = private)
 
         % Code that executes after component creation
-        function startupFcn(app, mainapp)
+        function startupFcn(app, callingApp)
             
-            app.mainApp    = mainapp;
-            app.rootFolder = mainapp.rootFolder;            
-            app.measData   = mainapp.measData;
+            app.mainApp     = callingApp;
+            app.rootFolder  = callingApp.rootFolder;
+            app.projectData = callingApp.projectData;
+            app.measData    = callingApp.measData;
 
             jsBackDoor_Initialization(app)
 
@@ -538,38 +658,94 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         % Image clicked function: tool_ExportFiles
         function tool_ExportTableAsExcelSheet(app, event)
             
-            % Inicialmente, verifica se o campo "Justificativa" foi devidamente 
-            % preenchido...
+            % VALIDAÇÕES
+            % (a) Inicialmente, verifica se o campo "Justificativa" foi devidamente 
+            %     preenchido...
             if ~isempty(layout_searchUnexpectedTableValues(app, 'TableExport'))
-                msgQuestion   = ['Há registro de estações instaladas na(s) localidade(s) sob análise para as quais '     ...
+                msgQuestion   = ['Há registro de pontos críticos sob análise para os quais '                             ...
                                  'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
-                                 'o campo "Justificativa".<br><br>Deseja ignorar esse alerta, exportando plot e tabela como arquivos (.KML e .XLSX)?'];
+                                 'o campo "Justificativa".'                                                              ...
+                                 '<br><br>Deseja ignorar esse alerta, exportando o resultado?'];
                 userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
                 if userSelection == "Não"
                     return
                 end
             end
 
-            % Usuário escolhe nome do arquivo a ser salvo...       
-            nameFormatMap = {'*.zip', 'RNI (*.zip)'};
-            defaultName   = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, 'RNI', '-1');
+            % (b) Solicita ao usuário nome do arquivo de saída...
+            appName       = class.Constants.appName;
+            nameFormatMap = {'*.zip', [appName, ' (*.zip)']};
+            defaultName   = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, appName, '-1');
             fileZIP       = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', nameFormatMap, defaultName);
             if isempty(fileZIP)
                 return
             end
 
-            app.progressDialog.Visible = 'visible';
+            % ARQUIVOS DE SAÍDA
+            d = appUtil.modalWindow(app.UIFigure, 'progressdlg', 'Em andamento a criação do arquivo de medidas no formato "xlsx".');
 
-            try
-                fileBasename = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, 'RNI', '-1');
-                hPlot = findobj(app.UIAxes.Children, 'Tag', 'Measures');
-                msgWarning = fileWriter.KML(app.mainApp.stationTable, app.UITable.UserData, app.measTable, fileBasename, fileZIP, hPlot);
-                appUtil.modalWindow(app.UIFigure, 'info', msgWarning);
-            catch ME
-                appUtil.modalWindow(app.UIFigure, 'error', ME.message);
+            savedFiles   = {};
+            errorFiles   = {};
+
+            baseName     = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, appName, '-1');
+
+
+            % (a) Arquivo no formato .XLSX
+            %     (um único arquivo de saída)
+            fileName_XLSX = [baseName '.xlsx'];
+            [status, msgError] = fileWriter.ExternalRequest(fileName_XLSX, app.mainApp.pointsTable, timetable2table(app.measTable), app.mainApp.General.ExternalRequest.FieldValue, app.mainApp.General.ExternalRequest.Export.XLSX);
+            if status
+                savedFiles{end+1} = fileName_XLSX;
+            else
+                errorFiles{end+1} = msgError;
             end
 
-            app.progressDialog.Visible = 'hidden';
+            % (b) Arquivos no formato .KML: "Measures" e "Route"
+            %     (um único arquivo de medições, além de um arquivo de rota 
+            %      por arquivo de medição)
+            if app.mainApp.General.ExternalRequest.Export.KML
+                hMeasPlot = findobj(app.UIAxes.Children, 'Tag', 'Measures');
+
+                % (b.1) KML:Measures
+                d.Message = 'Em andamento a criação do arquivo de medidas no formato "kml".';
+
+                fileName_KML1 = sprintf('%s_Measures.kml', baseName);
+                [status, msgError] = fileWriter.KML(fileName_KML1, 'Measures', timetable2table(app.measTable), hMeasPlot);
+                if status
+                    savedFiles{end+1} = fileName_KML1;
+                else
+                    errorFiles{end+1} = msgError;
+                end
+
+                % (b.2) KML:Route
+                d.Message = 'Em andamento a criação do arquivo de rotas no formato "kml".';
+
+                idxFile = FileIndex(app);
+                for ii = 1:numel(idxFile)
+                    fileName_KML2 = sprintf('%s_Route (%d).kml', baseName, ii);
+                    [status, msgError] = fileWriter.KML(fileName_KML2, 'Route', timetable2table(app.measData(idxFile(ii)).Data));
+                    if status
+                        savedFiles{end+1} = fileName_KML2;
+                    else
+                        errorFiles{end+1} = msgError;
+                    end
+                end
+            end
+
+            % (c) Arquivo no formato .ZIP
+            if ~isempty(savedFiles)
+                zip(fileZIP, savedFiles)
+
+                fileFolder = fileparts(baseName);
+                savedFiles = replace(savedFiles, fileFolder, '.');
+                appUtil.modalWindow(app.UIFigure, 'info', sprintf('Lista de arquivos criados:\n%s', strjoin(savedFiles, '\n')));
+            end
+
+            if ~isempty(errorFiles)
+                appUtil.modalWindow(app.UIFigure, 'error', strjoin(errorFiles, '\n'));
+            end
+
+            delete(d)
 
         end
 
@@ -586,165 +762,148 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         end
 
-        % Callback function
-        function UITreeCheckedNodesChanged(app, event)
+        % Callback function: TreeFileLocations
+        function TreeFileLocationsCheckedNodesChanged(app, event)
             
-            app.progressDialog.Visible = 'visible';
-            % Analysis(app)
-            app.progressDialog.Visible = 'hidden';
+            if isempty(app.TreeFileLocations.CheckedNodes)
+                app.TreeFileLocations.CheckedNodes = event.PreviousCheckedNodes;
+                return
+            end
+
+            Analysis(app)
 
         end
 
         % Cell edit callback: UITable
         function UITableCellEdit(app, event)
 
-            idxStation = app.UITable.UserData(event.Indices(1));
-            app.mainApp.stationTable.("Justificativa")(idxStation) = event.NewData;
+            idxPoint = event.Indices(1);
+            app.mainApp.pointsTable.("Justificativa")(idxPoint) = event.NewData;
             
             layout_TableStyle(app)
 
         end
 
         % Selection changed function: UITable
-        function UITableDoubleClicked(app, event)
+        function UITableSelectionChanged(app, event)
             
-            EditFieldRow = event.InteractionInformation.DisplayRow;
-            plot_SelectedStation(app,EditFieldRow)
+            plot_SelectedPoint(app)
 
         end
 
-        % Image clicked function: pointAddImage
-        function Button_AddPointsPushed(app, event)
-             
-            % VALIDAÇÃO
-            if (app.pointLatitude.Value == -1) && (app.pointLongitude.Value == -1)
-                msgQuestion   = 'Os valores de latitude e longitude não foram editados. Deseja continuar?';
-                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
-                if userSelection == "Não"
-                    return
-                end
+        % Image clicked function: AddNewPointCancel, AddNewPointConfirm, 
+        % ...and 2 other components
+        function AddNewPointEditionModeCallbacks(app, event)
+            
+            switch event.Source
+                case app.AddPointsFromFile
+                    % idxStation = selectedStation(app);
+                    % app.Latitude.Value  = app.mainApp.stationTable.("Lat")(idxStation);
+                    % app.Longitude.Value = app.mainApp.stationTable.("Long")(idxStation);
+                    % 
+                    % FormValueChanged(app, struct('Source', event.Source))
+
+                case app.AddNewPointMode
+                    app.AddNewPointMode.UserData = ~app.AddNewPointMode.UserData;
+                    
+                    if app.AddNewPointMode.UserData
+                        layout_newPointPanel(app, 'on')
+                        focus(app.NewPointType)
+                    else
+                        layout_newPointPanel(app, 'off')
+                    end
+
+                case app.AddNewPointConfirm
+                    % VALIDAÇÃO
+                    if isempty(app.NewPointType.Value) || ((app.NewPointLatitude.Value == -1) && (app.NewPointLongitude.Value == -1))
+                        msgWarning = 'Um novo ponto crítico somente poderá ser incluído se definido o seu tipo e coordenadas geográficas diferentes de (-1, -1).';
+                        appUtil.modalWindow(app.UIFigure, 'warning', msgWarning);
+                        return
+                    end
+        
+                    % CRIA ID DO NOVO PONTO
+                    switch app.NewPointType.Value
+                        case 'Estação'
+                            ID = sprintf('Estação nº %d', app.NewPointStation.Value);
+                        otherwise
+                            ID = app.NewPointType.Value;
+                    end
+                    ID = sprintf('%s @ (%.6f, %.6f)', ID, app.NewPointLatitude.Value, app.NewPointLongitude.Value);
+        
+                    % VERIFICA SE ESSE ID JÁ TINHA SIDO INCLUÍDO
+                    if any(strcmp(app.mainApp.pointsTable.ID, ID))
+                        appUtil.modalWindow(app.UIFigure, 'warning', 'Registro já consta na lista de pontos sob análise.');
+                        return
+                    end
+
+                    columsn2Fill = {'ID', 'Type', 'Station', 'Latitude', 'Longitude', 'Description', 'Justificativa', 'AnalysisFlag'};        
+                    app.mainApp.pointsTable(end+1, columsn2Fill) = {ID,                            ...
+                                                                    app.NewPointType.Value,        ...
+                                                                    app.NewPointStation.Value,     ...
+                                                                    app.NewPointLatitude.Value,    ...
+                                                                    app.NewPointLongitude.Value,   ...
+                                                                    app.NewPointDescription.Value, ...
+                                                                    categorical("-1"),             ...
+                                                                    false};
+        
+        
+                    % ATUALIZA ÁRVORE DE PONTOS CRÍTICOS
+                    layout_TreePointsBuilding(app)
+        
+                    % ANÁLISA DOS PONTOS CRÍTICOS, ATUALIZANDO TABELA E PLOT
+                    Analysis(app)
+
+                    % DESABILITA MODO DE INCLUSÃO DE PONTO
+                    layout_newPointPanel(app, 'off')
+
+                case app.AddNewPointCancel
+                    layout_newPointPanel(app, 'off')
             end
 
-            % ADICIONA REGISTRO DE PONTO CRÍTICO
-            switch app.pointType.Value
+        end
+
+        % Value changed function: NewPointType
+        function NewPointTypeValueChanged(app, event)
+            
+            switch app.NewPointType.Value
                 case 'Estação'
-                    ID = sprintf('Estação nº %d', app.pointStation.Value);
-                otherwise
-                    ID = app.pointType.Value;
-            end
-            ID = sprintf('%s @ (%.6f, %.6f)', ID, app.pointLatitude.Value, app.pointLongitude.Value);
-
-            % ADICIONA REGISTRO DE PONTO CRÍTICO
-            ValidID = find(strcmp(ID, app.mainApp.pointsTable.ID), 1);            
-            if ~isempty(ValidID)
-                appUtil.modalWindow(app.UIFigure, 'warning', 'Registro já consta na lista de pontos sob análise.');
-                return
-            end
-
-            app.mainApp.pointsTable(end+1,{'ID', 'Type', 'Station', 'Latitude', 'Longitude',                               ...
-                                           'Description', 'Justificativa', 'AnalysisFlag'}) = {ID,                         ...
-                                                                                               app.pointType.Value,        ...
-                                                                                               app.pointStation.Value,     ...
-                                                                                               app.pointLatitude.Value,    ...
-                                                                                               app.pointLongitude.Value,   ...
-                                                                                               app.pointDescription.Value, ...
-                                                                                               categorical("-1"),          ...
-                                                                                               false};
-
-
-            % ATUALIZA ÁRVORE DE PONTOS CRÍTICOS
-            pointTreeBuilding(app)
-
-            % ANÁLISA DOS PONTOS CRÍTICOS, ATUALIZANDO TABELA E PLOT
-            Analysis(app)
-     
-        end
-
-        % Callback function
-        function DropDown_UFValueChanged(app, event)
-            %Armazena em ER_UO as informações das URs da tabela do PA_RNI  
-            RNI_UF = app.Data_Localidades.('UF');
-            
-            %Busca na Base de dados do PA_RNI as localidades da Unidade Operacional selecionada 
-            Index_Local_UF   = find(strcmp(RNI_UF, app.DropDown_UF.Value));
-
-            RNI_Localidades  = unique(app.Data_Localidades.Municipios(Index_Local_UF)); 
-
-            app.DropDown_Local.Items = "";
-
-            app.DropDown_Local.Items = [""; RNI_Localidades];
-
-            %Armazena em ER_UO as informações das URs da tabela do PA_RNI  
-            RNI_Serv = app.Data_Serv_Rad_Tel.Servico;
-
-            app.DropDown_Serv.Items = "";
-
-            app.DropDown_Serv.Items = [""; RNI_Serv];
-        end
-
-        % Value changed function: pointType
-        function pointTypeValueChanged(app, event)
-            
-            switch app.pointType.Value
-                case 'Estação'
-                    app.pointStation.Enable = 1;
-                    set(app.pointLatitude,  'Value', -1, 'Enable', 0)
-                    set(app.pointLongitude, 'Value', -1, 'Enable', 0)
+                    app.NewPointStation.Enable = 1;
+                    set(app.NewPointLatitude,  'Value', -1, 'Enable', 0)
+                    set(app.NewPointLongitude, 'Value', -1, 'Enable', 0)
 
                 otherwise
-                    set(app.pointStation, 'Value', -1, 'Enable', 0)
-                    app.pointLatitude.Enable  = 1;
-                    app.pointLongitude.Enable = 1;
-            end
-
-            if isempty(app.pointType.Value)
-                app.pointAddImage.Enable = 0;
-            else
-                app.pointAddImage.Enable = 1;
+                    set(app.NewPointStation, 'Value', -1, 'Enable', 0)
+                    app.NewPointLatitude.Enable  = 1;
+                    app.NewPointLongitude.Enable = 1;
             end
 
         end
 
-        % Value changed function: pointStation
-        function pointStationValueChanged(app, event)
+        % Value changed function: NewPointStation
+        function NewPointStationValueChanged(app, event)
             
-            idxRFDataHub = find(app.mainApp.rfDataHub.Station == app.pointStation.Value, 1);
+            idxRFDataHub = find(app.mainApp.rfDataHub.Station == app.NewPointStation.Value, 1);
 
             if ~isempty(idxRFDataHub)
                 latStation  = round(app.mainApp.rfDataHub.Latitude(idxRFDataHub), 6);
                 longStation = round(app.mainApp.rfDataHub.Longitude(idxRFDataHub), 6);
 
-                set(app.pointLatitude,  'Value', latStation,  'Enable', 1)
-                set(app.pointLongitude, 'Value', longStation, 'Enable', 1)
+                set(app.NewPointLatitude,  'Value', latStation,  'Enable', 1)
+                set(app.NewPointLongitude, 'Value', longStation, 'Enable', 1)
 
             else
-                % msgWarning = 'Não identificado o número de estação indicado no RFDataBase.';
-                % appUtil.modalWindow(app.UIFigure, 'info', msgWarning);
-
-                set(app.pointLatitude,  'Value', -1, 'Enable', 1)
-                set(app.pointLongitude, 'Value', -1, 'Enable', 1)
+                set(app.NewPointLatitude,  'Value', -1, 'Enable', 1)
+                set(app.NewPointLongitude, 'Value', -1, 'Enable', 1)
             end
 
-            focus(app.pointLatitude);
+            focus(app.NewPointLatitude);
 
         end
 
-        % Callback function: UITree
-        function UITreeCheckedNodesChanged2(app, event)
+        % Value changed function: NewPointLatitude
+        function NewPointLatitudeValueChanged(app, event)
             
-            if isempty(app.UITree.CheckedNodes)
-                app.UITree.CheckedNodes = event.PreviousCheckedNodes;
-                return
-            end
-
-            Analysis(app)
-
-        end
-
-        % Value changed function: pointLatitude
-        function pointLatitudeValueChanged(app, event)
-            
-            focus(app.pointLongitude)
+            focus(app.NewPointLongitude)
             
         end
     end
@@ -824,13 +983,13 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % Create UITable
             app.UITable = uitable(app.GridLayout);
             app.UITable.ColumnName = {'ID'; 'Descrição'; 'Qtd.|Medidas'; 'Qtd.|> 14 V/m'; 'Dmin|(km)'; 'Emin|(V/m)'; 'Emean|(V/m)'; 'Emax|(V/m)'; 'Justificativa'};
-            app.UITable.ColumnWidth = {'auto', 'auto', 70, 70, 70, 70, 70, 70, 'auto'};
+            app.UITable.ColumnWidth = {210, 'auto', 70, 70, 70, 70, 70, 70, 'auto'};
             app.UITable.RowName = {};
             app.UITable.ColumnSortable = true;
             app.UITable.SelectionType = 'row';
             app.UITable.ColumnEditable = [false true false false false false false false true];
             app.UITable.CellEditCallback = createCallbackFcn(app, @UITableCellEdit, true);
-            app.UITable.SelectionChangedFcn = createCallbackFcn(app, @UITableDoubleClicked, true);
+            app.UITable.SelectionChangedFcn = createCallbackFcn(app, @UITableSelectionChanged, true);
             app.UITable.Multiselect = 'off';
             app.UITable.ForegroundColor = [0.149 0.149 0.149];
             app.UITable.Layout.Row = 5;
@@ -881,8 +1040,9 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Create GridLayout2
             app.GridLayout2 = uigridlayout(app.GridLayout);
-            app.GridLayout2.ColumnWidth = {'1x', 68, 12};
-            app.GridLayout2.RowHeight = {22, 22, '1x', 32, 168, 12, '1x', 22};
+            app.GridLayout2.ColumnWidth = {'1x', 16, 16, 16, 16};
+            app.GridLayout2.RowHeight = {22, 32, '1x', 32, 170, 175};
+            app.GridLayout2.ColumnSpacing = 5;
             app.GridLayout2.RowSpacing = 5;
             app.GridLayout2.Padding = [0 0 0 0];
             app.GridLayout2.Layout.Row = [2 5];
@@ -898,7 +1058,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.play_ControlsTab1Grid_2.Padding = [2 2 2 2];
             app.play_ControlsTab1Grid_2.Tag = 'COLORLOCKED';
             app.play_ControlsTab1Grid_2.Layout.Row = 1;
-            app.play_ControlsTab1Grid_2.Layout.Column = [1 3];
+            app.play_ControlsTab1Grid_2.Layout.Column = [1 5];
             app.play_ControlsTab1Grid_2.BackgroundColor = [0.749 0.749 0.749];
 
             % Create play_ControlsTab1Image_2
@@ -915,150 +1075,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.menu_Button1Label.Layout.Column = 2;
             app.menu_Button1Label.Text = 'DEMANDAS EXTERNAS';
 
-            % Create pointAddImage
-            app.pointAddImage = uiimage(app.GridLayout2);
-            app.pointAddImage.ImageClickedFcn = createCallbackFcn(app, @Button_AddPointsPushed, true);
-            app.pointAddImage.Enable = 'off';
-            app.pointAddImage.Layout.Row = 6;
-            app.pointAddImage.Layout.Column = 3;
-            app.pointAddImage.VerticalAlignment = 'bottom';
-            app.pointAddImage.ImageSource = 'addSymbol_32.png';
-
-            % Create pointTree
-            app.pointTree = uitree(app.GridLayout2);
-            app.pointTree.FontSize = 11;
-            app.pointTree.Layout.Row = 7;
-            app.pointTree.Layout.Column = [1 3];
-
-            % Create Panel_2
-            app.Panel_2 = uipanel(app.GridLayout2);
-            app.Panel_2.Layout.Row = 5;
-            app.Panel_2.Layout.Column = [1 3];
-
-            % Create GridLayout5
-            app.GridLayout5 = uigridlayout(app.Panel_2);
-            app.GridLayout5.ColumnWidth = {'1x', '1x', '1x'};
-            app.GridLayout5.RowHeight = {17, 22, 22, 22, 22, 22};
-            app.GridLayout5.RowSpacing = 5;
-            app.GridLayout5.Padding = [10 10 10 5];
-            app.GridLayout5.BackgroundColor = [1 1 1];
-
-            % Create pointTypeLabel
-            app.pointTypeLabel = uilabel(app.GridLayout5);
-            app.pointTypeLabel.VerticalAlignment = 'bottom';
-            app.pointTypeLabel.FontSize = 10;
-            app.pointTypeLabel.Layout.Row = 1;
-            app.pointTypeLabel.Layout.Column = 1;
-            app.pointTypeLabel.Text = 'Tipologia:';
-
-            % Create pointType
-            app.pointType = uidropdown(app.GridLayout5);
-            app.pointType.Items = {''};
-            app.pointType.ValueChangedFcn = createCallbackFcn(app, @pointTypeValueChanged, true);
-            app.pointType.FontSize = 11;
-            app.pointType.BackgroundColor = [1 1 1];
-            app.pointType.Layout.Row = 2;
-            app.pointType.Layout.Column = [1 3];
-            app.pointType.Value = '';
-
-            % Create pointStationLabel
-            app.pointStationLabel = uilabel(app.GridLayout5);
-            app.pointStationLabel.VerticalAlignment = 'bottom';
-            app.pointStationLabel.FontSize = 10;
-            app.pointStationLabel.Layout.Row = 3;
-            app.pointStationLabel.Layout.Column = 1;
-            app.pointStationLabel.Text = 'Estação:';
-
-            % Create pointStation
-            app.pointStation = uieditfield(app.GridLayout5, 'numeric');
-            app.pointStation.Limits = [-1 Inf];
-            app.pointStation.RoundFractionalValues = 'on';
-            app.pointStation.ValueDisplayFormat = '%d';
-            app.pointStation.ValueChangedFcn = createCallbackFcn(app, @pointStationValueChanged, true);
-            app.pointStation.HorizontalAlignment = 'left';
-            app.pointStation.FontSize = 11;
-            app.pointStation.Enable = 'off';
-            app.pointStation.Layout.Row = 4;
-            app.pointStation.Layout.Column = 1;
-            app.pointStation.Value = -1;
-
-            % Create pointLatitudeLabel
-            app.pointLatitudeLabel = uilabel(app.GridLayout5);
-            app.pointLatitudeLabel.VerticalAlignment = 'bottom';
-            app.pointLatitudeLabel.FontSize = 10;
-            app.pointLatitudeLabel.Layout.Row = 3;
-            app.pointLatitudeLabel.Layout.Column = 2;
-            app.pointLatitudeLabel.Text = 'Latitude:';
-
-            % Create pointLatitude
-            app.pointLatitude = uieditfield(app.GridLayout5, 'numeric');
-            app.pointLatitude.Limits = [-90 90];
-            app.pointLatitude.ValueDisplayFormat = '%.6f';
-            app.pointLatitude.ValueChangedFcn = createCallbackFcn(app, @pointLatitudeValueChanged, true);
-            app.pointLatitude.HorizontalAlignment = 'left';
-            app.pointLatitude.FontSize = 11;
-            app.pointLatitude.Layout.Row = 4;
-            app.pointLatitude.Layout.Column = 2;
-            app.pointLatitude.Value = -1;
-
-            % Create pointLongitudeLabel
-            app.pointLongitudeLabel = uilabel(app.GridLayout5);
-            app.pointLongitudeLabel.VerticalAlignment = 'bottom';
-            app.pointLongitudeLabel.FontSize = 10;
-            app.pointLongitudeLabel.Layout.Row = 3;
-            app.pointLongitudeLabel.Layout.Column = 3;
-            app.pointLongitudeLabel.Text = 'Longitude:';
-
-            % Create pointLongitude
-            app.pointLongitude = uieditfield(app.GridLayout5, 'numeric');
-            app.pointLongitude.Limits = [-180 180];
-            app.pointLongitude.ValueDisplayFormat = '%.6f';
-            app.pointLongitude.HorizontalAlignment = 'left';
-            app.pointLongitude.FontSize = 11;
-            app.pointLongitude.Layout.Row = 4;
-            app.pointLongitude.Layout.Column = 3;
-            app.pointLongitude.Value = -1;
-
-            % Create pointDescriptionLabel
-            app.pointDescriptionLabel = uilabel(app.GridLayout5);
-            app.pointDescriptionLabel.VerticalAlignment = 'bottom';
-            app.pointDescriptionLabel.FontSize = 10;
-            app.pointDescriptionLabel.Layout.Row = 5;
-            app.pointDescriptionLabel.Layout.Column = 1;
-            app.pointDescriptionLabel.Text = 'Descrição:';
-
-            % Create pointDescription
-            app.pointDescription = uieditfield(app.GridLayout5, 'text');
-            app.pointDescription.FontSize = 11;
-            app.pointDescription.Layout.Row = 6;
-            app.pointDescription.Layout.Column = [1 3];
-
-            % Create LocationListLabel
-            app.LocationListLabel = uilabel(app.GridLayout2);
-            app.LocationListLabel.VerticalAlignment = 'bottom';
-            app.LocationListLabel.FontSize = 10;
-            app.LocationListLabel.Layout.Row = 4;
-            app.LocationListLabel.Layout.Column = [1 2];
-            app.LocationListLabel.Interpreter = 'html';
-            app.LocationListLabel.Text = {'PONTOS CRÍTICOS SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionados àquilo que fora pedido pelo demandante)</font>'};
-
-            % Create EditField_DistPont
-            app.EditField_DistPont = uieditfield(app.GridLayout2, 'numeric');
-            app.EditField_DistPont.ValueDisplayFormat = '%.1f';
-            app.EditField_DistPont.HorizontalAlignment = 'left';
-            app.EditField_DistPont.FontSize = 11;
-            app.EditField_DistPont.Layout.Row = 8;
-            app.EditField_DistPont.Layout.Column = [2 3];
-            app.EditField_DistPont.Value = 200;
-
-            % Create DistncialimiteentrepontodemedioepontoscrticossobanlisemLabel
-            app.DistncialimiteentrepontodemedioepontoscrticossobanlisemLabel = uilabel(app.GridLayout2);
-            app.DistncialimiteentrepontodemedioepontoscrticossobanlisemLabel.WordWrap = 'on';
-            app.DistncialimiteentrepontodemedioepontoscrticossobanlisemLabel.FontSize = 10;
-            app.DistncialimiteentrepontodemedioepontoscrticossobanlisemLabel.Layout.Row = 8;
-            app.DistncialimiteentrepontodemedioepontoscrticossobanlisemLabel.Layout.Column = 1;
-            app.DistncialimiteentrepontodemedioepontoscrticossobanlisemLabel.Text = 'Distância limite entre ponto de medição e pontos críticos sob análise (m):';
-
             % Create config_geoAxesLabel
             app.config_geoAxesLabel = uilabel(app.GridLayout2);
             app.config_geoAxesLabel.VerticalAlignment = 'bottom';
@@ -1066,16 +1082,173 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.config_geoAxesLabel.FontSize = 10;
             app.config_geoAxesLabel.Layout.Row = 2;
             app.config_geoAxesLabel.Layout.Column = 1;
-            app.config_geoAxesLabel.Text = 'LOCALIDADES:';
+            app.config_geoAxesLabel.Interpreter = 'html';
+            app.config_geoAxesLabel.Text = {'LOCALIDADES:'; '<font style="color: gray; font-size: 9px;">(relacionadas aos arquivos de medição)</font>'};
 
-            % Create UITree
-            app.UITree = uitree(app.GridLayout2, 'checkbox');
-            app.UITree.FontSize = 11;
-            app.UITree.Layout.Row = 3;
-            app.UITree.Layout.Column = [1 3];
+            % Create TreeFileLocations
+            app.TreeFileLocations = uitree(app.GridLayout2, 'checkbox');
+            app.TreeFileLocations.FontSize = 11;
+            app.TreeFileLocations.Layout.Row = 3;
+            app.TreeFileLocations.Layout.Column = [1 5];
 
             % Assign Checked Nodes
-            app.UITree.CheckedNodesChangedFcn = createCallbackFcn(app, @UITreeCheckedNodesChanged2, true);
+            app.TreeFileLocations.CheckedNodesChangedFcn = createCallbackFcn(app, @TreeFileLocationsCheckedNodesChanged, true);
+
+            % Create TreePointsLabel
+            app.TreePointsLabel = uilabel(app.GridLayout2);
+            app.TreePointsLabel.VerticalAlignment = 'bottom';
+            app.TreePointsLabel.FontSize = 10;
+            app.TreePointsLabel.Layout.Row = 4;
+            app.TreePointsLabel.Layout.Column = 1;
+            app.TreePointsLabel.Interpreter = 'html';
+            app.TreePointsLabel.Text = {'PONTOS CRÍTICOS SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionados àquilo que fora pedido pelo demandante)</font>'};
+
+            % Create AddPointsFromFile
+            app.AddPointsFromFile = uiimage(app.GridLayout2);
+            app.AddPointsFromFile.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
+            app.AddPointsFromFile.Tooltip = {'Inclui pontos a partir de arquivo'};
+            app.AddPointsFromFile.Layout.Row = 4;
+            app.AddPointsFromFile.Layout.Column = 2;
+            app.AddPointsFromFile.VerticalAlignment = 'bottom';
+            app.AddPointsFromFile.ImageSource = 'OpenFile_36x36.png';
+
+            % Create AddNewPointMode
+            app.AddNewPointMode = uiimage(app.GridLayout2);
+            app.AddNewPointMode.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
+            app.AddNewPointMode.Tooltip = {'Habilita painel de inclusão de ponto'};
+            app.AddNewPointMode.Layout.Row = 4;
+            app.AddNewPointMode.Layout.Column = 3;
+            app.AddNewPointMode.VerticalAlignment = 'bottom';
+            app.AddNewPointMode.ImageSource = 'addFiles_32.png';
+
+            % Create AddNewPointConfirm
+            app.AddNewPointConfirm = uiimage(app.GridLayout2);
+            app.AddNewPointConfirm.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
+            app.AddNewPointConfirm.Enable = 'off';
+            app.AddNewPointConfirm.Tooltip = {'Confirma edição'};
+            app.AddNewPointConfirm.Layout.Row = 4;
+            app.AddNewPointConfirm.Layout.Column = 4;
+            app.AddNewPointConfirm.VerticalAlignment = 'bottom';
+            app.AddNewPointConfirm.ImageSource = 'Ok_32Green.png';
+
+            % Create AddNewPointCancel
+            app.AddNewPointCancel = uiimage(app.GridLayout2);
+            app.AddNewPointCancel.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
+            app.AddNewPointCancel.Enable = 'off';
+            app.AddNewPointCancel.Tooltip = {'Cancela edição'};
+            app.AddNewPointCancel.Layout.Row = 4;
+            app.AddNewPointCancel.Layout.Column = 5;
+            app.AddNewPointCancel.VerticalAlignment = 'bottom';
+            app.AddNewPointCancel.ImageSource = 'Delete_32Red.png';
+
+            % Create AddNewPointPanel
+            app.AddNewPointPanel = uipanel(app.GridLayout2);
+            app.AddNewPointPanel.Layout.Row = 5;
+            app.AddNewPointPanel.Layout.Column = [1 5];
+
+            % Create AddNewPointGrid
+            app.AddNewPointGrid = uigridlayout(app.AddNewPointPanel);
+            app.AddNewPointGrid.ColumnWidth = {'1x', '1x', '1x'};
+            app.AddNewPointGrid.RowHeight = {17, 22, 22, 22, 22, 22};
+            app.AddNewPointGrid.RowSpacing = 5;
+            app.AddNewPointGrid.Padding = [10 10 10 5];
+            app.AddNewPointGrid.BackgroundColor = [1 1 1];
+
+            % Create NewPointTypeLabel
+            app.NewPointTypeLabel = uilabel(app.AddNewPointGrid);
+            app.NewPointTypeLabel.VerticalAlignment = 'bottom';
+            app.NewPointTypeLabel.FontSize = 10;
+            app.NewPointTypeLabel.Layout.Row = 1;
+            app.NewPointTypeLabel.Layout.Column = 1;
+            app.NewPointTypeLabel.Text = 'Tipo:';
+
+            % Create NewPointType
+            app.NewPointType = uidropdown(app.AddNewPointGrid);
+            app.NewPointType.Items = {''};
+            app.NewPointType.ValueChangedFcn = createCallbackFcn(app, @NewPointTypeValueChanged, true);
+            app.NewPointType.FontSize = 11;
+            app.NewPointType.BackgroundColor = [1 1 1];
+            app.NewPointType.Layout.Row = 2;
+            app.NewPointType.Layout.Column = [1 3];
+            app.NewPointType.Value = '';
+
+            % Create NewPointStationLabel
+            app.NewPointStationLabel = uilabel(app.AddNewPointGrid);
+            app.NewPointStationLabel.VerticalAlignment = 'bottom';
+            app.NewPointStationLabel.FontSize = 10;
+            app.NewPointStationLabel.Layout.Row = 3;
+            app.NewPointStationLabel.Layout.Column = 1;
+            app.NewPointStationLabel.Text = 'Estação:';
+
+            % Create NewPointStation
+            app.NewPointStation = uieditfield(app.AddNewPointGrid, 'numeric');
+            app.NewPointStation.Limits = [-1 Inf];
+            app.NewPointStation.RoundFractionalValues = 'on';
+            app.NewPointStation.ValueDisplayFormat = '%d';
+            app.NewPointStation.ValueChangedFcn = createCallbackFcn(app, @NewPointStationValueChanged, true);
+            app.NewPointStation.HorizontalAlignment = 'left';
+            app.NewPointStation.FontSize = 11;
+            app.NewPointStation.Enable = 'off';
+            app.NewPointStation.Layout.Row = 4;
+            app.NewPointStation.Layout.Column = 1;
+            app.NewPointStation.Value = -1;
+
+            % Create NewPointLatitudeLabel
+            app.NewPointLatitudeLabel = uilabel(app.AddNewPointGrid);
+            app.NewPointLatitudeLabel.VerticalAlignment = 'bottom';
+            app.NewPointLatitudeLabel.FontSize = 10;
+            app.NewPointLatitudeLabel.Layout.Row = 3;
+            app.NewPointLatitudeLabel.Layout.Column = 2;
+            app.NewPointLatitudeLabel.Text = 'Latitude:';
+
+            % Create NewPointLatitude
+            app.NewPointLatitude = uieditfield(app.AddNewPointGrid, 'numeric');
+            app.NewPointLatitude.Limits = [-90 90];
+            app.NewPointLatitude.ValueDisplayFormat = '%.6f';
+            app.NewPointLatitude.ValueChangedFcn = createCallbackFcn(app, @NewPointLatitudeValueChanged, true);
+            app.NewPointLatitude.HorizontalAlignment = 'left';
+            app.NewPointLatitude.FontSize = 11;
+            app.NewPointLatitude.Layout.Row = 4;
+            app.NewPointLatitude.Layout.Column = 2;
+            app.NewPointLatitude.Value = -1;
+
+            % Create NewPointLongitudeLabel
+            app.NewPointLongitudeLabel = uilabel(app.AddNewPointGrid);
+            app.NewPointLongitudeLabel.VerticalAlignment = 'bottom';
+            app.NewPointLongitudeLabel.FontSize = 10;
+            app.NewPointLongitudeLabel.Layout.Row = 3;
+            app.NewPointLongitudeLabel.Layout.Column = 3;
+            app.NewPointLongitudeLabel.Text = 'Longitude:';
+
+            % Create NewPointLongitude
+            app.NewPointLongitude = uieditfield(app.AddNewPointGrid, 'numeric');
+            app.NewPointLongitude.Limits = [-180 180];
+            app.NewPointLongitude.ValueDisplayFormat = '%.6f';
+            app.NewPointLongitude.HorizontalAlignment = 'left';
+            app.NewPointLongitude.FontSize = 11;
+            app.NewPointLongitude.Layout.Row = 4;
+            app.NewPointLongitude.Layout.Column = 3;
+            app.NewPointLongitude.Value = -1;
+
+            % Create NewPointDescriptionLabel
+            app.NewPointDescriptionLabel = uilabel(app.AddNewPointGrid);
+            app.NewPointDescriptionLabel.VerticalAlignment = 'bottom';
+            app.NewPointDescriptionLabel.FontSize = 10;
+            app.NewPointDescriptionLabel.Layout.Row = 5;
+            app.NewPointDescriptionLabel.Layout.Column = 1;
+            app.NewPointDescriptionLabel.Text = 'Descrição:';
+
+            % Create NewPointDescription
+            app.NewPointDescription = uieditfield(app.AddNewPointGrid, 'text');
+            app.NewPointDescription.FontSize = 11;
+            app.NewPointDescription.Layout.Row = 6;
+            app.NewPointDescription.Layout.Column = [1 3];
+
+            % Create TreePoints
+            app.TreePoints = uitree(app.GridLayout2);
+            app.TreePoints.FontSize = 11;
+            app.TreePoints.Layout.Row = 6;
+            app.TreePoints.Layout.Column = [1 5];
 
             % Create filter_ContextMenu
             app.filter_ContextMenu = uicontextmenu(app.UIFigure);

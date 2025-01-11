@@ -522,7 +522,9 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.mainApp.General_I.Plot = app.mainApp.General.Plot;
             saveGeneralSettings(app)
 
+            appBackDoor(app.mainApp, app, 'PM-RNI: updateAxes')
             appBackDoor(app.mainApp, app, 'PM-RNI: updatePlot')
+            appBackDoor(app.mainApp, app, 'ExternalRequest: updateAxes')
             appBackDoor(app.mainApp, app, 'ExternalRequest: updatePlot')
 
         end
@@ -706,7 +708,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create Document
             app.Document = uigridlayout(app.GridLayout);
-            app.Document.ColumnWidth = {325, 0, 0, '1x', 0};
+            app.Document.ColumnWidth = {325, '1x', 0, 0, 0};
             app.Document.RowHeight = {'1x'};
             app.Document.Padding = [5 5 5 5];
             app.Document.Layout.Row = 1;
@@ -978,7 +980,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.StationsLabel.FontSize = 10;
             app.StationsLabel.Layout.Row = 4;
             app.StationsLabel.Layout.Column = [1 2];
-            app.StationsLabel.Text = 'Estações de referência:';
+            app.StationsLabel.Text = 'Estações/pontos de referência:';
 
             % Create StationsColor
             app.StationsColor = uicolorpicker(app.CustomPlotPanelGrid);
@@ -1006,7 +1008,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.SelectedStationLabel.FontSize = 10;
             app.SelectedStationLabel.Layout.Row = 5;
             app.SelectedStationLabel.Layout.Column = 1;
-            app.SelectedStationLabel.Text = 'Estação sob análise:';
+            app.SelectedStationLabel.Text = 'Estação/ponto sob análise:';
 
             % Create SelectedStationColor
             app.SelectedStationColor = uicolorpicker(app.CustomPlotPanelGrid);
@@ -1034,7 +1036,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.PeakLabel.FontSize = 10;
             app.PeakLabel.Layout.Row = 6;
             app.PeakLabel.Layout.Column = 1;
-            app.PeakLabel.Text = 'Pico em torno da estação:';
+            app.PeakLabel.Text = 'Pico em torno da estação/ponto:';
 
             % Create PeakColor
             app.PeakColor = uicolorpicker(app.CustomPlotPanelGrid);
@@ -1061,8 +1063,8 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.CircleColorLabel.WordWrap = 'on';
             app.CircleColorLabel.FontSize = 10;
             app.CircleColorLabel.Layout.Row = 7;
-            app.CircleColorLabel.Layout.Column = 1;
-            app.CircleColorLabel.Text = {'Região circular em torno da estação: '; '(cor)'};
+            app.CircleColorLabel.Layout.Column = [1 4];
+            app.CircleColorLabel.Text = 'Região circular em torno da estação/ponto:';
 
             % Create CircleColor
             app.CircleColor = uidropdown(app.CustomPlotPanelGrid);
@@ -1079,8 +1081,8 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.CircleColorAlphaLabel.WordWrap = 'on';
             app.CircleColorAlphaLabel.FontSize = 10;
             app.CircleColorAlphaLabel.Layout.Row = 8;
-            app.CircleColorAlphaLabel.Layout.Column = 1;
-            app.CircleColorAlphaLabel.Text = {'Região circular em torno da estação: '; '(transparência da face e borda)'};
+            app.CircleColorAlphaLabel.Layout.Column = [1 3];
+            app.CircleColorAlphaLabel.Text = {'Região circular em torno da estação/ponto: '; '(transparência da face e borda)'};
 
             % Create CircleFaceAlpha
             app.CircleFaceAlpha = uispinner(app.CustomPlotPanelGrid);
@@ -1105,7 +1107,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create AutomaticZoom
             app.AutomaticZoom = uicheckbox(app.CustomPlotPanelGrid);
             app.AutomaticZoom.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
-            app.AutomaticZoom.Text = 'Habilitar zoom automático em torno da estação sob análise.';
+            app.AutomaticZoom.Text = 'Habilitar zoom automático em torno da estação/ponto sob análise.';
             app.AutomaticZoom.FontSize = 11;
             app.AutomaticZoom.Layout.Row = 10;
             app.AutomaticZoom.Layout.Column = [1 5];
