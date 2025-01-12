@@ -1,8 +1,8 @@
 {
-    "version": 0.43,
+    "version": 0.45,
     "operationMode": {
         "Debug": false,
-        "Dock": false,
+        "Dock": true,
         "Simulation": false
     },
     "computerName": {
@@ -86,7 +86,7 @@
             "Acesso restrito",            
             "Local perigoso",
             "Difícil acesso",
-            "Outra (especificar)"
+            "Outra"
         ],
         "TypeOfLocation": [
             "Apartamento",
@@ -96,6 +96,10 @@
             "Estação",            
             "Hospital",
             "Outro"
-        ]
+        ],
+        "Export": {
+            "XLSX": false,
+            "KML": false
+        }
     }
 }

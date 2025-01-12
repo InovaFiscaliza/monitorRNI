@@ -12,6 +12,8 @@ classdef winConfig_exported < matlab.apps.AppBase
         AnalysisPanelGrid             matlab.ui.container.GridLayout
         ExternalRequestPanel          matlab.ui.container.Panel
         ExternalRequestGrid           matlab.ui.container.GridLayout
+        ExternalRequestExportKML      matlab.ui.control.CheckBox
+        ExternalRequestExportXLSX     matlab.ui.control.CheckBox
         ExternalRequestLevel          matlab.ui.control.NumericEditField
         ExternalRequestLevelLabel     matlab.ui.control.Label
         ExternalRequestDistance       matlab.ui.control.NumericEditField
@@ -47,7 +49,9 @@ classdef winConfig_exported < matlab.apps.AppBase
         CustomPlotPanelGrid           matlab.ui.container.GridLayout
         AutomaticZoomFactor           matlab.ui.control.Spinner
         AutomaticZoomFactorLabel      matlab.ui.control.Label
-        AutomaticZoom                 matlab.ui.control.CheckBox
+        AutomaticZoomMode             matlab.ui.control.CheckBox
+        ZoomOrientation               matlab.ui.control.DropDown
+        ZoomOrientationLabel          matlab.ui.control.Label
         CircleEdgeAlpha               matlab.ui.control.Spinner
         CircleFaceAlpha               matlab.ui.control.Spinner
         CircleColorAlphaLabel         matlab.ui.control.Label
@@ -241,6 +245,8 @@ classdef winConfig_exported < matlab.apps.AppBase
             % External Request
             app.ExternalRequestDistance.Value   = app.mainApp.General.ExternalRequest.Distance_km * 1000;
             app.ExternalRequestLevel.Value      = app.mainApp.General.ExternalRequest.FieldValue;
+            app.ExternalRequestExportXLSX.Value = app.mainApp.General.ExternalRequest.Export.XLSX;
+            app.ExternalRequestExportKML.Value  = app.mainApp.General.ExternalRequest.Export.KML;
         end
 
         %-----------------------------------------------------------------%
@@ -248,6 +254,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.Basemap.Value              = app.mainApp.General.Plot.GeographicAxes.Basemap;
             app.Colormap.Value             = app.mainApp.General.Plot.GeographicAxes.Colormap;
             app.Colorbar.Value             = app.mainApp.General.Plot.GeographicAxes.Colorbar;
+            app.ZoomOrientation.Value      = app.mainApp.General.Plot.GeographicAxes.ZoomOrientation;
 
             app.StationsColor.Value        = app.mainApp.General.Plot.Stations.Color;
             app.StationsSize.Value         = app.mainApp.General.Plot.Stations.Size;
@@ -259,9 +266,9 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.CircleFaceAlpha.Value      = app.mainApp.General.Plot.CircleRegion.FaceAlpha;
             app.CircleEdgeAlpha.Value      = app.mainApp.General.Plot.CircleRegion.EdgeAlpha;
 
-            app.AutomaticZoom.Value        = app.mainApp.General.Plot.SelectedStation.AutomaticZoom;
+            app.AutomaticZoomMode.Value    = app.mainApp.General.Plot.SelectedStation.AutomaticZoom;
             app.AutomaticZoomFactor.Value  = app.mainApp.General.Plot.SelectedStation.AutomaticZoomFactor;
-            if app.AutomaticZoom.Value
+            if app.AutomaticZoomMode.Value
                 app.AutomaticZoomFactor.Enable = 1;
             else
                 app.AutomaticZoomFactor.Enable = 0;
@@ -444,9 +451,8 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         end
 
-        % Callback function: ExternalRequestDistance, ExternalRequestLevel,
-        % 
-        % ...and 5 other components
+        % Callback function: ExternalRequestDistance, 
+        % ...and 8 other components
         function Analysis_ParameterValueChanged(app, event)
             
             updateAnalysisName = '';
@@ -481,6 +487,12 @@ classdef winConfig_exported < matlab.apps.AppBase
                 case app.ExternalRequestLevel
                     app.mainApp.General.ExternalRequest.FieldValue  = app.ExternalRequestLevel.Value;
                     updateAnalysisName = 'ExternalRequest: updateAnalysis';
+
+                case app.ExternalRequestExportXLSX
+                    app.mainApp.General.ExternalRequest.Export.XLSX  = app.ExternalRequestExportXLSX.Value;
+
+                case app.ExternalRequestExportKML
+                    app.mainApp.General.ExternalRequest.Export.KML   = app.ExternalRequestExportKML.Value;
             end
 
             app.mainApp.General_I.MonitoringPlan  = app.mainApp.General.MonitoringPlan;
@@ -516,16 +528,23 @@ classdef winConfig_exported < matlab.apps.AppBase
             projectFilePath    = fullfile(projectFolder, 'GeneralSettings.json');
             projectFileContent = jsondecode(fileread(projectFilePath));
 
-            app.mainApp.General.Plot   = projectFileContent.Plot;
-            CustomPlot_updatePanel(app)
-            
-            app.mainApp.General_I.Plot = app.mainApp.General.Plot;
-            saveGeneralSettings(app)
+            if isequal(app.mainApp.General.Plot, projectFileContent.Plot)
+                msgWarning = 'Configurações atuais já coincidem com as iniciais.';
+                appUtil.modalWindow(app.UIFigure, 'warning', msgWarning);
+                return
 
-            appBackDoor(app.mainApp, app, 'PM-RNI: updateAxes')
-            appBackDoor(app.mainApp, app, 'PM-RNI: updatePlot')
-            appBackDoor(app.mainApp, app, 'ExternalRequest: updateAxes')
-            appBackDoor(app.mainApp, app, 'ExternalRequest: updatePlot')
+            else
+                app.mainApp.General.Plot   = projectFileContent.Plot;
+                CustomPlot_updatePanel(app)
+                
+                app.mainApp.General_I.Plot = app.mainApp.General.Plot;
+                saveGeneralSettings(app)
+    
+                appBackDoor(app.mainApp, app, 'PM-RNI: updateAxes')
+                appBackDoor(app.mainApp, app, 'PM-RNI: updatePlot')
+                appBackDoor(app.mainApp, app, 'ExternalRequest: updateAxes')
+                appBackDoor(app.mainApp, app, 'ExternalRequest: updatePlot')
+            end
 
         end
 
@@ -551,32 +570,35 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         end
 
-        % Value changed function: AutomaticZoom, AutomaticZoomFactor, 
-        % ...and 9 other components
+        % Value changed function: AutomaticZoomFactor, AutomaticZoomMode, 
+        % ...and 10 other components
         function CustomPlot_ParameterValueChanged(app, event)
             
             switch event.Source
                 case app.StationsSize
-                    app.mainApp.General.Plot.Stations.Size             = round(app.StationsSize.Value);
+                    app.mainApp.General.Plot.Stations.Size          = round(app.StationsSize.Value);
 
                 case app.SelectedStationSize
-                    app.mainApp.General.Plot.SelectedStation.Size      = round(app.SelectedStationSize.Value);
+                    app.mainApp.General.Plot.SelectedStation.Size   = round(app.SelectedStationSize.Value);
 
                 case app.PeakSize
-                    app.mainApp.General.Plot.FieldPeak.Size            = round(app.PeakSize.Value);
+                    app.mainApp.General.Plot.FieldPeak.Size         = round(app.PeakSize.Value);
 
                 case app.CircleColor
-                    app.mainApp.General.Plot.CircleRegion.Color        = app.CircleColor.Value;
+                    app.mainApp.General.Plot.CircleRegion.Color     = app.CircleColor.Value;
 
                 case app.CircleFaceAlpha
-                    app.mainApp.General.Plot.CircleRegion.FaceAlpha    = app.CircleFaceAlpha.Value;
+                    app.mainApp.General.Plot.CircleRegion.FaceAlpha = app.CircleFaceAlpha.Value;
 
                 case app.CircleEdgeAlpha
-                    app.mainApp.General.Plot.CircleRegion.EdgeAlpha    = app.CircleEdgeAlpha.Value;
+                    app.mainApp.General.Plot.CircleRegion.EdgeAlpha = app.CircleEdgeAlpha.Value;
 
-                case app.AutomaticZoom
-                    app.mainApp.General.Plot.SelectedStation.AutomaticZoom = app.AutomaticZoom.Value;
-                    if app.AutomaticZoom.Value
+                case app.ZoomOrientation
+                    app.mainApp.General.Plot.GeographicAxes.ZoomOrientation    = app.ZoomOrientation.Value;
+
+                case app.AutomaticZoomMode
+                    app.mainApp.General.Plot.SelectedStation.AutomaticZoomMode = app.AutomaticZoomMode.Value;
+                    if app.AutomaticZoomMode.Value
                         app.AutomaticZoomFactor.Enable = 1;
                     else
                         app.AutomaticZoomFactor.Enable = 0;
@@ -708,7 +730,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create Document
             app.Document = uigridlayout(app.GridLayout);
-            app.Document.ColumnWidth = {325, '1x', 0, 0, 0};
+            app.Document.ColumnWidth = {325, 0, 0, '1x', 0};
             app.Document.RowHeight = {'1x'};
             app.Document.Padding = [5 5 5 5];
             app.Document.Layout.Row = 1;
@@ -906,6 +928,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create CustomPlotRefresh
             app.CustomPlotRefresh = uiimage(app.CustomPlotGrid);
             app.CustomPlotRefresh.ImageClickedFcn = createCallbackFcn(app, @CustomPlot_RefreshImageClicked, true);
+            app.CustomPlotRefresh.Tooltip = {'Retorna às configurações iniciais'};
             app.CustomPlotRefresh.Layout.Row = 1;
             app.CustomPlotRefresh.Layout.Column = 2;
             app.CustomPlotRefresh.VerticalAlignment = 'bottom';
@@ -919,7 +942,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create CustomPlotPanelGrid
             app.CustomPlotPanelGrid = uigridlayout(app.CustomPlotPanel);
             app.CustomPlotPanelGrid.ColumnWidth = {190, 36, 44, 90, '1x'};
-            app.CustomPlotPanelGrid.RowHeight = {22, 22, 22, 22, 22, 22, 22, 22, 1, 22, 22, 22};
+            app.CustomPlotPanelGrid.RowHeight = {22, 22, 22, 22, 22, 22, 22, 22, 22, 1, 22, 22, 22};
             app.CustomPlotPanelGrid.RowSpacing = 5;
             app.CustomPlotPanelGrid.BackgroundColor = [1 1 1];
 
@@ -1104,18 +1127,36 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.CircleEdgeAlpha.Layout.Row = 8;
             app.CircleEdgeAlpha.Layout.Column = 4;
 
-            % Create AutomaticZoom
-            app.AutomaticZoom = uicheckbox(app.CustomPlotPanelGrid);
-            app.AutomaticZoom.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
-            app.AutomaticZoom.Text = 'Habilitar zoom automático em torno da estação/ponto sob análise.';
-            app.AutomaticZoom.FontSize = 11;
-            app.AutomaticZoom.Layout.Row = 10;
-            app.AutomaticZoom.Layout.Column = [1 5];
+            % Create ZoomOrientationLabel
+            app.ZoomOrientationLabel = uilabel(app.CustomPlotPanelGrid);
+            app.ZoomOrientationLabel.WordWrap = 'on';
+            app.ZoomOrientationLabel.FontSize = 10;
+            app.ZoomOrientationLabel.Layout.Row = 9;
+            app.ZoomOrientationLabel.Layout.Column = 1;
+            app.ZoomOrientationLabel.Text = 'Orientação do zoom:';
+
+            % Create ZoomOrientation
+            app.ZoomOrientation = uidropdown(app.CustomPlotPanelGrid);
+            app.ZoomOrientation.Items = {'measures', 'stations/points'};
+            app.ZoomOrientation.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.ZoomOrientation.FontSize = 11;
+            app.ZoomOrientation.BackgroundColor = [1 1 1];
+            app.ZoomOrientation.Layout.Row = 9;
+            app.ZoomOrientation.Layout.Column = [2 4];
+            app.ZoomOrientation.Value = 'measures';
+
+            % Create AutomaticZoomMode
+            app.AutomaticZoomMode = uicheckbox(app.CustomPlotPanelGrid);
+            app.AutomaticZoomMode.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
+            app.AutomaticZoomMode.Text = 'Habilitar zoom automático em torno da estação/ponto sob análise.';
+            app.AutomaticZoomMode.FontSize = 11;
+            app.AutomaticZoomMode.Layout.Row = 11;
+            app.AutomaticZoomMode.Layout.Column = [1 5];
 
             % Create AutomaticZoomFactorLabel
             app.AutomaticZoomFactorLabel = uilabel(app.CustomPlotPanelGrid);
             app.AutomaticZoomFactorLabel.FontSize = 10;
-            app.AutomaticZoomFactorLabel.Layout.Row = 11;
+            app.AutomaticZoomFactorLabel.Layout.Row = 12;
             app.AutomaticZoomFactorLabel.Layout.Column = 1;
             app.AutomaticZoomFactorLabel.Text = {'Fator do zoom: '; '(distância referência)'};
 
@@ -1127,7 +1168,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.AutomaticZoomFactor.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_ParameterValueChanged, true);
             app.AutomaticZoomFactor.FontSize = 11;
             app.AutomaticZoomFactor.Enable = 'off';
-            app.AutomaticZoomFactor.Layout.Row = 11;
+            app.AutomaticZoomFactor.Layout.Row = 12;
             app.AutomaticZoomFactor.Layout.Column = [2 3];
             app.AutomaticZoomFactor.Value = 1;
 
@@ -1351,8 +1392,8 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create ExternalRequestGrid
             app.ExternalRequestGrid = uigridlayout(app.ExternalRequestPanel);
-            app.ExternalRequestGrid.ColumnWidth = {310, 90};
-            app.ExternalRequestGrid.RowHeight = {22, 22};
+            app.ExternalRequestGrid.ColumnWidth = {310, 90, '1x'};
+            app.ExternalRequestGrid.RowHeight = {22, 22, 1, 22, 22};
             app.ExternalRequestGrid.RowSpacing = 5;
             app.ExternalRequestGrid.BackgroundColor = [1 1 1];
 
@@ -1388,6 +1429,22 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.ExternalRequestLevel.Layout.Row = 2;
             app.ExternalRequestLevel.Layout.Column = 2;
             app.ExternalRequestLevel.Value = 14;
+
+            % Create ExternalRequestExportXLSX
+            app.ExternalRequestExportXLSX = uicheckbox(app.ExternalRequestGrid);
+            app.ExternalRequestExportXLSX.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
+            app.ExternalRequestExportXLSX.Text = 'Ao exportar a tabela de dados, cria uma segunda aba na planilha com as medidas brutas.';
+            app.ExternalRequestExportXLSX.FontSize = 11;
+            app.ExternalRequestExportXLSX.Layout.Row = 4;
+            app.ExternalRequestExportXLSX.Layout.Column = [1 3];
+
+            % Create ExternalRequestExportKML
+            app.ExternalRequestExportKML = uicheckbox(app.ExternalRequestGrid);
+            app.ExternalRequestExportKML.ValueChangedFcn = createCallbackFcn(app, @Analysis_ParameterValueChanged, true);
+            app.ExternalRequestExportKML.Text = 'Ao exportar a tabela de dados, cria arquivos no formato "kml".';
+            app.ExternalRequestExportKML.FontSize = 11;
+            app.ExternalRequestExportKML.Layout.Row = 5;
+            app.ExternalRequestExportKML.Layout.Column = [1 3];
 
             % Create Toolbar
             app.Toolbar = uigridlayout(app.GridLayout);

@@ -264,10 +264,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card4_stationsOutRoute.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS FORA DA ROTA</p>',                               nStationsOutRoute);
 
             % PLOT
-            prePlot(app)
-            plot_Measures(app)
-            plot_RiskMeasures(app)
-            plot_Stations(app)
+            plot_MeasuresAndPoints(app)
 
             if ~isempty(initialSelection)
                 [~, idxRow] = ismember(initialSelection, app.UITable.UserData);
@@ -312,18 +309,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function prePlot(app)
+        function plot_MeasuresAndPoints(app)
+            % prePlot
             cla(app.UIAxes)
             geolimits(app.UIAxes, 'auto')
             app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
-        end
 
-        %-----------------------------------------------------------------%
-        function plot_Measures(app)
+            % Measures
             if ~isempty(app.measTable)
-                hPlot = geoscatter(app.UIAxes, app.measTable.Latitude, app.measTable.Longitude, [], app.measTable.FieldValue, 'filled', 'DisplayName', 'Medidas', 'Tag', 'Measures');
-                hPlot.DataTipTemplate.DataTipRows(3).Label  = 'Nivel';
-                hPlot.DataTipTemplate.DataTipRows(3).Format = '%0.2f V/m';
+                plot.draw.Measures(app.UIAxes, app.measTable, app.mainApp.General.MonitoringPlan.FieldValue, app.mainApp.General);
 
                 % Abaixo estabelece como limites do eixo os limites atuais,
                 % configurados automaticamente pelo MATLAB. Ao fazer isso,
@@ -331,98 +325,26 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 % estações.
                 plot_AxesDefaultLimits(app, 'measures')
             end
-        end
 
-        %-----------------------------------------------------------------%
-        function plot_RiskMeasures(app)
-            if ~isempty(app.measTable)
-                idxRisk = find(app.measTable.FieldValue > app.mainApp.General.MonitoringPlan.FieldValue);
-
-                if ~isempty(idxRisk)
-                    latitudeArray  = app.measTable.Latitude(idxRisk);
-                    longitudeArray = app.measTable.Longitude(idxRisk);
-    
-                    geoscatter(app.UIAxes, latitudeArray, longitudeArray,                      ...
-                        'Marker', '^', 'MarkerFaceColor', app.mainApp.General.Plot.RiskMeasures.Color, ...
-                        'MarkerEdgeColor', app.mainApp.General.Plot.RiskMeasures.Color,                ...
-                        'SizeData',        app.mainApp.General.Plot.RiskMeasures.Size,                 ...
-                        'DisplayName',     sprintf('> %.0f V/m', app.mainApp.General.MonitoringPlan.FieldValue), ...
-                        'Tag',             'RiskMeasures');
-                end
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function plot_Stations(app)
+            % Stations/Points
             if ~isempty(app.UITable.Data)
                 idxStations    = app.UITable.UserData;
-                latitudeArray  = app.mainApp.stationTable.Latitude(idxStations);
-                longitudeArray = app.mainApp.stationTable.Longitude(idxStations);
+                refPointsTable = app.mainApp.stationTable(idxStations, :);
 
-                geoscatter(app.UIAxes, latitudeArray, longitudeArray,                          ...
-                    'Marker', '^', 'MarkerFaceColor', app.mainApp.General.Plot.Stations.Color, ...
-                    'MarkerEdgeColor', app.mainApp.General.Plot.Stations.Color,                ...
-                    'SizeData',        app.mainApp.General.Plot.Stations.Size,                 ...
-                    'DisplayName',     'Estações de referência PM-RNI',                        ...
-                    'Tag',             'Stations');
+                plot.draw.Points(app.UIAxes, refPointsTable, 'Estações de referência PM-RNI', app.mainApp.General)
             end
-
             plot_AxesDefaultLimits(app, 'stations/points')
         end
 
         %-----------------------------------------------------------------%
-        function plot_SelectedStation(app)
-            delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedStation', '-or', 'Tag', 'FieldPeak'))
+        function plot_SelectedPoint(app)
+            delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedPoint'))
 
             if ~isempty(app.UITable.Selection)
-                % (a) Estação selecionada
-                idxSelectedStation = app.UITable.UserData(app.UITable.Selection);
-                stationLatitude    = app.mainApp.stationTable.Latitude(idxSelectedStation);
-                stationLongitude   = app.mainApp.stationTable.Longitude(idxSelectedStation);
-                stationNumber      = sprintf('Estação nº %d', app.mainApp.stationTable.("N° estacao")(idxSelectedStation));
+                idxSelectedPoint   = app.UITable.UserData(app.UITable.Selection);
+                selectedPointTable = app.mainApp.stationTable(idxSelectedPoint, :);
 
-                geoscatter(app.UIAxes, stationLatitude, stationLongitude,      ...
-                    'Marker',          '^',                                    ...
-                    'MarkerFaceColor', app.mainApp.General.Plot.SelectedStation.Color, ...
-                    'MarkerEdgeColor', app.mainApp.General.Plot.SelectedStation.Color, ...
-                    'SizeData',        app.mainApp.General.Plot.SelectedStation.Size,  ...
-                    'DisplayName',     stationNumber,                          ...
-                    'Tag',             'SelectedStation');
-    
-                % (b) Círculo entorno do ponto
-                drawcircle(app.UIAxes,                                                 ...
-                    'Position',        [stationLatitude, stationLongitude],            ...
-                    'Radius',          km2deg(app.mainApp.General.MonitoringPlan.Distance_km), ...
-                    'Color',           app.mainApp.General.Plot.CircleRegion.Color,            ...
-                    'FaceAlpha',       app.mainApp.General.Plot.CircleRegion.FaceAlpha,        ...
-                    'EdgeAlpha',       app.mainApp.General.Plot.CircleRegion.EdgeAlpha,        ...
-                    'FaceSelectable',  0, 'InteractionsAllowed', 'none',               ...
-                    'Tag',            'SelectedStation');
-    
-                % (c) Maior nível em torno da estação
-                maxFieldValue      = app.mainApp.stationTable.maxFieldValue(idxSelectedStation);
-                if maxFieldValue > 0
-                    maxFieldLatitude   = app.mainApp.stationTable.maxFieldLatitude(idxSelectedStation);
-                    maxFieldLongitude  = app.mainApp.stationTable.maxFieldLongitude(idxSelectedStation);
-    
-                    geoscatter(app.UIAxes, maxFieldLatitude, maxFieldLongitude, maxFieldValue, ...
-                        'Marker',          'square',                          ...
-                        'MarkerFaceColor', app.mainApp.General.Plot.FieldPeak.Color,  ...
-                        'SizeData',        app.mainApp.General.Plot.FieldPeak.Size,   ...
-                        'DisplayName',     'Maior nível em torno da estação', ...
-                        'Tag',             'FieldPeak');
-                end
-
-                % Zoom automático em torno da estação
-                if app.mainApp.General.Plot.SelectedStation.AutomaticZoom
-                    arclen         = km2deg(app.mainApp.General.Plot.SelectedStation.AutomaticZoomFactor * app.mainApp.General.MonitoringPlan.Distance_km);
-                    [~, lim_long1] = reckon(stationLatitude, stationLongitude, arclen, -90);
-                    [~, lim_long2] = reckon(stationLatitude, stationLongitude, arclen,  90);    
-                    [lim_lat1, ~]  = reckon(stationLatitude, stationLongitude, arclen, 180);
-                    [lim_lat2, ~]  = reckon(stationLatitude, stationLongitude, arclen,   0);
-        
-                    geolimits(app.UIAxes, [lim_lat1, lim_lat2], [lim_long1, lim_long2]);
-                end
+                plot.draw.SelectedPoint(app.UIAxes, selectedPointTable, app.mainApp.General, class(app))
             end
         end
 
@@ -896,15 +818,19 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Selection changed function: UITable
         function UITableSelectionChanged(app, event)
             
-            if exist('event', 'var') && ~isempty(event.PreviousSelection) && (event.Selection == event.PreviousSelection)
+            if exist('event', 'var') && ~isempty(event.PreviousSelection) && isequal(event.Selection, event.PreviousSelection)
                 return
             end
 
-            if isempty(app.UITable.ContextMenu)
-                app.UITable.ContextMenu = app.ContextMenu;
+            if isempty(event.Selection)
+                app.UITable.ContextMenu = [];
+            else
+                if isempty(app.UITable.ContextMenu)
+                    app.UITable.ContextMenu = app.ContextMenu;
+                end
             end
 
-            plot_SelectedStation(app)
+            plot_SelectedPoint(app)
             
         end
 

@@ -21,7 +21,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         AddNewPointCancel            matlab.ui.control.Image
         AddNewPointConfirm           matlab.ui.control.Image
         AddNewPointMode              matlab.ui.control.Image
-        AddPointsFromFile            matlab.ui.control.Image
         TreePointsLabel              matlab.ui.control.Label
         TreeFileLocations            matlab.ui.container.CheckBoxTree
         config_geoAxesLabel          matlab.ui.control.Label
@@ -38,9 +37,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         axesTool_RegionZoom          matlab.ui.control.Image
         axesTool_RestoreView         matlab.ui.control.Image
         plotPanel                    matlab.ui.container.Panel
-        filter_ContextMenu           matlab.ui.container.ContextMenu
-        filter_delButton             matlab.ui.container.Menu
-        filter_delAllButton          matlab.ui.container.Menu
+        ContextMenu                  matlab.ui.container.ContextMenu
+        DeletePoint                  matlab.ui.container.Menu
     end
 
     
@@ -89,6 +87,16 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function jsBackDoor_Initialization(app)
             app.jsBackDoor.HTMLSource = ccTools.fcn.jsBackDoorHTMLSource();
+            app.jsBackDoor.HTMLEventReceivedFcn = @(~, evt)jsBackDoor_Listener(app, evt);
+        end
+
+        %-----------------------------------------------------------------%
+        function jsBackDoor_Listener(app, event)
+            switch event.HTMLEventName
+                case 'app.TreePoints'
+                    DeleteSelectedPoint(app, struct('ContextObject', app.TreePoints))
+            end
+            drawnow
         end
 
         %-----------------------------------------------------------------%
@@ -113,6 +121,9 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                                                                                    'classAttributes',  'font-size: 10px; white-space: pre-wrap; margin-bottom: 5px;'));
 
             ccTools.compCustomizationV2(app.jsBackDoor, app.axesToolbarGrid, 'borderBottomLeftRadius', '5px', 'borderBottomRightRadius', '5px')
+
+            app.TreePoints.UserData = struct(app.TreePoints).Controller.ViewModel.Id;
+            sendEventToHTMLSource(app.jsBackDoor, 'addKeyDownListener', struct('componentName', 'app.TreePoints', 'componentDataTag', app.TreePoints.UserData, 'keyEvents', ["Delete", "Backspace"]))
         end
     end
 
@@ -236,16 +247,13 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             layout_TableStyle(app)
 
             % PLOT
-            prePlot(app)
-            plot_Measures(app)
-            plot_RiskMeasures(app)
-            plot_Points(app)
+            plot_MeasuresAndPoints(app)
 
             if ~isempty(initialSelection)
-                [~, idxRow] = ismember(initialSelection, app.UITable.UserData);
+                [~, idxRow] = ismember(initialSelection, app.UITable.Data.ID);
                 if idxRow
                     app.UITable.Selection = idxRow;
-                    UITableSelectionChanged(app, struct('PreviousSelection', 0, 'Selection', idxRow))
+                    UITableSelectionChanged(app, struct('PreviousSelection', [], 'Selection', idxRow))
                 end
             end
 
@@ -267,7 +275,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         function initialSelection = updateTable(app)
             initialSelection = [];
             if ~isempty(app.UITable.Selection)
-                initialSelection = app.UITable.Selection;
+                initialSelection = app.UITable.Data.ID{app.UITable.Selection};
             end
 
             table2Render = app.mainApp.pointsTable(:, {'ID',                    ...
@@ -283,18 +291,15 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function prePlot(app)
+        function plot_MeasuresAndPoints(app)
+            % prePlot
             cla(app.UIAxes)
             geolimits(app.UIAxes, 'auto')
             app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
-        end
 
-        %-----------------------------------------------------------------%
-        function plot_Measures(app)
+            % Measures
             if ~isempty(app.measTable)
-                hPlot = geoscatter(app.UIAxes, app.measTable.Latitude, app.measTable.Longitude, [], app.measTable.FieldValue, 'filled', 'DisplayName', 'Medidas', 'Tag', 'Measures');
-                hPlot.DataTipTemplate.DataTipRows(3).Label  = 'Nivel';
-                hPlot.DataTipTemplate.DataTipRows(3).Format = '%0.2f V/m';
+                plot.draw.Measures(app.UIAxes, app.measTable, app.mainApp.General.MonitoringPlan.FieldValue, app.mainApp.General);
 
                 % Abaixo estabelece como limites do eixo os limites atuais,
                 % configurados automaticamente pelo MATLAB. Ao fazer isso,
@@ -302,96 +307,25 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 % estações.
                 plot_AxesDefaultLimits(app, 'measures')
             end
-        end
 
-        %-----------------------------------------------------------------%
-        function plot_RiskMeasures(app)
-            if ~isempty(app.measTable)
-                idxRisk = find(app.measTable.FieldValue > app.mainApp.General.MonitoringPlan.FieldValue);
-
-                if ~isempty(idxRisk)
-                    latitudeArray  = app.measTable.Latitude(idxRisk);
-                    longitudeArray = app.measTable.Longitude(idxRisk);
-    
-                    geoscatter(app.UIAxes, latitudeArray, longitudeArray,                      ...
-                        'Marker', '^', 'MarkerFaceColor', app.mainApp.General.Plot.RiskMeasures.Color, ...
-                        'MarkerEdgeColor', app.mainApp.General.Plot.RiskMeasures.Color,                ...
-                        'SizeData',        app.mainApp.General.Plot.RiskMeasures.Size,                 ...
-                        'DisplayName',     sprintf('> %.0f V/m', app.mainApp.General.MonitoringPlan.FieldValue), ...
-                        'Tag',             'RiskMeasures');
-                end
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function plot_Points(app)            
+            % Stations/Points
             if ~isempty(app.UITable.Data)
-                latitudeArray  = app.mainApp.pointsTable.Latitude;
-                longitudeArray = app.mainApp.pointsTable.Longitude;
+                refPointsTable = app.mainApp.pointsTable;
 
-                geoscatter(app.UIAxes, latitudeArray, longitudeArray,                          ...
-                    'Marker', '^', 'MarkerFaceColor', app.mainApp.General.Plot.Stations.Color, ...
-                    'MarkerEdgeColor', app.mainApp.General.Plot.Stations.Color,                ...
-                    'SizeData',        app.mainApp.General.Plot.Stations.Size,                 ...
-                    'DisplayName',     'Pontos críticos',                                      ...
-                    'Tag',             'Points');
+                plot.draw.Points(app.UIAxes, refPointsTable, 'Pontos críticos', app.mainApp.General)
             end
-
             plot_AxesDefaultLimits(app, 'stations/points')
         end
+
         %-----------------------------------------------------------------%
         function plot_SelectedPoint(app)
-            delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedPoint', '-or', 'Tag', 'FieldPeak'))
+            delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedPoint'))
 
             if ~isempty(app.UITable.Selection)
-                % (a) Ponto selecionado
                 idxSelectedPoint   = app.UITable.Selection;
-                stationLatitude    = app.mainApp.pointsTable.Latitude(idxSelectedPoint);
-                stationLongitude   = app.mainApp.pointsTable.Longitude(idxSelectedPoint);
-                stationNumber      = sprintf('Ponto ID %s', app.mainApp.pointsTable.ID{idxSelectedPoint});
+                selectedPointTable = app.mainApp.pointsTable(idxSelectedPoint, :);
 
-                geoscatter(app.UIAxes, stationLatitude, stationLongitude,              ...
-                    'Marker',          '^',                                            ...
-                    'MarkerFaceColor', app.mainApp.General.Plot.SelectedStation.Color, ...
-                    'MarkerEdgeColor', app.mainApp.General.Plot.SelectedStation.Color, ...
-                    'SizeData',        app.mainApp.General.Plot.SelectedStation.Size,  ...
-                    'DisplayName',     stationNumber,                                  ...
-                    'Tag',             'SelectedPoint');
-    
-                % (b) Círculo entorno da estação
-                drawcircle(app.UIAxes,                                                          ...
-                    'Position',        [stationLatitude, stationLongitude],                     ...
-                    'Radius',          km2deg(app.mainApp.General.ExternalRequest.Distance_km), ...
-                    'Color',           app.mainApp.General.Plot.CircleRegion.Color,             ...
-                    'FaceAlpha',       app.mainApp.General.Plot.CircleRegion.FaceAlpha,         ...
-                    'EdgeAlpha',       app.mainApp.General.Plot.CircleRegion.EdgeAlpha,         ...
-                    'FaceSelectable',  0, 'InteractionsAllowed', 'none',                        ...
-                    'Tag',            'SelectedPoint');
-    
-                % (c) Maior nível em torno da estação
-                maxFieldValue      = app.mainApp.pointsTable.maxFieldValue(idxSelectedPoint);
-                if maxFieldValue > 0
-                    maxFieldLatitude   = app.mainApp.pointsTable.maxFieldLatitude(idxSelectedPoint);
-                    maxFieldLongitude  = app.mainApp.pointsTable.maxFieldLongitude(idxSelectedPoint);
-    
-                    geoscatter(app.UIAxes, maxFieldLatitude, maxFieldLongitude, maxFieldValue, ...
-                        'Marker',          'square',                                           ...
-                        'MarkerFaceColor', app.mainApp.General.Plot.FieldPeak.Color,           ...
-                        'SizeData',        app.mainApp.General.Plot.FieldPeak.Size,            ...
-                        'DisplayName',     'Maior nível em torno da estação',                  ...
-                        'Tag',             'FieldPeak');
-                end
-
-                % Zoom automático em torno da estação
-                if app.mainApp.General.Plot.SelectedStation.AutomaticZoom
-                    arclen         = km2deg(app.mainApp.General.Plot.SelectedStation.AutomaticZoomFactor * app.mainApp.General.MonitoringPlan.Distance_km);
-                    [~, lim_long1] = reckon(stationLatitude, stationLongitude, arclen, -90);
-                    [~, lim_long2] = reckon(stationLatitude, stationLongitude, arclen,  90);    
-                    [lim_lat1, ~]  = reckon(stationLatitude, stationLongitude, arclen, 180);
-                    [lim_lat2, ~]  = reckon(stationLatitude, stationLongitude, arclen,   0);
-        
-                    geolimits(app.UIAxes, [lim_lat1, lim_lat2], [lim_long1, lim_long2]);
-                end
+                plot.draw.SelectedPoint(app.UIAxes, selectedPointTable, app.mainApp.General, class(app))
             end
         end
 
@@ -517,7 +451,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             end
 
             for ii = 1:height(app.mainApp.pointsTable)
-                uitreenode(app.TreePoints, 'Text', app.mainApp.pointsTable.ID{ii});
+                uitreenode(app.TreePoints, 'Text', app.mainApp.pointsTable.ID{ii}, 'NodeData', ii, 'ContextMenu', app.ContextMenu);
             end
         end
 
@@ -562,8 +496,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                             case 'ExternalRequest: updateAnalysis'
                                 app.UITable.ColumnName{4} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.ExternalRequest.FieldValue);
 
-                                if ~isempty(app.mainApp.pointTable)
-                                    app.mainApp.pointTable.AnalysisFlag(:) = false;
+                                if ~isempty(app.mainApp.pointsTable)
+                                    app.mainApp.pointsTable.AnalysisFlag(:) = false;
                                     Analysis(app)
                                 end
 
@@ -661,7 +595,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % VALIDAÇÕES
             % (a) Inicialmente, verifica se o campo "Justificativa" foi devidamente 
             %     preenchido...
-            if ~isempty(layout_searchUnexpectedTableValues(app, 'TableExport'))
+            if ~isempty(layout_searchUnexpectedTableValues(app))
                 msgQuestion   = ['Há registro de pontos críticos sob análise para os quais '                             ...
                                  'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
                                  'o campo "Justificativa".'                                                              ...
@@ -787,22 +721,29 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         % Selection changed function: UITable
         function UITableSelectionChanged(app, event)
             
+            if exist('event', 'var') && ~isempty(event.PreviousSelection) && isequal(event.Selection, event.PreviousSelection)
+                return
+            end
+
+            if isempty(event.Selection)
+                app.UITable.ContextMenu = [];
+                app.TreePoints.SelectedNodes = [];
+            else
+                if isempty(app.UITable.ContextMenu)
+                    app.UITable.ContextMenu = app.ContextMenu;
+                end
+                app.TreePoints.SelectedNodes = app.TreePoints.Children(event.Selection);
+            end
+
             plot_SelectedPoint(app)
 
         end
 
         % Image clicked function: AddNewPointCancel, AddNewPointConfirm, 
-        % ...and 2 other components
+        % ...and 1 other component
         function AddNewPointEditionModeCallbacks(app, event)
             
             switch event.Source
-                case app.AddPointsFromFile
-                    % idxStation = selectedStation(app);
-                    % app.Latitude.Value  = app.mainApp.stationTable.("Lat")(idxStation);
-                    % app.Longitude.Value = app.mainApp.stationTable.("Long")(idxStation);
-                    % 
-                    % FormValueChanged(app, struct('Source', event.Source))
-
                 case app.AddNewPointMode
                     app.AddNewPointMode.UserData = ~app.AddNewPointMode.UserData;
                     
@@ -905,6 +846,50 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             
             focus(app.NewPointLongitude)
             
+        end
+
+        % Menu selected function: DeletePoint
+        function DeleteSelectedPoint(app, event)
+            
+            idxPoint = [];
+
+            if ismember(app.TreePoints, [event.ContextObject, event.ContextObject.Parent])
+                if ~isempty(app.TreePoints.SelectedNodes)
+                    idxPoint = app.TreePoints.SelectedNodes.NodeData;
+                end
+            elseif event.ContextObject == app.UITable
+                idxPoint = app.UITable.Selection;
+            end
+
+            if ~isempty(idxPoint)
+                app.mainApp.pointsTable(idxPoint, :) = [];
+
+                % ATUALIZA ÁRVORE DE PONTOS CRÍTICOS
+                layout_TreePointsBuilding(app)
+    
+                % ANÁLISA DOS PONTOS CRÍTICOS, ATUALIZANDO TABELA E PLOT
+                Analysis(app)
+            end
+
+        end
+
+        % Selection changed function: TreePoints
+        function TreePointsSelectionChanged(app, event)
+            
+            idxPoint = [];
+            if ~isempty(app.TreePoints.SelectedNodes)
+                idxPoint = app.TreePoints.SelectedNodes.NodeData;
+            end
+
+            % Nessa operação, o foco sai de app.TreePoints e vai pra app.UITable.
+            previousSelection = app.UITable.Selection;
+            app.UITable.Selection = idxPoint;
+            drawnow
+
+            UITableSelectionChanged(app, struct('PreviousSelection', previousSelection, 'Selection', idxPoint))
+            
+            focus(app.TreePoints)
+
         end
     end
 
@@ -1040,7 +1025,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Create GridLayout2
             app.GridLayout2 = uigridlayout(app.GridLayout);
-            app.GridLayout2.ColumnWidth = {'1x', 16, 16, 16, 16};
+            app.GridLayout2.ColumnWidth = {'1x', 16, 16, 16};
             app.GridLayout2.RowHeight = {22, 32, '1x', 32, 170, 175};
             app.GridLayout2.ColumnSpacing = 5;
             app.GridLayout2.RowSpacing = 5;
@@ -1058,7 +1043,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.play_ControlsTab1Grid_2.Padding = [2 2 2 2];
             app.play_ControlsTab1Grid_2.Tag = 'COLORLOCKED';
             app.play_ControlsTab1Grid_2.Layout.Row = 1;
-            app.play_ControlsTab1Grid_2.Layout.Column = [1 5];
+            app.play_ControlsTab1Grid_2.Layout.Column = [1 4];
             app.play_ControlsTab1Grid_2.BackgroundColor = [0.749 0.749 0.749];
 
             % Create play_ControlsTab1Image_2
@@ -1089,7 +1074,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.TreeFileLocations = uitree(app.GridLayout2, 'checkbox');
             app.TreeFileLocations.FontSize = 11;
             app.TreeFileLocations.Layout.Row = 3;
-            app.TreeFileLocations.Layout.Column = [1 5];
+            app.TreeFileLocations.Layout.Column = [1 4];
 
             % Assign Checked Nodes
             app.TreeFileLocations.CheckedNodesChangedFcn = createCallbackFcn(app, @TreeFileLocationsCheckedNodesChanged, true);
@@ -1103,21 +1088,12 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.TreePointsLabel.Interpreter = 'html';
             app.TreePointsLabel.Text = {'PONTOS CRÍTICOS SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionados àquilo que fora pedido pelo demandante)</font>'};
 
-            % Create AddPointsFromFile
-            app.AddPointsFromFile = uiimage(app.GridLayout2);
-            app.AddPointsFromFile.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
-            app.AddPointsFromFile.Tooltip = {'Inclui pontos a partir de arquivo'};
-            app.AddPointsFromFile.Layout.Row = 4;
-            app.AddPointsFromFile.Layout.Column = 2;
-            app.AddPointsFromFile.VerticalAlignment = 'bottom';
-            app.AddPointsFromFile.ImageSource = 'OpenFile_36x36.png';
-
             % Create AddNewPointMode
             app.AddNewPointMode = uiimage(app.GridLayout2);
             app.AddNewPointMode.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
             app.AddNewPointMode.Tooltip = {'Habilita painel de inclusão de ponto'};
             app.AddNewPointMode.Layout.Row = 4;
-            app.AddNewPointMode.Layout.Column = 3;
+            app.AddNewPointMode.Layout.Column = 2;
             app.AddNewPointMode.VerticalAlignment = 'bottom';
             app.AddNewPointMode.ImageSource = 'addFiles_32.png';
 
@@ -1127,7 +1103,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.AddNewPointConfirm.Enable = 'off';
             app.AddNewPointConfirm.Tooltip = {'Confirma edição'};
             app.AddNewPointConfirm.Layout.Row = 4;
-            app.AddNewPointConfirm.Layout.Column = 4;
+            app.AddNewPointConfirm.Layout.Column = 3;
             app.AddNewPointConfirm.VerticalAlignment = 'bottom';
             app.AddNewPointConfirm.ImageSource = 'Ok_32Green.png';
 
@@ -1137,14 +1113,14 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.AddNewPointCancel.Enable = 'off';
             app.AddNewPointCancel.Tooltip = {'Cancela edição'};
             app.AddNewPointCancel.Layout.Row = 4;
-            app.AddNewPointCancel.Layout.Column = 5;
+            app.AddNewPointCancel.Layout.Column = 4;
             app.AddNewPointCancel.VerticalAlignment = 'bottom';
             app.AddNewPointCancel.ImageSource = 'Delete_32Red.png';
 
             % Create AddNewPointPanel
             app.AddNewPointPanel = uipanel(app.GridLayout2);
             app.AddNewPointPanel.Layout.Row = 5;
-            app.AddNewPointPanel.Layout.Column = [1 5];
+            app.AddNewPointPanel.Layout.Column = [1 4];
 
             % Create AddNewPointGrid
             app.AddNewPointGrid = uigridlayout(app.AddNewPointPanel);
@@ -1246,20 +1222,18 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Create TreePoints
             app.TreePoints = uitree(app.GridLayout2);
+            app.TreePoints.SelectionChangedFcn = createCallbackFcn(app, @TreePointsSelectionChanged, true);
             app.TreePoints.FontSize = 11;
             app.TreePoints.Layout.Row = 6;
-            app.TreePoints.Layout.Column = [1 5];
+            app.TreePoints.Layout.Column = [1 4];
 
-            % Create filter_ContextMenu
-            app.filter_ContextMenu = uicontextmenu(app.UIFigure);
+            % Create ContextMenu
+            app.ContextMenu = uicontextmenu(app.UIFigure);
 
-            % Create filter_delButton
-            app.filter_delButton = uimenu(app.filter_ContextMenu);
-            app.filter_delButton.Text = 'Excluir';
-
-            % Create filter_delAllButton
-            app.filter_delAllButton = uimenu(app.filter_ContextMenu);
-            app.filter_delAllButton.Text = 'Excluir todos';
+            % Create DeletePoint
+            app.DeletePoint = uimenu(app.ContextMenu);
+            app.DeletePoint.MenuSelectedFcn = createCallbackFcn(app, @DeleteSelectedPoint, true);
+            app.DeletePoint.Text = 'Excluir';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
