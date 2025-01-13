@@ -87,6 +87,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function jsBackDoor_Initialization(app)
             if app.isDocked
+                delete(app.jsBackDoor)
                 app.jsBackDoor = app.mainApp.jsBackDoor;
             else
                 app.jsBackDoor.HTMLSource = appUtil.jsBackDoorHTMLSource();

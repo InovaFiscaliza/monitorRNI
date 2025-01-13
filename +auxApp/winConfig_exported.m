@@ -136,6 +136,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function jsBackDoor_Initialization(app)
             if app.isDocked
+                delete(app.jsBackDoor)
                 app.jsBackDoor = app.mainApp.jsBackDoor;
             else
                 app.jsBackDoor.HTMLSource = ccTools.fcn.jsBackDoorHTMLSource();
@@ -734,7 +735,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create Document
             app.Document = uigridlayout(app.GridLayout);
-            app.Document.ColumnWidth = {325, 0, 0, '1x', 0};
+            app.Document.ColumnWidth = {325, '1x', 0, 0, 0};
             app.Document.RowHeight = {'1x'};
             app.Document.Padding = [5 5 5 5];
             app.Document.Layout.Row = 1;
