@@ -123,8 +123,12 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                             % ...
                     end
 
-                case 'app.file_Tree'
+                case 'winMonitorRNI.file_Tree'
                     file_ContextMenu_delTreeNodeSelected(app)
+
+                case 'auxApp.winExternalRequest.TreePoints'
+                    hExternalRequest = auxAppHandle(app, "EXTERNALREQUEST");
+                    appBackDoor(hExternalRequest, app, 'ExternalRequest: DeletePoint')
             end
             drawnow
         end
@@ -163,7 +167,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                         switch tabIndex
                             case 1 % FILE
                                 app.file_Tree.UserData = struct(app.file_Tree).Controller.ViewModel.Id;
-                                sendEventToHTMLSource(app.jsBackDoor, 'addKeyDownListener', struct('componentName', 'app.file_Tree', 'componentDataTag', app.file_Tree.UserData, 'keyEvents', ["Delete", "Backspace"]))
+                                sendEventToHTMLSource(app.jsBackDoor, 'addKeyDownListener', struct('componentName', 'winMonitorRNI.file_Tree', 'componentDataTag', app.file_Tree.UserData, 'keyEvents', ["Delete", "Backspace"]))
 
                             otherwise
                                 % ...

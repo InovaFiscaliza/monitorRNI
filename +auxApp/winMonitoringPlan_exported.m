@@ -78,7 +78,11 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % JSBACKDOOR
         %-----------------------------------------------------------------%
         function jsBackDoor_Initialization(app)
-            app.jsBackDoor.HTMLSource = appUtil.jsBackDoorHTMLSource();
+            if app.isDocked
+                app.jsBackDoor = app.mainApp.jsBackDoor;
+            else
+                app.jsBackDoor.HTMLSource = appUtil.jsBackDoorHTMLSource();
+            end
         end
 
         %-----------------------------------------------------------------%
@@ -87,20 +91,20 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 app.progressDialog = app.mainApp.progressDialog;
             else
                 app.progressDialog = ccTools.ProgressDialog(app.jsBackDoor);
+
+                sendEventToHTMLSource(app.jsBackDoor, 'htmlClassCustomization', struct('className',        'body',                           ...
+                                                                                       'classAttributes', ['--tabButton-border-color: #fff;' ...
+                                                                                                           '--tabContainer-border-color: #fff;']));
+    
+                sendEventToHTMLSource(app.jsBackDoor, 'htmlClassCustomization', struct('className',        '.mw-theme-light',                                                   ...
+                                                                                       'classAttributes', ['--mw-backgroundColor-dataWidget-selected: rgb(180 222 255 / 45%); ' ...
+                                                                                                           '--mw-backgroundColor-selected: rgb(180 222 255 / 45%); '            ...
+                                                                                                           '--mw-backgroundColor-selectedFocus: rgb(180 222 255 / 45%);'        ...
+                                                                                                           '--mw-backgroundColor-tab: #fff;']));
+    
+                sendEventToHTMLSource(app.jsBackDoor, 'htmlClassCustomization', struct('className',        '.mw-default-header-cell', ...
+                                                                                       'classAttributes',  'font-size: 10px; white-space: pre-wrap; margin-bottom: 5px;'));
             end
-
-            sendEventToHTMLSource(app.jsBackDoor, 'htmlClassCustomization', struct('className',        'body',                           ...
-                                                                                   'classAttributes', ['--tabButton-border-color: #fff;' ...
-                                                                                                       '--tabContainer-border-color: #fff;']));
-
-            sendEventToHTMLSource(app.jsBackDoor, 'htmlClassCustomization', struct('className',        '.mw-theme-light',                                                   ...
-                                                                                   'classAttributes', ['--mw-backgroundColor-dataWidget-selected: rgb(180 222 255 / 45%); ' ...
-                                                                                                       '--mw-backgroundColor-selected: rgb(180 222 255 / 45%); '            ...
-                                                                                                       '--mw-backgroundColor-selectedFocus: rgb(180 222 255 / 45%);'        ...
-                                                                                                       '--mw-backgroundColor-tab: #fff;']));
-
-            sendEventToHTMLSource(app.jsBackDoor, 'htmlClassCustomization', struct('className',        '.mw-default-header-cell', ...
-                                                                                   'classAttributes',  'font-size: 10px; white-space: pre-wrap; margin-bottom: 5px;'));
 
             ccTools.compCustomizationV2(app.jsBackDoor, app.axesToolbarGrid, 'borderBottomLeftRadius', '5px', 'borderBottomRightRadius', '5px')
         end
@@ -270,7 +274,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 [~, idxRow] = ismember(initialSelection, app.UITable.UserData);
                 if idxRow
                     app.UITable.Selection = idxRow;
-                    UITableSelectionChanged(app, struct('PreviousSelection', 0, 'Selection', idxRow))
+                    UITableSelectionChanged(app, struct('PreviousSelection', [], 'Selection', idxRow))
                 end
             end
 
@@ -507,6 +511,20 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
+        function createPopUpContainer(app)
+            if isempty(app.popupContainer)
+                popupContainerGrid = uigridlayout(app.UIFigure, [1, 1], "BackgroundColor", "white", "ColumnWidth", {'1x', 540, '1x'}, "RowHeight", {'1x', 440, '1x'}, "Visible", "off");
+                app.popupContainer = uipanel(popupContainerGrid, "Title", "");
+                app.popupContainer.Layout.Row = 2;
+                app.popupContainer.Layout.Column = 2;
+                drawnow
+
+                ccTools.compCustomizationV2(app.jsBackDoor, popupContainerGrid, 'backgroundColor', 'rgba(255,255,255,0.65)')
+                sendEventToHTMLSource(app.jsBackDoor, "panelDialog", struct('componentDataTag', struct(app.popupContainer).Controller.ViewModel.Id))
+            end
+        end
+
+        %-----------------------------------------------------------------%
         function [idxStation, idxRow] = selectedStation(app)
             idxRow     = app.UITable.Selection;
             idxStation = app.UITable.UserData(idxRow);
@@ -594,7 +612,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                     app.UITable.Selection = newRowSelection;
                                     scroll(app.UITable, 'row', newRowSelection)
 
-                                    UITableSelectionChanged(app)
+                                    UITableSelectionChanged(app, struct('PreviousSelection', [], 'Selection', newRowSelection))
 
                                 case 'ListOfLocationChanged'
                                     Analysis(app)
@@ -840,17 +858,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             if ~isempty(app.UITable.Selection)
                 app.progressDialog.Visible = 'visible';
 
-                if isempty(app.popupContainer)
-                    popupContainerGrid = uigridlayout(app.UIFigure, [1, 1], "BackgroundColor", "white", "ColumnWidth", {'1x', 540, '1x'}, "RowHeight", {'1x', 440, '1x'}, "Visible", "off");
-                    app.popupContainer = uipanel(popupContainerGrid, "Title", "");
-                    app.popupContainer.Layout.Row = 2;
-                    app.popupContainer.Layout.Column = 2;
-                    drawnow
-
-                    ccTools.compCustomizationV2(app.jsBackDoor, popupContainerGrid, 'backgroundColor', 'rgba(255,255,255,0.65)')
-                    sendEventToHTMLSource(app.jsBackDoor, "panelDialog", struct('componentDataTag', struct(app.popupContainer).Controller.ViewModel.Id))
-                end
-
+                createPopUpContainer(app)
                 auxApp.dockStationInfo_exported(app.popupContainer, app)
                 app.popupContainer.Parent.Visible = "on";
 
@@ -864,17 +872,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             
             app.progressDialog.Visible = 'visible';
 
-            if isempty(app.popupContainer)
-                popupContainerGrid = uigridlayout(app.UIFigure, [1, 1], "BackgroundColor", "white", "ColumnWidth", {'1x', 540, '1x'}, "RowHeight", {'1x', 440, '1x'}, "Visible", "off");
-                app.popupContainer = uipanel(popupContainerGrid, "Title", "");
-                app.popupContainer.Layout.Row = 2;
-                app.popupContainer.Layout.Column = 2;
-                drawnow
-
-                ccTools.compCustomizationV2(app.jsBackDoor, popupContainerGrid, 'backgroundColor', 'rgba(255,255,255,0.65)')
-                sendEventToHTMLSource(app.jsBackDoor, "panelDialog", struct('componentDataTag', struct(app.popupContainer).Controller.ViewModel.Id))
-            end
-
+            createPopUpContainer(app)
             auxApp.dockListOfLocation_exported(app.popupContainer, app)
             app.popupContainer.Parent.Visible = "on";
 

@@ -135,7 +135,11 @@ classdef winConfig_exported < matlab.apps.AppBase
         % JSBACKDOOR
         %-----------------------------------------------------------------%
         function jsBackDoor_Initialization(app)
-            app.jsBackDoor.HTMLSource = ccTools.fcn.jsBackDoorHTMLSource();
+            if app.isDocked
+                app.jsBackDoor = app.mainApp.jsBackDoor;
+            else
+                app.jsBackDoor.HTMLSource = ccTools.fcn.jsBackDoorHTMLSource();
+            end
         end
 
         %-----------------------------------------------------------------%
@@ -594,10 +598,10 @@ classdef winConfig_exported < matlab.apps.AppBase
                     app.mainApp.General.Plot.CircleRegion.EdgeAlpha = app.CircleEdgeAlpha.Value;
 
                 case app.ZoomOrientation
-                    app.mainApp.General.Plot.GeographicAxes.ZoomOrientation    = app.ZoomOrientation.Value;
+                    app.mainApp.General.Plot.GeographicAxes.ZoomOrientation = app.ZoomOrientation.Value;
 
                 case app.AutomaticZoomMode
-                    app.mainApp.General.Plot.SelectedStation.AutomaticZoomMode = app.AutomaticZoomMode.Value;
+                    app.mainApp.General.Plot.SelectedStation.AutomaticZoom  = app.AutomaticZoomMode.Value;
                     if app.AutomaticZoomMode.Value
                         app.AutomaticZoomFactor.Enable = 1;
                     else

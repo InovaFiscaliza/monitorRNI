@@ -1,5 +1,5 @@
 <deployment-project plugin="plugin.webdeploy" plugin-version="1.0">
-  <configuration file="D:\InovaFiscaliza\RNI\monitorRNI_webappCompiler.prj" location="D:\InovaFiscaliza\RNI" name="monitorRNI_webappCompiler" target="target.webdeploy" target-name="Web App Compiler">
+  <configuration file="D:\InovaFiscaliza\monitorRNI\monitorRNI_webappCompiler.prj" location="D:\InovaFiscaliza\monitorRNI" name="monitorRNI_webappCompiler" target="target.webdeploy" target-name="Web App Compiler">
     <param.appname>monitorRNI</param.appname>
     <param.intermediate>${PROJECT_ROOT}\monitorRNI_webappCompiler</param.intermediate>
     <param.files.only>${PROJECT_ROOT}\monitorRNI_webappCompiler</param.files.only>
@@ -20,7 +20,7 @@
       <param.support.packages />
     </unset>
     <fileset.web.main>
-      <file>${PROJECT_ROOT}\winRNI.mlapp</file>
+      <file>${PROJECT_ROOT}\winMonitorRNI.mlapp</file>
     </fileset.web.main>
     <fileset.resources>
       <file>C:\SupportPackages</file>
@@ -37,7 +37,7 @@
     <fileset.depfun />
     <fileset.package />
     <build-deliverables>
-      <file location="${PROJECT_ROOT}\monitorRNI_webappCompiler" name="monitorRNI.ctf" optional="false">D:\InovaFiscaliza\RNI\monitorRNI_webappCompiler\monitorRNI.ctf</file>
+      <file location="${PROJECT_ROOT}\monitorRNI_webappCompiler" name="monitorRNI.ctf" optional="false">D:\InovaFiscaliza\monitorRNI\monitorRNI_webappCompiler\monitorRNI.ctf</file>
     </build-deliverables>
     <workflow />
     <matlab>

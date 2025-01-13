@@ -86,17 +86,22 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         % JSBACKDOOR
         %-----------------------------------------------------------------%
         function jsBackDoor_Initialization(app)
-            app.jsBackDoor.HTMLSource = ccTools.fcn.jsBackDoorHTMLSource();
-            app.jsBackDoor.HTMLEventReceivedFcn = @(~, evt)jsBackDoor_Listener(app, evt);
+            if app.isDocked
+                app.jsBackDoor = app.mainApp.jsBackDoor;
+            else
+                app.jsBackDoor.HTMLSource = appUtil.jsBackDoorHTMLSource();
+                app.jsBackDoor.HTMLEventReceivedFcn = @(~, evt)jsBackDoor_Listener(app, evt);
+            end
         end
 
         %-----------------------------------------------------------------%
         function jsBackDoor_Listener(app, event)
             switch event.HTMLEventName
-                case 'app.TreePoints'
+                case 'auxApp.winExternalRequest.TreePoints'
                     DeleteSelectedPoint(app, struct('ContextObject', app.TreePoints))
+                otherwise
+                    % ...
             end
-            drawnow
         end
 
         %-----------------------------------------------------------------%
@@ -105,25 +110,25 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 app.progressDialog = app.mainApp.progressDialog;
             else
                 app.progressDialog = ccTools.ProgressDialog(app.jsBackDoor);
+
+                sendEventToHTMLSource(app.jsBackDoor, 'htmlClassCustomization', struct('className',        'body',                           ...
+                                                                                       'classAttributes', ['--tabButton-border-color: #fff;' ...
+                                                                                                           '--tabContainer-border-color: #fff;']));
+    
+                sendEventToHTMLSource(app.jsBackDoor, 'htmlClassCustomization', struct('className',        '.mw-theme-light',                                                   ...
+                                                                                       'classAttributes', ['--mw-backgroundColor-dataWidget-selected: rgb(180 222 255 / 45%); ' ...
+                                                                                                           '--mw-backgroundColor-selected: rgb(180 222 255 / 45%); '            ...
+                                                                                                           '--mw-backgroundColor-selectedFocus: rgb(180 222 255 / 45%);'        ...
+                                                                                                           '--mw-backgroundColor-tab: #fff;']));
+    
+                sendEventToHTMLSource(app.jsBackDoor, 'htmlClassCustomization', struct('className',        '.mw-default-header-cell', ...
+                                                                                       'classAttributes',  'font-size: 10px; white-space: pre-wrap; margin-bottom: 5px;'));
             end
-
-            sendEventToHTMLSource(app.jsBackDoor, 'htmlClassCustomization', struct('className',        'body',                           ...
-                                                                                   'classAttributes', ['--tabButton-border-color: #fff;' ...
-                                                                                                       '--tabContainer-border-color: #fff;']));
-
-            sendEventToHTMLSource(app.jsBackDoor, 'htmlClassCustomization', struct('className',        '.mw-theme-light',                                                   ...
-                                                                                   'classAttributes', ['--mw-backgroundColor-dataWidget-selected: rgb(180 222 255 / 45%); ' ...
-                                                                                                       '--mw-backgroundColor-selected: rgb(180 222 255 / 45%); '            ...
-                                                                                                       '--mw-backgroundColor-selectedFocus: rgb(180 222 255 / 45%);'        ...
-                                                                                                       '--mw-backgroundColor-tab: #fff;']));
-
-            sendEventToHTMLSource(app.jsBackDoor, 'htmlClassCustomization', struct('className',        '.mw-default-header-cell', ...
-                                                                                   'classAttributes',  'font-size: 10px; white-space: pre-wrap; margin-bottom: 5px;'));
 
             ccTools.compCustomizationV2(app.jsBackDoor, app.axesToolbarGrid, 'borderBottomLeftRadius', '5px', 'borderBottomRightRadius', '5px')
 
             app.TreePoints.UserData = struct(app.TreePoints).Controller.ViewModel.Id;
-            sendEventToHTMLSource(app.jsBackDoor, 'addKeyDownListener', struct('componentName', 'app.TreePoints', 'componentDataTag', app.TreePoints.UserData, 'keyEvents', ["Delete", "Backspace"]))
+            sendEventToHTMLSource(app.jsBackDoor, 'addKeyDownListener', struct('componentName', 'auxApp.winExternalRequest.TreePoints', 'componentDataTag', app.TreePoints.UserData, 'keyEvents', ["Delete", "Backspace"]))
         end
     end
 
@@ -508,6 +513,9 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
                                 plot.axes.Colormap(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colormap)
                                 plot.axes.Colorbar(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colorbar)
+
+                            case 'ExternalRequest: DeletePoint'
+                                DeleteSelectedPoint(app, struct('ContextObject', app.TreePoints))
 
                             otherwise
                                 error('UnexpectedCall')
