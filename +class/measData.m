@@ -2,6 +2,7 @@ classdef measData < handle
 
     properties
         %-----------------------------------------------------------------%
+        Filepath
         Filename
 
         Sensor
@@ -33,7 +34,8 @@ classdef measData < handle
                 dataTable    timetable
             end
 
-            [~, fileName, fileExt] = fileparts(fileFullName);
+            [filePath, fileName, fileExt] = fileparts(fileFullName);
+            obj.Filepath  = filePath;
             obj.Filename  = [fileName, fileExt];
             
             obj.Sensor    = Sensor;

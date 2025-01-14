@@ -1404,12 +1404,11 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create ExternalRequestDistanceLabel
             app.ExternalRequestDistanceLabel = uilabel(app.ExternalRequestGrid);
-            app.ExternalRequestDistanceLabel.VerticalAlignment = 'top';
             app.ExternalRequestDistanceLabel.WordWrap = 'on';
             app.ExternalRequestDistanceLabel.FontSize = 10;
-            app.ExternalRequestDistanceLabel.Layout.Row = [1 2];
+            app.ExternalRequestDistanceLabel.Layout.Row = 1;
             app.ExternalRequestDistanceLabel.Layout.Column = [1 2];
-            app.ExternalRequestDistanceLabel.Text = {'Distância limite entre ponto de medição e a estação sob análise (m):'; '(valor padrão)'};
+            app.ExternalRequestDistanceLabel.Text = 'Distância limite entre ponto de medição e a estação sob análise (m):';
 
             % Create ExternalRequestDistance
             app.ExternalRequestDistance = uieditfield(app.ExternalRequestGrid, 'numeric');
