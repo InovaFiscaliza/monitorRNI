@@ -28,7 +28,7 @@ function [status, msgError] = MonitoringPlan(fileName, stationTable, measTable, 
         end
     
         % (b) Seleciona colunas que irão compor o arquivo .XLSX.
-        stationTable = stationTable(:, [1:13, 19:29]);
+        stationTable = stationTable(:, [1:13, 19:30]);
     
         % (c) Troca valores inválidos ("-1", por exemplo) por valores nulos.
         stationTable.("Justificativa") = replace(cellstr(stationTable.("Justificativa")), '-1', '');

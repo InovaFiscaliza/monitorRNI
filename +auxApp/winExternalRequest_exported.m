@@ -747,6 +747,11 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         % Cell edit callback: UITable
         function UITableCellEdit(app, event)
+            
+            if ~ismember(event.EditData, app.mainApp.General.ExternalRequest.NoMeasureReasons)
+                app.UITable.Data.("Justificativa") = app.mainApp.pointsTable.("Justificativa");
+                return
+            end
 
             idxPoint = event.Indices(1);
             app.mainApp.pointsTable.("Justificativa")(idxPoint) = event.NewData;
@@ -1009,7 +1014,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.UITable.RowName = {};
             app.UITable.ColumnSortable = true;
             app.UITable.SelectionType = 'row';
-            app.UITable.ColumnEditable = [false true false false false false false false true];
+            app.UITable.ColumnEditable = [false false false false false false false false true];
             app.UITable.CellEditCallback = createCallbackFcn(app, @UITableCellEdit, true);
             app.UITable.SelectionChangedFcn = createCallbackFcn(app, @UITableSelectionChanged, true);
             app.UITable.Multiselect = 'off';

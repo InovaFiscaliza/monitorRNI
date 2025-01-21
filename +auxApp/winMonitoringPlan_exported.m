@@ -211,9 +211,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             if ~isempty(idxFile)
                 % Concatena as tabelas de LATITUDE, LONGITUDE E NÍVEL de cada um
                 % dos arquivos cuja localidade coincide com o que foi selecionado
-                % em tela. 
-                listOfTables = {app.measData(idxFile).Data};            
-                app.measTable = sortrows(vertcat(listOfTables{:}), 'Timestamp');
+                % em tela. Além disso, insere o nome do próprio arquivo p/ fins de 
+                % mapeamento entre os dados e os arquivos brutos.
+                listOfTables  = {app.measData(idxFile).Data};
+                listOfFiles   = cellfun(@(x,y) repmat({x}, y, 1), {app.measData(idxFile).Filename}, {app.measData(idxFile).Measures}, 'UniformOutput', false);
+                tempMeasTable = vertcat(listOfTables{:});
+                tempMeasTable.FileSource = vertcat(listOfFiles{:});
+
+                app.measTable = sortrows(tempMeasTable, 'Timestamp');
                 
                 % Identifica localidades relacionadas à monitoração sob análise.
                 listOfLocations = {};
@@ -397,19 +402,21 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     app.mainApp.stationTable.maxFieldTimestamp(ii)    = stationMeasures.Timestamp(idxMaxFieldValue);
                     app.mainApp.stationTable.maxFieldLatitude(ii)     = stationMeasures.Latitude(idxMaxFieldValue);
                     app.mainApp.stationTable.maxFieldLongitude(ii)    = stationMeasures.Longitude(idxMaxFieldValue);
+                    app.mainApp.stationTable.("Fonte de dados"){ii}   = jsonencode(unique(stationMeasures.FileSource));
 
                 else
                     app.mainApp.stationTable.numberOfMeasures(ii)     = 0;
                     app.mainApp.stationTable.numberOfRiskMeasures(ii) = 0;
                     app.mainApp.stationTable.minFieldValue(ii)        = 0;
                     app.mainApp.stationTable.meanFieldValue(ii)       = 0;
-                    app.mainApp.stationTable.maxFieldValue(ii)        = 0;                
+                    app.mainApp.stationTable.maxFieldValue(ii)        = 0;
                     app.mainApp.stationTable.maxFieldTimestamp(ii)    = NaT;
                     app.mainApp.stationTable.maxFieldLatitude(ii)     = 0;
                     app.mainApp.stationTable.maxFieldLongitude(ii)    = 0;
+                    app.mainApp.stationTable.("Fonte de dados"){ii}   = jsonencode({''});       % '[""]'
                 end
 
-                app.mainApp.stationTable.minDistanceForMeasure(ii)    = min(stationDistance); % km
+                app.mainApp.stationTable.minDistanceForMeasure(ii)    = min(stationDistance);   % km
             end
         end
 
@@ -887,7 +894,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % (b) ARQUIVOS BRUTOS
             idxFile = FileIndex(app);
-            for ii = 1:numel(idxFile)
+            for ii = idxFile
                 fileName_RAW = fullfile(app.measData(ii).Filepath, app.measData(ii).Filename);
                 [status, msgError] = copyfile(fileName_RAW, app.mainApp.General.fileFolder.DataHub_POST, 'f');
                 if status
@@ -936,8 +943,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Cell edit callback: UITable
         function UITableCellEdit(app, event)
 
-            idxStation = app.UITable.UserData(event.Indices(1));
-            app.mainApp.stationTable.("Justificativa")(idxStation) = event.NewData;
+            idxStations = app.UITable.UserData;
+            idxSelectedStation = idxStations(event.Indices(1));
+            
+            if ~ismember(event.EditData, app.mainApp.General.MonitoringPlan.NoMeasureReasons)
+                app.UITable.Data.("Justificativa") = app.mainApp.stationTable.("Justificativa")(idxStations);
+                return
+            end
+                        
+            app.mainApp.stationTable.("Justificativa")(idxSelectedStation) = event.NewData;
             
             layout_TableStyle(app)
 
