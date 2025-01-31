@@ -558,13 +558,13 @@ classdef winConfig_exported < matlab.apps.AppBase
             
             switch event.Source
                 case app.Basemap
-                    app.mainApp.General.Plot.GeographicAxes.Basemap    = app.Basemap.Value;
+                    app.mainApp.General.Plot.GeographicAxes.Basemap  = app.Basemap.Value;
 
                 case app.Colormap
-                    app.mainApp.General.Plot.GeographicAxes.Colormap   = app.Colormap.Value;
+                    app.mainApp.General.Plot.GeographicAxes.Colormap = app.Colormap.Value;
 
                 case app.Colorbar
-                    app.mainApp.General.Plot.GeographicAxes.Colorbar   = app.Colorbar.Value;
+                    app.mainApp.General.Plot.GeographicAxes.Colorbar = app.Colorbar.Value;
             end
 
             app.mainApp.General_I.Plot = app.mainApp.General.Plot;
@@ -960,7 +960,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create Basemap
             app.Basemap = uidropdown(app.CustomPlotPanelGrid);
-            app.Basemap.Items = {'darkwater', 'streets-light', 'streets-dark', 'satellite', 'topographic', 'grayterrain'};
+            app.Basemap.Items = {'darkwater', 'none', 'satellite', 'streets-dark', 'streets-light', 'topographic'};
             app.Basemap.ValueChangedFcn = createCallbackFcn(app, @CustomPlot_AxesValueChanged, true);
             app.Basemap.FontSize = 11;
             app.Basemap.BackgroundColor = [1 1 1];

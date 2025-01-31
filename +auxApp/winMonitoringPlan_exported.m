@@ -168,35 +168,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 app.UITable.ColumnName{5} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.MonitoringPlan.FieldValue);
             end
 
-            startup_AxesCreation(app)
+            [app.UIAxes, app.restoreView] = plot.axesCreationController(app.plotPanel, app.mainApp.General);
             layout_TreeFileLocationBuilding(app)
                         
             app.tool_TableVisibility.UserData = 1;
-        end
-
-        %-----------------------------------------------------------------%
-        function startup_AxesCreation(app)
-            % Eixo geográfico: MAPA
-            app.plotPanel.AutoResizeChildren = 'off';
-            app.UIAxes = plot.axes.Creation(app.plotPanel, 'Geographic', {'Units',    'normalized',                                    ...
-                                                                          'Position', [0 0 1 1 ],                                      ...
-                                                                          'Basemap',  app.mainApp.General.Plot.GeographicAxes.Basemap, ...
-                                                                          'UserData', struct('CLimMode', 'auto', 'Colormap', '')});
-
-            set(app.UIAxes.LatitudeAxis,  'TickLabels', {}, 'Color', 'none')
-            set(app.UIAxes.LongitudeAxis, 'TickLabels', {}, 'Color', 'none')
-            
-            geolimits(app.UIAxes, 'auto')
-            app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
-
-            plot.axes.Colormap(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colormap)
-            plot.axes.Colorbar(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colorbar)
-
-            % Legenda
-            legend(app.UIAxes, 'Location', 'southwest', 'Color', [.94,.94,.94], 'EdgeColor', [.9,.9,.9], 'NumColumns', 4, 'LineWidth', .5, 'FontSize', 7.5)
-
-            % Axes interactions:
-            plot.axes.Interactivity.DefaultCreation(app.UIAxes, [dataTipInteraction, zoomInteraction, panInteraction])
         end
     end
 
@@ -583,6 +558,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                             case 'PM-RNI: updateAxes'
                                 if ~isequal(app.UIAxes.Basemap, app.mainApp.General.Plot.GeographicAxes.Basemap)
                                     app.UIAxes.Basemap = app.mainApp.General.Plot.GeographicAxes.Basemap;
+                                    
+                                    switch app.mainApp.General.Plot.GeographicAxes.Basemap
+                                        case {'darkwater', 'none'}
+                                            app.UIAxes.Grid = 'on';
+                                        otherwise
+                                            app.UIAxes.Grid = 'off';
+                                    end
                                 end
 
                                 plot.axes.Colormap(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colormap)

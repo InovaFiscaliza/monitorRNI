@@ -272,6 +272,16 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     % meio de chamada a uiputfile. 
                     app.General_I.fileFolder.userPath = tempDir;
 
+                    % A renderização do plot no MATLAB WebServer, enviando-o à uma 
+                    % sessão do webapp como imagem Base64, é crítica por depender 
+                    % das comunicações WebServer-webapp e WebServer-BaseMapServer. 
+                    % Ao configurar o Basemap como "none", entretanto, elimina-se a 
+                    % necessidade de comunicação com BaseMapServer, além de tornar 
+                    % mais eficiente a comunicação com webapp porque as imagens
+                    % Base64 são menores (uma imagem com Basemap "sattelite" pode 
+                    % ter 500 kB, enquanto uma imagem sem Basemap pode ter 25 kB).
+                    app.General_I.Plot.GeographicAxes.Basemap = 'none';
+
                 otherwise    
                     % Resgata a pasta de trabalho do usuário (configurável).
                     userPaths = appUtil.UserPaths(app.General_I.fileFolder.userPath);
