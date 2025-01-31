@@ -61,14 +61,14 @@ classdef measData < handle
             [minLat,  maxLat]    = bounds(dataTable.Latitude);
             [minLong, maxLong]   = bounds(dataTable.Longitude);
             
-            obj.LatitudeLimits   = [minLat;  maxLat];
-            obj.LongitudeLimits  = [minLong; maxLong];  
+            obj.LatitudeLimits   = round([minLat;  maxLat],  6);
+            obj.LongitudeLimits  = round([minLong; maxLong], 6);
             
-            obj.Latitude         = mean(dataTable.Latitude);
-            obj.Longitude        = mean(dataTable.Longitude);
+            obj.Latitude         = round(mean(dataTable.Latitude),  6);
+            obj.Longitude        = round(mean(dataTable.Longitude), 6);
             obj.Location         = fcn.gpsFindCity(struct('Latitude', obj.Latitude, 'Longitude', obj.Longitude));   
 
-            obj.CoveredDistance  = sum(deg2km(distance(dataTable.Latitude(2:end), dataTable.Longitude(2:end), dataTable.Latitude(1:end-1), dataTable.Longitude(1:end-1))));
+            obj.CoveredDistance  = round(sum(deg2km(distance(dataTable.Latitude(2:end), dataTable.Longitude(2:end), dataTable.Latitude(1:end-1), dataTable.Longitude(1:end-1)))), 6);
         end
     end
 end

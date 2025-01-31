@@ -27,11 +27,11 @@ function [stationTable, rawListOfYears, refListOfLocations, refListOfStates] = M
     
     % Conversões:
     stationTable.Fistel                   = uint64(stationTable.Fistel);
-    stationTable.("N° estacao")           = uint32(stationTable.("N° estacao"));
+    stationTable.("Estação")              = uint32(stationTable.("Estação"));
 
     % Dados inválidos (Duplicados por possuírem mesmos valores p/ colunas 
     % "Fistel", "Nº estação", "Lat" e "Long"):
-    strHashBase = cellstr(string(stationTable.Fistel) + "; " + string(stationTable.("N° estacao")) + "; " + string(stationTable.Lat) + "; " + string(stationTable.Long));
+    strHashBase = cellstr(string(stationTable.Fistel) + "; " + string(stationTable.("Estação")) + "; " + string(stationTable.Lat) + "; " + string(stationTable.Long));
     stationTable.Base64Hash               = cellfun(@(x) Base64Hash.encode(x), strHashBase, 'UniformOutput', false);
     [~, idxUnique] = unique(stationTable.Base64Hash, 'stable');
     stationTable = stationTable(idxUnique, :);

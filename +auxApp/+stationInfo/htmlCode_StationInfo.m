@@ -3,7 +3,7 @@ function htmlContent = htmlCode_StationInfo(stationTable, idxStation, rfDataHub)
     % PM-RNI
     % (planilha de referência)
     stationTable = stationTable(idxStation, :);
-    stationID    = stationTable.("N° estacao");
+    stationID    = stationTable.("Estação");
 
     stationEntity   = '';
     if ~isempty(stationTable.("Entidade"){1})
@@ -11,8 +11,8 @@ function htmlContent = htmlCode_StationInfo(stationTable, idxStation, rfDataHub)
     end
 
     stationAddress  = '';
-    if ~isempty(stationTable.("Endereco"){1})
-        stationAddress = sprintf(', Endereço="%s"', stationTable.("Endereco"){1});
+    if ~isempty(stationTable.("Endereço"){1})
+        stationAddress = sprintf(', Endereço="%s"', stationTable.("Endereço"){1});
     end
 
     stationCritical = '';
@@ -21,7 +21,7 @@ function htmlContent = htmlCode_StationInfo(stationTable, idxStation, rfDataHub)
     end    
 
     stationMonitoringPlan  = sprintf('%s, %s(Fistel=%.0f, Estação=%.0f), %s/%s @ (Latitude=%.6fº, Longitude=%.6fº%s)%s', ...
-        upper(stationTable.("Serviço"){1}), stationEntity, stationTable.("Fistel")(1), stationTable.("N° estacao")(1), stationTable.("Município"){1}, stationTable.UF{1}, ...
+        upper(stationTable.("Serviço"){1}), stationEntity, stationTable.("Fistel")(1), stationTable.("Estação")(1), stationTable.("Município"){1}, stationTable.UF{1}, ...
         stationTable.("Lat")(1), stationTable.("Long")(1), stationAddress, stationCritical);
 
     % RFDATAHUB

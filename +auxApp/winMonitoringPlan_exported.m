@@ -308,7 +308,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 initialSelection = app.UITable.UserData(app.UITable.Selection);
             end
 
-            table2Render = app.mainApp.stationTable(idxStations, {'N° estacao',            ...
+            table2Render = app.mainApp.stationTable(idxStations, {'Estação',               ...
                                                                   'Location',              ...
                                                                   'Serviço',               ...                                                                                      
                                                                   'numberOfMeasures',      ...
@@ -892,13 +892,26 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 errorFiles{end+1} = msgError;
             end
 
-            % (b) ARQUIVOS BRUTOS
+            % (b) ARQUIVOS BRUTOS E ARQUIVOS DE METADADOS
             idxFile = FileIndex(app);
             for ii = idxFile
+                % ARQUIVOS BRUTOS
                 fileName_RAW = fullfile(app.measData(ii).Filepath, app.measData(ii).Filename);
-                [status, msgError] = copyfile(fileName_RAW, app.mainApp.General.fileFolder.DataHub_POST, 'f');
+                
+                [status, msgError]    = copyfile(fileName_RAW, app.mainApp.General.fileFolder.DataHub_POST, 'f');
                 if status
                     savedFiles{end+1} = app.measData(ii).Filename;
+                else
+                    errorFiles{end+1} = msgError;
+                end
+
+                % ARQUIVOS DE METADADOS
+                [~, fileName_JSON] = fileparts(fileName_RAW);
+                fileName_JSON = [fileName_JSON '.json'];
+
+                [status, msgError]    = fileWriter.RawFileMetaData(fullfile(app.mainApp.General.fileFolder.DataHub_POST, fileName_JSON), app.measData(ii));
+                if status
+                    savedFiles{end+1} = fileName_JSON;
                 else
                     errorFiles{end+1} = msgError;
                 end

@@ -45,7 +45,7 @@ classdef (Abstract) draw
             switch callinAppTag
                 case {'auxApp.winMonitoringPlan',  'auxApp.winMonitoringPlan_exported'}
                     DIST_km     = appGeneral.MonitoringPlan.Distance_km;
-                    pointID     = sprintf('Estação nº %d', selectedPointTable.("N° estacao"));
+                    pointID     = sprintf('Estação nº %d', selectedPointTable.("Estação"));
                     displayName = 'Maior nível em torno da estação';
 
                 case {'auxApp.winExternalRequest', 'auxApp.winExternalRequest_exported'}
