@@ -19,7 +19,7 @@
     <param.installpath.string>\ANATEL\monitorRNI\</param.installpath.string>
     <param.installpath.combo>option.installpath.appdata</param.installpath.combo>
     <param.logo />
-    <param.install.notes>Executável gerado em 31/01/2025 13:30</param.install.notes>
+    <param.install.notes>Executável gerado em 31/01/2025 15:51</param.install.notes>
     <param.target.install.notes />
     <param.intermediate>${PROJECT_ROOT}\monitorRNI_desktopCompiler\for_testing</param.intermediate>
     <param.files.only>${PROJECT_ROOT}\monitorRNI_desktopCompiler\for_redistribution_files_only</param.files.only>
