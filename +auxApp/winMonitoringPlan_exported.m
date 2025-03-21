@@ -157,7 +157,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.progressDialog.Visible = 'visible';
 
             startup_GUIComponents(app)
-            Analysis(app)
+            Analysis(app, 'Startup')
+            Analysis(app, 'Update')
 
             app.progressDialog.Visible = 'hidden';
         end
@@ -178,10 +179,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
     methods (Access = private)
         %-----------------------------------------------------------------%
-        function Analysis(app)
+        function Analysis(app, operationType)
+            arguments
+                app
+                operationType char {mustBeMember(operationType, {'Startup', 'Update'})} = 'Update'
+            end
+
             app.progressDialog.Visible = 'visible';
 
-            [idxFile, selectedFileLocations] = FileIndex(app);
+            [idxFile, selectedFileLocations] = FileIndex(app, operationType);
 
             if ~isempty(idxFile)
                 % Concatena as tabelas de LATITUDE, LONGITUDE E NÍVEL de cada um
@@ -229,6 +235,19 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             idxStations = find(ismember(app.mainApp.stationTable.Location, fullListOfLocation));
             if ~isempty(app.measTable)
                 identifyMeasuresForEachStation(app, idxStations)
+
+                % Na inicialização, preciso garantir que todas as medidas
+                % coletadas serão usadas p/ fins de identificação daqueles
+                % realizadas no entorno de uma estação.
+
+                % Nesse cenário, define-se idxFile = 1:numel(app.measData)
+                % e realiza operação, voltando à startup_Controller(app)
+                % que chamará novamente este método, mas no modo "Update",
+                % quando então será realizada a atualização da GUI (incluso
+                % o plot).
+                if operationType == "Startup"
+                    return
+                end
             end
             initialSelection = updateTable(app, idxStations);
             layout_TableStyle(app)
@@ -266,13 +285,25 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function [idxFile, selectedFileLocations] = FileIndex(app)
-            if ~isempty(app.TreeFileLocations.CheckedNodes)
-                selectedFileLocations = {app.TreeFileLocations.CheckedNodes.Text};
-                idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
-            else
-                selectedFileLocations = {};
-                idxFile = [];
+        function [idxFile, selectedFileLocations] = FileIndex(app, operationType)
+            arguments
+                app
+                operationType char {mustBeMember(operationType, {'Startup', 'Update'})} = 'Update'
+            end
+
+            switch operationType
+                case 'Startup'
+                    selectedFileLocations = unique({app.measData.Location});
+                    idxFile = 1:numel(app.measData);
+
+                otherwise
+                    if ~isempty(app.TreeFileLocations.CheckedNodes)
+                        selectedFileLocations = {app.TreeFileLocations.CheckedNodes.Text};
+                        idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
+                    else
+                        selectedFileLocations = {};
+                        idxFile = [];
+                    end
             end
         end
 
@@ -362,7 +393,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
                 % Inicialmente, afere a distância da estação a cada uma das
                 % medidas, identificando aquelas no entorno.
-                stationDistance    = deg2km(distance(app.mainApp.stationTable.Latitude(ii), app.mainApp.stationTable.Longitude(ii), app.measTable.Latitude, app.measTable.Longitude));                
+                stationDistance    = deg2km(distance(app.mainApp.stationTable.Latitude(ii), app.mainApp.stationTable.Longitude(ii), app.measTable.Latitude, app.measTable.Longitude));
                 idxLogicalMeasures = stationDistance <= DIST_km;
 
                 if any(idxLogicalMeasures)
@@ -543,7 +574,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 switch class(callingApp)
                     case {'winMonitorRNI', 'winMonitorRNI_exported'}
                         switch operationType
-                            case {'PM-RNI: updateReferenceTable', 'PM-RNI: updatePlot'}
+                            case 'PM-RNI: updatePlot'
                                 Analysis(app)
 
                             case 'PM-RNI: updateAnalysis'
@@ -553,7 +584,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                 if ~isempty(idxStations)
                                     app.mainApp.stationTable.AnalysisFlag(idxStations) = false;
                                 end
-                                Analysis(app)
+                                Analysis(app, 'Startup')
+                                Analysis(app, 'Update')
 
                             case 'PM-RNI: updateAxes'
                                 if ~isequal(app.UIAxes.Basemap, app.mainApp.General.Plot.GeographicAxes.Basemap)
@@ -616,7 +648,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                     app.mainApp.stationTable.("Longitude")(idxStation) = newLongitude;
                                     app.mainApp.stationTable.AnalysisFlag(idxStation)  = false;
 
-                                    Analysis(app)
+                                    Analysis(app, 'Startup')
+                                    Analysis(app, 'Update')
 
                                 case 'UITableSelectionChanged'
                                     newRowSelection = varargin{3};
@@ -626,7 +659,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                     UITableSelectionChanged(app, struct('PreviousSelection', [], 'Selection', newRowSelection))
 
                                 case 'ListOfLocationChanged'
-                                    Analysis(app)
+                                    Analysis(app, 'Startup')
+                                    Analysis(app, 'Update')
 
                                 otherwise
                                     error('UnexpectedCall')

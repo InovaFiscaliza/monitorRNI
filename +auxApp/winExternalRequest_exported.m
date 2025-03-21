@@ -179,7 +179,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.progressDialog.Visible = 'visible';
 
             startup_GUIComponents(app)
-            Analysis(app)
+            Analysis(app, 'Startup')
+            Analysis(app, 'Update')
 
             app.progressDialog.Visible = 'hidden';
         end
@@ -206,10 +207,15 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
     methods (Access = private)
         %-----------------------------------------------------------------%
-        function Analysis(app)
+        function Analysis(app, operationType)
+            arguments
+                app
+                operationType char {mustBeMember(operationType, {'Startup', 'Update'})} = 'Update'
+            end
+
             app.progressDialog.Visible = 'visible';
 
-            [idxFile, selectedFileLocations] = FileIndex(app);
+            [idxFile, selectedFileLocations] = FileIndex(app, operationType);
 
             if ~isempty(idxFile)
                 % Concatena as tabelas de LATITUDE, LONGITUDE E NÍVEL de cada um
@@ -224,7 +230,13 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             app.projectData.selectedFileLocations     = selectedFileLocations;
 
-            identifyMeasuresForEachPoint(app)
+            if ~isempty(app.measTable)
+                identifyMeasuresForEachPoint(app)
+
+                if operationType == "Startup"
+                    return
+                end
+            end
 
             initialSelection = updateTable(app);
             layout_TableStyle(app)
@@ -245,13 +257,25 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function [idxFile, selectedFileLocations] = FileIndex(app)
-            if ~isempty(app.TreeFileLocations.CheckedNodes)
-                selectedFileLocations = {app.TreeFileLocations.CheckedNodes.Text};
-                idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
-            else
-                selectedFileLocations = {};
-                idxFile = [];
+        function [idxFile, selectedFileLocations] = FileIndex(app, operationType)
+            arguments
+                app
+                operationType char {mustBeMember(operationType, {'Startup', 'Update'})} = 'Update'
+            end
+
+            switch operationType
+                case 'Startup'
+                    selectedFileLocations = unique({app.measData.Location});
+                    idxFile = 1:numel(app.measData);
+
+                otherwise
+                    if ~isempty(app.TreeFileLocations.CheckedNodes)
+                        selectedFileLocations = {app.TreeFileLocations.CheckedNodes.Text};
+                        idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
+                    else
+                        selectedFileLocations = {};
+                        idxFile = [];
+                    end
             end
         end
 
@@ -501,7 +525,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                                 if ~isempty(app.mainApp.pointsTable)
                                     app.mainApp.pointsTable.AnalysisFlag(:) = false;
                                 end
-                                Analysis(app)
+                                Analysis(app, 'Startup')
+                                Analysis(app, 'Update')
 
                             case 'ExternalRequest: updateAxes'
                                 if ~isequal(app.UIAxes.Basemap, app.mainApp.General.Plot.GeographicAxes.Basemap)
@@ -816,7 +841,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                     layout_TreePointsBuilding(app)
         
                     % ANÁLISA DOS PONTOS CRÍTICOS, ATUALIZANDO TABELA E PLOT
-                    Analysis(app)
+                    Analysis(app, 'Startup')
+                    Analysis(app, 'Update')
 
                     % DESABILITA MODO DE INCLUSÃO DE PONTO
                     layout_newPointPanel(app, 'off')

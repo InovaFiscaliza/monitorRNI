@@ -36,7 +36,7 @@ function htmlContent = htmlCode_StationInfo(stationTable, idxStation, rfDataHub)
             if rfDataHub.BW(ii) > 0
                 stationTag = [stationTag sprintf(' ⌂ %.1f kHz', rfDataHub.BW(ii))];
             end
-            stationRFDataHub{end+1} = [stationTag newline RF.RFDataHub.Description(rfDataHub, ii)];
+            stationRFDataHub{end+1} = [stationTag newline model.RFDataHub.Description(rfDataHub, ii)];
         end
         stationRFDataHub   = strjoin(unique(stationRFDataHub), '\n\n');
 

@@ -44,7 +44,7 @@ function appVersion = envVersion(rootFolder, versionType, tempDir)
     global RFDataHub_info
 
     if isempty(RFDataHub) || isempty(RFDataHub_info)
-        RF.RFDataHub.read(appName, rootFolder, tempDir)
+        model.RFDataHub.read(appName, rootFolder, tempDir)
     end
     appVersion.RFDataHub = RFDataHub_info;   
 

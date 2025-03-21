@@ -359,33 +359,15 @@ classdef winConfig_exported < matlab.apps.AppBase
             d = appUtil.modalWindow(app.UIFigure, "progressdlg", 'Em andamento... esse processo pode demorar alguns minutos!');
 
             try
-                [~, ~, rfdatahubLink] = fcn.PublicLinks(app.rootFolder);
-                tempDir = app.mainApp.General.fileFolder.tempPath;
-                websave(fullfile(tempDir, 'estacoes.parquet.gzip'), rfdatahubLink.Table);
-                websave(fullfile(tempDir, 'log.parquet.gzip'),      rfdatahubLink.Log);
-                websave(fullfile(tempDir, 'Release.json'),          rfdatahubLink.Release);
-
                 appName = class.Constants.appName;
-                [~, ...
-                 programDataFolder] = appUtil.Path(appName, app.rootFolder);
-
-                if isfile(fullfile(programDataFolder, 'RFDataHub_old.mat'))
-                    delete(fullfile(programDataFolder, 'RFDataHub_old.mat'))
-                end
-
-                if isfile(fullfile(programDataFolder, 'RFDataHub.mat'))
-                    movefile(fullfile(programDataFolder, 'RFDataHub.mat'), fullfile(programDataFolder, 'RFDataHub_old.mat'), 'f');
-                end
-
-                % Apaga as variáveis globais, lendo os novos arquivos.
-                clear global RFDataHub
-                clear global RFDataHubLog
-                clear global RFDataHub_info
-                RF.RFDataHub.read(appName, app.rootFolder, tempDir)
+                [~, ~, rfDataHubLink] = fcn.PublicLinks(app.rootFolder);
+                model.RFDataHub.update(appName, app.rootFolder, app.mainApp.General.fileFolder.tempPath, rfDataHubLink)
 
                 % Atualiza versão.
                 global RFDataHub_info
+
                 app.mainApp.General.AppVersion.RFDataHub = RFDataHub_info;
+                app.stableVersion.RFDataHub = RFDataHub_info;
                 app.tool_RFDataHubButton.Enable = 0;
                 
             catch ME
@@ -393,7 +375,6 @@ classdef winConfig_exported < matlab.apps.AppBase
             end
 
             General_updatePanel(app)
-
             delete(d)
 
         end
@@ -477,7 +458,7 @@ classdef winConfig_exported < matlab.apps.AppBase
                         return
                     end
                     app.mainApp.General.MonitoringPlan.Period       = str2double({app.MonitoringPlanPeriod.CheckedNodes.Text});
-                    updateAnalysisName = 'PM-RNI: updateReferenceTable';
+                    updateAnalysisName = 'PM-RNI: updateAnalysis';
 
                 case app.MonitoringPlanExportXLSX
                     app.mainApp.General.MonitoringPlan.Export.XLSX  = app.MonitoringPlanExportXLSX.Value;

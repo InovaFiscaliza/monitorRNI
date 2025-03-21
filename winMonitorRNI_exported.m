@@ -539,26 +539,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         % Close request function: UIFigure
         function closeFcn(app, event)
 
-            % PROGRESS DIALOG
-            delete(app.progressDialog)
+            % Especificidade "winMonitorRNI":
+            % ...
 
-            % DELETE TEMP FILES
-            rmdir(app.General_I.fileFolder.tempPath, 's');
-
-            % DELETE APPS
-            if isdeployed
-                delete(findall(groot, 'Type', 'Figure'))
-            else
-                delete(app.tabGroupController)                
-            end
-
-            % MATLAB RUNTIME
-            % Ao fechar um webapp, o MATLAB WebServer demora uns 10 segundos para
-            % fechar o Runtime que suportava a sessão do webapp. Dessa forma, a 
-            % liberação do recurso, que ocorre com a inicialização de uma nova 
-            % sessão do Runtime, fica comprometida.
-            appUtil.killingMATLABRuntime(app.executionMode)
-
+            % Aspectos gerais (carregar em todos os apps):
+            appUtil.beforeDeleteApp(app.progressDialog, app.General_I.fileFolder.tempPath, app.tabGroupController, app.executionMode)
             delete(app)
             
         end
@@ -704,7 +689,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             % LOG
             msgWarning = '';
             if ~isempty(filesError)
-                msgWarning = sprintf('Arquivos que apresentaram erro na leitura:\n%s\n\n', strjoin(strcat({'•&thinsp;'}, {filesError.File}, {': '}, {filesError.Error}), '\n'));
+                msgWarning = sprintf('Arquivos que apresentaram erro na leitura:\n%s\n\n', strjoin(strcat({'<font style="font-size: 11px;">•&thinsp;'}, {filesError.File}, {': '}, {filesError.Error}), '</font>\n'));
             end
 
             if ~isempty(filesInCache)
