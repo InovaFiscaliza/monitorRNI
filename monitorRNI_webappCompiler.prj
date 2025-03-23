@@ -23,16 +23,15 @@
       <file>${PROJECT_ROOT}\winMonitorRNI.mlapp</file>
     </fileset.web.main>
     <fileset.resources>
-      <file>C:\SupportPackages</file>
       <file>${PROJECT_ROOT}\+auxApp</file>
       <file>${PROJECT_ROOT}\+class</file>
       <file>${PROJECT_ROOT}\+fcn</file>
       <file>${PROJECT_ROOT}\+fileReader</file>
       <file>${PROJECT_ROOT}\+fileWriter</file>
       <file>${PROJECT_ROOT}\+plot</file>
-      <file>${PROJECT_ROOT}\IBGE.mat</file>
       <file>${PROJECT_ROOT}\Icons</file>
       <file>${PROJECT_ROOT}\Settings</file>
+      <file>D:\SupportPackages\src\General</file>
     </fileset.resources>
     <fileset.depfun />
     <fileset.package />
