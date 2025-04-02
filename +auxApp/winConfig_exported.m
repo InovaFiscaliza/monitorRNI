@@ -31,6 +31,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         MonitoringPlanLevelLabel      matlab.ui.control.Label
         MonitoringPlanDistance        matlab.ui.control.NumericEditField
         MonitoringPlanDistanceLabel   matlab.ui.control.Label
+        MonitoringPlanRefresh         matlab.ui.control.Image
         MonitoringPlanLabel           matlab.ui.control.Label
         FolderGrid                    matlab.ui.container.GridLayout
         FolderPanel                   matlab.ui.container.Panel
@@ -237,6 +238,11 @@ classdef winConfig_exported < matlab.apps.AppBase
             
             MonitoringPlanYearsOptions          = app.mainApp.projectData.rawListOfYears;
             MonitoringPlanYearsValue            = app.mainApp.General.MonitoringPlan.Period;
+
+            if ~isempty(app.MonitoringPlanPeriod.Children)
+                delete(app.MonitoringPlanPeriod.Children)
+            end
+
             for ii = 1:numel(MonitoringPlanYearsOptions)                
                 treeNode = uitreenode(app.MonitoringPlanPeriod, 'Text', string(MonitoringPlanYearsOptions(ii)));
                 if ismember(MonitoringPlanYearsOptions(ii), MonitoringPlanYearsValue)
@@ -501,6 +507,41 @@ classdef winConfig_exported < matlab.apps.AppBase
                     web(fileName, '-new')
                 otherwise
                     ccTools.fcn.OperationSystem('openFile', fileName)
+            end
+
+        end
+
+        % Image clicked function: MonitoringPlanRefresh
+        function Analysis_RefreshImageClicked(app, event)
+            
+            % Lê a versão de "GeneralSettings.json" que vem junto ao
+            % projeto (e não a versão armazenada em "ProgramData").
+            projectFolder      = appUtil.Path(class.Constants.appName, app.rootFolder);
+            projectFilePath    = fullfile(projectFolder, 'GeneralSettings.json');
+            projectFileContent = jsondecode(fileread(projectFilePath));
+
+            if structUtil.hasMatchingFields(app.mainApp.General.MonitoringPlan,  projectFileContent.MonitoringPlan,  {'Distance_km', 'FieldValue', 'Export'}) && ...
+               structUtil.hasMatchingFields(app.mainApp.General.ExternalRequest, projectFileContent.ExternalRequest, {'Distance_km', 'FieldValue', 'Export'})
+                msgWarning = 'Configurações atuais já coincidem com as iniciais.';
+                appUtil.modalWindow(app.UIFigure, 'warning', msgWarning);
+                return
+
+            else
+                app.mainApp.General.MonitoringPlan.Distance_km  = projectFileContent.MonitoringPlan.Distance_km;
+                app.mainApp.General.MonitoringPlan.FieldValue   = projectFileContent.MonitoringPlan.FieldValue;
+                app.mainApp.General.MonitoringPlan.Export       = projectFileContent.MonitoringPlan.Export;
+                app.mainApp.General.ExternalRequest.Distance_km = projectFileContent.ExternalRequest.Distance_km;
+                app.mainApp.General.ExternalRequest.FieldValue  = projectFileContent.ExternalRequest.FieldValue;
+                app.mainApp.General.ExternalRequest.Export      = projectFileContent.ExternalRequest.Export;
+
+                Analysis_updatePanel(app)
+                
+                app.mainApp.General_I.MonitoringPlan  = app.mainApp.General.MonitoringPlan;
+                app.mainApp.General_I.ExternalRequest = app.mainApp.General.ExternalRequest;
+                saveGeneralSettings(app)
+                
+                appBackDoor(app.mainApp, app, 'PM-RNI: updateAnalysis')
+                appBackDoor(app.mainApp, app, 'ExternalRequest: updateAnalysis')
             end
 
         end
@@ -1254,7 +1295,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create AnalysisPanelGrid
             app.AnalysisPanelGrid = uigridlayout(app.Document);
-            app.AnalysisPanelGrid.ColumnWidth = {'1x'};
+            app.AnalysisPanelGrid.ColumnWidth = {'1x', 16};
             app.AnalysisPanelGrid.RowHeight = {22, '1x', 22, '1x'};
             app.AnalysisPanelGrid.RowSpacing = 5;
             app.AnalysisPanelGrid.Padding = [0 0 0 0];
@@ -1270,10 +1311,19 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.MonitoringPlanLabel.Layout.Column = 1;
             app.MonitoringPlanLabel.Text = 'PM-RNI';
 
+            % Create MonitoringPlanRefresh
+            app.MonitoringPlanRefresh = uiimage(app.AnalysisPanelGrid);
+            app.MonitoringPlanRefresh.ImageClickedFcn = createCallbackFcn(app, @Analysis_RefreshImageClicked, true);
+            app.MonitoringPlanRefresh.Tooltip = {'Retorna às configurações iniciais'};
+            app.MonitoringPlanRefresh.Layout.Row = 1;
+            app.MonitoringPlanRefresh.Layout.Column = 2;
+            app.MonitoringPlanRefresh.VerticalAlignment = 'bottom';
+            app.MonitoringPlanRefresh.ImageSource = 'Refresh_18.png';
+
             % Create MonitoringPlanPanel
             app.MonitoringPlanPanel = uipanel(app.AnalysisPanelGrid);
             app.MonitoringPlanPanel.Layout.Row = 2;
-            app.MonitoringPlanPanel.Layout.Column = 1;
+            app.MonitoringPlanPanel.Layout.Column = [1 2];
 
             % Create MonitoringPlanGrid
             app.MonitoringPlanGrid = uigridlayout(app.MonitoringPlanPanel);
@@ -1374,7 +1424,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create ExternalRequestPanel
             app.ExternalRequestPanel = uipanel(app.AnalysisPanelGrid);
             app.ExternalRequestPanel.Layout.Row = 4;
-            app.ExternalRequestPanel.Layout.Column = 1;
+            app.ExternalRequestPanel.Layout.Column = [1 2];
 
             % Create ExternalRequestGrid
             app.ExternalRequestGrid = uigridlayout(app.ExternalRequestPanel);

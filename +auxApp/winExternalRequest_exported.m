@@ -984,6 +984,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Create plotPanel
             app.plotPanel = uipanel(app.GridLayout);
+            app.plotPanel.AutoResizeChildren = 'off';
             app.plotPanel.BorderType = 'none';
             app.plotPanel.BackgroundColor = [1 1 1];
             app.plotPanel.Layout.Row = [2 3];

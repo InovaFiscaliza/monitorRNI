@@ -3,8 +3,8 @@
     <param.appname>monitorRNI</param.appname>
     <param.intermediate>${PROJECT_ROOT}\monitorRNI_webappCompiler</param.intermediate>
     <param.files.only>${PROJECT_ROOT}\monitorRNI_webappCompiler</param.files.only>
-    <param.output />
-    <param.checkbox>false</param.checkbox>
+    <param.output>C:\ProgramData\MathWorks\webapps\R2024a\apps</param.output>
+    <param.checkbox>true</param.checkbox>
     <param.logdir>${PROJECT_ROOT}\monitorRNI_webappCompiler</param.logdir>
     <param.target.type>subtarget.web.app</param.target.type>
     <param.user.defined.mcr.options />
@@ -12,8 +12,6 @@
     <unset>
       <param.intermediate />
       <param.files.only />
-      <param.output />
-      <param.checkbox />
       <param.logdir />
       <param.target.type />
       <param.user.defined.mcr.options />
