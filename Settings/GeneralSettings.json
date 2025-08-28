@@ -1,5 +1,5 @@
 {
-    "version": 0.47,
+    "version": 0.50,
     "operationMode": {
         "Debug": false,
         "Dock": true,
@@ -34,13 +34,13 @@
             "Size": 12
         },
         "SelectedStation": {
-            "Color": "red",
+            "Color": "#00ffff",
             "Size": 32,
             "AutomaticZoom": false,
             "AutomaticZoomFactor": 4
         },
         "CircleRegion": {
-            "Color": "red",
+            "Color": "cyan",
             "FaceAlpha": 0.25,
             "EdgeAlpha": 0.40
         },

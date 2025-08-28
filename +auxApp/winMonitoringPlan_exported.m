@@ -5,6 +5,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         UIFigure                     matlab.ui.Figure
         GridLayout                   matlab.ui.container.GridLayout
         toolGrid                     matlab.ui.container.GridLayout
+        tool_peakIcon                matlab.ui.control.Image
+        tool_peakLabel               matlab.ui.control.Label
         tool_UploadFinalFile         matlab.ui.control.Image
         jsBackDoor                   matlab.ui.control.HTML
         tool_ExportFiles             matlab.ui.control.Image
@@ -79,6 +81,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function jsBackDoor_Initialization(app)
             if app.isDocked
+                delete(app.jsBackDoor)
                 app.jsBackDoor = app.mainApp.jsBackDoor;
             else
                 app.jsBackDoor.HTMLSource = appUtil.jsBackDoorHTMLSource();
@@ -154,7 +157,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.progressDialog.Visible = 'visible';
 
             startup_GUIComponents(app)
-            Analysis(app)
+            Analysis(app, 'Startup')
+            Analysis(app, 'Update')
 
             app.progressDialog.Visible = 'hidden';
         end
@@ -165,52 +169,37 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 app.UITable.ColumnName{5} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.MonitoringPlan.FieldValue);
             end
 
-            startup_AxesCreation(app)
+            [app.UIAxes, app.restoreView] = plot.axesCreationController(app.plotPanel, app.mainApp.General);
             layout_TreeFileLocationBuilding(app)
                         
             app.tool_TableVisibility.UserData = 1;
-        end
-
-        %-----------------------------------------------------------------%
-        function startup_AxesCreation(app)
-            % Eixo geográfico: MAPA
-            app.plotPanel.AutoResizeChildren = 'off';
-            app.UIAxes = plot.axes.Creation(app.plotPanel, 'Geographic', {'Units',    'normalized',                                    ...
-                                                                          'Position', [0 0 1 1 ],                                      ...
-                                                                          'Basemap',  app.mainApp.General.Plot.GeographicAxes.Basemap, ...
-                                                                          'UserData', struct('CLimMode', 'auto', 'Colormap', '')});
-
-            set(app.UIAxes.LatitudeAxis,  'TickLabels', {}, 'Color', 'none')
-            set(app.UIAxes.LongitudeAxis, 'TickLabels', {}, 'Color', 'none')
-            
-            geolimits(app.UIAxes, 'auto')
-            app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
-
-            plot.axes.Colormap(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colormap)
-            plot.axes.Colorbar(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colorbar)
-
-            % Legenda
-            legend(app.UIAxes, 'Location', 'southwest', 'Color', [.94,.94,.94], 'EdgeColor', [.9,.9,.9], 'NumColumns', 4, 'LineWidth', .5, 'FontSize', 7.5)
-
-            % Axes interactions:
-            plot.axes.Interactivity.DefaultCreation(app.UIAxes, [dataTipInteraction, zoomInteraction, panInteraction])
         end
     end
 
 
     methods (Access = private)
         %-----------------------------------------------------------------%
-        function Analysis(app)
+        function Analysis(app, operationType)
+            arguments
+                app
+                operationType char {mustBeMember(operationType, {'Startup', 'Update'})} = 'Update'
+            end
+
             app.progressDialog.Visible = 'visible';
 
-            [idxFile, selectedFileLocations] = FileIndex(app);
+            [idxFile, selectedFileLocations] = FileIndex(app, operationType);
 
             if ~isempty(idxFile)
                 % Concatena as tabelas de LATITUDE, LONGITUDE E NÍVEL de cada um
                 % dos arquivos cuja localidade coincide com o que foi selecionado
-                % em tela. 
-                listOfTables = {app.measData(idxFile).Data};            
-                app.measTable = sortrows(vertcat(listOfTables{:}), 'Timestamp');
+                % em tela. Além disso, insere o nome do próprio arquivo p/ fins de 
+                % mapeamento entre os dados e os arquivos brutos.
+                listOfTables  = {app.measData(idxFile).Data};
+                listOfFiles   = cellfun(@(x,y) repmat({x}, y, 1), {app.measData(idxFile).Filename}, {app.measData(idxFile).Measures}, 'UniformOutput', false);
+                tempMeasTable = vertcat(listOfTables{:});
+                tempMeasTable.FileSource = vertcat(listOfFiles{:});
+
+                app.measTable = sortrows(tempMeasTable, 'Timestamp');
                 
                 % Identifica localidades relacionadas à monitoração sob análise.
                 listOfLocations = {};
@@ -246,6 +235,19 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             idxStations = find(ismember(app.mainApp.stationTable.Location, fullListOfLocation));
             if ~isempty(app.measTable)
                 identifyMeasuresForEachStation(app, idxStations)
+
+                % Na inicialização, preciso garantir que todas as medidas
+                % coletadas serão usadas p/ fins de identificação daqueles
+                % realizadas no entorno de uma estação.
+
+                % Nesse cenário, define-se idxFile = 1:numel(app.measData)
+                % e realiza operação, voltando à startup_Controller(app)
+                % que chamará novamente este método, mas no modo "Update",
+                % quando então será realizada a atualização da GUI (incluso
+                % o plot).
+                if operationType == "Startup"
+                    return
+                end
             end
             initialSelection = updateTable(app, idxStations);
             layout_TableStyle(app)
@@ -262,10 +264,11 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             nStationsOutRoute = nStations - nStationsOnRoute;
 
             % Atualiza painel com quantitativo de estações...
-            app.Card1_numberOfStations.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: black;   font-size: 32px;">%d</font>\nESTAÇÕES LOCALIZADAS NOS MUNICÍPIOS SOB ANÁLISE</p>',                nStations);
-            app.Card2_numberOfRiskStations.Text = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES NO ENTORNO DE REGISTROS DE NÍVEIS ACIMA DE 14 V/m</p></p>', nRiskStations);
-            app.Card3_stationsOnRoute .Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: black;   font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS NO ENTORNO DA ROTA</p>',                         nStationsOnRoute);
-            app.Card4_stationsOutRoute.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS FORA DA ROTA</p>',                               nStationsOutRoute);
+            app.Card1_numberOfStations.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: black;   font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS NAS LOCALIDADES SOB ANÁLISE</p>',                  nStations);
+            app.Card2_numberOfRiskStations.Text = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES NO ENTORNO DE REGISTROS DE NÍVEIS ACIMA DE %.0f V/m</p></p>', nRiskStations, app.mainApp.General.MonitoringPlan.FieldValue);
+            app.Card3_stationsOnRoute .Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: black;   font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS NO ENTORNO DA ROTA</p>',                           nStationsOnRoute);
+            app.Card4_stationsOutRoute.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS FORA DA ROTA</p>',                                 nStationsOutRoute);
+            layout_updatePeakInfo(app)
 
             % PLOT
             plot_MeasuresAndPoints(app)
@@ -282,13 +285,25 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function [idxFile, selectedFileLocations] = FileIndex(app)
-            if ~isempty(app.TreeFileLocations.CheckedNodes)
-                selectedFileLocations = {app.TreeFileLocations.CheckedNodes.Text};
-                idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
-            else
-                selectedFileLocations = {};
-                idxFile = [];
+        function [idxFile, selectedFileLocations] = FileIndex(app, operationType)
+            arguments
+                app
+                operationType char {mustBeMember(operationType, {'Startup', 'Update'})} = 'Update'
+            end
+
+            switch operationType
+                case 'Startup'
+                    selectedFileLocations = unique({app.measData.Location});
+                    idxFile = 1:numel(app.measData);
+
+                otherwise
+                    if ~isempty(app.TreeFileLocations.CheckedNodes)
+                        selectedFileLocations = {app.TreeFileLocations.CheckedNodes.Text};
+                        idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
+                    else
+                        selectedFileLocations = {};
+                        idxFile = [];
+                    end
             end
         end
 
@@ -299,7 +314,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 initialSelection = app.UITable.UserData(app.UITable.Selection);
             end
 
-            table2Render = app.mainApp.stationTable(idxStations, {'N° estacao',            ...
+            table2Render = app.mainApp.stationTable(idxStations, {'Estação',               ...
                                                                   'Location',              ...
                                                                   'Serviço',               ...                                                                                      
                                                                   'numberOfMeasures',      ...
@@ -378,7 +393,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
                 % Inicialmente, afere a distância da estação a cada uma das
                 % medidas, identificando aquelas no entorno.
-                stationDistance    = deg2km(distance(app.mainApp.stationTable.Latitude(ii), app.mainApp.stationTable.Longitude(ii), app.measTable.Latitude, app.measTable.Longitude));                
+                stationDistance    = deg2km(distance(app.mainApp.stationTable.Latitude(ii), app.mainApp.stationTable.Longitude(ii), app.measTable.Latitude, app.measTable.Longitude));
                 idxLogicalMeasures = stationDistance <= DIST_km;
 
                 if any(idxLogicalMeasures)
@@ -393,19 +408,21 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     app.mainApp.stationTable.maxFieldTimestamp(ii)    = stationMeasures.Timestamp(idxMaxFieldValue);
                     app.mainApp.stationTable.maxFieldLatitude(ii)     = stationMeasures.Latitude(idxMaxFieldValue);
                     app.mainApp.stationTable.maxFieldLongitude(ii)    = stationMeasures.Longitude(idxMaxFieldValue);
+                    app.mainApp.stationTable.("Fonte de dados"){ii}   = jsonencode(unique(stationMeasures.FileSource));
 
                 else
                     app.mainApp.stationTable.numberOfMeasures(ii)     = 0;
                     app.mainApp.stationTable.numberOfRiskMeasures(ii) = 0;
                     app.mainApp.stationTable.minFieldValue(ii)        = 0;
                     app.mainApp.stationTable.meanFieldValue(ii)       = 0;
-                    app.mainApp.stationTable.maxFieldValue(ii)        = 0;                
+                    app.mainApp.stationTable.maxFieldValue(ii)        = 0;
                     app.mainApp.stationTable.maxFieldTimestamp(ii)    = NaT;
                     app.mainApp.stationTable.maxFieldLatitude(ii)     = 0;
                     app.mainApp.stationTable.maxFieldLongitude(ii)    = 0;
+                    app.mainApp.stationTable.("Fonte de dados"){ii}   = jsonencode({''});       % '[""]'
                 end
 
-                app.mainApp.stationTable.minDistanceForMeasure(ii)    = min(stationDistance); % km
+                app.mainApp.stationTable.minDistanceForMeasure(ii)    = min(stationDistance);   % km
             end
         end
 
@@ -491,6 +508,24 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
+        function layout_updatePeakInfo(app)
+            if ~isempty(app.measTable)
+                [~, idxMax] = max(app.measTable.FieldValue);
+                peakLabel   = sprintf('%.2f V/m\n(%.6f, %.6f)', app.measTable.FieldValue(idxMax), ...
+                                                                app.measTable.Latitude(idxMax),   ...
+                                                                app.measTable.Longitude(idxMax));
+
+                set(app.tool_peakLabel, 'Visible', 1, 'Text', peakLabel)
+                set(app.tool_peakIcon,  'Visible', 1, 'UserData', struct('idxMax',    idxMax,                         ...
+                                                                         'Latitude',  app.measTable.Latitude(idxMax), ...
+                                                                         'Longitude', app.measTable.Longitude(idxMax)))
+            else
+                app.tool_peakLabel.Visible = 0;
+                app.tool_peakIcon.Visible  = 0;
+            end
+        end
+
+        %-----------------------------------------------------------------%
         function layout_TreeFileLocationBuilding(app)
             if ~isempty(app.TreeFileLocations.Children)
                 delete(app.TreeFileLocations.Children)
@@ -539,7 +574,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 switch class(callingApp)
                     case {'winMonitorRNI', 'winMonitorRNI_exported'}
                         switch operationType
-                            case {'PM-RNI: updateReferenceTable', 'PM-RNI: updatePlot'}
+                            case 'PM-RNI: updatePlot'
                                 Analysis(app)
 
                             case 'PM-RNI: updateAnalysis'
@@ -548,12 +583,20 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                 idxStations = app.UITable.UserData;
                                 if ~isempty(idxStations)
                                     app.mainApp.stationTable.AnalysisFlag(idxStations) = false;
-                                    Analysis(app)
                                 end
+                                Analysis(app, 'Startup')
+                                Analysis(app, 'Update')
 
                             case 'PM-RNI: updateAxes'
                                 if ~isequal(app.UIAxes.Basemap, app.mainApp.General.Plot.GeographicAxes.Basemap)
                                     app.UIAxes.Basemap = app.mainApp.General.Plot.GeographicAxes.Basemap;
+                                    
+                                    switch app.mainApp.General.Plot.GeographicAxes.Basemap
+                                        case {'darkwater', 'none'}
+                                            app.UIAxes.Grid = 'on';
+                                        otherwise
+                                            app.UIAxes.Grid = 'off';
+                                    end
                                 end
 
                                 plot.axes.Colormap(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colormap)
@@ -605,7 +648,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                     app.mainApp.stationTable.("Longitude")(idxStation) = newLongitude;
                                     app.mainApp.stationTable.AnalysisFlag(idxStation)  = false;
 
-                                    Analysis(app)
+                                    Analysis(app, 'Startup')
+                                    Analysis(app, 'Update')
 
                                 case 'UITableSelectionChanged'
                                     newRowSelection = varargin{3};
@@ -615,7 +659,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                     UITableSelectionChanged(app, struct('PreviousSelection', [], 'Selection', newRowSelection))
 
                                 case 'ListOfLocationChanged'
-                                    Analysis(app)
+                                    Analysis(app, 'Startup')
+                                    Analysis(app, 'Update')
 
                                 otherwise
                                     error('UnexpectedCall')
@@ -671,7 +716,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         % Image clicked function: tool_ControlPanelVisibility, 
-        % ...and 1 other component
+        % ...and 2 other components
         function tool_InteractionImageClicked(app, event)
             
             focus(app.jsBackDoor)
@@ -699,6 +744,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                         case 2
                             app.UITable.Visible = 1;
                             app.GridLayout.RowHeight(2:5) = {0, 0, 0, '1x'};
+                    end
+
+                case app.tool_peakIcon
+                    if ~isempty(app.tool_peakIcon.UserData)
+                        ReferenceDistance_km = 1;
+                        plot.zoom(app.UIAxes, app.tool_peakIcon.UserData.Latitude, app.tool_peakIcon.UserData.Longitude, ReferenceDistance_km)
+                        plot.datatip.Create(app.UIAxes, 'Measures', app.tool_peakIcon.UserData.idxMax)
                     end
             end
 
@@ -736,12 +788,12 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             savedFiles   = {};
             errorFiles   = {};
 
-            baseName     = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, appName, '-1');
+            defaultTempName = appUtil.DefaultFileName(app.mainApp.General.fileFolder.tempPath, appName, '-1');
             idxStations  = app.UITable.UserData;
 
             % (a) Arquivo no formato .XLSX
             %     (um único arquivo de saída)
-            fileName_XLSX = [baseName '.xlsx'];
+            fileName_XLSX = [defaultTempName '.xlsx'];
             [status, msgError] = fileWriter.MonitoringPlan(fileName_XLSX, app.mainApp.stationTable(idxStations, :), timetable2table(app.measTable), app.mainApp.General.MonitoringPlan.FieldValue, app.mainApp.General.MonitoringPlan.Export.XLSX);
             if status
                 savedFiles{end+1} = fileName_XLSX;
@@ -758,7 +810,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 % (b.1) KML:Measures
                 d.Message = 'Em andamento a criação do arquivo de medidas no formato "kml".';
 
-                fileName_KML1 = sprintf('%s_Measures.kml', baseName);
+                fileName_KML1 = sprintf('%s_Measures.kml', defaultTempName);
                 [status, msgError] = fileWriter.KML(fileName_KML1, 'Measures', timetable2table(app.measTable), hMeasPlot);
                 if status
                     savedFiles{end+1} = fileName_KML1;
@@ -771,7 +823,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
                 idxFile = FileIndex(app);
                 for ii = 1:numel(idxFile)
-                    fileName_KML2 = sprintf('%s_Route (%d).kml', baseName, ii);
+                    fileName_KML2 = sprintf('%s_Route (%d).kml', defaultTempName, ii);
                     [status, msgError] = fileWriter.KML(fileName_KML2, 'Route', timetable2table(app.measData(idxFile(ii)).Data));
                     if status
                         savedFiles{end+1} = fileName_KML2;
@@ -785,8 +837,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             if ~isempty(savedFiles)
                 zip(fileZIP, savedFiles)
 
-                fileFolder = fileparts(baseName);
-                savedFiles = replace(savedFiles, fileFolder, '.');
+                [~, fileName, fileExt] = fileparts(savedFiles);
+                savedFiles = strcat('•&thinsp;', fileName, fileExt);
                 appUtil.modalWindow(app.UIFigure, 'info', sprintf('Lista de arquivos criados:\n%s', strjoin(savedFiles, '\n')));
             end
 
@@ -795,88 +847,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             end
 
             delete(d)
-
-        end
-
-        % Image clicked function: axesTool_RegionZoom, axesTool_RestoreView
-        function axesTool_InteractionImageClicked(app, event)
-            
-            switch event.Source
-                case app.axesTool_RestoreView
-                    geolimits(app.UIAxes, app.restoreView(1).xLim, app.restoreView(1).yLim)
-
-                case app.axesTool_RegionZoom
-                    plot.axes.Interactivity.GeographicRegionZoomInteraction(app.UIAxes, app.axesTool_RegionZoom)
-            end
-
-        end
-
-        % Callback function: TreeFileLocations
-        function TreeFileLocationsCheckedNodesChanged(app, event)
-            
-            if isempty(app.TreeFileLocations.CheckedNodes)
-                app.TreeFileLocations.CheckedNodes = event.PreviousCheckedNodes;
-                return
-            end
-
-            Analysis(app)
-
-        end
-
-        % Cell edit callback: UITable
-        function UITableCellEdit(app, event)
-
-            idxStation = app.UITable.UserData(event.Indices(1));
-            app.mainApp.stationTable.("Justificativa")(idxStation) = event.NewData;
-            
-            layout_TableStyle(app)
-
-        end
-
-        % Selection changed function: UITable
-        function UITableSelectionChanged(app, event)
-            
-            if exist('event', 'var') && ~isempty(event.PreviousSelection) && isequal(event.Selection, event.PreviousSelection)
-                return
-            end
-
-            if isempty(event.Selection)
-                app.UITable.ContextMenu = [];
-            else
-                if isempty(app.UITable.ContextMenu)
-                    app.UITable.ContextMenu = app.ContextMenu;
-                end
-            end
-
-            plot_SelectedPoint(app)
-            
-        end
-
-        % Menu selected function: EditSelectedUITableRow
-        function tool_EditRowImageClicked(app, event)
-            
-            if ~isempty(app.UITable.Selection)
-                app.progressDialog.Visible = 'visible';
-
-                createPopUpContainer(app)
-                auxApp.dockStationInfo_exported(app.popupContainer, app)
-                app.popupContainer.Parent.Visible = "on";
-
-                app.progressDialog.Visible = 'hidden';
-            end
-
-        end
-
-        % Image clicked function: LocationListEdit
-        function LocationListEditClicked(app, event)
-            
-            app.progressDialog.Visible = 'visible';
-
-            createPopUpContainer(app)
-            auxApp.dockListOfLocation_exported(app.popupContainer, app)
-            app.popupContainer.Parent.Visible = "on";
-
-            app.progressDialog.Visible = 'hidden';
 
         end
 
@@ -921,18 +891,145 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 end
             end
 
-            % SALVA ARQUIVO NA PASTA "POST" DO SHAREPOINT
-            fileName = [appUtil.DefaultFileName(app.mainApp.General.fileFolder.DataHub_POST, class.Constants.appName, '-1') '.xlsx'];
+            % SALVA ARQUIVOS NA PASTA "POST" DO SHAREPOINT
+            savedFiles   = {};
+            errorFiles   = {};
 
-            [status, msgError] = fileWriter.MonitoringPlan(fileName, relatedStationTable, [], app.mainApp.General.MonitoringPlan.FieldValue);
+            % (a) PLANILHA EXCEL
+            fileName_XLSX = [appUtil.DefaultFileName(app.mainApp.General.fileFolder.DataHub_POST, class.Constants.appName, '-1') '.xlsx'];
+            [status, msgError] = fileWriter.MonitoringPlan(fileName_XLSX, relatedStationTable, [], app.mainApp.General.MonitoringPlan.FieldValue);
             if status
                 app.mainApp.stationTable.UploadResultFlag(idxStations) = true;
                 layout_TableStyle(app)
 
-                appUtil.modalWindow(app.UIFigure, 'info', 'Operação concluída com sucesso.');
+                [~, fileName, fileExt] = fileparts(fileName_XLSX);
+                savedFiles{end+1} = [fileName, fileExt];
             else
-                appUtil.modalWindow(app.UIFigure, 'error', msgError);
+                errorFiles{end+1} = msgError;
             end
+
+            % (b) ARQUIVOS BRUTOS E ARQUIVOS DE METADADOS
+            idxFile = FileIndex(app);
+            for ii = idxFile
+                % ARQUIVOS BRUTOS
+                fileName_RAW = fullfile(app.measData(ii).Filepath, app.measData(ii).Filename);
+                
+                [status, msgError]    = copyfile(fileName_RAW, app.mainApp.General.fileFolder.DataHub_POST, 'f');
+                if status
+                    savedFiles{end+1} = app.measData(ii).Filename;
+                else
+                    errorFiles{end+1} = msgError;
+                end
+
+                % ARQUIVOS DE METADADOS
+                [~, fileName_JSON] = fileparts(fileName_RAW);
+                fileName_JSON = [fileName_JSON '.json'];
+
+                [status, msgError]    = fileWriter.RawFileMetaData(fullfile(app.mainApp.General.fileFolder.DataHub_POST, fileName_JSON), app.measData(ii));
+                if status
+                    savedFiles{end+1} = fileName_JSON;
+                else
+                    errorFiles{end+1} = msgError;
+                end
+            end
+
+            if ~isempty(savedFiles)
+                savedFiles = strcat('•&thinsp;', savedFiles);
+                appUtil.modalWindow(app.UIFigure, 'info', sprintf('Lista de arquivos copiados para o Sharepoint:\n%s', strjoin(savedFiles, '\n')));
+            end
+
+            if ~isempty(errorFiles)
+                appUtil.modalWindow(app.UIFigure, 'error', strjoin(errorFiles, '\n'));
+            end
+
+        end
+
+        % Image clicked function: axesTool_RegionZoom, axesTool_RestoreView
+        function axesTool_InteractionImageClicked(app, event)
+            
+            switch event.Source
+                case app.axesTool_RestoreView
+                    geolimits(app.UIAxes, app.restoreView(1).xLim, app.restoreView(1).yLim)
+
+                case app.axesTool_RegionZoom
+                    plot.axes.Interactivity.GeographicRegionZoomInteraction(app.UIAxes, app.axesTool_RegionZoom)
+            end
+
+        end
+
+        % Callback function: TreeFileLocations
+        function TreeFileLocationsCheckedNodesChanged(app, event)
+            
+            if isempty(app.TreeFileLocations.CheckedNodes)
+                app.TreeFileLocations.CheckedNodes = event.PreviousCheckedNodes;
+                return
+            end
+
+            Analysis(app)
+
+        end
+
+        % Cell edit callback: UITable
+        function UITableCellEdit(app, event)
+
+            idxStations = app.UITable.UserData;
+            idxSelectedStation = idxStations(event.Indices(1));
+            
+            if ~ismember(event.EditData, app.mainApp.General.MonitoringPlan.NoMeasureReasons)
+                app.UITable.Data.("Justificativa") = app.mainApp.stationTable.("Justificativa")(idxStations);
+                return
+            end
+                        
+            app.mainApp.stationTable.("Justificativa")(idxSelectedStation) = event.NewData;
+            
+            layout_TableStyle(app)
+
+        end
+
+        % Selection changed function: UITable
+        function UITableSelectionChanged(app, event)
+            
+            if exist('event', 'var') && ~isempty(event.PreviousSelection) && isequal(event.Selection, event.PreviousSelection)
+                return
+            end
+
+            if isempty(event.Selection)
+                app.UITable.ContextMenu = [];
+            else
+                if isempty(app.UITable.ContextMenu)
+                    app.UITable.ContextMenu = app.ContextMenu;
+                end
+            end
+
+            plot_SelectedPoint(app)
+            
+        end
+
+        % Menu selected function: EditSelectedUITableRow
+        function UITableOpenPopUpEditionMode(app, event)
+            
+            if ~isempty(app.UITable.Selection)
+                app.progressDialog.Visible = 'visible';
+
+                createPopUpContainer(app)
+                auxApp.dockStationInfo_exported(app.popupContainer, app)
+                app.popupContainer.Parent.Visible = "on";
+
+                app.progressDialog.Visible = 'hidden';
+            end
+
+        end
+
+        % Image clicked function: LocationListEdit
+        function LocationListEditClicked(app, event)
+            
+            app.progressDialog.Visible = 'visible';
+
+            createPopUpContainer(app)
+            auxApp.dockListOfLocation_exported(app.popupContainer, app)
+            app.popupContainer.Parent.Visible = "on";
+
+            app.progressDialog.Visible = 'hidden';
 
         end
     end
@@ -978,6 +1075,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create plotPanel
             app.plotPanel = uipanel(app.GridLayout);
+            app.plotPanel.AutoResizeChildren = 'off';
             app.plotPanel.BorderType = 'none';
             app.plotPanel.BackgroundColor = [1 1 1];
             app.plotPanel.Layout.Row = [2 3];
@@ -1092,7 +1190,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card1_numberOfStations.Layout.Row = 6;
             app.Card1_numberOfStations.Layout.Column = 1;
             app.Card1_numberOfStations.Interpreter = 'html';
-            app.Card1_numberOfStations.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: BLACK; font-size: 32px;">0</font>'; 'ESTAÇÕES LOCALIZADAS NOS MUNICÍPIOS SOB ANÁLISE</p>'};
+            app.Card1_numberOfStations.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: BLACK; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS NAS LOCALIDADES SOB ANÁLISE</p>'};
 
             % Create Card2_numberOfRiskStations
             app.Card2_numberOfRiskStations = uilabel(app.Document);
@@ -1157,7 +1255,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create toolGrid
             app.toolGrid = uigridlayout(app.GridLayout);
-            app.toolGrid.ColumnWidth = {22, 22, 22, '1x', 22, 22};
+            app.toolGrid.ColumnWidth = {22, 22, 22, 22, 22, '1x', 150, 22};
             app.toolGrid.RowHeight = {4, 17, '1x'};
             app.toolGrid.ColumnSpacing = 5;
             app.toolGrid.RowSpacing = 0;
@@ -1203,15 +1301,34 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_UploadFinalFile.Enable = 'off';
             app.tool_UploadFinalFile.Tooltip = {'Upload do arquivo final para o Sharepoint'};
             app.tool_UploadFinalFile.Layout.Row = 2;
-            app.tool_UploadFinalFile.Layout.Column = 6;
+            app.tool_UploadFinalFile.Layout.Column = 4;
             app.tool_UploadFinalFile.ImageSource = 'Up_24.png';
+
+            % Create tool_peakLabel
+            app.tool_peakLabel = uilabel(app.toolGrid);
+            app.tool_peakLabel.HorizontalAlignment = 'right';
+            app.tool_peakLabel.FontSize = 10;
+            app.tool_peakLabel.Visible = 'off';
+            app.tool_peakLabel.Layout.Row = [1 3];
+            app.tool_peakLabel.Layout.Column = 7;
+            app.tool_peakLabel.Text = {'5.3 V/m'; '(-12.354321, -38.123456)'};
+
+            % Create tool_peakIcon
+            app.tool_peakIcon = uiimage(app.toolGrid);
+            app.tool_peakIcon.ImageClickedFcn = createCallbackFcn(app, @tool_InteractionImageClicked, true);
+            app.tool_peakIcon.Visible = 'off';
+            app.tool_peakIcon.Tooltip = {'Zoom em torno do local de máximo'};
+            app.tool_peakIcon.Layout.Row = [1 3];
+            app.tool_peakIcon.Layout.Column = 8;
+            app.tool_peakIcon.HorizontalAlignment = 'right';
+            app.tool_peakIcon.ImageSource = 'Detection_128.png';
 
             % Create ContextMenu
             app.ContextMenu = uicontextmenu(app.UIFigure);
 
             % Create EditSelectedUITableRow
             app.EditSelectedUITableRow = uimenu(app.ContextMenu);
-            app.EditSelectedUITableRow.MenuSelectedFcn = createCallbackFcn(app, @tool_EditRowImageClicked, true);
+            app.EditSelectedUITableRow.MenuSelectedFcn = createCallbackFcn(app, @UITableOpenPopUpEditionMode, true);
             app.EditSelectedUITableRow.Text = 'Editar';
 
             % Show the figure after all components are created

@@ -27,11 +27,11 @@ function [stationTable, rawListOfYears, refListOfLocations, refListOfStates] = M
     
     % Conversões:
     stationTable.Fistel                   = uint64(stationTable.Fistel);
-    stationTable.("N° estacao")           = uint32(stationTable.("N° estacao"));
+    stationTable.("Estação")              = uint32(stationTable.("Estação"));
 
     % Dados inválidos (Duplicados por possuírem mesmos valores p/ colunas 
     % "Fistel", "Nº estação", "Lat" e "Long"):
-    strHashBase = cellstr(string(stationTable.Fistel) + "; " + string(stationTable.("N° estacao")) + "; " + string(stationTable.Lat) + "; " + string(stationTable.Long));
+    strHashBase = cellstr(string(stationTable.Fistel) + "; " + string(stationTable.("Estação")) + "; " + string(stationTable.Lat) + "; " + string(stationTable.Long));
     stationTable.Base64Hash               = cellfun(@(x) Base64Hash.encode(x), strHashBase, 'UniformOutput', false);
     [~, idxUnique] = unique(stationTable.Base64Hash, 'stable');
     stationTable = stationTable(idxUnique, :);
@@ -53,11 +53,13 @@ function [stationTable, rawListOfYears, refListOfLocations, refListOfStates] = M
     stationTable.maxFieldLatitude(:)      = 0;
     stationTable.maxFieldLongitude(:)     = 0;
 
-    stationTable.("Justificativa")        = repmat(categorical("-1", appGeneral.MonitoringPlan.NoMeasureReasons), height(stationTable), 1);
-    stationTable.("Observações")          = repmat({''}, height(stationTable), 1);
+    stationTable.("Fonte de dados")(:)    = {''};
+    stationTable.("Justificativa")(:)     = categorical("-1", appGeneral.MonitoringPlan.NoMeasureReasons);
+    stationTable.("Observações")(:)       = {''};
 
-    stationTable.AnalysisFlag             = false(height(stationTable), 1);
-    stationTable.UploadResultFlag         = false(height(stationTable), 1);
+    stationTable.AnalysisFlag(:)          = false;
+    stationTable.UploadResultFlag(:)      = false;
+    
 
     % Ordenando lista (evitando que "Águas Claras" seja apresentada 
     % depois dos municípios que se iniciam com a letra "z")

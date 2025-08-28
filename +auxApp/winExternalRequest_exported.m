@@ -28,6 +28,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         menu_Button1Label            matlab.ui.control.Label
         play_ControlsTab1Image_2     matlab.ui.control.Image
         toolGrid                     matlab.ui.container.GridLayout
+        tool_peakIcon                matlab.ui.control.Image
+        tool_peakLabel               matlab.ui.control.Label
         tool_ExportFiles             matlab.ui.control.Image
         jsBackDoor                   matlab.ui.control.HTML
         tool_TableVisibility         matlab.ui.control.Image
@@ -87,6 +89,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function jsBackDoor_Initialization(app)
             if app.isDocked
+                delete(app.jsBackDoor)
                 app.jsBackDoor = app.mainApp.jsBackDoor;
             else
                 app.jsBackDoor.HTMLSource = appUtil.jsBackDoorHTMLSource();
@@ -176,18 +179,19 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.progressDialog.Visible = 'visible';
 
             startup_GUIComponents(app)
-            Analysis(app)
+            Analysis(app, 'Startup')
+            Analysis(app, 'Update')
 
             app.progressDialog.Visible = 'hidden';
         end
 
         %-----------------------------------------------------------------%
         function startup_GUIComponents(app)
-            if app.mainApp.General.MonitoringPlan.FieldValue ~= 14
-                app.UITable.ColumnName{5} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.MonitoringPlan.FieldValue);
+            if app.mainApp.General.ExternalRequest.FieldValue ~= 14
+                app.UITable.ColumnName{5} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.ExternalRequest.FieldValue);
             end
 
-            startup_AxesCreation(app)
+            [app.UIAxes, app.restoreView] = plot.axesCreationController(app.plotPanel, app.mainApp.General);
             layout_TreeFileLocationBuilding(app)
             
             app.tool_TableVisibility.UserData = 1;
@@ -198,40 +202,20 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.NewPointType.Items = [{''}; app.mainApp.General.ExternalRequest.TypeOfLocation];
             layout_newPointPanel(app, 'off')
         end
-
-        %-----------------------------------------------------------------%
-        function startup_AxesCreation(app)
-            % Eixo geográfico: MAPA
-            app.plotPanel.AutoResizeChildren = 'off';
-            app.UIAxes = plot.axes.Creation(app.plotPanel, 'Geographic', {'Units',    'normalized',                                    ...
-                                                                          'Position', [0 0 1 1 ],                                      ...
-                                                                          'Basemap',  app.mainApp.General.Plot.GeographicAxes.Basemap, ...
-                                                                          'UserData', struct('CLimMode', 'auto', 'Colormap', '')});
-
-            set(app.UIAxes.LatitudeAxis,  'TickLabels', {}, 'Color', 'none')
-            set(app.UIAxes.LongitudeAxis, 'TickLabels', {}, 'Color', 'none')
-            
-            geolimits(app.UIAxes, 'auto')
-            app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
-
-            plot.axes.Colormap(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colormap)
-            plot.axes.Colorbar(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colorbar)
-
-            % Legenda
-            legend(app.UIAxes, 'Location', 'southwest', 'Color', [.94,.94,.94], 'EdgeColor', [.9,.9,.9], 'NumColumns', 4, 'LineWidth', .5, 'FontSize', 7.5)
-
-            % Axes interactions:
-            plot.axes.Interactivity.DefaultCreation(app.UIAxes, [dataTipInteraction, zoomInteraction, panInteraction])
-        end
     end
 
 
     methods (Access = private)
         %-----------------------------------------------------------------%
-        function Analysis(app)
+        function Analysis(app, operationType)
+            arguments
+                app
+                operationType char {mustBeMember(operationType, {'Startup', 'Update'})} = 'Update'
+            end
+
             app.progressDialog.Visible = 'visible';
 
-            [idxFile, selectedFileLocations] = FileIndex(app);
+            [idxFile, selectedFileLocations] = FileIndex(app, operationType);
 
             if ~isempty(idxFile)
                 % Concatena as tabelas de LATITUDE, LONGITUDE E NÍVEL de cada um
@@ -246,10 +230,17 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             app.projectData.selectedFileLocations     = selectedFileLocations;
 
-            identifyMeasuresForEachPoint(app)
+            if ~isempty(app.measTable)
+                identifyMeasuresForEachPoint(app)
+
+                if operationType == "Startup"
+                    return
+                end
+            end
 
             initialSelection = updateTable(app);
             layout_TableStyle(app)
+            layout_updatePeakInfo(app)
 
             % PLOT
             plot_MeasuresAndPoints(app)
@@ -266,13 +257,25 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function [idxFile, selectedFileLocations] = FileIndex(app)
-            if ~isempty(app.TreeFileLocations.CheckedNodes)
-                selectedFileLocations = {app.TreeFileLocations.CheckedNodes.Text};
-                idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
-            else
-                selectedFileLocations = {};
-                idxFile = [];
+        function [idxFile, selectedFileLocations] = FileIndex(app, operationType)
+            arguments
+                app
+                operationType char {mustBeMember(operationType, {'Startup', 'Update'})} = 'Update'
+            end
+
+            switch operationType
+                case 'Startup'
+                    selectedFileLocations = unique({app.measData.Location});
+                    idxFile = 1:numel(app.measData);
+
+                otherwise
+                    if ~isempty(app.TreeFileLocations.CheckedNodes)
+                        selectedFileLocations = {app.TreeFileLocations.CheckedNodes.Text};
+                        idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
+                    else
+                        selectedFileLocations = {};
+                        idxFile = [];
+                    end
             end
         end
 
@@ -304,7 +307,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Measures
             if ~isempty(app.measTable)
-                plot.draw.Measures(app.UIAxes, app.measTable, app.mainApp.General.MonitoringPlan.FieldValue, app.mainApp.General);
+                plot.draw.Measures(app.UIAxes, app.measTable, app.mainApp.General.ExternalRequest.FieldValue, app.mainApp.General);
 
                 % Abaixo estabelece como limites do eixo os limites atuais,
                 % configurados automaticamente pelo MATLAB. Ao fazer isso,
@@ -430,6 +433,24 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
+        function layout_updatePeakInfo(app)
+            if ~isempty(app.measTable)
+                [~, idxMax] = max(app.measTable.FieldValue);
+                peakLabel   = sprintf('%.2f V/m\n(%.6f, %.6f)', app.measTable.FieldValue(idxMax), ...
+                                                                app.measTable.Latitude(idxMax),   ...
+                                                                app.measTable.Longitude(idxMax));
+
+                set(app.tool_peakLabel, 'Visible', 1, 'Text', peakLabel)
+                set(app.tool_peakIcon,  'Visible', 1, 'UserData', struct('idxMax',    idxMax,                         ...
+                                                                         'Latitude',  app.measTable.Latitude(idxMax), ...
+                                                                         'Longitude', app.measTable.Longitude(idxMax)))
+            else
+                app.tool_peakLabel.Visible = 0;
+                app.tool_peakIcon.Visible  = 0;
+            end
+        end
+
+        %-----------------------------------------------------------------%
         function layout_TreeFileLocationBuilding(app)
             if ~isempty(app.TreeFileLocations.Children)
                 delete(app.TreeFileLocations.Children)
@@ -503,12 +524,20 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
                                 if ~isempty(app.mainApp.pointsTable)
                                     app.mainApp.pointsTable.AnalysisFlag(:) = false;
-                                    Analysis(app)
                                 end
+                                Analysis(app, 'Startup')
+                                Analysis(app, 'Update')
 
                             case 'ExternalRequest: updateAxes'
                                 if ~isequal(app.UIAxes.Basemap, app.mainApp.General.Plot.GeographicAxes.Basemap)
                                     app.UIAxes.Basemap = app.mainApp.General.Plot.GeographicAxes.Basemap;
+
+                                    switch app.mainApp.General.Plot.GeographicAxes.Basemap
+                                        case {'darkwater', 'none'}
+                                            app.UIAxes.Grid = 'on';
+                                        otherwise
+                                            app.UIAxes.Grid = 'off';
+                                    end
                                 end
 
                                 plot.axes.Colormap(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colormap)
@@ -564,7 +593,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         end
 
         % Image clicked function: tool_ControlPanelVisibility, 
-        % ...and 1 other component
+        % ...and 2 other components
         function tool_InteractionImageClicked(app, event)
             
             focus(app.jsBackDoor)
@@ -592,6 +621,13 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                         case 2
                             app.UITable.Visible = 1;
                             app.GridLayout.RowHeight(2:5) = {0, 0, 0, '1x'};
+                    end
+
+                case app.tool_peakIcon
+                    if ~isempty(app.tool_peakIcon.UserData)
+                        ReferenceDistance_km = 1;
+                        plot.zoom(app.UIAxes, app.tool_peakIcon.UserData.Latitude, app.tool_peakIcon.UserData.Longitude, ReferenceDistance_km)
+                        plot.datatip.Create(app.UIAxes, 'Measures', app.tool_peakIcon.UserData.idxMax)
                     end
             end
 
@@ -718,6 +754,11 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         % Cell edit callback: UITable
         function UITableCellEdit(app, event)
+            
+            if ~ismember(event.EditData, app.mainApp.General.ExternalRequest.NoMeasureReasons)
+                app.UITable.Data.("Justificativa") = app.mainApp.pointsTable.("Justificativa");
+                return
+            end
 
             idxPoint = event.Indices(1);
             app.mainApp.pointsTable.("Justificativa")(idxPoint) = event.NewData;
@@ -800,7 +841,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                     layout_TreePointsBuilding(app)
         
                     % ANÁLISA DOS PONTOS CRÍTICOS, ATUALIZANDO TABELA E PLOT
-                    Analysis(app)
+                    Analysis(app, 'Startup')
+                    Analysis(app, 'Update')
 
                     % DESABILITA MODO DE INCLUSÃO DE PONTO
                     layout_newPointPanel(app, 'off')
@@ -942,6 +984,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Create plotPanel
             app.plotPanel = uipanel(app.GridLayout);
+            app.plotPanel.AutoResizeChildren = 'off';
             app.plotPanel.BorderType = 'none';
             app.plotPanel.BackgroundColor = [1 1 1];
             app.plotPanel.Layout.Row = [2 3];
@@ -980,7 +1023,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.UITable.RowName = {};
             app.UITable.ColumnSortable = true;
             app.UITable.SelectionType = 'row';
-            app.UITable.ColumnEditable = [false true false false false false false false true];
+            app.UITable.ColumnEditable = [false false false false false false false false true];
             app.UITable.CellEditCallback = createCallbackFcn(app, @UITableCellEdit, true);
             app.UITable.SelectionChangedFcn = createCallbackFcn(app, @UITableSelectionChanged, true);
             app.UITable.Multiselect = 'off';
@@ -991,7 +1034,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Create toolGrid
             app.toolGrid = uigridlayout(app.GridLayout);
-            app.toolGrid.ColumnWidth = {22, 22, 22, '1x', 22};
+            app.toolGrid.ColumnWidth = {22, 22, 22, 22, '1x', 150, 22};
             app.toolGrid.RowHeight = {4, 17, '1x'};
             app.toolGrid.ColumnSpacing = 5;
             app.toolGrid.RowSpacing = 0;
@@ -1019,17 +1062,36 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % Create jsBackDoor
             app.jsBackDoor = uihtml(app.toolGrid);
             app.jsBackDoor.Layout.Row = 2;
-            app.jsBackDoor.Layout.Column = 5;
+            app.jsBackDoor.Layout.Column = 4;
 
             % Create tool_ExportFiles
             app.tool_ExportFiles = uiimage(app.toolGrid);
             app.tool_ExportFiles.ScaleMethod = 'none';
             app.tool_ExportFiles.ImageClickedFcn = createCallbackFcn(app, @tool_ExportTableAsExcelSheet, true);
             app.tool_ExportFiles.Enable = 'off';
-            app.tool_ExportFiles.Tooltip = {'Exporta plot e tabela como arquivos'; '(.KML e .XLSX)'};
+            app.tool_ExportFiles.Tooltip = {'Exporta análise'};
             app.tool_ExportFiles.Layout.Row = 2;
             app.tool_ExportFiles.Layout.Column = 3;
             app.tool_ExportFiles.ImageSource = 'Export_16.png';
+
+            % Create tool_peakLabel
+            app.tool_peakLabel = uilabel(app.toolGrid);
+            app.tool_peakLabel.HorizontalAlignment = 'right';
+            app.tool_peakLabel.FontSize = 10;
+            app.tool_peakLabel.Visible = 'off';
+            app.tool_peakLabel.Layout.Row = [1 3];
+            app.tool_peakLabel.Layout.Column = 6;
+            app.tool_peakLabel.Text = {'5.3 V/m'; '(-12.354321, -38.123456)'};
+
+            % Create tool_peakIcon
+            app.tool_peakIcon = uiimage(app.toolGrid);
+            app.tool_peakIcon.ImageClickedFcn = createCallbackFcn(app, @tool_InteractionImageClicked, true);
+            app.tool_peakIcon.Visible = 'off';
+            app.tool_peakIcon.Tooltip = {'Zoom em torno do local de máximo'};
+            app.tool_peakIcon.Layout.Row = [1 3];
+            app.tool_peakIcon.Layout.Column = 7;
+            app.tool_peakIcon.HorizontalAlignment = 'right';
+            app.tool_peakIcon.ImageSource = 'Detection_128.png';
 
             % Create GridLayout2
             app.GridLayout2 = uigridlayout(app.GridLayout);

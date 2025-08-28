@@ -272,6 +272,16 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     % meio de chamada a uiputfile. 
                     app.General_I.fileFolder.userPath = tempDir;
 
+                    % A renderização do plot no MATLAB WebServer, enviando-o à uma 
+                    % sessão do webapp como imagem Base64, é crítica por depender 
+                    % das comunicações WebServer-webapp e WebServer-BaseMapServer. 
+                    % Ao configurar o Basemap como "none", entretanto, elimina-se a 
+                    % necessidade de comunicação com BaseMapServer, além de tornar 
+                    % mais eficiente a comunicação com webapp porque as imagens
+                    % Base64 são menores (uma imagem com Basemap "sattelite" pode 
+                    % ter 500 kB, enquanto uma imagem sem Basemap pode ter 25 kB).
+                    app.General_I.Plot.GeographicAxes.Basemap = 'none';
+
                 otherwise    
                     % Resgata a pasta de trabalho do usuário (configurável).
                     userPaths = appUtil.UserPaths(app.General_I.fileFolder.userPath);
@@ -529,26 +539,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         % Close request function: UIFigure
         function closeFcn(app, event)
 
-            % PROGRESS DIALOG
-            delete(app.progressDialog)
+            % Especificidade "winMonitorRNI":
+            % ...
 
-            % DELETE TEMP FILES
-            rmdir(app.General_I.fileFolder.tempPath, 's');
-
-            % DELETE APPS
-            if isdeployed
-                delete(findall(groot, 'Type', 'Figure'))
-            else
-                delete(app.tabGroupController)                
-            end
-
-            % MATLAB RUNTIME
-            % Ao fechar um webapp, o MATLAB WebServer demora uns 10 segundos para
-            % fechar o Runtime que suportava a sessão do webapp. Dessa forma, a 
-            % liberação do recurso, que ocorre com a inicialização de uma nova 
-            % sessão do Runtime, fica comprometida.
-            appUtil.killingMATLABRuntime(app.executionMode)
-
+            % Aspectos gerais (carregar em todos os apps):
+            appUtil.beforeDeleteApp(app.progressDialog, app.General_I.fileFolder.tempPath, app.tabGroupController, app.executionMode)
             delete(app)
             
         end
@@ -694,7 +689,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             % LOG
             msgWarning = '';
             if ~isempty(filesError)
-                msgWarning = sprintf('Arquivos que apresentaram erro na leitura:\n%s\n\n', strjoin(strcat({'•&thinsp;'}, {filesError.File}, {': '}, {filesError.Error}), '\n'));
+                msgWarning = sprintf('Arquivos que apresentaram erro na leitura:\n%s\n\n', strjoin(strcat({'<font style="font-size: 11px;">•&thinsp;'}, {filesError.File}, {': '}, {filesError.Error}), '</font>\n'));
             end
 
             if ~isempty(filesInCache)

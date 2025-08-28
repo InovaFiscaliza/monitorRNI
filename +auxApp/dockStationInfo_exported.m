@@ -187,6 +187,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
                         LocationValueChanged(app, struct('Source', event.Source))
                     else
                         updateLocationPanelLayout(app, 'off')
+                        updateForm(app)
                     end
 
                 case app.LocationEditionConfirm

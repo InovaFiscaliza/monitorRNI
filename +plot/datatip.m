@@ -45,5 +45,18 @@ classdef (Abstract) datatip
                 delete(dt)
             end
         end
+
+        %-----------------------------------------------------------------%
+        function Create(hAxes, PlotTag, idx)
+            hPlot = findobj(hAxes, 'Tag', PlotTag);
+            
+            if ~isempty(hPlot)
+                hPeak = findobj(hPlot(1), 'Type', 'datatip', 'Tag', 'Peak');
+                
+                if isempty(hPeak)
+                    datatip(hPlot(1), 'DataIndex', idx, 'Tag', 'Peak');
+                end
+            end
+        end
     end
 end

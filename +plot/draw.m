@@ -45,7 +45,7 @@ classdef (Abstract) draw
             switch callinAppTag
                 case {'auxApp.winMonitoringPlan',  'auxApp.winMonitoringPlan_exported'}
                     DIST_km     = appGeneral.MonitoringPlan.Distance_km;
-                    pointID     = sprintf('Estação nº %d', selectedPointTable.("N° estacao"));
+                    pointID     = sprintf('Estação nº %d', selectedPointTable.("Estação"));
                     displayName = 'Maior nível em torno da estação';
 
                 case {'auxApp.winExternalRequest', 'auxApp.winExternalRequest_exported'}
@@ -90,13 +90,8 @@ classdef (Abstract) draw
 
             % Zoom automático em torno do ponto
             if appGeneral.Plot.SelectedStation.AutomaticZoom
-                arclen         = km2deg(appGeneral.Plot.SelectedStation.AutomaticZoomFactor * DIST_km);
-                [~, lim_long1] = reckon(pointLatitude, pointLongitude, arclen, -90);
-                [~, lim_long2] = reckon(pointLatitude, pointLongitude, arclen,  90);    
-                [lim_lat1, ~]  = reckon(pointLatitude, pointLongitude, arclen, 180);
-                [lim_lat2, ~]  = reckon(pointLatitude, pointLongitude, arclen,   0);
-    
-                geolimits(hAxes, [lim_lat1, lim_lat2], [lim_long1, lim_long2]);
+                ReferenceDistance_km = appGeneral.Plot.SelectedStation.AutomaticZoomFactor * DIST_km;
+                plot.zoom(hAxes, pointLatitude, pointLongitude, ReferenceDistance_km)
             end
         end
     end

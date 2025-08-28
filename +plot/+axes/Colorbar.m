@@ -16,7 +16,7 @@ function Colorbar(hAxes, Location)
             if ~isempty(cb)
                 cb.Location = Location;
             else
-                colorbar(hAxes, 'Location', Location, 'Color', 'white', 'HitTest', 'off', 'FontSize', 7);
+                colorbar(hAxes, 'Location', Location, 'Color', 'white', 'FontSize', 7, 'PickableParts', 'none');
             end
     end
 end

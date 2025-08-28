@@ -43,7 +43,7 @@ classdef (Abstract) CSV
             % Tabela:
             rawData        = regexp(fileContent, regExp2, 'names');
             if isempty(rawData)
-                error('Arquivo parece não conter medida válida')
+                error('Não identificada médida válida')
             end
             
             Timestamp      = datetime({rawData.Timestamp}', 'InputFormat', dateFormat, 'Format', 'dd/MM/yyyy HH:mm:ss');
