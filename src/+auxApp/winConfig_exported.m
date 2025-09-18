@@ -1,0 +1,1659 @@
+classdef winConfig_exported < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure                      matlab.ui.Figure
+        GridLayout                    matlab.ui.container.GridLayout
+        DockModuleGroup               matlab.ui.container.GridLayout
+        dockModule_Undock             matlab.ui.control.Image
+        dockModule_Close              matlab.ui.control.Image
+        TabGroup                      matlab.ui.container.TabGroup
+        Tab1                          matlab.ui.container.Tab
+        Tab1Grid                      matlab.ui.container.GridLayout
+        tool_RFDataHubButton          matlab.ui.control.Image
+        tool_versionInfoRefresh       matlab.ui.control.Image
+        openAuxiliarApp2Debug         matlab.ui.control.CheckBox
+        openAuxiliarAppAsDocked       matlab.ui.control.CheckBox
+        versionInfo                   matlab.ui.control.Label
+        versionInfoLabel              matlab.ui.control.Label
+        Tab2                          matlab.ui.container.Tab
+        Tab2Grid                      matlab.ui.container.GridLayout
+        Panel_2                       matlab.ui.container.Panel
+        GridLayout3                   matlab.ui.container.GridLayout
+        SortMethod                    matlab.ui.control.DropDown
+        SortMethodLabel               matlab.ui.control.Label
+        InputType                     matlab.ui.control.DropDown
+        InputTypeLabel                matlab.ui.control.Label
+        PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel  matlab.ui.control.Label
+        analysis_ElevationPanel       matlab.ui.container.Panel
+        ExternalRequestGrid           matlab.ui.container.GridLayout
+        ExternalRequestExportKML      matlab.ui.control.CheckBox
+        ExternalRequestExportXLSX     matlab.ui.control.CheckBox
+        ExternalRequestLevel          matlab.ui.control.NumericEditField
+        ExternalRequestLevelLabel     matlab.ui.control.Label
+        ExternalRequestDistance       matlab.ui.control.NumericEditField
+        ExternalRequestDistanceLabel  matlab.ui.control.Label
+        analysis_ElevationLabel       matlab.ui.control.Label
+        analysis_FilePanel            matlab.ui.container.Panel
+        MonitoringPlanGrid            matlab.ui.container.GridLayout
+        MonitoringPlanExportKML       matlab.ui.control.CheckBox
+        MonitoringPlanExportXLSX      matlab.ui.control.CheckBox
+        MonitoringPlanPeriod          matlab.ui.container.CheckBoxTree
+        MonitoringPlanOpenFile        matlab.ui.control.Image
+        MonitoringPlanFileName        matlab.ui.control.EditField
+        MonitoringPlanFileLabel       matlab.ui.control.Label
+        MonitoringPlanLevel           matlab.ui.control.NumericEditField
+        MonitoringPlanLevelLabel      matlab.ui.control.Label
+        MonitoringPlanDistance        matlab.ui.control.NumericEditField
+        MonitoringPlanDistanceLabel   matlab.ui.control.Label
+        analysis_FileRefresh          matlab.ui.control.Image
+        analysis_FileLabel            matlab.ui.control.Label
+        PLOTTab                       matlab.ui.container.Tab
+        CustomPlotGrid                matlab.ui.container.GridLayout
+        CustomPlotTitle_2             matlab.ui.control.Label
+        Panel                         matlab.ui.container.Panel
+        GridLayout2                   matlab.ui.container.GridLayout
+        AutomaticZoomFactor           matlab.ui.control.Spinner
+        AutomaticZoomFactorLabel      matlab.ui.control.Label
+        AutomaticZoomMode             matlab.ui.control.CheckBox
+        ZoomOrientation               matlab.ui.control.DropDown
+        ZoomOrientationLabel          matlab.ui.control.Label
+        Colorbar                      matlab.ui.control.DropDown
+        ColorbarLabel                 matlab.ui.control.Label
+        Colormap                      matlab.ui.control.DropDown
+        ColormapLabel                 matlab.ui.control.Label
+        Basemap                       matlab.ui.control.DropDown
+        BasemapLabel                  matlab.ui.control.Label
+        CustomPlotPanel               matlab.ui.container.Panel
+        CustomPlotPanelGrid           matlab.ui.container.GridLayout
+        CircleEdgeAlpha               matlab.ui.control.Spinner
+        CircleFaceAlpha               matlab.ui.control.Spinner
+        CircleColorAlphaLabel         matlab.ui.control.Label
+        CircleColor                   matlab.ui.control.DropDown
+        CircleColorLabel              matlab.ui.control.Label
+        PeakSize                      matlab.ui.control.Slider
+        PeakColor                     matlab.ui.control.ColorPicker
+        PeakLabel                     matlab.ui.control.Label
+        SelectedStationSize           matlab.ui.control.Slider
+        SelectedStationColor          matlab.ui.control.ColorPicker
+        SelectedStationLabel          matlab.ui.control.Label
+        StationsSize                  matlab.ui.control.Slider
+        StationsColor                 matlab.ui.control.ColorPicker
+        StationsLabel                 matlab.ui.control.Label
+        CustomPlotRefresh             matlab.ui.control.Image
+        CustomPlotTitle               matlab.ui.control.Label
+        Tab3                          matlab.ui.container.Tab
+        Tab3Grid                      matlab.ui.container.GridLayout
+        userPathButton                matlab.ui.control.Image
+        userPath                      matlab.ui.control.EditField
+        userPathLabel                 matlab.ui.control.Label
+        DataHubPOSTButton             matlab.ui.control.Image
+        DataHubPOST                   matlab.ui.control.EditField
+        DATAHUBPOSTLabel              matlab.ui.control.Label
+        Toolbar                       matlab.ui.container.GridLayout
+        tool_openDevTools             matlab.ui.control.Image
+        tool_simulationMode           matlab.ui.control.Image
+    end
+
+    
+    properties
+        %-----------------------------------------------------------------%
+        Container
+        isDocked = false
+        
+        mainApp
+
+        % A função do timer é executada uma única vez após a renderização
+        % da figura, lendo arquivos de configuração, iniciando modo de operação
+        % paralelo etc. A ideia é deixar o MATLAB focar apenas na criação dos 
+        % componentes essenciais da GUI (especificados em "createComponents"), 
+        % mostrando a GUI para o usuário o mais rápido possível.
+        timerObj
+        jsBackDoor
+
+        % Janela de progresso já criada no DOM. Dessa forma, controla-se 
+        % apenas a sua visibilidade - e tornando desnecessário criá-la a
+        % cada chamada (usando uiprogressdlg, por exemplo).
+        progressDialog
+
+        stableVersion
+    end
+
+
+    properties (Access = private)
+        %-----------------------------------------------------------------%
+        defaultValues
+    end
+
+
+    methods
+        %-----------------------------------------------------------------%
+        % IPC: COMUNICAÇÃO ENTRE PROCESSOS
+        %-----------------------------------------------------------------%
+        function ipcSecundaryJSEventsHandler(app, event)
+            try
+                switch event.HTMLEventName
+                    case 'renderer'
+                        startup_Controller(app)
+
+                    otherwise
+                        error('UnexpectedEvent')
+                end
+
+            catch ME
+                appUtil.modalWindow(app.UIFigure, 'error', ME.message);
+            end
+        end
+    end
+    
+
+    methods (Access = private)
+        %-----------------------------------------------------------------%
+        % JSBACKDOOR
+        %-----------------------------------------------------------------%
+        function jsBackDoor_Initialization(app)
+            app.jsBackDoor = uihtml(app.UIFigure, "HTMLSource",           appUtil.jsBackDoorHTMLSource(),                 ...
+                                                  "HTMLEventReceivedFcn", @(~, evt)ipcSecundaryJSEventsHandler(app, evt), ...
+                                                  "Visible",              "off");
+        end
+
+        %-----------------------------------------------------------------%
+        function jsBackDoor_Customizations(app, tabIndex)
+            persistent customizationStatus
+            if isempty(customizationStatus)
+                customizationStatus = [false, false, false, false];
+            end
+
+            switch tabIndex
+                case 0 % STARTUP
+                    if app.isDocked
+                        app.progressDialog = app.mainApp.progressDialog;
+                    else
+                        sendEventToHTMLSource(app.jsBackDoor, 'startup', app.mainApp.executionMode);
+                        app.progressDialog = ccTools.ProgressDialog(app.jsBackDoor);
+                    end
+                    customizationStatus = [false, false, false, false];
+
+                otherwise
+                    if customizationStatus(tabIndex)
+                        return
+                    end
+
+                    customizationStatus(tabIndex) = true;
+                    switch tabIndex
+                        case 1
+                            appName = class(app);
+
+                            % Grid botões "dock":
+                            if app.isDocked
+                                elToModify = {app.DockModuleGroup};
+                                elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
+                                if ~isempty(elDataTag)
+                                    sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                                        struct('appName', appName, 'dataTag', elDataTag{1}, 'style', struct('transition', 'opacity 2s ease', 'opacity', '0.5')), ...
+                                    });
+                                end
+                            end
+                            
+                            % Outros elementos:
+                            elToModify = {app.versionInfo};
+                            elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
+                            if ~isempty(elDataTag)
+                                ui.TextView.startup(app.jsBackDoor, app.versionInfo, appName);
+                            end
+
+                        case 2
+                            Analysis_updatePanel(app)
+
+                        case 3
+                            CustomPlot_updatePanel(app)
+
+                        case 4
+                            Folder_updatePanel(app)
+                    end
+            end
+        end
+    end
+
+
+    methods (Access = private)
+        %-----------------------------------------------------------------%
+        function startup_timerCreation(app)
+            app.timerObj = timer("ExecutionMode", "fixedSpacing", ...
+                                 "StartDelay",    1.5,            ...
+                                 "Period",        .1,             ...
+                                 "TimerFcn",      @(~,~)app.startup_timerFcn);
+            start(app.timerObj)
+        end
+
+        %-----------------------------------------------------------------%
+        function startup_timerFcn(app)
+            if ccTools.fcn.UIFigureRenderStatus(app.UIFigure)
+                stop(app.timerObj)
+                delete(app.timerObj)
+
+                jsBackDoor_Initialization(app)
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function startup_Controller(app)
+            drawnow
+            jsBackDoor_Customizations(app, 0)
+            jsBackDoor_Customizations(app, 1)
+
+            startup_AppProperties(app)
+            startup_GUIComponents(app)
+        end
+
+        %-----------------------------------------------------------------%
+        function startup_AppProperties(app)
+            % Lê a versão de "GeneralSettings.json" que vem junto ao
+            % projeto (e não a versão armazenada em "ProgramData").
+            projectFolder     = appUtil.Path(class.Constants.appName, app.mainApp.rootFolder);
+            projectFilePath   = fullfile(projectFolder, 'GeneralSettings.json');
+            projectGeneral    = jsondecode(fileread(projectFilePath));
+
+            app.defaultValues = struct('File',            projectGeneral.File, ...
+                                       'MonitoringPlan',  struct('Distance_km', projectGeneral.MonitoringPlan.Distance_km, ...
+                                                                 'FieldValue',  projectGeneral.MonitoringPlan.FieldValue, ...
+                                                                 'Export',      projectGeneral.MonitoringPlan.Export), ...
+                                       'ExternalRequest', struct('Distance_km', projectGeneral.ExternalRequest.Distance_km, ...
+                                                                 'FieldValue',  projectGeneral.ExternalRequest.FieldValue, ...
+                                                                 'Export',      projectGeneral.ExternalRequest.Export), ...
+                                       'Plot',            projectGeneral.Plot);
+        end
+
+        %-----------------------------------------------------------------%
+        function startup_GUIComponents(app)
+            if ~strcmp(app.mainApp.executionMode, 'webApp')
+                app.dockModule_Undock.Enable = 1;
+                app.tool_openDevTools.Enable = 1;
+
+                set([app.DataHubPOSTButton, app.userPathButton], 'Enable', 1)
+                app.tool_versionInfoRefresh.Enable      = 1;
+                app.openAuxiliarAppAsDocked.Enable = 1;
+            end
+
+            if ~isdeployed
+                app.openAuxiliarApp2Debug.Enable = 1;
+            end
+
+            General_updatePanel(app)
+        end
+
+        %-----------------------------------------------------------------%
+        function General_updatePanel(app)
+            % Versão
+            ui.TextView.update(app.versionInfo, util.HtmlTextGenerator.AppInfo(app.mainApp.General, app.mainApp.rootFolder, app.mainApp.executionMode));
+
+            % Modo de operação
+            app.openAuxiliarAppAsDocked.Value = app.mainApp.General.operationMode.Dock;
+            app.openAuxiliarApp2Debug.Value   = app.mainApp.General.operationMode.Debug;
+        end
+
+        %-----------------------------------------------------------------%
+        function Analysis_updatePanel(app)
+            % FILE
+            app.InputType.Value                 = app.mainApp.General.File.input;
+            app.SortMethod.Value                = app.mainApp.General.File.sortMethod;
+
+            % PM-RNI
+            app.MonitoringPlanDistance.Value    = app.mainApp.General.MonitoringPlan.Distance_km * 1000;
+            app.MonitoringPlanLevel.Value       = app.mainApp.General.MonitoringPlan.FieldValue;
+            app.MonitoringPlanFileName.Value    = app.mainApp.General.MonitoringPlan.ReferenceFile;
+            
+            MonitoringPlanYearsOptions          = app.mainApp.projectData.rawListOfYears;
+            MonitoringPlanYearsValue            = app.mainApp.General.MonitoringPlan.Period;
+
+            if ~isempty(app.MonitoringPlanPeriod.Children)
+                delete(app.MonitoringPlanPeriod.Children)
+            end
+
+            for ii = 1:numel(MonitoringPlanYearsOptions)                
+                treeNode = uitreenode(app.MonitoringPlanPeriod, 'Text', string(MonitoringPlanYearsOptions(ii)));
+                if ismember(MonitoringPlanYearsOptions(ii), MonitoringPlanYearsValue)
+                    app.MonitoringPlanPeriod.CheckedNodes = [app.MonitoringPlanPeriod.CheckedNodes; treeNode];
+                end
+            end
+
+            app.MonitoringPlanExportXLSX.Value  = app.mainApp.General.MonitoringPlan.Export.XLSX;
+            app.MonitoringPlanExportKML.Value   = app.mainApp.General.MonitoringPlan.Export.KML;
+
+            % External Request
+            app.ExternalRequestDistance.Value   = app.mainApp.General.ExternalRequest.Distance_km * 1000;
+            app.ExternalRequestLevel.Value      = app.mainApp.General.ExternalRequest.FieldValue;
+            app.ExternalRequestExportXLSX.Value = app.mainApp.General.ExternalRequest.Export.XLSX;
+            app.ExternalRequestExportKML.Value  = app.mainApp.General.ExternalRequest.Export.KML;
+
+            if checkEdition(app, 'ANALYSIS')
+                app.analysis_FileRefresh.Visible = 1;
+            else
+                app.analysis_FileRefresh.Visible = 0;
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function CustomPlot_updatePanel(app)
+            app.Basemap.Value              = app.mainApp.General.Plot.GeographicAxes.Basemap;
+            app.Colormap.Value             = app.mainApp.General.Plot.GeographicAxes.Colormap;
+            app.Colorbar.Value             = app.mainApp.General.Plot.GeographicAxes.Colorbar;
+            app.ZoomOrientation.Value      = app.mainApp.General.Plot.GeographicAxes.ZoomOrientation;
+
+            app.StationsColor.Value        = app.mainApp.General.Plot.Stations.Color;
+            app.StationsSize.Value         = app.mainApp.General.Plot.Stations.Size;
+
+            app.SelectedStationColor.Value = app.mainApp.General.Plot.SelectedStation.Color;
+            app.SelectedStationSize.Value  = app.mainApp.General.Plot.SelectedStation.Size;
+
+            app.CircleColor.Value          = app.mainApp.General.Plot.CircleRegion.Color;
+            app.CircleFaceAlpha.Value      = app.mainApp.General.Plot.CircleRegion.FaceAlpha;
+            app.CircleEdgeAlpha.Value      = app.mainApp.General.Plot.CircleRegion.EdgeAlpha;
+
+            app.AutomaticZoomMode.Value    = app.mainApp.General.Plot.SelectedStation.AutomaticZoom;
+            app.AutomaticZoomFactor.Value  = app.mainApp.General.Plot.SelectedStation.AutomaticZoomFactor;
+            if app.AutomaticZoomMode.Value
+                app.AutomaticZoomFactor.Enable = 1;
+            else
+                app.AutomaticZoomFactor.Enable = 0;
+            end
+
+            app.PeakColor.Value            = app.mainApp.General.Plot.FieldPeak.Color;
+            app.PeakSize.Value             = app.mainApp.General.Plot.FieldPeak.Size;
+
+            if checkEdition(app, 'PLOT')
+                app.CustomPlotRefresh.Visible = 1;
+            else
+                app.CustomPlotRefresh.Visible = 0;
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function Folder_updatePanel(app)
+            DataHub_POST = app.mainApp.General.fileFolder.DataHub_POST;    
+            if isfolder(DataHub_POST)
+                app.DataHubPOST.Value = DataHub_POST;
+            end
+
+            app.userPath.Value = app.mainApp.General.fileFolder.userPath;                
+        end
+
+        %-----------------------------------------------------------------%
+        function editionFlag = checkEdition(app, tabName)
+            editionFlag   = false;
+            currentValues = struct('File',            app.mainApp.General.File, ...
+                                   'MonitoringPlan',  struct('Distance_km', app.mainApp.General.MonitoringPlan.Distance_km, ...
+                                                             'FieldValue',  app.mainApp.General.MonitoringPlan.FieldValue, ...
+                                                             'Export',      app.mainApp.General.MonitoringPlan.Export), ...
+                                   'ExternalRequest', struct('Distance_km', app.mainApp.General.ExternalRequest.Distance_km, ...
+                                                             'FieldValue',  app.mainApp.General.ExternalRequest.FieldValue, ...
+                                                             'Export',      app.mainApp.General.ExternalRequest.Export), ...
+                                   'Plot',            app.mainApp.General.Plot);
+
+            switch tabName
+                case 'ANALYSIS'
+                    if ~isequal(rmfield(currentValues, 'Plot'), rmfield(app.defaultValues, 'Plot'))        
+                        editionFlag = true;
+                    end
+
+                case 'PLOT'
+                    if ~isequal(currentValues.Plot, app.defaultValues.Plot)
+                        editionFlag = true;
+                    end
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function saveGeneralSettings(app)
+            appUtil.generalSettingsSave(class.Constants.appName, app.mainApp.rootFolder, app.mainApp.General_I, app.mainApp.executionMode)
+        end
+    end
+    
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Code that executes after component creation
+        function startupFcn(app, mainApp)
+            
+            app.mainApp = mainApp;
+
+            if app.isDocked
+                app.GridLayout.Padding(4) = 30;
+                app.DockModuleGroup.Visible = 1;
+                app.jsBackDoor = mainApp.jsBackDoor;
+                startup_Controller(app)
+            else
+                appUtil.winPosition(app.UIFigure)
+                startup_timerCreation(app)
+            end
+            
+        end
+
+        % Close request function: UIFigure
+        function closeFcn(app, event)
+            
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'closeFcn')
+            delete(app)
+            
+        end
+
+        % Image clicked function: dockModule_Close, dockModule_Undock
+        function DockModuleGroup_ButtonPushed(app, event)
+            
+            [idx, auxAppTag, relatedButton] = getAppInfoFromHandle(app.mainApp.tabGroupController, app);
+
+            switch event.Source
+                case app.dockModule_Undock
+                    appGeneral = app.mainApp.General;
+                    appGeneral.operationMode.Dock = false;
+                    
+                    app.mainApp.tabGroupController.Components.appHandle{idx} = [];
+
+                    inputArguments = ipcMainMatlabCallsHandler(app.mainApp, app, 'dockButtonPushed', auxAppTag);
+                    openModule(app.mainApp.tabGroupController, relatedButton, false, appGeneral, inputArguments{:})
+                    closeModule(app.mainApp.tabGroupController, auxAppTag, app.mainApp.General, 'undock')
+                    
+                    delete(app)
+
+                case app.dockModule_Close
+                    closeModule(app.mainApp.tabGroupController, auxAppTag, app.mainApp.General)
+            end
+
+        end
+
+        % Selection change function: TabGroup
+        function TabGroup_TabSelectionChanged(app, event)
+            
+            [~, tabIndex] = ismember(app.TabGroup.SelectedTab, app.TabGroup.Children);
+            jsBackDoor_Customizations(app, tabIndex)
+
+        end
+
+        % Image clicked function: tool_versionInfoRefresh
+        function Toolbar_AppEnvRefreshButtonPushed(app, event)
+            
+            app.progressDialog.Visible = 'visible';
+
+            [htmlContent, app.stableVersion, updatedModule] = util.HtmlTextGenerator.checkAvailableUpdate(app.mainApp.General, app.mainApp.rootFolder);
+            appUtil.modalWindow(app.UIFigure, "info", htmlContent);
+            
+            if ~ismember('RFDataHub', updatedModule)
+                app.tool_RFDataHubButton.Enable = 1;
+            end         
+
+            app.progressDialog.Visible = 'hidden';
+
+        end
+
+        % Image clicked function: tool_RFDataHubButton
+        function Toolbar_RFDataHubButtonPushed(app, event)
+            
+            if isequal(rmfield(app.mainApp.General.AppVersion.database, 'name'),  app.stableVersion.rfDataHub)
+                app.tool_RFDataHubButton.Enable = 0;
+                appUtil.modalWindow(app.UIFigure, 'warning', 'Módulo RFDataHub já atualizado!');
+                return
+            end
+
+            d = appUtil.modalWindow(app.UIFigure, "progressdlg", 'Em andamento... esse processo pode demorar alguns minutos!');
+
+            try
+                appName = class.Constants.appName;
+                rfDataHubLink = util.publicLink(appName, app.mainApp.rootFolder, 'RFDataHub');
+                model.RFDataHub.update(appName, app.mainApp.rootFolder, app.mainApp.General.fileFolder.tempPath, rfDataHubLink)
+
+                % Atualiza versão.
+                global RFDataHub_info
+
+                app.mainApp.General.AppVersion.database      = RFDataHub_info;
+                app.mainApp.General.AppVersion.database.name = 'RFDataHub';
+                app.stableVersion.rfDataHub = RFDataHub_info;
+                app.tool_RFDataHubButton.Enable = 0;
+                
+            catch ME
+                appUtil.modalWindow(app.UIFigure, 'error', ME.message);
+            end
+
+            General_updatePanel(app)
+            delete(d)
+
+        end
+
+        % Image clicked function: tool_simulationMode
+        function Toolbar_SimulationModeButtonPushed(app, event)
+            
+            msgQuestion   = 'Deseja abrir arquivos de <b>simulação</b>?';
+            userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
+            
+            if strcmp(userSelection, 'Não')
+                return
+            end
+
+            app.mainApp.General.operationMode.Simulation = true;
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'simulationModeChanged')
+
+        end
+
+        % Image clicked function: tool_openDevTools
+        function Toolbar_OpenDevToolsClicked(app, event)
+            
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'openDevTools')
+
+        end
+
+        % Value changed function: openAuxiliarApp2Debug, 
+        % ...and 1 other component
+        function Config_GeneralParameterValueChanged(app, event)
+            
+            switch event.Source
+                case app.openAuxiliarAppAsDocked
+                    app.mainApp.General.operationMode.Dock  = app.openAuxiliarAppAsDocked.Value;
+
+                case app.openAuxiliarApp2Debug
+                    app.mainApp.General.operationMode.Debug = app.openAuxiliarApp2Debug.Value;
+            end
+
+            app.mainApp.General_I.operationMode = app.mainApp.General.operationMode;
+            saveGeneralSettings(app)
+
+        end
+
+        % Image clicked function: analysis_FileRefresh
+        function Config_AnalysisRefreshImageClicked(app, event)
+            
+            if ~checkEdition(app, 'ANALYSIS')
+                app.analysis_FileRefresh.Visible = 0;
+                return
+
+            else
+                app.mainApp.General.File                        = app.defaultValues.File;
+                app.mainApp.General.MonitoringPlan.Distance_km  = app.defaultValues.MonitoringPlan.Distance_km;
+                app.mainApp.General.MonitoringPlan.FieldValue   = app.defaultValues.MonitoringPlan.FieldValue;
+                app.mainApp.General.MonitoringPlan.Export       = app.defaultValues.MonitoringPlan.Export;
+                app.mainApp.General.ExternalRequest.Distance_km = app.defaultValues.ExternalRequest.Distance_km;
+                app.mainApp.General.ExternalRequest.FieldValue  = app.defaultValues.ExternalRequest.FieldValue;
+                app.mainApp.General.ExternalRequest.Export      = app.defaultValues.ExternalRequest.Export;
+
+                app.mainApp.General_I.File            = app.mainApp.General.File;
+                app.mainApp.General_I.MonitoringPlan  = app.mainApp.General.MonitoringPlan;
+                app.mainApp.General_I.ExternalRequest = app.mainApp.General.ExternalRequest;
+
+                Analysis_updatePanel(app)
+                saveGeneralSettings(app)
+                
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'PM-RNI: updateAnalysis')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest: updateAnalysis')
+            end
+
+        end
+
+        % Callback function: ExternalRequestDistance, 
+        % ...and 10 other components
+        function Config_AnalysisParameterValueChanged(app, event)
+            
+            updateAnalysisName = '';
+
+            switch event.Source
+                case app.InputType
+                    app.mainApp.General.File.input = app.InputType.Value;
+
+                case app.SortMethod
+                    app.mainApp.General.File.sortMethod = app.SortMethod.Value;
+                    ipcMainMatlabCallsHandler(app.mainApp, app, 'fileSortMethodChanged')
+
+                case app.MonitoringPlanDistance
+                    app.mainApp.General.MonitoringPlan.Distance_km  = app.MonitoringPlanDistance.Value / 1000;
+                    updateAnalysisName = 'PM-RNI: updateAnalysis';
+
+                case app.MonitoringPlanLevel
+                    app.mainApp.General.MonitoringPlan.FieldValue   = app.MonitoringPlanLevel.Value;
+                    updateAnalysisName = 'PM-RNI: updateAnalysis';
+
+                case app.MonitoringPlanPeriod
+                    if isempty(app.MonitoringPlanPeriod.CheckedNodes)
+                        app.MonitoringPlanPeriod.CheckedNodes = event.PreviousCheckedNodes;
+                        return
+                    end
+                    app.mainApp.General.MonitoringPlan.Period       = str2double({app.MonitoringPlanPeriod.CheckedNodes.Text});
+                    updateAnalysisName = 'PM-RNI: updateAnalysis';
+
+                case app.MonitoringPlanExportXLSX
+                    app.mainApp.General.MonitoringPlan.Export.XLSX  = app.MonitoringPlanExportXLSX.Value;
+
+                case app.MonitoringPlanExportKML
+                    app.mainApp.General.MonitoringPlan.Export.KML   = app.MonitoringPlanExportKML.Value;
+
+                case app.ExternalRequestDistance
+                    app.mainApp.General.ExternalRequest.Distance_km = app.ExternalRequestDistance.Value / 1000;
+                    updateAnalysisName = 'ExternalRequest: updateAnalysis';
+
+                case app.ExternalRequestLevel
+                    app.mainApp.General.ExternalRequest.FieldValue  = app.ExternalRequestLevel.Value;
+                    updateAnalysisName = 'ExternalRequest: updateAnalysis';
+
+                case app.ExternalRequestExportXLSX
+                    app.mainApp.General.ExternalRequest.Export.XLSX  = app.ExternalRequestExportXLSX.Value;
+
+                case app.ExternalRequestExportKML
+                    app.mainApp.General.ExternalRequest.Export.KML   = app.ExternalRequestExportKML.Value;
+            end
+
+            app.mainApp.General_I.File            = app.mainApp.General.File;
+            app.mainApp.General_I.MonitoringPlan  = app.mainApp.General.MonitoringPlan;
+            app.mainApp.General_I.ExternalRequest = app.mainApp.General.ExternalRequest;
+
+            Analysis_updatePanel(app)
+            saveGeneralSettings(app)
+
+            if ~isempty(updateAnalysisName)
+                ipcMainMatlabCallsHandler(app.mainApp, app, updateAnalysisName)
+            end
+            
+        end
+
+        % Image clicked function: MonitoringPlanOpenFile
+        function Config_AnalysisOpenReferenceFile(app, event)
+            
+            fileName = fullfile(ccTools.fcn.OperationSystem('programData'), 'ANATEL', class.Constants.appName, app.MonitoringPlanFileName.Value);
+            
+            switch app.mainApp.executionMode
+                case 'webApp'
+                    web(fileName, '-new')
+                otherwise
+                    ccTools.fcn.OperationSystem('openFile', fileName)
+            end
+
+        end
+
+        % Image clicked function: CustomPlotRefresh
+        function Config_PlotRefreshImageClicked(app, event)
+            
+            if ~checkEdition(app, 'PLOT')
+                app.CustomPlotRefresh.Visible = 0;
+                return
+            
+            else
+                app.mainApp.General.Plot   = app.defaultValues.Plot;
+                app.mainApp.General_I.Plot = app.mainApp.General.Plot;
+                
+                CustomPlot_updatePanel(app)
+                saveGeneralSettings(app)
+    
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'PM-RNI: updateAxes')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'PM-RNI: updatePlot')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest: updateAxes')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest: updatePlot')
+            end
+
+        end
+
+        % Value changed function: Basemap, Colorbar, Colormap
+        function Config_PlotAxesValueChanged(app, event)
+            
+            switch event.Source
+                case app.Basemap
+                    app.mainApp.General.Plot.GeographicAxes.Basemap  = app.Basemap.Value;
+
+                case app.Colormap
+                    app.mainApp.General.Plot.GeographicAxes.Colormap = app.Colormap.Value;
+
+                case app.Colorbar
+                    app.mainApp.General.Plot.GeographicAxes.Colorbar = app.Colorbar.Value;
+            end
+
+            app.mainApp.General_I.Plot = app.mainApp.General.Plot;
+
+            CustomPlot_updatePanel(app)
+            saveGeneralSettings(app)
+            
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'PM-RNI: updateAxes')
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest: updateAxes')
+
+        end
+
+        % Value changed function: AutomaticZoomFactor, AutomaticZoomMode, 
+        % ...and 10 other components
+        function Config_PlotParameterValueChanged(app, event)
+            
+            switch event.Source
+                case app.StationsSize
+                    app.mainApp.General.Plot.Stations.Size          = round(app.StationsSize.Value);
+
+                case app.SelectedStationSize
+                    app.mainApp.General.Plot.SelectedStation.Size   = round(app.SelectedStationSize.Value);
+
+                case app.PeakSize
+                    app.mainApp.General.Plot.FieldPeak.Size         = round(app.PeakSize.Value);
+
+                case app.CircleColor
+                    app.mainApp.General.Plot.CircleRegion.Color     = app.CircleColor.Value;
+
+                case app.CircleFaceAlpha
+                    app.mainApp.General.Plot.CircleRegion.FaceAlpha = app.CircleFaceAlpha.Value;
+
+                case app.CircleEdgeAlpha
+                    app.mainApp.General.Plot.CircleRegion.EdgeAlpha = app.CircleEdgeAlpha.Value;
+
+                case app.ZoomOrientation
+                    app.mainApp.General.Plot.GeographicAxes.ZoomOrientation = app.ZoomOrientation.Value;
+
+                case app.AutomaticZoomMode
+                    app.mainApp.General.Plot.SelectedStation.AutomaticZoom  = app.AutomaticZoomMode.Value;
+                    if app.AutomaticZoomMode.Value
+                        app.AutomaticZoomFactor.Enable = 1;
+                    else
+                        app.AutomaticZoomFactor.Enable = 0;
+                    end
+
+                case app.AutomaticZoomFactor
+                    app.mainApp.General.Plot.SelectedStation.AutomaticZoomFactor = app.AutomaticZoomFactor.Value;
+
+                case {app.PeakColor, app.SelectedStationColor, app.StationsColor}
+                    initialColor  = event.PreviousValue;
+                    selectedColor = event.Value;
+        
+                    if ~isequal(initialColor, selectedColor)
+                        selectedColor = rgb2hex(selectedColor);
+            
+                        switch event.Source
+                            case app.StationsColor
+                                app.mainApp.General.Plot.Stations.Color        = selectedColor;
+                            case app.SelectedStationColor
+                                app.mainApp.General.Plot.SelectedStation.Color = selectedColor;
+                            case app.PeakColor
+                                app.mainApp.General.Plot.FieldPeak.Color       = selectedColor;
+                        end
+                    end
+            end
+
+            app.mainApp.General_I.Plot = app.mainApp.General.Plot;
+
+            CustomPlot_updatePanel(app)
+            saveGeneralSettings(app)
+            
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'PM-RNI: updatePlot')
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest: updatePlot')
+            
+        end
+
+        % Image clicked function: DataHubPOSTButton, userPathButton
+        function Config_FolderButtonPushed(app, event)
+            
+            try
+                relatedFolder = eval(sprintf('app.%s.Value', event.Source.Tag));
+            catch
+                relatedFolder = app.mainApp.General.fileFolder.(event.Source.Tag);
+            end
+            
+            if isfolder(relatedFolder)
+                initialFolder = relatedFolder;
+            elseif isfile(relatedFolder)
+                initialFolder = fileparts(relatedFolder);
+            else
+                initialFolder = app.userPath.Value;
+            end
+
+            selectedFolder = uigetdir(initialFolder);
+            if ~strcmp(app.mainApp.executionMode, 'webApp')
+                figure(app.UIFigure)
+            end
+
+            if selectedFolder
+                switch event.Source
+                    case app.DataHubPOSTButton
+                        if strcmp(app.mainApp.General.fileFolder.DataHub_POST, selectedFolder) 
+                            return
+                        else
+                            selectedFolderFiles = dir(selectedFolder);
+                            if ~ismember('.monitorrni_post', {selectedFolderFiles.name})
+                                appUtil.modalWindow(app.UIFigure, 'error', 'Não se trata da pasta "DataHub - POST", do monitorRNI.');
+                                return
+                            end
+
+                            app.DataHubPOST.Value = selectedFolder;
+                            app.mainApp.General.fileFolder.DataHub_POST = selectedFolder;
+    
+                            ipcMainMatlabCallsHandler(app.mainApp, app, 'checkDataHubLampStatus')
+                        end
+
+                    case app.userPathButton
+                        app.userPath.Value = selectedFolder;
+                        app.mainApp.General.fileFolder.userPath = selectedFolder;
+                end
+
+                app.mainApp.General_I.fileFolder = app.mainApp.General.fileFolder;
+
+                Folder_updatePanel(app)
+                saveGeneralSettings(app)
+            end
+
+        end
+    end
+
+    % Component initialization
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app, Container)
+
+            % Get the file path for locating images
+            pathToMLAPP = fileparts(mfilename('fullpath'));
+
+            % Create UIFigure and hide until all components are created
+            if isempty(Container)
+                app.UIFigure = uifigure('Visible', 'off');
+                app.UIFigure.AutoResizeChildren = 'off';
+                app.UIFigure.Position = [100 100 1244 660];
+                app.UIFigure.Name = 'monitorRNI';
+                app.UIFigure.Icon = 'icon_48.png';
+                app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @closeFcn, true);
+
+                app.Container = app.UIFigure;
+
+            else
+                if ~isempty(Container.Children)
+                    delete(Container.Children)
+                end
+
+                app.UIFigure  = ancestor(Container, 'figure');
+                app.Container = Container;
+                if ~isprop(Container, 'RunningAppInstance')
+                    addprop(app.Container, 'RunningAppInstance');
+                end
+                app.Container.RunningAppInstance = app;
+                app.isDocked  = true;
+            end
+
+            % Create GridLayout
+            app.GridLayout = uigridlayout(app.Container);
+            app.GridLayout.ColumnWidth = {10, '1x', 48, 8, 2};
+            app.GridLayout.RowHeight = {2, 8, 24, '1x', 10, 34};
+            app.GridLayout.ColumnSpacing = 0;
+            app.GridLayout.RowSpacing = 0;
+            app.GridLayout.Padding = [0 0 0 0];
+            app.GridLayout.BackgroundColor = [1 1 1];
+
+            % Create Toolbar
+            app.Toolbar = uigridlayout(app.GridLayout);
+            app.Toolbar.ColumnWidth = {22, '1x', 22, 22};
+            app.Toolbar.RowHeight = {4, 17, '1x'};
+            app.Toolbar.ColumnSpacing = 5;
+            app.Toolbar.RowSpacing = 0;
+            app.Toolbar.Padding = [10 5 10 5];
+            app.Toolbar.Layout.Row = 6;
+            app.Toolbar.Layout.Column = [1 5];
+            app.Toolbar.BackgroundColor = [0.9412 0.9412 0.9412];
+
+            % Create tool_simulationMode
+            app.tool_simulationMode = uiimage(app.Toolbar);
+            app.tool_simulationMode.ScaleMethod = 'none';
+            app.tool_simulationMode.ImageClickedFcn = createCallbackFcn(app, @Toolbar_SimulationModeButtonPushed, true);
+            app.tool_simulationMode.Tooltip = {'Leitura arquivos de simulação'};
+            app.tool_simulationMode.Layout.Row = 2;
+            app.tool_simulationMode.Layout.Column = 1;
+            app.tool_simulationMode.ImageSource = 'Import_16.png';
+
+            % Create tool_openDevTools
+            app.tool_openDevTools = uiimage(app.Toolbar);
+            app.tool_openDevTools.ScaleMethod = 'none';
+            app.tool_openDevTools.ImageClickedFcn = createCallbackFcn(app, @Toolbar_OpenDevToolsClicked, true);
+            app.tool_openDevTools.Enable = 'off';
+            app.tool_openDevTools.Tooltip = {'Abre DevTools'};
+            app.tool_openDevTools.Layout.Row = 2;
+            app.tool_openDevTools.Layout.Column = 4;
+            app.tool_openDevTools.ImageSource = 'Debug_18.png';
+
+            % Create TabGroup
+            app.TabGroup = uitabgroup(app.GridLayout);
+            app.TabGroup.AutoResizeChildren = 'off';
+            app.TabGroup.SelectionChangedFcn = createCallbackFcn(app, @TabGroup_TabSelectionChanged, true);
+            app.TabGroup.Layout.Row = [3 4];
+            app.TabGroup.Layout.Column = [2 3];
+
+            % Create Tab1
+            app.Tab1 = uitab(app.TabGroup);
+            app.Tab1.AutoResizeChildren = 'off';
+            app.Tab1.Title = 'ASPECTOS GERAIS';
+            app.Tab1.BackgroundColor = 'none';
+
+            % Create Tab1Grid
+            app.Tab1Grid = uigridlayout(app.Tab1);
+            app.Tab1Grid.ColumnWidth = {'1x', 22, 22};
+            app.Tab1Grid.RowHeight = {17, '1x', 1, 22, 15};
+            app.Tab1Grid.ColumnSpacing = 5;
+            app.Tab1Grid.RowSpacing = 5;
+            app.Tab1Grid.BackgroundColor = [1 1 1];
+
+            % Create versionInfoLabel
+            app.versionInfoLabel = uilabel(app.Tab1Grid);
+            app.versionInfoLabel.VerticalAlignment = 'bottom';
+            app.versionInfoLabel.FontSize = 10;
+            app.versionInfoLabel.Layout.Row = 1;
+            app.versionInfoLabel.Layout.Column = 1;
+            app.versionInfoLabel.Text = 'AMBIENTE:';
+
+            % Create versionInfo
+            app.versionInfo = uilabel(app.Tab1Grid);
+            app.versionInfo.BackgroundColor = [1 1 1];
+            app.versionInfo.VerticalAlignment = 'top';
+            app.versionInfo.WordWrap = 'on';
+            app.versionInfo.FontSize = 11;
+            app.versionInfo.Layout.Row = 2;
+            app.versionInfo.Layout.Column = [1 3];
+            app.versionInfo.Interpreter = 'html';
+            app.versionInfo.Text = '';
+
+            % Create openAuxiliarAppAsDocked
+            app.openAuxiliarAppAsDocked = uicheckbox(app.Tab1Grid);
+            app.openAuxiliarAppAsDocked.ValueChangedFcn = createCallbackFcn(app, @Config_GeneralParameterValueChanged, true);
+            app.openAuxiliarAppAsDocked.Enable = 'off';
+            app.openAuxiliarAppAsDocked.Text = 'Modo DOCK: módulos auxiliares abertos na janela principal do app';
+            app.openAuxiliarAppAsDocked.FontSize = 11;
+            app.openAuxiliarAppAsDocked.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.openAuxiliarAppAsDocked.Layout.Row = 4;
+            app.openAuxiliarAppAsDocked.Layout.Column = 1;
+
+            % Create openAuxiliarApp2Debug
+            app.openAuxiliarApp2Debug = uicheckbox(app.Tab1Grid);
+            app.openAuxiliarApp2Debug.ValueChangedFcn = createCallbackFcn(app, @Config_GeneralParameterValueChanged, true);
+            app.openAuxiliarApp2Debug.Enable = 'off';
+            app.openAuxiliarApp2Debug.Text = 'Modo DEBUG';
+            app.openAuxiliarApp2Debug.FontSize = 11;
+            app.openAuxiliarApp2Debug.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.openAuxiliarApp2Debug.Layout.Row = 5;
+            app.openAuxiliarApp2Debug.Layout.Column = 1;
+
+            % Create tool_versionInfoRefresh
+            app.tool_versionInfoRefresh = uiimage(app.Tab1Grid);
+            app.tool_versionInfoRefresh.ScaleMethod = 'none';
+            app.tool_versionInfoRefresh.ImageClickedFcn = createCallbackFcn(app, @Toolbar_AppEnvRefreshButtonPushed, true);
+            app.tool_versionInfoRefresh.Enable = 'off';
+            app.tool_versionInfoRefresh.Tooltip = {'Verifica atualizações'};
+            app.tool_versionInfoRefresh.Layout.Row = 1;
+            app.tool_versionInfoRefresh.Layout.Column = 2;
+            app.tool_versionInfoRefresh.VerticalAlignment = 'bottom';
+            app.tool_versionInfoRefresh.ImageSource = 'Refresh_18.png';
+
+            % Create tool_RFDataHubButton
+            app.tool_RFDataHubButton = uiimage(app.Tab1Grid);
+            app.tool_RFDataHubButton.ImageClickedFcn = createCallbackFcn(app, @Toolbar_RFDataHubButtonPushed, true);
+            app.tool_RFDataHubButton.Enable = 'off';
+            app.tool_RFDataHubButton.Tooltip = {'Atualiza RFDataHub'};
+            app.tool_RFDataHubButton.Layout.Row = 1;
+            app.tool_RFDataHubButton.Layout.Column = 3;
+            app.tool_RFDataHubButton.ImageSource = 'mosaic_32.png';
+
+            % Create Tab2
+            app.Tab2 = uitab(app.TabGroup);
+            app.Tab2.AutoResizeChildren = 'off';
+            app.Tab2.Title = 'ANÁLISE';
+            app.Tab2.BackgroundColor = 'none';
+
+            % Create Tab2Grid
+            app.Tab2Grid = uigridlayout(app.Tab2);
+            app.Tab2Grid.ColumnWidth = {'1x', 22};
+            app.Tab2Grid.RowHeight = {17, 69, 22, 200, 22, '1x'};
+            app.Tab2Grid.RowSpacing = 5;
+            app.Tab2Grid.BackgroundColor = [1 1 1];
+
+            % Create analysis_FileLabel
+            app.analysis_FileLabel = uilabel(app.Tab2Grid);
+            app.analysis_FileLabel.VerticalAlignment = 'bottom';
+            app.analysis_FileLabel.FontSize = 10;
+            app.analysis_FileLabel.Layout.Row = 3;
+            app.analysis_FileLabel.Layout.Column = 1;
+            app.analysis_FileLabel.Text = 'PM-RNI';
+
+            % Create analysis_FileRefresh
+            app.analysis_FileRefresh = uiimage(app.Tab2Grid);
+            app.analysis_FileRefresh.ScaleMethod = 'none';
+            app.analysis_FileRefresh.ImageClickedFcn = createCallbackFcn(app, @Config_AnalysisRefreshImageClicked, true);
+            app.analysis_FileRefresh.Visible = 'off';
+            app.analysis_FileRefresh.Tooltip = {'Retorna às configurações iniciais'};
+            app.analysis_FileRefresh.Layout.Row = 1;
+            app.analysis_FileRefresh.Layout.Column = 2;
+            app.analysis_FileRefresh.VerticalAlignment = 'bottom';
+            app.analysis_FileRefresh.ImageSource = 'Refresh_18.png';
+
+            % Create analysis_FilePanel
+            app.analysis_FilePanel = uipanel(app.Tab2Grid);
+            app.analysis_FilePanel.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.analysis_FilePanel.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
+            app.analysis_FilePanel.Layout.Row = 4;
+            app.analysis_FilePanel.Layout.Column = [1 2];
+
+            % Create MonitoringPlanGrid
+            app.MonitoringPlanGrid = uigridlayout(app.analysis_FilePanel);
+            app.MonitoringPlanGrid.ColumnWidth = {350, 90, '1x', 20};
+            app.MonitoringPlanGrid.RowHeight = {22, 22, 22, '1x', 1, 17, 17};
+            app.MonitoringPlanGrid.ColumnSpacing = 5;
+            app.MonitoringPlanGrid.RowSpacing = 5;
+            app.MonitoringPlanGrid.BackgroundColor = [1 1 1];
+
+            % Create MonitoringPlanDistanceLabel
+            app.MonitoringPlanDistanceLabel = uilabel(app.MonitoringPlanGrid);
+            app.MonitoringPlanDistanceLabel.WordWrap = 'on';
+            app.MonitoringPlanDistanceLabel.FontSize = 11;
+            app.MonitoringPlanDistanceLabel.Layout.Row = 1;
+            app.MonitoringPlanDistanceLabel.Layout.Column = [1 2];
+            app.MonitoringPlanDistanceLabel.Text = 'Distância limite entre ponto de medição e a estação sob análise (m):';
+
+            % Create MonitoringPlanDistance
+            app.MonitoringPlanDistance = uieditfield(app.MonitoringPlanGrid, 'numeric');
+            app.MonitoringPlanDistance.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.MonitoringPlanDistance.FontSize = 11;
+            app.MonitoringPlanDistance.Layout.Row = 1;
+            app.MonitoringPlanDistance.Layout.Column = 2;
+            app.MonitoringPlanDistance.Value = 200;
+
+            % Create MonitoringPlanLevelLabel
+            app.MonitoringPlanLevelLabel = uilabel(app.MonitoringPlanGrid);
+            app.MonitoringPlanLevelLabel.WordWrap = 'on';
+            app.MonitoringPlanLevelLabel.FontSize = 11;
+            app.MonitoringPlanLevelLabel.Layout.Row = 2;
+            app.MonitoringPlanLevelLabel.Layout.Column = 1;
+            app.MonitoringPlanLevelLabel.Text = 'Nível de referência de campo elétrico: (V/m)';
+
+            % Create MonitoringPlanLevel
+            app.MonitoringPlanLevel = uieditfield(app.MonitoringPlanGrid, 'numeric');
+            app.MonitoringPlanLevel.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.MonitoringPlanLevel.FontSize = 11;
+            app.MonitoringPlanLevel.Layout.Row = 2;
+            app.MonitoringPlanLevel.Layout.Column = 2;
+            app.MonitoringPlanLevel.Value = 14;
+
+            % Create MonitoringPlanFileLabel
+            app.MonitoringPlanFileLabel = uilabel(app.MonitoringPlanGrid);
+            app.MonitoringPlanFileLabel.WordWrap = 'on';
+            app.MonitoringPlanFileLabel.FontSize = 11;
+            app.MonitoringPlanFileLabel.Layout.Row = 3;
+            app.MonitoringPlanFileLabel.Layout.Column = 1;
+            app.MonitoringPlanFileLabel.Text = 'Arquivo de referência:';
+
+            % Create MonitoringPlanFileName
+            app.MonitoringPlanFileName = uieditfield(app.MonitoringPlanGrid, 'text');
+            app.MonitoringPlanFileName.Editable = 'off';
+            app.MonitoringPlanFileName.FontSize = 11;
+            app.MonitoringPlanFileName.Layout.Row = 3;
+            app.MonitoringPlanFileName.Layout.Column = [2 3];
+
+            % Create MonitoringPlanOpenFile
+            app.MonitoringPlanOpenFile = uiimage(app.MonitoringPlanGrid);
+            app.MonitoringPlanOpenFile.ImageClickedFcn = createCallbackFcn(app, @Config_AnalysisOpenReferenceFile, true);
+            app.MonitoringPlanOpenFile.Tooltip = {'Abrir no Excel a planilha de referência'};
+            app.MonitoringPlanOpenFile.Layout.Row = 3;
+            app.MonitoringPlanOpenFile.Layout.Column = 4;
+            app.MonitoringPlanOpenFile.ImageSource = 'OpenFile_36x36.png';
+
+            % Create MonitoringPlanPeriod
+            app.MonitoringPlanPeriod = uitree(app.MonitoringPlanGrid, 'checkbox');
+            app.MonitoringPlanPeriod.FontSize = 11;
+            app.MonitoringPlanPeriod.Layout.Row = 4;
+            app.MonitoringPlanPeriod.Layout.Column = [2 3];
+
+            % Assign Checked Nodes
+            app.MonitoringPlanPeriod.CheckedNodesChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+
+            % Create MonitoringPlanExportXLSX
+            app.MonitoringPlanExportXLSX = uicheckbox(app.MonitoringPlanGrid);
+            app.MonitoringPlanExportXLSX.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.MonitoringPlanExportXLSX.Text = 'Ao exportar a tabela de dados, cria uma segunda aba na planilha com as medidas brutas.';
+            app.MonitoringPlanExportXLSX.FontSize = 11;
+            app.MonitoringPlanExportXLSX.Layout.Row = 6;
+            app.MonitoringPlanExportXLSX.Layout.Column = [1 3];
+
+            % Create MonitoringPlanExportKML
+            app.MonitoringPlanExportKML = uicheckbox(app.MonitoringPlanGrid);
+            app.MonitoringPlanExportKML.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.MonitoringPlanExportKML.Text = 'Ao exportar a tabela de dados, cria arquivos no formato "kml".';
+            app.MonitoringPlanExportKML.FontSize = 11;
+            app.MonitoringPlanExportKML.Layout.Row = 7;
+            app.MonitoringPlanExportKML.Layout.Column = [1 3];
+
+            % Create analysis_ElevationLabel
+            app.analysis_ElevationLabel = uilabel(app.Tab2Grid);
+            app.analysis_ElevationLabel.VerticalAlignment = 'bottom';
+            app.analysis_ElevationLabel.FontSize = 10;
+            app.analysis_ElevationLabel.Layout.Row = 5;
+            app.analysis_ElevationLabel.Layout.Column = 1;
+            app.analysis_ElevationLabel.Text = 'DEMANDA EXTERNA';
+
+            % Create analysis_ElevationPanel
+            app.analysis_ElevationPanel = uipanel(app.Tab2Grid);
+            app.analysis_ElevationPanel.AutoResizeChildren = 'off';
+            app.analysis_ElevationPanel.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.analysis_ElevationPanel.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
+            app.analysis_ElevationPanel.Layout.Row = 6;
+            app.analysis_ElevationPanel.Layout.Column = [1 2];
+
+            % Create ExternalRequestGrid
+            app.ExternalRequestGrid = uigridlayout(app.analysis_ElevationPanel);
+            app.ExternalRequestGrid.ColumnWidth = {350, 90, '1x'};
+            app.ExternalRequestGrid.RowHeight = {22, 22, 1, 17, 17};
+            app.ExternalRequestGrid.RowSpacing = 5;
+            app.ExternalRequestGrid.BackgroundColor = [1 1 1];
+
+            % Create ExternalRequestDistanceLabel
+            app.ExternalRequestDistanceLabel = uilabel(app.ExternalRequestGrid);
+            app.ExternalRequestDistanceLabel.WordWrap = 'on';
+            app.ExternalRequestDistanceLabel.FontSize = 11;
+            app.ExternalRequestDistanceLabel.Layout.Row = 1;
+            app.ExternalRequestDistanceLabel.Layout.Column = [1 2];
+            app.ExternalRequestDistanceLabel.Text = 'Distância limite entre ponto de medição e a estação sob análise (m):';
+
+            % Create ExternalRequestDistance
+            app.ExternalRequestDistance = uieditfield(app.ExternalRequestGrid, 'numeric');
+            app.ExternalRequestDistance.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.ExternalRequestDistance.FontSize = 11;
+            app.ExternalRequestDistance.Layout.Row = 1;
+            app.ExternalRequestDistance.Layout.Column = 2;
+            app.ExternalRequestDistance.Value = 1000;
+
+            % Create ExternalRequestLevelLabel
+            app.ExternalRequestLevelLabel = uilabel(app.ExternalRequestGrid);
+            app.ExternalRequestLevelLabel.WordWrap = 'on';
+            app.ExternalRequestLevelLabel.FontSize = 11;
+            app.ExternalRequestLevelLabel.Layout.Row = 2;
+            app.ExternalRequestLevelLabel.Layout.Column = 1;
+            app.ExternalRequestLevelLabel.Text = 'Nível de referência de campo elétrico: (V/m)';
+
+            % Create ExternalRequestLevel
+            app.ExternalRequestLevel = uieditfield(app.ExternalRequestGrid, 'numeric');
+            app.ExternalRequestLevel.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.ExternalRequestLevel.FontSize = 11;
+            app.ExternalRequestLevel.Layout.Row = 2;
+            app.ExternalRequestLevel.Layout.Column = 2;
+            app.ExternalRequestLevel.Value = 14;
+
+            % Create ExternalRequestExportXLSX
+            app.ExternalRequestExportXLSX = uicheckbox(app.ExternalRequestGrid);
+            app.ExternalRequestExportXLSX.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.ExternalRequestExportXLSX.Text = 'Ao exportar a tabela de dados, cria uma segunda aba na planilha com as medidas brutas.';
+            app.ExternalRequestExportXLSX.FontSize = 11;
+            app.ExternalRequestExportXLSX.Layout.Row = 4;
+            app.ExternalRequestExportXLSX.Layout.Column = [1 3];
+
+            % Create ExternalRequestExportKML
+            app.ExternalRequestExportKML = uicheckbox(app.ExternalRequestGrid);
+            app.ExternalRequestExportKML.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.ExternalRequestExportKML.Text = 'Ao exportar a tabela de dados, cria arquivos no formato "kml".';
+            app.ExternalRequestExportKML.FontSize = 11;
+            app.ExternalRequestExportKML.Layout.Row = 5;
+            app.ExternalRequestExportKML.Layout.Column = [1 3];
+
+            % Create PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel
+            app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel = uilabel(app.Tab2Grid);
+            app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel.VerticalAlignment = 'bottom';
+            app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel.FontSize = 10;
+            app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel.Layout.Row = 1;
+            app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel.Layout.Column = 1;
+            app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel.Text = 'PROCESSO DE LEITURA DOS ARQUIVOS E VISUALIZAÇÃO DOS SEUS METADADOS';
+
+            % Create Panel_2
+            app.Panel_2 = uipanel(app.Tab2Grid);
+            app.Panel_2.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
+            app.Panel_2.Layout.Row = 2;
+            app.Panel_2.Layout.Column = [1 2];
+
+            % Create GridLayout3
+            app.GridLayout3 = uigridlayout(app.Panel_2);
+            app.GridLayout3.ColumnWidth = {350, 230};
+            app.GridLayout3.RowHeight = {22, 22};
+            app.GridLayout3.RowSpacing = 5;
+            app.GridLayout3.BackgroundColor = [1 1 1];
+
+            % Create InputTypeLabel
+            app.InputTypeLabel = uilabel(app.GridLayout3);
+            app.InputTypeLabel.FontSize = 11;
+            app.InputTypeLabel.Layout.Row = 1;
+            app.InputTypeLabel.Layout.Column = 1;
+            app.InputTypeLabel.Text = 'Entrada:';
+
+            % Create InputType
+            app.InputType = uidropdown(app.GridLayout3);
+            app.InputType.Items = {'file', 'folder'};
+            app.InputType.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.InputType.FontSize = 11;
+            app.InputType.BackgroundColor = [1 1 1];
+            app.InputType.Layout.Row = 1;
+            app.InputType.Layout.Column = 2;
+            app.InputType.Value = 'file';
+
+            % Create SortMethodLabel
+            app.SortMethodLabel = uilabel(app.GridLayout3);
+            app.SortMethodLabel.FontSize = 11;
+            app.SortMethodLabel.Layout.Row = 2;
+            app.SortMethodLabel.Layout.Column = 1;
+            app.SortMethodLabel.Text = 'Visualização árvore:';
+
+            % Create SortMethod
+            app.SortMethod = uidropdown(app.GridLayout3);
+            app.SortMethod.Items = {'ARQUIVO', 'LOCALIDADE', 'SENSOR'};
+            app.SortMethod.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.SortMethod.FontSize = 11;
+            app.SortMethod.BackgroundColor = [1 1 1];
+            app.SortMethod.Layout.Row = 2;
+            app.SortMethod.Layout.Column = 2;
+            app.SortMethod.Value = 'ARQUIVO';
+
+            % Create PLOTTab
+            app.PLOTTab = uitab(app.TabGroup);
+            app.PLOTTab.Title = 'PLOT';
+
+            % Create CustomPlotGrid
+            app.CustomPlotGrid = uigridlayout(app.PLOTTab);
+            app.CustomPlotGrid.ColumnWidth = {'1x', 22};
+            app.CustomPlotGrid.RowHeight = {17, 200, 22, '1x'};
+            app.CustomPlotGrid.RowSpacing = 5;
+            app.CustomPlotGrid.BackgroundColor = [1 1 1];
+
+            % Create CustomPlotTitle
+            app.CustomPlotTitle = uilabel(app.CustomPlotGrid);
+            app.CustomPlotTitle.VerticalAlignment = 'bottom';
+            app.CustomPlotTitle.FontSize = 10;
+            app.CustomPlotTitle.Layout.Row = 1;
+            app.CustomPlotTitle.Layout.Column = 1;
+            app.CustomPlotTitle.Text = 'EIXO GEOGRÁFICO';
+
+            % Create CustomPlotRefresh
+            app.CustomPlotRefresh = uiimage(app.CustomPlotGrid);
+            app.CustomPlotRefresh.ScaleMethod = 'none';
+            app.CustomPlotRefresh.ImageClickedFcn = createCallbackFcn(app, @Config_PlotRefreshImageClicked, true);
+            app.CustomPlotRefresh.Visible = 'off';
+            app.CustomPlotRefresh.Tooltip = {'Retorna às configurações iniciais'};
+            app.CustomPlotRefresh.Layout.Row = 1;
+            app.CustomPlotRefresh.Layout.Column = 2;
+            app.CustomPlotRefresh.VerticalAlignment = 'bottom';
+            app.CustomPlotRefresh.ImageSource = 'Refresh_18.png';
+
+            % Create CustomPlotPanel
+            app.CustomPlotPanel = uipanel(app.CustomPlotGrid);
+            app.CustomPlotPanel.Layout.Row = 4;
+            app.CustomPlotPanel.Layout.Column = [1 2];
+
+            % Create CustomPlotPanelGrid
+            app.CustomPlotPanelGrid = uigridlayout(app.CustomPlotPanel);
+            app.CustomPlotPanelGrid.ColumnWidth = {350, 36, 64, 110};
+            app.CustomPlotPanelGrid.RowHeight = {22, 22, 22, 22, 22, 1};
+            app.CustomPlotPanelGrid.RowSpacing = 5;
+            app.CustomPlotPanelGrid.BackgroundColor = [1 1 1];
+
+            % Create StationsLabel
+            app.StationsLabel = uilabel(app.CustomPlotPanelGrid);
+            app.StationsLabel.WordWrap = 'on';
+            app.StationsLabel.FontSize = 11;
+            app.StationsLabel.Layout.Row = 1;
+            app.StationsLabel.Layout.Column = [1 2];
+            app.StationsLabel.Text = 'Estações/pontos de referência:';
+
+            % Create StationsColor
+            app.StationsColor = uicolorpicker(app.CustomPlotPanelGrid);
+            app.StationsColor.Value = [0 1 1];
+            app.StationsColor.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
+            app.StationsColor.Layout.Row = 1;
+            app.StationsColor.Layout.Column = 2;
+            app.StationsColor.BackgroundColor = [1 1 1];
+
+            % Create StationsSize
+            app.StationsSize = uislider(app.CustomPlotPanelGrid);
+            app.StationsSize.Limits = [1 36];
+            app.StationsSize.MajorTicks = [];
+            app.StationsSize.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
+            app.StationsSize.MinorTicks = [];
+            app.StationsSize.FontSize = 10;
+            app.StationsSize.Tooltip = {'Tamanho do marcador'};
+            app.StationsSize.Layout.Row = 1;
+            app.StationsSize.Layout.Column = [3 4];
+            app.StationsSize.Value = 12;
+
+            % Create SelectedStationLabel
+            app.SelectedStationLabel = uilabel(app.CustomPlotPanelGrid);
+            app.SelectedStationLabel.WordWrap = 'on';
+            app.SelectedStationLabel.FontSize = 11;
+            app.SelectedStationLabel.Layout.Row = 2;
+            app.SelectedStationLabel.Layout.Column = 1;
+            app.SelectedStationLabel.Text = 'Estação/ponto sob análise:';
+
+            % Create SelectedStationColor
+            app.SelectedStationColor = uicolorpicker(app.CustomPlotPanelGrid);
+            app.SelectedStationColor.Value = [0 1 1];
+            app.SelectedStationColor.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
+            app.SelectedStationColor.Layout.Row = 2;
+            app.SelectedStationColor.Layout.Column = 2;
+            app.SelectedStationColor.BackgroundColor = [1 1 1];
+
+            % Create SelectedStationSize
+            app.SelectedStationSize = uislider(app.CustomPlotPanelGrid);
+            app.SelectedStationSize.Limits = [1 36];
+            app.SelectedStationSize.MajorTicks = [];
+            app.SelectedStationSize.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
+            app.SelectedStationSize.MinorTicks = [];
+            app.SelectedStationSize.FontSize = 10;
+            app.SelectedStationSize.Tooltip = {'Tamanho do marcador'};
+            app.SelectedStationSize.Layout.Row = 2;
+            app.SelectedStationSize.Layout.Column = [3 4];
+            app.SelectedStationSize.Value = 32;
+
+            % Create PeakLabel
+            app.PeakLabel = uilabel(app.CustomPlotPanelGrid);
+            app.PeakLabel.WordWrap = 'on';
+            app.PeakLabel.FontSize = 11;
+            app.PeakLabel.Layout.Row = 3;
+            app.PeakLabel.Layout.Column = 1;
+            app.PeakLabel.Text = 'Pico em torno da estação/ponto:';
+
+            % Create PeakColor
+            app.PeakColor = uicolorpicker(app.CustomPlotPanelGrid);
+            app.PeakColor.Value = [1 1 0];
+            app.PeakColor.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
+            app.PeakColor.Layout.Row = 3;
+            app.PeakColor.Layout.Column = 2;
+            app.PeakColor.BackgroundColor = [1 1 1];
+
+            % Create PeakSize
+            app.PeakSize = uislider(app.CustomPlotPanelGrid);
+            app.PeakSize.Limits = [1 36];
+            app.PeakSize.MajorTicks = [];
+            app.PeakSize.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
+            app.PeakSize.MinorTicks = [];
+            app.PeakSize.FontSize = 10;
+            app.PeakSize.Tooltip = {'Tamanho do marcador'};
+            app.PeakSize.Layout.Row = 3;
+            app.PeakSize.Layout.Column = [3 4];
+            app.PeakSize.Value = 32;
+
+            % Create CircleColorLabel
+            app.CircleColorLabel = uilabel(app.CustomPlotPanelGrid);
+            app.CircleColorLabel.WordWrap = 'on';
+            app.CircleColorLabel.FontSize = 11;
+            app.CircleColorLabel.Layout.Row = 4;
+            app.CircleColorLabel.Layout.Column = [1 4];
+            app.CircleColorLabel.Text = 'Região circular em torno da estação/ponto:';
+
+            % Create CircleColor
+            app.CircleColor = uidropdown(app.CustomPlotPanelGrid);
+            app.CircleColor.Items = {'black', 'blue', 'cyan', 'green', 'magenta', 'red', 'white', 'yellow'};
+            app.CircleColor.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
+            app.CircleColor.FontSize = 11;
+            app.CircleColor.BackgroundColor = [1 1 1];
+            app.CircleColor.Layout.Row = 4;
+            app.CircleColor.Layout.Column = [2 4];
+            app.CircleColor.Value = 'cyan';
+
+            % Create CircleColorAlphaLabel
+            app.CircleColorAlphaLabel = uilabel(app.CustomPlotPanelGrid);
+            app.CircleColorAlphaLabel.WordWrap = 'on';
+            app.CircleColorAlphaLabel.FontSize = 11;
+            app.CircleColorAlphaLabel.Layout.Row = [5 6];
+            app.CircleColorAlphaLabel.Layout.Column = [1 3];
+            app.CircleColorAlphaLabel.Interpreter = 'html';
+            app.CircleColorAlphaLabel.Text = {'Região circular em torno da estação/ponto: '; '<font style="font-size: 10px;">(transparência da face e borda)</font>'};
+
+            % Create CircleFaceAlpha
+            app.CircleFaceAlpha = uispinner(app.CustomPlotPanelGrid);
+            app.CircleFaceAlpha.Step = 0.05;
+            app.CircleFaceAlpha.Limits = [0 1];
+            app.CircleFaceAlpha.ValueDisplayFormat = '%.2f';
+            app.CircleFaceAlpha.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
+            app.CircleFaceAlpha.FontSize = 11;
+            app.CircleFaceAlpha.Layout.Row = 5;
+            app.CircleFaceAlpha.Layout.Column = [2 3];
+            app.CircleFaceAlpha.Value = 0.25;
+
+            % Create CircleEdgeAlpha
+            app.CircleEdgeAlpha = uispinner(app.CustomPlotPanelGrid);
+            app.CircleEdgeAlpha.Step = 0.05;
+            app.CircleEdgeAlpha.Limits = [0 1];
+            app.CircleEdgeAlpha.ValueDisplayFormat = '%.2f';
+            app.CircleEdgeAlpha.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
+            app.CircleEdgeAlpha.FontSize = 11;
+            app.CircleEdgeAlpha.Layout.Row = 5;
+            app.CircleEdgeAlpha.Layout.Column = 4;
+            app.CircleEdgeAlpha.Value = 0.4;
+
+            % Create Panel
+            app.Panel = uipanel(app.CustomPlotGrid);
+            app.Panel.Layout.Row = 2;
+            app.Panel.Layout.Column = [1 2];
+
+            % Create GridLayout2
+            app.GridLayout2 = uigridlayout(app.Panel);
+            app.GridLayout2.ColumnWidth = {350, 110, 110};
+            app.GridLayout2.RowHeight = {22, 22, 22, 22, 22, 22, 1};
+            app.GridLayout2.RowSpacing = 5;
+            app.GridLayout2.BackgroundColor = [1 1 1];
+
+            % Create BasemapLabel
+            app.BasemapLabel = uilabel(app.GridLayout2);
+            app.BasemapLabel.FontSize = 11;
+            app.BasemapLabel.Layout.Row = 1;
+            app.BasemapLabel.Layout.Column = 1;
+            app.BasemapLabel.Text = 'Basemap:';
+
+            % Create Basemap
+            app.Basemap = uidropdown(app.GridLayout2);
+            app.Basemap.Items = {'darkwater', 'none', 'satellite', 'streets-dark', 'streets-light', 'topographic'};
+            app.Basemap.ValueChangedFcn = createCallbackFcn(app, @Config_PlotAxesValueChanged, true);
+            app.Basemap.FontSize = 11;
+            app.Basemap.BackgroundColor = [1 1 1];
+            app.Basemap.Layout.Row = 1;
+            app.Basemap.Layout.Column = [2 3];
+            app.Basemap.Value = 'satellite';
+
+            % Create ColormapLabel
+            app.ColormapLabel = uilabel(app.GridLayout2);
+            app.ColormapLabel.FontSize = 11;
+            app.ColormapLabel.Layout.Row = 2;
+            app.ColormapLabel.Layout.Column = 1;
+            app.ColormapLabel.Text = 'Mapa de cor:';
+
+            % Create Colormap
+            app.Colormap = uidropdown(app.GridLayout2);
+            app.Colormap.Items = {'winter', 'parula', 'turbo', 'gray', 'hot', 'jet', 'summer'};
+            app.Colormap.ValueChangedFcn = createCallbackFcn(app, @Config_PlotAxesValueChanged, true);
+            app.Colormap.FontSize = 11;
+            app.Colormap.BackgroundColor = [1 1 1];
+            app.Colormap.Layout.Row = 2;
+            app.Colormap.Layout.Column = [2 3];
+            app.Colormap.Value = 'turbo';
+
+            % Create ColorbarLabel
+            app.ColorbarLabel = uilabel(app.GridLayout2);
+            app.ColorbarLabel.FontSize = 11;
+            app.ColorbarLabel.Layout.Row = 3;
+            app.ColorbarLabel.Layout.Column = 1;
+            app.ColorbarLabel.Text = 'Legenda de cor:';
+
+            % Create Colorbar
+            app.Colorbar = uidropdown(app.GridLayout2);
+            app.Colorbar.Items = {'off', 'on'};
+            app.Colorbar.ValueChangedFcn = createCallbackFcn(app, @Config_PlotAxesValueChanged, true);
+            app.Colorbar.FontSize = 11;
+            app.Colorbar.BackgroundColor = [1 1 1];
+            app.Colorbar.Layout.Row = 3;
+            app.Colorbar.Layout.Column = 2;
+            app.Colorbar.Value = 'on';
+
+            % Create ZoomOrientationLabel
+            app.ZoomOrientationLabel = uilabel(app.GridLayout2);
+            app.ZoomOrientationLabel.WordWrap = 'on';
+            app.ZoomOrientationLabel.FontSize = 11;
+            app.ZoomOrientationLabel.Layout.Row = 4;
+            app.ZoomOrientationLabel.Layout.Column = 1;
+            app.ZoomOrientationLabel.Text = 'Orientação do zoom:';
+
+            % Create ZoomOrientation
+            app.ZoomOrientation = uidropdown(app.GridLayout2);
+            app.ZoomOrientation.Items = {'measures', 'stations/points'};
+            app.ZoomOrientation.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
+            app.ZoomOrientation.FontSize = 11;
+            app.ZoomOrientation.BackgroundColor = [1 1 1];
+            app.ZoomOrientation.Layout.Row = 4;
+            app.ZoomOrientation.Layout.Column = 2;
+            app.ZoomOrientation.Value = 'stations/points';
+
+            % Create AutomaticZoomMode
+            app.AutomaticZoomMode = uicheckbox(app.GridLayout2);
+            app.AutomaticZoomMode.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
+            app.AutomaticZoomMode.Text = 'Habilitar zoom automático em torno da estação/ponto sob análise.';
+            app.AutomaticZoomMode.FontSize = 11;
+            app.AutomaticZoomMode.Layout.Row = 5;
+            app.AutomaticZoomMode.Layout.Column = [1 3];
+
+            % Create AutomaticZoomFactorLabel
+            app.AutomaticZoomFactorLabel = uilabel(app.GridLayout2);
+            app.AutomaticZoomFactorLabel.FontSize = 11;
+            app.AutomaticZoomFactorLabel.Layout.Row = [6 7];
+            app.AutomaticZoomFactorLabel.Layout.Column = 1;
+            app.AutomaticZoomFactorLabel.Interpreter = 'html';
+            app.AutomaticZoomFactorLabel.Text = {'Fator do zoom: '; '<font style="font-size: 10px;">(distância referência)</font>'};
+
+            % Create AutomaticZoomFactor
+            app.AutomaticZoomFactor = uispinner(app.GridLayout2);
+            app.AutomaticZoomFactor.Limits = [1 10];
+            app.AutomaticZoomFactor.RoundFractionalValues = 'on';
+            app.AutomaticZoomFactor.ValueDisplayFormat = '%d';
+            app.AutomaticZoomFactor.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
+            app.AutomaticZoomFactor.FontSize = 11;
+            app.AutomaticZoomFactor.Enable = 'off';
+            app.AutomaticZoomFactor.Layout.Row = 6;
+            app.AutomaticZoomFactor.Layout.Column = 2;
+            app.AutomaticZoomFactor.Value = 4;
+
+            % Create CustomPlotTitle_2
+            app.CustomPlotTitle_2 = uilabel(app.CustomPlotGrid);
+            app.CustomPlotTitle_2.VerticalAlignment = 'bottom';
+            app.CustomPlotTitle_2.FontSize = 10;
+            app.CustomPlotTitle_2.Layout.Row = 3;
+            app.CustomPlotTitle_2.Layout.Column = 1;
+            app.CustomPlotTitle_2.Text = 'ESTAÇÃO/PONTO';
+
+            % Create Tab3
+            app.Tab3 = uitab(app.TabGroup);
+            app.Tab3.AutoResizeChildren = 'off';
+            app.Tab3.Title = 'MAPEAMENTO DE PASTAS';
+            app.Tab3.BackgroundColor = 'none';
+
+            % Create Tab3Grid
+            app.Tab3Grid = uigridlayout(app.Tab3);
+            app.Tab3Grid.ColumnWidth = {'1x', 20};
+            app.Tab3Grid.RowHeight = {17, 22, 22, 22, '1x'};
+            app.Tab3Grid.ColumnSpacing = 5;
+            app.Tab3Grid.RowSpacing = 5;
+            app.Tab3Grid.BackgroundColor = [1 1 1];
+
+            % Create DATAHUBPOSTLabel
+            app.DATAHUBPOSTLabel = uilabel(app.Tab3Grid);
+            app.DATAHUBPOSTLabel.VerticalAlignment = 'bottom';
+            app.DATAHUBPOSTLabel.FontSize = 10;
+            app.DATAHUBPOSTLabel.Layout.Row = 1;
+            app.DATAHUBPOSTLabel.Layout.Column = 1;
+            app.DATAHUBPOSTLabel.Text = 'DATAHUB - POST:';
+
+            % Create DataHubPOST
+            app.DataHubPOST = uieditfield(app.Tab3Grid, 'text');
+            app.DataHubPOST.Editable = 'off';
+            app.DataHubPOST.FontSize = 11;
+            app.DataHubPOST.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.DataHubPOST.Layout.Row = 2;
+            app.DataHubPOST.Layout.Column = 1;
+
+            % Create DataHubPOSTButton
+            app.DataHubPOSTButton = uiimage(app.Tab3Grid);
+            app.DataHubPOSTButton.ImageClickedFcn = createCallbackFcn(app, @Config_FolderButtonPushed, true);
+            app.DataHubPOSTButton.Tag = 'DataHub_POST';
+            app.DataHubPOSTButton.Enable = 'off';
+            app.DataHubPOSTButton.Layout.Row = 2;
+            app.DataHubPOSTButton.Layout.Column = 2;
+            app.DataHubPOSTButton.ImageSource = 'OpenFile_36x36.png';
+
+            % Create userPathLabel
+            app.userPathLabel = uilabel(app.Tab3Grid);
+            app.userPathLabel.VerticalAlignment = 'bottom';
+            app.userPathLabel.FontSize = 10;
+            app.userPathLabel.Layout.Row = 3;
+            app.userPathLabel.Layout.Column = 1;
+            app.userPathLabel.Text = 'PASTA DO USUÁRIO:';
+
+            % Create userPath
+            app.userPath = uieditfield(app.Tab3Grid, 'text');
+            app.userPath.Editable = 'off';
+            app.userPath.FontSize = 11;
+            app.userPath.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.userPath.Layout.Row = 4;
+            app.userPath.Layout.Column = 1;
+
+            % Create userPathButton
+            app.userPathButton = uiimage(app.Tab3Grid);
+            app.userPathButton.ImageClickedFcn = createCallbackFcn(app, @Config_FolderButtonPushed, true);
+            app.userPathButton.Tag = 'userPath';
+            app.userPathButton.Enable = 'off';
+            app.userPathButton.Layout.Row = 4;
+            app.userPathButton.Layout.Column = 2;
+            app.userPathButton.ImageSource = 'OpenFile_36x36.png';
+
+            % Create DockModuleGroup
+            app.DockModuleGroup = uigridlayout(app.GridLayout);
+            app.DockModuleGroup.RowHeight = {'1x'};
+            app.DockModuleGroup.ColumnSpacing = 2;
+            app.DockModuleGroup.Padding = [5 2 5 2];
+            app.DockModuleGroup.Visible = 'off';
+            app.DockModuleGroup.Layout.Row = [2 3];
+            app.DockModuleGroup.Layout.Column = [3 4];
+            app.DockModuleGroup.BackgroundColor = [0.2 0.2 0.2];
+
+            % Create dockModule_Close
+            app.dockModule_Close = uiimage(app.DockModuleGroup);
+            app.dockModule_Close.ScaleMethod = 'none';
+            app.dockModule_Close.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
+            app.dockModule_Close.Tag = 'DRIVETEST';
+            app.dockModule_Close.Tooltip = {'Fecha módulo'};
+            app.dockModule_Close.Layout.Row = 1;
+            app.dockModule_Close.Layout.Column = 2;
+            app.dockModule_Close.ImageSource = 'Delete_12SVG_white.svg';
+
+            % Create dockModule_Undock
+            app.dockModule_Undock = uiimage(app.DockModuleGroup);
+            app.dockModule_Undock.ScaleMethod = 'none';
+            app.dockModule_Undock.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
+            app.dockModule_Undock.Tag = 'DRIVETEST';
+            app.dockModule_Undock.Enable = 'off';
+            app.dockModule_Undock.Tooltip = {'Reabre módulo em outra janela'};
+            app.dockModule_Undock.Layout.Row = 1;
+            app.dockModule_Undock.Layout.Column = 1;
+            app.dockModule_Undock.ImageSource = 'Undock_18White.png';
+
+            % Show the figure after all components are created
+            app.UIFigure.Visible = 'on';
+        end
+    end
+
+    % App creation and deletion
+    methods (Access = public)
+
+        % Construct app
+        function app = winConfig_exported(Container, varargin)
+
+            % Create UIFigure and components
+            createComponents(app, Container)
+
+            % Execute the startup function
+            runStartupFcn(app, @(app)startupFcn(app, varargin{:}))
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            if app.isDocked
+                delete(app.Container.Children)
+            else
+                delete(app.UIFigure)
+            end
+        end
+    end
+end
