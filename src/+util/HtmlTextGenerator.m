@@ -61,23 +61,42 @@ classdef (Abstract) HtmlTextGenerator
         % WINMONITOR - MODO "FILE"
         %-----------------------------------------------------------------%
         function htmlContent = SelectedFile(measData)
-            dataStruct    = struct('group', 'ARQUIVO', 'value', measData.Filename);
-            dataStruct(2) = struct('group', 'SENSOR',  'value', measData.MetaData);
+            if isscalar(measData)
+                dataStruct      = struct('group', 'ARQUIVO',  'value', sprintf('"%s"', measData.Filename));
+                dataStruct(2)   = struct('group', 'SENSOR',   'value', measData.MetaData);            
+                dataStruct(3)   = struct('group', 'ROTA',     'value', struct('LatitudeLimits',   sprintf('[%.6f, %.6f]', measData.LatitudeLimits(:)),  ...
+                                                                              'LongitudeLimits',  sprintf('[%.6f, %.6f]', measData.LongitudeLimits(:)), ...
+                                                                              'Latitude',         measData.Latitude,        ...
+                                                                              'Longitude',        measData.Longitude,       ...
+                                                                              'Location',         measData.Location,        ...
+                                                                              'CoveredDistance',  sprintf('%.1f km', measData.CoveredDistance)));
+                dataStruct(4)   = struct('group', 'MEDIDAS',  'value', struct('Measures',         measData.Measures,        ...
+                                                                              'ObservationTime',  measData.ObservationTime, ...
+                                                                              'FieldValueLimits', sprintf('[%.1f - %.1f] V/m', measData.FieldValueLimits(:))));
+                dataStruct(5)   = struct('group', 'CONTEÚDO', 'value', [measData.Content '<br><font style="color: red;">... [texto truncado]</font>']);
             
-            dataStruct(3) = struct('group', 'ROTA',    'value', struct('LatitudeLimits',   sprintf('[%.6f, %.6f]', measData.LatitudeLimits(:)),  ...
-                                                                       'LongitudeLimits',  sprintf('[%.6f, %.6f]', measData.LongitudeLimits(:)), ...
-                                                                       'Latitude',         measData.Latitude,        ...
-                                                                       'Longitude',        measData.Longitude,       ...
-                                                                       'Location',         measData.Location,        ...
-                                                                       'CoveredDistance',  sprintf('%.1f km', measData.CoveredDistance)));
-        
-        
-            dataStruct(4) = struct('group', 'MEDIDAS', 'value', struct('Measures',         measData.Measures,        ...
-                                                                       'ObservationTime',  measData.ObservationTime, ...
-                                                                       'FieldValueLimits', sprintf('[%.1f - %.1f] V/m', measData.FieldValueLimits(:))));
-        
-            htmlContent   = [sprintf('<p style="font-family: Helvetica, Arial, sans-serif; font-size: 10px; margin: 5px; color: white; background-color: red; display: inline-block; vertical-align: middle; padding: 5px; border-radius: 5px;">%s</p>', upper(measData.Sensor)) ...
-                             textFormatGUI.struct2PrettyPrintList(dataStruct, 'delete')];
+                freeInitialText = sprintf(['<p style="padding-left: 10px; padding-top: 10px; font-size: 16px;"><b>%s </b>' ...
+                                               '<font style="color: gray; font-size: 11px;">%s</font>' ...
+                                           '</p>'], measData.Location, sprintf('[%.1f - %.1f] V/m', measData.FieldValueLimits(:)));
+            
+            else
+                locationList = {measData.Location};
+                locations = unique(locationList);
+
+                if isscalar(locations)
+                    dataStruct(1)   = struct('group', 'ARQUIVO', 'value', textFormatGUI.cellstr2Bullets(cellfun(@(x) sprintf('"%s"', x), {measData.Filename}, 'UniformOutput', false)));
+
+                    [minField, maxField] = bounds([measData.FieldValueLimits], 'all');
+                    freeInitialText = sprintf(['<p style="padding-left: 10px; padding-top: 10px; font-size: 16px;"><b>%s </b>' ...
+                                                   '<font style="color: gray; font-size: 11px;">%s</font>' ...
+                                               '</p>'], measData(1).Location, sprintf('[%.1f - %.1f] V/m', minField, maxField));
+
+                else
+                    dataStruct(1)   = struct('group', 'ARQUIVO', 'value', textFormatGUI.cellstr2Bullets(cellfun(@(x) sprintf('"%s"', x), {measData.Filename}, 'UniformOutput', false)));
+                    freeInitialText = '<p style="padding-left: 10px; padding-top: 10px; font-size: 16px;"><b>*.*</b></p>';
+                end
+            end
+            htmlContent     = [freeInitialText, textFormatGUI.struct2PrettyPrintList(dataStruct, 'delete')];
         end
 
 
@@ -196,7 +215,8 @@ classdef (Abstract) HtmlTextGenerator
                 
                 % Validação:
                 if isequal(presentVersion, stableVersion)
-                    msgWarning   = 'O monitorRNI está atualizado.';                    
+                    msgWarning    = 'O monitorRNI está atualizado.';
+                    updatedModule = {'monitorRNI', 'RFDataHub'};
                 else
                     nonUpdatedModule = {};
                     if strcmp(presentVersion.(appName), stableVersion.(appName))

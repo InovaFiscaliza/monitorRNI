@@ -5,6 +5,8 @@ classdef measData < handle
         Filepath
         Filename
 
+        Content
+
         Sensor
         MetaData
         
@@ -26,17 +28,19 @@ classdef measData < handle
 
     methods
         %-----------------------------------------------------------------%
-        function obj = measData(fileFullName, Sensor, metaData, dataTable)
+        function obj = measData(fileFullName, Sensor, metaData, dataTable, contentSample)
             arguments
-                fileFullName char
-                Sensor       char {mustBeMember(Sensor, {'Wavecontrol', 'Narda'})}
-                metaData     struct
-                dataTable    timetable
+                fileFullName  char
+                Sensor        char {mustBeMember(Sensor, {'Wavecontrol', 'Narda'})}
+                metaData      struct
+                dataTable     timetable
+                contentSample char = ''
             end
 
             [filePath, fileName, fileExt] = fileparts(fileFullName);
             obj.Filepath  = filePath;
             obj.Filename  = [fileName, fileExt];
+            obj.Content   = contentSample;
             
             obj.Sensor    = Sensor;
             obj.MetaData  = metaData;
@@ -69,6 +73,21 @@ classdef measData < handle
             obj.Location         = gpsLib.findNearestCity(struct('Latitude', obj.Latitude, 'Longitude', obj.Longitude));   
 
             obj.CoveredDistance  = round(sum(deg2km(distance(dataTable.Latitude(2:end), dataTable.Longitude(2:end), dataTable.Latitude(1:end-1), dataTable.Longitude(1:end-1)))), 6);
+        end
+
+        %-----------------------------------------------------------------%
+        function measTable = createMeasTable(obj)
+            % Concatena as tabelas de LATITUDE, LONGITUDE E NÍVEL de cada um
+            % dos arquivos cuja localidade coincide com o que foi selecionado
+            % em tela. Além disso, insere o nome do próprio arquivo p/ fins de 
+            % mapeamento entre os dados e os arquivos brutos.
+
+            listOfTables  = {obj.Data};
+            listOfFiles   = cellfun(@(x,y) repmat({x}, y, 1), {obj.Filename}, {obj.Measures}, 'UniformOutput', false);
+            tempMeasTable = vertcat(listOfTables{:});
+            tempMeasTable.FileSource = vertcat(listOfFiles{:});
+    
+            measTable     = sortrows(tempMeasTable, 'Timestamp');
         end
     end
 end

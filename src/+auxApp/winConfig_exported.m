@@ -27,6 +27,8 @@ classdef winConfig_exported < matlab.apps.AppBase
         PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel  matlab.ui.control.Label
         analysis_ElevationPanel       matlab.ui.container.Panel
         ExternalRequestGrid           matlab.ui.container.GridLayout
+        ExternalRequestOrientation    matlab.ui.control.DropDown
+        ExternalRequestOrientationLabel  matlab.ui.control.Label
         ExternalRequestExportKML      matlab.ui.control.CheckBox
         ExternalRequestExportXLSX     matlab.ui.control.CheckBox
         ExternalRequestLevel          matlab.ui.control.NumericEditField
@@ -325,6 +327,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.ExternalRequestLevel.Value      = app.mainApp.General.ExternalRequest.FieldValue;
             app.ExternalRequestExportXLSX.Value = app.mainApp.General.ExternalRequest.Export.XLSX;
             app.ExternalRequestExportKML.Value  = app.mainApp.General.ExternalRequest.Export.KML;
+            app.ExternalRequestOrientation.Value= app.mainApp.General.ExternalRequest.Orientation;
 
             if checkEdition(app, 'ANALYSIS')
                 app.analysis_FileRefresh.Visible = 1;
@@ -387,7 +390,8 @@ classdef winConfig_exported < matlab.apps.AppBase
                                                              'Export',      app.mainApp.General.MonitoringPlan.Export), ...
                                    'ExternalRequest', struct('Distance_km', app.mainApp.General.ExternalRequest.Distance_km, ...
                                                              'FieldValue',  app.mainApp.General.ExternalRequest.FieldValue, ...
-                                                             'Export',      app.mainApp.General.ExternalRequest.Export), ...
+                                                             'Export',      app.mainApp.General.ExternalRequest.Export, ...
+                                                             'Orientation', app.mainApp.General.ExternalRequest.Orientation), ...
                                    'Plot',            app.mainApp.General.Plot);
 
             switch tabName
@@ -477,10 +481,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             [htmlContent, app.stableVersion, updatedModule] = util.HtmlTextGenerator.checkAvailableUpdate(app.mainApp.General, app.mainApp.rootFolder);
             appUtil.modalWindow(app.UIFigure, "info", htmlContent);
-            
-            if ~ismember('RFDataHub', updatedModule)
-                app.tool_RFDataHubButton.Enable = 1;
-            end         
+            app.tool_RFDataHubButton.Enable = ~ismember('RFDataHub', updatedModule);
 
             app.progressDialog.Visible = 'hidden';
 
@@ -588,7 +589,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         end
 
         % Callback function: ExternalRequestDistance, 
-        % ...and 10 other components
+        % ...and 11 other components
         function Config_AnalysisParameterValueChanged(app, event)
             
             updateAnalysisName = '';
@@ -636,6 +637,9 @@ classdef winConfig_exported < matlab.apps.AppBase
 
                 case app.ExternalRequestExportKML
                     app.mainApp.General.ExternalRequest.Export.KML   = app.ExternalRequestExportKML.Value;
+
+                case app.ExternalRequestOrientation
+                    app.mainApp.General.ExternalRequest.Orientation  = app.ExternalRequestOrientation.Value;
             end
 
             app.mainApp.General_I.File            = app.mainApp.General.File;
@@ -1128,8 +1132,8 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create ExternalRequestGrid
             app.ExternalRequestGrid = uigridlayout(app.analysis_ElevationPanel);
-            app.ExternalRequestGrid.ColumnWidth = {350, 90, '1x'};
-            app.ExternalRequestGrid.RowHeight = {22, 22, 1, 17, 17};
+            app.ExternalRequestGrid.ColumnWidth = {350, 90, 130};
+            app.ExternalRequestGrid.RowHeight = {22, 22, 1, 17, 17, 22};
             app.ExternalRequestGrid.RowSpacing = 5;
             app.ExternalRequestGrid.BackgroundColor = [1 1 1];
 
@@ -1181,6 +1185,23 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.ExternalRequestExportKML.Layout.Row = 5;
             app.ExternalRequestExportKML.Layout.Column = [1 3];
 
+            % Create ExternalRequestOrientationLabel
+            app.ExternalRequestOrientationLabel = uilabel(app.ExternalRequestGrid);
+            app.ExternalRequestOrientationLabel.FontSize = 11;
+            app.ExternalRequestOrientationLabel.Layout.Row = 6;
+            app.ExternalRequestOrientationLabel.Layout.Column = 1;
+            app.ExternalRequestOrientationLabel.Text = 'Orientação do relatório:';
+
+            % Create ExternalRequestOrientation
+            app.ExternalRequestOrientation = uidropdown(app.ExternalRequestGrid);
+            app.ExternalRequestOrientation.Items = {'file', 'location'};
+            app.ExternalRequestOrientation.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.ExternalRequestOrientation.FontSize = 11;
+            app.ExternalRequestOrientation.BackgroundColor = [1 1 1];
+            app.ExternalRequestOrientation.Layout.Row = 6;
+            app.ExternalRequestOrientation.Layout.Column = [2 3];
+            app.ExternalRequestOrientation.Value = 'file';
+
             % Create PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel
             app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel = uilabel(app.Tab2Grid);
             app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel.VerticalAlignment = 'bottom';
@@ -1228,13 +1249,13 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create SortMethod
             app.SortMethod = uidropdown(app.GridLayout3);
-            app.SortMethod.Items = {'ARQUIVO', 'LOCALIDADE', 'SENSOR'};
+            app.SortMethod.Items = {'ARQUIVO', 'LOCALIDADE'};
             app.SortMethod.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
             app.SortMethod.FontSize = 11;
             app.SortMethod.BackgroundColor = [1 1 1];
             app.SortMethod.Layout.Row = 2;
             app.SortMethod.Layout.Column = 2;
-            app.SortMethod.Value = 'ARQUIVO';
+            app.SortMethod.Value = 'LOCALIDADE';
 
             % Create PLOTTab
             app.PLOTTab = uitab(app.TabGroup);
@@ -1243,7 +1264,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create CustomPlotGrid
             app.CustomPlotGrid = uigridlayout(app.PLOTTab);
             app.CustomPlotGrid.ColumnWidth = {'1x', 22};
-            app.CustomPlotGrid.RowHeight = {17, 200, 22, '1x'};
+            app.CustomPlotGrid.RowHeight = {17, 182, 22, '1x'};
             app.CustomPlotGrid.RowSpacing = 5;
             app.CustomPlotGrid.BackgroundColor = [1 1 1];
 
