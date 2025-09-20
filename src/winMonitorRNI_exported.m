@@ -409,14 +409,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.General_I.fileFolder.tempPath  = tempDir;
             app.General_I.fileFolder.MFilePath = MFilePath;
 
-            if ~ismember(app.General_I.File.input, {'file', 'folder'})
-                app.General_I.File.input = 'file';
-            end
-
-            if ~ismember(app.General_I.File.sortMethod, {'ARQUIVO', 'LOCALIDADE', 'SENSOR'})
-                app.General_I.File.sortMethod = 'ARQUIVO';
-            end
-
             switch app.executionMode
                 case 'webApp'
                     % Força a exclusão do SplashScreen do MATLAB Web Server.
@@ -494,11 +486,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             % Cria o objeto que conecta o TabGroup com o GraphicMenu.
             app.tabGroupController = tabGroupGraphicMenu(app.menu_Grid, app.TabGroup, app.progressDialog, @app.jsBackDoor_AppCustomizations, '');
 
-            addComponent(app.tabGroupController, "Built-in", "",                          app.menu_Button1, "AlwaysOn", struct('On', 'OpenFile_32Yellow.png',         'Off', 'OpenFile_32White.png'),          matlab.graphics.GraphicsPlaceholder, 1)
-            addComponent(app.tabGroupController, "External", "auxApp.winMonitoringPlan",  app.menu_Button2, "AlwaysOn", struct('On', 'DriveTestDensity_32Yellow.png', 'Off', 'DriveTestDensity_32White.png'),  app.menu_Button1,                    2)
-            addComponent(app.tabGroupController, "External", "auxApp.winExternalRequest", app.menu_Button3, "AlwaysOn", struct('On', 'Report_32Yellow.png',           'Off', 'Report_32White.png'),            app.menu_Button1,                    3)
-            addComponent(app.tabGroupController, "External", "auxApp.winRFDataHub",       app.menu_Button4, "AlwaysOn", struct('On', 'mosaic_32Yellow.png',           'Off', 'mosaic_32White.png'),            app.menu_Button1,                    4)
-            addComponent(app.tabGroupController, "External", "auxApp.winConfig",          app.menu_Button5, "AlwaysOn", struct('On', 'Settings_36Yellow.png',         'Off', 'Settings_36White.png'),          app.menu_Button1,                    5)
+            addComponent(app.tabGroupController, "Built-in", "",                          app.menu_Button1, "AlwaysOn", struct('On', 'OpenFile_32Yellow.png',      'Off', 'OpenFile_32White.png'),      matlab.graphics.GraphicsPlaceholder, 1)
+            addComponent(app.tabGroupController, "External", "auxApp.winMonitoringPlan",  app.menu_Button2, "AlwaysOn", struct('On', 'Detection_32Yellow.png',     'Off', 'Detection_32White.png'),     app.menu_Button1,                    2)
+            addComponent(app.tabGroupController, "External", "auxApp.winExternalRequest", app.menu_Button3, "AlwaysOn", struct('On', 'exceptionList_32Yellow.png', 'Off', 'exceptionList_32White.png'), app.menu_Button1,                    3)
+            addComponent(app.tabGroupController, "External", "auxApp.winRFDataHub",       app.menu_Button4, "AlwaysOn", struct('On', 'mosaic_32Yellow.png',        'Off', 'mosaic_32White.png'),        app.menu_Button1,                    4)
+            addComponent(app.tabGroupController, "External", "auxApp.winConfig",          app.menu_Button5, "AlwaysOn", struct('On', 'Settings_36Yellow.png',      'Off', 'Settings_36White.png'),      app.menu_Button1,                    5)
 
             DataHubWarningLamp(app)
             app.file_FileSortMethod.Value = app.General.File.sortMethod;
@@ -524,38 +516,84 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
         
         %-----------------------------------------------------------------%
-        function file_TreeBuilding(app)
-            initialSelection = '';
-            if ~isempty(app.file_Tree.Children)
-                if ~isempty(app.file_Tree.SelectedNodes)
-                    initialSelection = app.file_Tree.SelectedNodes(1).Text;
-                end
+        function file_TreeBuilding(app, selectedNodeData)
+            arguments
+                app
+                selectedNodeData = []
+            end
 
+            if ~isempty(app.file_Tree.Children)
+                app.file_Metadata.UserData = [];
                 delete(app.file_Tree.Children)
             end
 
-            for ii = 1:numel(app.measData)
-                uitreenode(app.file_Tree, 'Text',        app.measData(ii).Filename, ...
-                                          'NodeData',    ii,                        ...
-                                          'ContextMenu', app.file_ContextMenu);
+            selectedNode = [];
+
+            switch app.file_FileSortMethod.Value
+                case 'ARQUIVO'
+                    for ii = 1:numel(app.measData)
+                        treeNode = uitreenode(app.file_Tree, 'Text', app.measData(ii).Filename, ...
+                                                             'NodeData', ii, ...
+                                                             'ContextMenu', app.file_ContextMenu);
+
+                        if ismember(ii, selectedNodeData)
+                            selectedNode = [selectedNode, treeNode];
+                        end
+                    end
+
+                case 'LOCALIDADE'
+                    locationList = {app.measData.Location};
+                    locations    = unique(locationList);
+
+                    for ii = 1:numel(locations)
+                        location = locations{ii};
+                        locationIndexes  = find(strcmp(locationList, location));
+                        [~, idSort]      = sort(arrayfun(@(x) x.Data.Timestamp(1), app.measData(locationIndexes)));
+                        locationIndexes  = locationIndexes(idSort);
+
+                        locationTreeNode = uitreenode(app.file_Tree, 'Text', location, ...
+                                                                     'NodeData', locationIndexes, ...
+                                                                     'ContextMenu', app.file_ContextMenu);
+
+                        for jj = locationIndexes
+                            [taskBegin, taskEnd] = bounds(app.measData(jj).Data.Timestamp);
+                            treeText = sprintf('%s  - ⌛%s  -  📐%s', ...
+                                app.measData(jj).ObservationTime, ...
+                                string(taskEnd-taskBegin), ...
+                                sprintf('[%.1f - %.1f] V/m', app.measData(jj).FieldValueLimits(:)));
+
+                            treeNode = uitreenode(locationTreeNode, 'Text',        treeText, ...
+                                                                    'NodeData',    jj,                        ...
+                                                                    'ContextMenu', app.file_ContextMenu);
+    
+                            if ismember(jj, selectedNodeData)
+                                selectedNode = [selectedNode, treeNode];
+                            end
+                        end
+                    end
             end
 
+            expand(app.file_Tree, 'all')
+
             if ~isempty(app.measData)
-                if ~isempty(initialSelection) && ismember(initialSelection, {app.file_Tree.Children.Text})
-                    [~, idxSelection] = ismember(initialSelection, {app.file_Tree.Children.Text});
-                    app.file_Tree.SelectedNodes = app.file_Tree.Children(idxSelection);
+                if ~isempty(selectedNode)
+                    app.file_Tree.SelectedNodes = selectedNode;
                 else
-                    app.file_Tree.SelectedNodes = app.file_Tree.Children(1);
+                    if isempty(app.file_Tree.Children(1).Children)
+                        app.file_Tree.SelectedNodes = app.file_Tree.Children(1);
+                    else
+                        app.file_Tree.SelectedNodes = app.file_Tree.Children(1).Children(1);
+                    end
                 end
-                file_TreeSelectionChanged(app)
 
                 app.menu_Button2.Enable = 1;
                 app.menu_Button3.Enable = 1;
             else
-                app.file_Metadata.Text  = ' ';
                 app.menu_Button2.Enable = 0;
                 app.menu_Button3.Enable = 0;
             end
+
+            file_TreeSelectionChanged(app)
         end
 
         %-----------------------------------------------------------------%
@@ -730,11 +768,19 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         % Selection changed function: file_Tree
         function file_TreeSelectionChanged(app, event)
 
-            if isscalar(app.file_Tree.SelectedNodes)
-                idx = app.file_Tree.SelectedNodes.NodeData;
-                app.file_Metadata.Text = util.HtmlTextGenerator.SelectedFile(app.measData(idx));
+            indexes = file_findSelectedNodeData(app);
+
+            if isempty(indexes)
+                app.file_Metadata.Text     = '';
+                app.file_Metadata.UserData = [];
+
             else
-                app.file_Metadata.Text = ' ';
+                if isequal(app.file_Metadata.UserData, indexes)
+                    return
+                end
+
+                app.file_Metadata.Text     = util.HtmlTextGenerator.SelectedFile(app.measData(indexes));
+                app.file_Metadata.UserData = indexes;
             end
             
         end
@@ -868,7 +914,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             end
             
             % Atualiza app.file_Tree.
-            file_TreeBuilding(app)
+            indexes = file_findSelectedNodeData(app);
+            file_TreeBuilding(app, indexes)
 
             delete(d)
 
@@ -984,13 +1031,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create file_FileSortMethod
             app.file_FileSortMethod = uidropdown(app.GridLayout2);
-            app.file_FileSortMethod.Items = {'ARQUIVO', 'LOCALIDADE', 'SENSOR'};
+            app.file_FileSortMethod.Items = {'ARQUIVO', 'LOCALIDADE'};
             app.file_FileSortMethod.ValueChangedFcn = createCallbackFcn(app, @file_FileSortMethodValueChanged, true);
             app.file_FileSortMethod.FontSize = 10;
             app.file_FileSortMethod.BackgroundColor = [0.9804 0.9804 0.9804];
             app.file_FileSortMethod.Layout.Row = 2;
             app.file_FileSortMethod.Layout.Column = 2;
-            app.file_FileSortMethod.Value = 'ARQUIVO';
+            app.file_FileSortMethod.Value = 'LOCALIDADE';
 
             % Create file_FileSortMethodIcon
             app.file_FileSortMethodIcon = uiimage(app.GridLayout2);
@@ -1003,7 +1050,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.file_Tree = uitree(app.file_Grid);
             app.file_Tree.Multiselect = 'on';
             app.file_Tree.SelectionChangedFcn = createCallbackFcn(app, @file_TreeSelectionChanged, true);
-            app.file_Tree.FontSize = 10;
+            app.file_Tree.FontSize = 11;
             app.file_Tree.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.file_Tree.Layout.Row = 3;
             app.file_Tree.Layout.Column = [2 3];
@@ -1083,7 +1130,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.menu_Button2.Tag = 'MONITORINGPLAN';
             app.menu_Button2.Enable = 'off';
             app.menu_Button2.Tooltip = {'PM-RNI'};
-            app.menu_Button2.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'DriveTestDensity_32White.png');
+            app.menu_Button2.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'Detection_32White.png');
             app.menu_Button2.IconAlignment = 'right';
             app.menu_Button2.Text = '';
             app.menu_Button2.BackgroundColor = [0.2 0.2 0.2];
@@ -1098,7 +1145,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.menu_Button3.Tag = 'EXTERNALREQUEST';
             app.menu_Button3.Enable = 'off';
             app.menu_Button3.Tooltip = {'Demanda externa'};
-            app.menu_Button3.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'Report_32White.png');
+            app.menu_Button3.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'exceptionList_32White.png');
             app.menu_Button3.IconAlignment = 'right';
             app.menu_Button3.Text = '';
             app.menu_Button3.BackgroundColor = [0.2 0.2 0.2];

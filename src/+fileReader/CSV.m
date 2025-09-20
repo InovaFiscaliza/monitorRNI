@@ -53,10 +53,15 @@ classdef (Abstract) CSV
             LatitudeValues = str2double({rawData.LatValue}');
             LongitudeValues= str2double({rawData.LongValue}');
             Latitude       = coordinatesDic({rawData.LatOrientation}')  .* (floor(LatitudeValues/100)  + 100*(LatitudeValues/100  - floor(LatitudeValues/100))/60);
-            Longitude      = coordinatesDic({rawData.LongOrientation}') .* (floor(LongitudeValues/100) + 100*(LongitudeValues/100 - floor(LongitudeValues/100))/60);
-            
+            Longitude      = coordinatesDic({rawData.LongOrientation}') .* (floor(LongitudeValues/100) + 100*(LongitudeValues/100 - floor(LongitudeValues/100))/60);            
             dataTable      = timetable(Timestamp, Latitude, Longitude, FieldValue);
-            measData       = model.measData(fileFullName, sensorName, metaData, dataTable);
+
+            contentSample  = strtrim(splitlines(fileContent));
+            contentSample(cellfun(@(x) isempty(x), contentSample)) = [];
+            contentSample  = strjoin(contentSample, '\n');
+            contentSample  = contentSample(1:min(1000, numel(contentSample)));
+
+            measData       = model.measData(fileFullName, sensorName, metaData, dataTable, contentSample);
         end
 
         %-----------------------------------------------------------------%

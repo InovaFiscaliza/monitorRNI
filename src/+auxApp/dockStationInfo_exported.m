@@ -108,7 +108,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
                     set(app.LocationEditionMode, 'ImageSource', 'Edit_32Filled.png', 'UserData', true)
                     set(hEditFields, 'Editable', true)
                     
-                    app.LocationLabelGrid.ColumnWidth(end-1:end) = {16,16};
+                    app.LocationLabelGrid.ColumnWidth(end-1:end) = {18, 18};
                     app.LocationEditionConfirm.Enable = 1;
                     app.LocationEditionCancel.Enable  = 1;
 
@@ -361,7 +361,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             % Create LocationLabelGrid
             app.LocationLabelGrid = uigridlayout(app.StationPanel);
-            app.LocationLabelGrid.ColumnWidth = {'1x', 16, 16, 16, 16};
+            app.LocationLabelGrid.ColumnWidth = {'1x', 18, 18, 0, 0};
             app.LocationLabelGrid.RowHeight = {'1x'};
             app.LocationLabelGrid.ColumnSpacing = 5;
             app.LocationLabelGrid.Padding = [0 0 0 0];

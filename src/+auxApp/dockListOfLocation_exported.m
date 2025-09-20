@@ -249,12 +249,13 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
 
             % Create Add
             app.Add = uiimage(app.LocationPanel);
+            app.Add.ScaleMethod = 'none';
             app.Add.ImageClickedFcn = createCallbackFcn(app, @Callbacks, true);
             app.Add.Enable = 'off';
             app.Add.Tooltip = {'Adiciona localidades selecionadas'};
             app.Add.Layout.Row = 2;
             app.Add.Layout.Column = 4;
-            app.Add.ImageSource = 'play_32.png';
+            app.Add.ImageSource = 'Continue_16.png';
 
             % Create Delete
             app.Delete = uiimage(app.LocationPanel);

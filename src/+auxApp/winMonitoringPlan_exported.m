@@ -2,39 +2,42 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                     matlab.ui.Figure
-        GridLayout                   matlab.ui.container.GridLayout
-        dockModuleGrid               matlab.ui.container.GridLayout
-        dockModule_Undock            matlab.ui.control.Image
-        dockModule_Close             matlab.ui.control.Image
-        Document                     matlab.ui.container.GridLayout
-        AxesToolbar                  matlab.ui.container.GridLayout
-        axesTool_RegionZoom          matlab.ui.control.Image
-        axesTool_RestoreView         matlab.ui.control.Image
-        plotPanel                    matlab.ui.container.Panel
-        UITable                      matlab.ui.control.Table
-        Control                      matlab.ui.container.GridLayout
-        LocationListLabel            matlab.ui.control.Label
-        LocationListEdit             matlab.ui.control.Image
-        LocationList                 matlab.ui.control.TextArea
-        Card4_stationsOutRoute       matlab.ui.control.Label
-        Card3_stationsOnRoute        matlab.ui.control.Label
-        Card2_numberOfRiskStations   matlab.ui.control.Label
-        Card1_numberOfStations       matlab.ui.control.Label
-        TreeFileLocations            matlab.ui.container.CheckBoxTree
-        config_geoAxesLabel_2        matlab.ui.control.Label
-        play_ControlsTab1Grid_2      matlab.ui.container.GridLayout
-        play_ControlsTab1Label_2     matlab.ui.control.Label
-        play_ControlsTab1Image_2     matlab.ui.control.Image
-        toolGrid                     matlab.ui.container.GridLayout
-        tool_peakIcon                matlab.ui.control.Image
-        tool_peakLabel               matlab.ui.control.Label
-        tool_UploadFinalFile         matlab.ui.control.Image
-        tool_ExportFiles             matlab.ui.control.Image
-        tool_TableVisibility         matlab.ui.control.Image
-        tool_ControlPanelVisibility  matlab.ui.control.Image
-        ContextMenu                  matlab.ui.container.ContextMenu
-        EditSelectedUITableRow       matlab.ui.container.Menu
+        UIFigure                       matlab.ui.Figure
+        GridLayout                     matlab.ui.container.GridLayout
+        dockModuleGrid                 matlab.ui.container.GridLayout
+        dockModule_Undock              matlab.ui.control.Image
+        dockModule_Close               matlab.ui.control.Image
+        Document                       matlab.ui.container.GridLayout
+        AxesToolbar                    matlab.ui.container.GridLayout
+        axesTool_RegionZoom            matlab.ui.control.Image
+        axesTool_RestoreView           matlab.ui.control.Image
+        plotPanel                      matlab.ui.container.Panel
+        UITable                        matlab.ui.control.Table
+        Control                        matlab.ui.container.GridLayout
+        Card4_stationsOutRoute         matlab.ui.control.Label
+        Card3_stationsOnRoute          matlab.ui.control.Label
+        Card2_numberOfRiskStations     matlab.ui.control.Label
+        Card1_numberOfStations         matlab.ui.control.Label
+        LocationList                   matlab.ui.control.TextArea
+        LocationListEdit               matlab.ui.control.Image
+        LocationListLabel              matlab.ui.control.Label
+        TreeFileMultipleSelectionFlag  matlab.ui.control.CheckBox
+        TreeFileLocations              matlab.ui.container.CheckBoxTree
+        config_geoAxesLabel_2          matlab.ui.control.Label
+        play_ControlsTab1Grid_2        matlab.ui.container.GridLayout
+        play_ControlsTab1Label_2       matlab.ui.control.Label
+        play_ControlsTab1Image_2       matlab.ui.control.Image
+        toolGrid                       matlab.ui.container.GridLayout
+        tool_peakIcon                  matlab.ui.control.Image
+        tool_peakLabel                 matlab.ui.control.Label
+        tool_UploadFinalFile           matlab.ui.control.Image
+        tool_ExportFiles               matlab.ui.control.Image
+        tool_Separator                 matlab.ui.control.Image
+        tool_TableEdition              matlab.ui.control.Image
+        tool_TableVisibility           matlab.ui.control.Image
+        tool_ControlPanelVisibility    matlab.ui.control.Image
+        ContextMenu                    matlab.ui.container.ContextMenu
+        EditSelectedUITableRow         matlab.ui.container.Menu
     end
 
     
@@ -331,6 +334,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             layout_TreeFileLocationBuilding(app)
                         
             app.tool_TableVisibility.UserData = 1;
+
+            if numel(app.mainApp.projectData.selectedFileLocations) > 1
+                app.TreeFileMultipleSelectionFlag.Value = 1;
+            end
         end
     end
 
@@ -352,12 +359,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 % dos arquivos cuja localidade coincide com o que foi selecionado
                 % em tela. Além disso, insere o nome do próprio arquivo p/ fins de 
                 % mapeamento entre os dados e os arquivos brutos.
-                listOfTables  = {app.measData(idxFile).Data};
-                listOfFiles   = cellfun(@(x,y) repmat({x}, y, 1), {app.measData(idxFile).Filename}, {app.measData(idxFile).Measures}, 'UniformOutput', false);
-                tempMeasTable = vertcat(listOfTables{:});
-                tempMeasTable.FileSource = vertcat(listOfFiles{:});
-
-                app.measTable = sortrows(tempMeasTable, 'Timestamp');
+                app.measTable = createMeasTable(app.measData(idxFile));
                 
                 % Identifica localidades relacionadas à monitoração sob análise.
                 listOfLocations = {};
@@ -740,6 +742,30 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             
         end
 
+        % Image clicked function: dockModule_Close, dockModule_Undock
+        function menu_DockButtonPushed(app, event)
+            
+            [idx, auxAppTag, relatedButton] = getAppInfoFromHandle(app.mainApp.tabGroupController, app);
+
+            switch event.Source
+                case app.dockModule_Undock
+                    appGeneral = app.mainApp.General;
+                    appGeneral.operationMode.Dock = false;
+                    
+                    inputArguments = ipcMainMatlabCallsHandler(app.mainApp, app, 'dockButtonPushed', auxAppTag);
+                    app.mainApp.tabGroupController.Components.appHandle{idx} = [];
+                    
+                    openModule(app.mainApp.tabGroupController, relatedButton, false, appGeneral, inputArguments{:})
+                    closeModule(app.mainApp.tabGroupController, auxAppTag, app.mainApp.General, 'undock')
+                    
+                    delete(app)
+
+                case app.dockModule_Close
+                    closeModule(app.mainApp.tabGroupController, auxAppTag, app.mainApp.General)
+            end
+
+        end
+
         % Image clicked function: tool_ControlPanelVisibility, 
         % ...and 2 other components
         function tool_InteractionImageClicked(app, event)
@@ -748,10 +774,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 case app.tool_ControlPanelVisibility
                     if app.GridLayout.ColumnWidth{2}
                         app.tool_ControlPanelVisibility.ImageSource = 'ArrowRight_32.png';
-                        app.GridLayout.ColumnWidth(2:3) = {0,0};
+                        app.GridLayout.ColumnWidth(2:3) = {0, 0};
                     else
                         app.tool_ControlPanelVisibility.ImageSource = 'ArrowLeft_32.png';
-                        app.GridLayout.ColumnWidth(2:3) = {325,10};
+                        app.GridLayout.ColumnWidth(2:3) = {320, 10};
                     end
 
                 case app.tool_TableVisibility
@@ -896,8 +922,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 msgQuestion   = ['Todos os registros de estações já tiveram os seus resultados exportados para a pasta "POST" ' ...
                                  'do Sharepoint na presente sessão. Esses registros estão destacados com a fonte cinza.' ...
                                  '<br><br>Deseja realizar uma nova exportação?'];
-                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
-                if userSelection == "Não"
+                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'SIM', 'NÃO'}, 2, 2);
+                if userSelection == "NÃO"
                     return
                 end
 
@@ -911,6 +937,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                         relatedStationTable(relatedStationTable.UploadResultFlag, :) = [];
                     case 'Cancelar'
                         return
+                end
+
+            else
+                msgQuestion   = 'Confirma a exportação da análise para a pasta "POST" do Sharepoint?';
+                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'SIM', 'NÃO'}, 2, 2);
+                if userSelection == "NÃO"
+                    return
                 end
             end
 
@@ -983,13 +1016,33 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Callback function: TreeFileLocations
         function TreeFileLocationsCheckedNodesChanged(app, event)
             
-            if isempty(app.TreeFileLocations.CheckedNodes)
-                app.TreeFileLocations.CheckedNodes = event.PreviousCheckedNodes;
-                return
+            if app.TreeFileMultipleSelectionFlag.Value
+                checkedNodes = event.CheckedNodes;
+
+            else
+                checkedNodes = setdiff(event.CheckedNodes, event.PreviousCheckedNodes);    
+                if isempty(checkedNodes)
+                    app.TreeFileLocations.CheckedNodes = event.PreviousCheckedNodes;
+                    return
+                end
+                checkedNodes = checkedNodes(1);
             end
 
+            app.TreeFileLocations.CheckedNodes = checkedNodes;
             Analysis(app)
 
+        end
+
+        % Value changed function: TreeFileMultipleSelectionFlag
+        function TreeFileMultipleSelectionFlagValueChanged(app, event)
+            
+            if ~app.TreeFileMultipleSelectionFlag.Value
+                if numel(app.TreeFileLocations.CheckedNodes) > 1
+                    app.TreeFileLocations.CheckedNodes = app.TreeFileLocations.CheckedNodes(1);
+                    Analysis(app)
+                end
+            end
+            
         end
 
         % Cell edit callback: UITable
@@ -1017,8 +1070,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             end
 
             if isempty(event.Selection)
+                app.tool_TableEdition.Enable = "off";
                 app.UITable.ContextMenu = [];
             else
+                app.tool_TableEdition.Enable = "on";
                 if isempty(app.UITable.ContextMenu)
                     app.UITable.ContextMenu = app.ContextMenu;
                 end
@@ -1028,7 +1083,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             
         end
 
-        % Menu selected function: EditSelectedUITableRow
+        % Callback function: EditSelectedUITableRow, tool_TableEdition
         function UITableOpenPopUpEditionMode(app, event)
             
             if ~isempty(app.UITable.Selection)
@@ -1053,30 +1108,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.popupContainer.Parent.Visible = "on";
 
             app.progressDialog.Visible = 'hidden';
-
-        end
-
-        % Image clicked function: dockModule_Close, dockModule_Undock
-        function menu_DockButtonPushed(app, event)
-            
-            [idx, auxAppTag, relatedButton] = getAppInfoFromHandle(app.mainApp.tabGroupController, app);
-
-            switch event.Source
-                case app.dockModule_Undock
-                    appGeneral = app.mainApp.General;
-                    appGeneral.operationMode.Dock = false;
-                    
-                    app.mainApp.tabGroupController.Components.appHandle{idx} = [];
-
-                    inputArguments = ipcMainMatlabCallsHandler(app.mainApp, app, 'dockButtonPushed', auxAppTag);
-                    openModule(app.mainApp.tabGroupController, relatedButton, false, appGeneral, inputArguments{:})
-                    closeModule(app.mainApp.tabGroupController, auxAppTag, app.mainApp.General, 'undock')
-                    
-                    delete(app)
-
-                case app.dockModule_Close
-                    closeModule(app.mainApp.tabGroupController, auxAppTag, app.mainApp.General)
-            end
 
         end
     end
@@ -1118,7 +1149,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Create GridLayout
             app.GridLayout = uigridlayout(app.Container);
             app.GridLayout.ColumnWidth = {10, 320, 10, '1x', 48, 8, 2};
-            app.GridLayout.RowHeight = {2, 8, 24, '1x', 10, 175, 10, 34};
+            app.GridLayout.RowHeight = {2, 8, 24, '1x', 10, 34};
             app.GridLayout.ColumnSpacing = 0;
             app.GridLayout.RowSpacing = 0;
             app.GridLayout.Padding = [0 0 0 0];
@@ -1126,12 +1157,12 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create toolGrid
             app.toolGrid = uigridlayout(app.GridLayout);
-            app.toolGrid.ColumnWidth = {22, 22, 22, 22, '1x', 150, 22};
+            app.toolGrid.ColumnWidth = {22, 22, 22, 5, 22, 22, '1x', 150, 22};
             app.toolGrid.RowHeight = {4, 17, '1x'};
             app.toolGrid.ColumnSpacing = 5;
             app.toolGrid.RowSpacing = 0;
-            app.toolGrid.Padding = [10 5 10 5];
-            app.toolGrid.Layout.Row = 8;
+            app.toolGrid.Padding = [5 5 10 5];
+            app.toolGrid.Layout.Row = 6;
             app.toolGrid.Layout.Column = [1 7];
             app.toolGrid.BackgroundColor = [0.9412 0.9412 0.9412];
 
@@ -1151,6 +1182,23 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_TableVisibility.Layout.Column = 2;
             app.tool_TableVisibility.ImageSource = 'View_16.png';
 
+            % Create tool_TableEdition
+            app.tool_TableEdition = uiimage(app.toolGrid);
+            app.tool_TableEdition.ScaleMethod = 'none';
+            app.tool_TableEdition.ImageClickedFcn = createCallbackFcn(app, @UITableOpenPopUpEditionMode, true);
+            app.tool_TableEdition.Enable = 'off';
+            app.tool_TableEdition.Tooltip = {'Edita tabela'};
+            app.tool_TableEdition.Layout.Row = 2;
+            app.tool_TableEdition.Layout.Column = 3;
+            app.tool_TableEdition.ImageSource = 'Variable_edit_16.png';
+
+            % Create tool_Separator
+            app.tool_Separator = uiimage(app.toolGrid);
+            app.tool_Separator.Enable = 'off';
+            app.tool_Separator.Layout.Row = [1 3];
+            app.tool_Separator.Layout.Column = 4;
+            app.tool_Separator.ImageSource = 'LineV.png';
+
             % Create tool_ExportFiles
             app.tool_ExportFiles = uiimage(app.toolGrid);
             app.tool_ExportFiles.ScaleMethod = 'none';
@@ -1158,7 +1206,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_ExportFiles.Enable = 'off';
             app.tool_ExportFiles.Tooltip = {'Exporta análise'};
             app.tool_ExportFiles.Layout.Row = 2;
-            app.tool_ExportFiles.Layout.Column = 3;
+            app.tool_ExportFiles.Layout.Column = 5;
             app.tool_ExportFiles.ImageSource = 'Export_16.png';
 
             % Create tool_UploadFinalFile
@@ -1167,7 +1215,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_UploadFinalFile.Enable = 'off';
             app.tool_UploadFinalFile.Tooltip = {'Upload do arquivo final para o Sharepoint'};
             app.tool_UploadFinalFile.Layout.Row = 2;
-            app.tool_UploadFinalFile.Layout.Column = 4;
+            app.tool_UploadFinalFile.Layout.Column = 6;
             app.tool_UploadFinalFile.ImageSource = 'Up_24.png';
 
             % Create tool_peakLabel
@@ -1176,7 +1224,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_peakLabel.FontSize = 10;
             app.tool_peakLabel.Visible = 'off';
             app.tool_peakLabel.Layout.Row = [1 3];
-            app.tool_peakLabel.Layout.Column = 6;
+            app.tool_peakLabel.Layout.Column = 8;
             app.tool_peakLabel.Text = {'5.3 V/m'; '(-12.354321, -38.123456)'};
 
             % Create tool_peakIcon
@@ -1186,17 +1234,16 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_peakIcon.Visible = 'off';
             app.tool_peakIcon.Tooltip = {'Zoom em torno do local de máximo'};
             app.tool_peakIcon.Layout.Row = [1 3];
-            app.tool_peakIcon.Layout.Column = 7;
-            app.tool_peakIcon.HorizontalAlignment = 'right';
+            app.tool_peakIcon.Layout.Column = 9;
             app.tool_peakIcon.ImageSource = 'Detection_18.png';
 
             % Create Control
             app.Control = uigridlayout(app.GridLayout);
-            app.Control.ColumnWidth = {160, '1x', 16};
-            app.Control.RowHeight = {22, 37, 5, '1x', 37, 5, 170, 10, 83, 10, 83};
+            app.Control.ColumnWidth = {160, '1x', 18};
+            app.Control.RowHeight = {22, 37, 5, '1x', 5, 17, 42, 5, '0.5x', 10, 83, 10, 83};
             app.Control.RowSpacing = 0;
             app.Control.Padding = [0 0 0 0];
-            app.Control.Layout.Row = [3 6];
+            app.Control.Layout.Row = [3 4];
             app.Control.Layout.Column = 2;
             app.Control.BackgroundColor = [1 1 1];
 
@@ -1214,10 +1261,11 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create play_ControlsTab1Image_2
             app.play_ControlsTab1Image_2 = uiimage(app.play_ControlsTab1Grid_2);
+            app.play_ControlsTab1Image_2.ScaleMethod = 'none';
             app.play_ControlsTab1Image_2.Layout.Row = 1;
             app.play_ControlsTab1Image_2.Layout.Column = 1;
             app.play_ControlsTab1Image_2.HorizontalAlignment = 'left';
-            app.play_ControlsTab1Image_2.ImageSource = 'Playback_32.png';
+            app.play_ControlsTab1Image_2.ImageSource = 'Detection_18.png';
 
             % Create play_ControlsTab1Label_2
             app.play_ControlsTab1Label_2 = uilabel(app.play_ControlsTab1Grid_2);
@@ -1245,6 +1293,39 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Assign Checked Nodes
             app.TreeFileLocations.CheckedNodesChangedFcn = createCallbackFcn(app, @TreeFileLocationsCheckedNodesChanged, true);
 
+            % Create TreeFileMultipleSelectionFlag
+            app.TreeFileMultipleSelectionFlag = uicheckbox(app.Control);
+            app.TreeFileMultipleSelectionFlag.ValueChangedFcn = createCallbackFcn(app, @TreeFileMultipleSelectionFlagValueChanged, true);
+            app.TreeFileMultipleSelectionFlag.Text = 'Habilita seleção múltipla.';
+            app.TreeFileMultipleSelectionFlag.FontSize = 11;
+            app.TreeFileMultipleSelectionFlag.Layout.Row = 6;
+            app.TreeFileMultipleSelectionFlag.Layout.Column = [1 3];
+
+            % Create LocationListLabel
+            app.LocationListLabel = uilabel(app.Control);
+            app.LocationListLabel.VerticalAlignment = 'bottom';
+            app.LocationListLabel.FontSize = 10;
+            app.LocationListLabel.Layout.Row = 7;
+            app.LocationListLabel.Layout.Column = [1 2];
+            app.LocationListLabel.Interpreter = 'html';
+            app.LocationListLabel.Text = {'LOCALIDADES SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
+
+            % Create LocationListEdit
+            app.LocationListEdit = uiimage(app.Control);
+            app.LocationListEdit.ImageClickedFcn = createCallbackFcn(app, @LocationListEditClicked, true);
+            app.LocationListEdit.Tooltip = {'Edita lista de localidades'};
+            app.LocationListEdit.Layout.Row = 7;
+            app.LocationListEdit.Layout.Column = 3;
+            app.LocationListEdit.VerticalAlignment = 'bottom';
+            app.LocationListEdit.ImageSource = 'Edit_32.png';
+
+            % Create LocationList
+            app.LocationList = uitextarea(app.Control);
+            app.LocationList.Editable = 'off';
+            app.LocationList.FontSize = 11;
+            app.LocationList.Layout.Row = 9;
+            app.LocationList.Layout.Column = [1 3];
+
             % Create Card1_numberOfStations
             app.Card1_numberOfStations = uilabel(app.Control);
             app.Card1_numberOfStations.BackgroundColor = [0.9412 0.9412 0.9412];
@@ -1252,7 +1333,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card1_numberOfStations.WordWrap = 'on';
             app.Card1_numberOfStations.FontSize = 10;
             app.Card1_numberOfStations.FontColor = [0.502 0.502 0.502];
-            app.Card1_numberOfStations.Layout.Row = 9;
+            app.Card1_numberOfStations.Layout.Row = 11;
             app.Card1_numberOfStations.Layout.Column = 1;
             app.Card1_numberOfStations.Interpreter = 'html';
             app.Card1_numberOfStations.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: BLACK; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS NAS LOCALIDADES SOB ANÁLISE</p>'};
@@ -1264,7 +1345,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card2_numberOfRiskStations.WordWrap = 'on';
             app.Card2_numberOfRiskStations.FontSize = 10;
             app.Card2_numberOfRiskStations.FontColor = [0.502 0.502 0.502];
-            app.Card2_numberOfRiskStations.Layout.Row = 9;
+            app.Card2_numberOfRiskStations.Layout.Row = 11;
             app.Card2_numberOfRiskStations.Layout.Column = [2 3];
             app.Card2_numberOfRiskStations.Interpreter = 'html';
             app.Card2_numberOfRiskStations.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">0</font>'; 'ESTAÇÕES NO ENTORNO DE REGISTROS DE NÍVEIS ACIMA DE 14 V/m</p>'};
@@ -1276,7 +1357,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card3_stationsOnRoute.WordWrap = 'on';
             app.Card3_stationsOnRoute.FontSize = 10;
             app.Card3_stationsOnRoute.FontColor = [0.502 0.502 0.502];
-            app.Card3_stationsOnRoute.Layout.Row = 11;
+            app.Card3_stationsOnRoute.Layout.Row = 13;
             app.Card3_stationsOnRoute.Layout.Column = 1;
             app.Card3_stationsOnRoute.Interpreter = 'html';
             app.Card3_stationsOnRoute.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: black; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS NO ENTORNO DA ROTA</p>'};
@@ -1288,35 +1369,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card4_stationsOutRoute.WordWrap = 'on';
             app.Card4_stationsOutRoute.FontSize = 10;
             app.Card4_stationsOutRoute.FontColor = [0.502 0.502 0.502];
-            app.Card4_stationsOutRoute.Layout.Row = 11;
+            app.Card4_stationsOutRoute.Layout.Row = 13;
             app.Card4_stationsOutRoute.Layout.Column = [2 3];
             app.Card4_stationsOutRoute.Interpreter = 'html';
             app.Card4_stationsOutRoute.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS FORA DA ROTA</p>'};
-
-            % Create LocationList
-            app.LocationList = uitextarea(app.Control);
-            app.LocationList.Editable = 'off';
-            app.LocationList.FontSize = 11;
-            app.LocationList.Layout.Row = 7;
-            app.LocationList.Layout.Column = [1 3];
-
-            % Create LocationListEdit
-            app.LocationListEdit = uiimage(app.Control);
-            app.LocationListEdit.ImageClickedFcn = createCallbackFcn(app, @LocationListEditClicked, true);
-            app.LocationListEdit.Tooltip = {'Edita lista de localidades'};
-            app.LocationListEdit.Layout.Row = 5;
-            app.LocationListEdit.Layout.Column = 3;
-            app.LocationListEdit.VerticalAlignment = 'bottom';
-            app.LocationListEdit.ImageSource = 'Edit_32.png';
-
-            % Create LocationListLabel
-            app.LocationListLabel = uilabel(app.Control);
-            app.LocationListLabel.VerticalAlignment = 'bottom';
-            app.LocationListLabel.FontSize = 10;
-            app.LocationListLabel.Layout.Row = 5;
-            app.LocationListLabel.Layout.Column = [1 2];
-            app.LocationListLabel.Interpreter = 'html';
-            app.LocationListLabel.Text = {'LOCALIDADES SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
 
             % Create Document
             app.Document = uigridlayout(app.GridLayout);
@@ -1325,7 +1381,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Document.ColumnSpacing = 0;
             app.Document.RowSpacing = 0;
             app.Document.Padding = [0 0 0 0];
-            app.Document.Layout.Row = [3 6];
+            app.Document.Layout.Row = [3 4];
             app.Document.Layout.Column = [4 5];
             app.Document.BackgroundColor = [1 1 1];
 
@@ -1341,10 +1397,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.UITable.SelectionChangedFcn = createCallbackFcn(app, @UITableSelectionChanged, true);
             app.UITable.Multiselect = 'off';
             app.UITable.ForegroundColor = [0.149 0.149 0.149];
-            app.UITable.FontName = 'MS Sans Serif';
             app.UITable.Layout.Row = 4;
             app.UITable.Layout.Column = [1 3];
-            app.UITable.FontSize = 10;
+            app.UITable.FontSize = 11;
 
             % Create plotPanel
             app.plotPanel = uipanel(app.Document);

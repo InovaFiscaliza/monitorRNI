@@ -3,22 +3,22 @@ function varargout = compile(compilationType, rootCompiledFolder, matlabRuntimeF
     % Automatiza compilação da ferramenta, nas suas versões desktop e webapp.
     % No caso de criação de release no repo do GitHub, deve-se certificar
     % de instalar o GitHub CLI e estar conectado a uma conta que tem perfil
-    % de escrita no repo InovaFiscaliza/appAnalise.
+    % de escrita no repo InovaFiscaliza/monitorRNI.
 
     % ToDo:
     % Publicação do webapp no MATLAB WebServer ou no servidor local.
 
     arguments
         compilationType         char {mustBeMember(compilationType, {'Desktop+WebApp', 'Desktop', 'WebApp'})} = 'Desktop+WebApp'
-        rootCompiledFolder      char    = 'D:\_ANATEL - AppsDeployVersions'
-        matlabRuntimeFolder     char    = ''
-        showConsoleInDesktopBuild  (1,1) logical = true % versão desktop apresenta console
-        createGitHubReleaseForDesktopBuild (1,1) logical = false
+        rootCompiledFolder      char    = 'C:\InovaFiscaliza (AppsDeployVersions)'
+        matlabRuntimeFolder     char    = 'E:\MATLAB Runtime\MATLAB Runtime (Custom)\R2024a'
+        showConsoleInDesktopBuild  (1,1) logical = false % versão desktop apresenta console
+        createGitHubReleaseForDesktopBuild (1,1) logical = true
         githubCLIFolder         char    = 'C:\Program Files\GitHub CLI'
         githubAccount           char    = 'EricMagalhaesDelgado'
     end
 
-    appName     = 'monitorSPED';
+    appName     = 'monitorRNI';
 
     initFolder  = fileparts(mfilename('fullpath'));
     finalFolder = fullfile(rootCompiledFolder, appName);
@@ -39,7 +39,7 @@ function varargout = compile(compilationType, rootCompiledFolder, matlabRuntimeF
         end
     end
 
-    % Abre projeto do "appAnalise", caso fechado, o que mapeia as pastas do
+    % Abre projeto do "monitorRNI", caso fechado, o que mapeia as pastas do
     % projeto, possibilitar chamar class.Constants.appRelease, por exemplo.
     try
         prjInfo = currentProject;
@@ -52,10 +52,31 @@ function varargout = compile(compilationType, rootCompiledFolder, matlabRuntimeF
     end
 
     % Cria versões .M para cada um dos arquivos .MLAPP, possibilitando que
-    % a figura do app principal (winAppAnalise.mlapp) seja um container para
+    % a figura do app principal (winMonitorRNI.mlapp) seja um container para
     % os apps auxiliares.
     cd(initFolder)
     preCompile()
+
+    % Atualiza base de dados, caso necessário.
+    RFDataHubOriginalFile = fullfile(fileparts(initFolder), 'src', 'config', 'DataBase', 'RFDataHub.mat');
+    RFDataHubEditedFile   = fullfile(fullfile(ccTools.fcn.OperationSystem('programData'), 'ANATEL', appName), 'DataBase', 'RFDataHub.mat');
+    
+    load(RFDataHubOriginalFile, 'RFDataHub_info')
+    originalReleaseDate   = datetime(RFDataHub_info.ReleaseDate, 'InputFormat', 'dd/MM/yyyy HH:mm:ss');
+
+    if isfile(RFDataHubEditedFile)
+        load(RFDataHubEditedFile, 'RFDataHub_info')
+        editedReleaseDate = datetime(RFDataHub_info.ReleaseDate, 'InputFormat', 'dd/MM/yyyy HH:mm:ss');
+
+        if editedReleaseDate > originalReleaseDate
+            originalReleaseDate = editedReleaseDate;
+            copyfile(RFDataHubEditedFile, RFDataHubOriginalFile, 'f');
+        end
+    end
+
+    if hours(datetime('now') - originalReleaseDate) > 24*7
+        error('RFDataHubNonUpdated')
+    end
 
     % Gera as versões desktop e webapp.
     switch compilationType

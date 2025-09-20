@@ -1,0 +1,12 @@
+[
+    {
+        "Name": "_ReportLibTest",
+        "File": "_ReportLibTest.json",
+        "DocumentType": "Relatório de Atividades",
+        "Description": "Exemplo de relatório, apresentando alguns dos elementos HTML hoje contemplados na lib \"reportLib\".",
+        "Author": "Eric Magalhães Delgado",
+        "Version": "1.00",
+        "Release": "19/09/2025",
+        "UserData": ""
+    }
+]
