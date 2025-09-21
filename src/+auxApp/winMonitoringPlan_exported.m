@@ -65,6 +65,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         % ESPECIFICIDADES AUXAPP.WINMONITORINGPLAN
         %-----------------------------------------------------------------%
+        projectData
         measData
         measTable
 
@@ -335,7 +336,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                         
             app.tool_TableVisibility.UserData = 1;
 
-            if numel(app.mainApp.projectData.selectedFileLocations) > 1
+            if numel(app.projectData.selectedFileLocations) > 1
                 app.TreeFileMultipleSelectionFlag.Value = 1;
             end
         end
@@ -353,6 +354,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.progressDialog.Visible = 'visible';
 
             [idxFile, selectedFileLocations] = FileIndex(app, operationType);
+            updateSelectedListOfLocations(app.projectData, selectedFileLocations)
 
             if ~isempty(idxFile)
                 % Concatena as tabelas de LATITUDE, LONGITUDE E NÍVEL de cada um
@@ -362,37 +364,19 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 app.measTable = createMeasTable(app.measData(idxFile));
                 
                 % Identifica localidades relacionadas à monitoração sob análise.
-                listOfLocations = {};
-                DIST_km = app.mainApp.General.MonitoringPlan.Distance_km;
-    
-                for ii = idxFile
-                    % Limites de latitude e longitude relacionados à rota, acrescentando 
-                    % a distância máxima à estação p/ fins de cômputo de medidas válidas 
-                    % no entorno de uma estação.
-                    [maxLatitude, maxLongitude] = reckon(app.measData(ii).LatitudeLimits(2), app.measData(ii).LongitudeLimits(2), km2deg(DIST_km), 45);
-                    [minLatitude, minLongitude] = reckon(app.measData(ii).LatitudeLimits(1), app.measData(ii).LongitudeLimits(1), km2deg(DIST_km), 225);
-    
-                    idxLogicalStation = app.mainApp.stationTable.Latitude  >= minLatitude  & ...
-                                        app.mainApp.stationTable.Latitude  <= maxLatitude  & ...
-                                        app.mainApp.stationTable.Longitude >= minLongitude & ...
-                                        app.mainApp.stationTable.Longitude <= maxLongitude;
-    
-                    if any(idxLogicalStation)
-                        listOfLocations = [listOfLocations; unique(app.mainApp.stationTable.Location(idxLogicalStation))];
-                    end
-                end
-                listOfLocation = unique(listOfLocations);
+                addAutomaticLocations(...
+                    app.projectData, ...
+                    app.measData(idxFile), ...
+                    app.mainApp.stationTable, ...
+                    app.mainApp.General.MonitoringPlan.Distance_km ...
+                );
             else
                 app.measTable  = [];
-                listOfLocation = {};
             end
-
-            app.mainApp.projectData.selectedFileLocations     = selectedFileLocations;
-            app.mainApp.projectData.listOfLocations.Automatic = listOfLocation;
-
-            fullListOfLocation = union(app.mainApp.projectData.listOfLocations.Manual, app.mainApp.projectData.listOfLocations.Automatic);
-
+            
+            fullListOfLocation = getFullListOfLocation(app.projectData, app.measData(idxFile));
             idxStations = find(ismember(app.mainApp.stationTable.Location, fullListOfLocation));
+
             if ~isempty(app.measTable)
                 identifyMeasuresForEachStation(app, idxStations)
 
@@ -695,7 +679,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             for ii = 1:numel(listOfFileLocations)
                 treeNode = uitreenode(app.TreeFileLocations, 'Text', listOfFileLocations{ii});
 
-                if ismember(listOfFileLocations{ii}, app.mainApp.projectData.selectedFileLocations)
+                if ismember(listOfFileLocations{ii}, app.projectData.selectedFileLocations)
                     app.TreeFileLocations.CheckedNodes = [app.TreeFileLocations.CheckedNodes; treeNode];
                 end
             end
@@ -719,8 +703,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app, mainApp)
 
-            app.mainApp  = mainApp;
-            app.measData = mainApp.measData;
+            app.mainApp     = mainApp;
+            app.projectData = mainApp.projectData;
+            app.measData    = mainApp.measData;
 
             if app.isDocked
                 app.GridLayout.Padding(4)  = 30;
@@ -1104,7 +1089,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.progressDialog.Visible = 'visible';
 
             ui.PopUpContainer(app, class.Constants.appName, 540, 440)
-            auxApp.dockListOfLocation_exported(app.popupContainer, app)
+            auxApp.dockListOfLocation_exported(app.popupContainer, app, FileIndex(app))
             app.popupContainer.Parent.Visible = "on";
 
             app.progressDialog.Visible = 'hidden';

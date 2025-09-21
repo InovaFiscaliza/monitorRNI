@@ -476,7 +476,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.rfDataHubSummary = summary(RFDataHub);
 
             % app.projectData
-            app.projectData  = projectLib(app);
+            app.projectData  = model.projectLib(app);
             ReadStationTable(app)
             app.pointsTable  = fileReader.ExternalRequest(app.General);
         end
@@ -745,8 +745,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         % Image clicked function: AppInfo, FigurePosition
         function menu_ToolbarImageCliced(app, event)
             
-            focus(app.jsBackDoor)
-
             switch event.Source
                 case app.FigurePosition
                     app.UIFigure.Position(3:4) = class.Constants.windowSize;
