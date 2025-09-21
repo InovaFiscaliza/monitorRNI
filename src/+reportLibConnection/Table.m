@@ -60,5 +60,24 @@ classdef Table
                 Table(end+1,:) = {locations{ii}, fileList, periodList, limitsList};
             end
         end
+
+        %-----------------------------------------------------------------%
+        function Table = PointsFilteredByLocation(reportInfo, analyzedData)
+            pointsTable = reportInfo.Function.table_Points;            
+            measData    = analyzedData.InfoSet.measData;
+            locations   = unique({measData.Location});
+
+            logicalIndexes = cellfun(@(x) any(ismember(x, locations)), pointsTable.DataSourceLocation); 
+            Table = pointsTable(logicalIndexes, :);
+        end
+
+        %-----------------------------------------------------------------%
+        function Table = StationsFilteredByLocation(reportInfo, analyzedData)
+            projectData = reportInfo.Project;
+            measData = analyzedData.InfoSet.measData;
+
+            fullListOfLocation = union(projectData.listOfLocations.Manual, {measData.Location});
+            idxStations = find(ismember(app.mainApp.stationTable.Location, fullListOfLocation));
+        end
     end
 end

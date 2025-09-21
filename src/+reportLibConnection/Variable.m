@@ -29,7 +29,7 @@ classdef Variable
                 case {'Filename', 'Sensor', 'Location'}
                     fieldValue = strjoin(unique({measData.(fieldName)}), ', ');
                 case 'Content'
-                    fieldValue = strjoin(strcat({measData.Content}, '<br><font style="color: red;">[Texto truncado. Fonte:&thinsp;', ' ', {measData.Filename}, ']</font>'), '<br><br>');
+                    fieldValue = strjoin(strcat({measData.Content}, '<br><font style="color: red;">[Texto truncado — Fonte:&thinsp;', ' ', {measData.Filename}, ']</font>'), '<br><br>');
                 case 'MetaData'
                     fieldValue = strjoin(unique(arrayfun(@(x) jsonencode(x.MetaData), measData, 'UniformOutput', false)), '<br>');
                 case 'Measures'

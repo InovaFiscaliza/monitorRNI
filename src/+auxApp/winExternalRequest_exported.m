@@ -73,6 +73,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         % ESPECIFICIDADES AUXAPP.WINEXTERNALREQUEST
         %-----------------------------------------------------------------%
+        projectData
         measData
         measTable
 
@@ -282,7 +283,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             
             app.tool_TableVisibility.UserData = 1;
 
-            if numel(app.mainApp.projectData.selectedFileLocations) > 1
+            if numel(app.projectData.selectedFileLocations) > 1
                 app.TreeFileMultipleSelectionFlag.Value = 1;
             end
 
@@ -306,19 +307,18 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.progressDialog.Visible = 'visible';
 
             [idxFile, selectedFileLocations] = FileIndex(app, operationType);
+            updateSelectedListOfLocations(app.projectData, selectedFileLocations)
 
             if ~isempty(idxFile)
                 % Concatena as tabelas de LATITUDE, LONGITUDE E NÍVEL de cada um
                 % dos arquivos cuja localidade coincide com o que foi selecionado
-                % em tela. 
-                listOfTables = {app.measData(idxFile).Data};            
-                app.measTable = sortrows(vertcat(listOfTables{:}), 'Timestamp');
+                % em tela. Além disso, insere o nome do próprio arquivo p/ fins de 
+                % mapeamento entre os dados e os arquivos brutos.
+                app.measTable = createMeasTable(app.measData(idxFile));
 
             else
                 app.measTable = [];
             end
-
-            app.mainApp.projectData.selectedFileLocations     = selectedFileLocations;
 
             if ~isempty(app.measTable)
                 identifyMeasuresForEachPoint(app)
@@ -468,6 +468,10 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                     app.mainApp.pointsTable.maxFieldLatitude(ii)     = pointMeasures.Latitude(idxMaxFieldValue);
                     app.mainApp.pointsTable.maxFieldLongitude(ii)    = pointMeasures.Longitude(idxMaxFieldValue);
 
+                    dataSourceFile = unique(app.measTable.FileSource(idxLogicalMeasures))';
+                    dataSourceFileIndex = find(ismember({app.measData.Filename}, dataSourceFile));
+                    app.mainApp.pointsTable.DataSourceLocation{ii}   = unique({app.measData(dataSourceFileIndex).Location});
+
                 else
                     app.mainApp.pointsTable.numberOfMeasures(ii)     = 0;
                     app.mainApp.pointsTable.numberOfRiskMeasures(ii) = 0;
@@ -552,7 +556,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             for ii = 1:numel(listOfFileLocations)
                 treeNode = uitreenode(app.TreeFileLocations, 'Text', listOfFileLocations{ii});
 
-                if ismember(listOfFileLocations{ii}, app.mainApp.projectData.selectedFileLocations)
+                if ismember(listOfFileLocations{ii}, app.projectData.selectedFileLocations)
                     app.TreeFileLocations.CheckedNodes = [app.TreeFileLocations.CheckedNodes; treeNode];
                 end
             end
@@ -607,8 +611,9 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app, mainApp)
             
-            app.mainApp  = mainApp;
-            app.measData = mainApp.measData;
+            app.mainApp     = mainApp;
+            app.projectData = mainApp.projectData;
+            app.measData    = mainApp.measData;
 
             if app.isDocked
                 app.GridLayout.Padding(4)  = 30;
@@ -714,7 +719,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 app.progressDialog.Visible = 'visible';
 
                 try
-                    reportLibConnection.Controller.Run(app, app.measData(indexes), app.mainApp.General.ExternalRequest.Orientation, app.mainApp.stationTable, app.mainApp.pointsTable)
+                    reportLibConnection.Controller.Run(app, app.projectData, app.measData(indexes), app.mainApp.General.ExternalRequest.Orientation, app.mainApp.stationTable, app.mainApp.pointsTable)
                 catch ME
                     appUtil.modalWindow(app.UIFigure, 'error', getReport(ME));
                 end

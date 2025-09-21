@@ -29,6 +29,8 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         callingApp  % winMonitoringPlan | winMonitoringPlan_exported
 
         projectData
+        measData
+        selectedFileIndexes
     end
 
 
@@ -61,7 +63,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
     methods (Access = private)
         %-----------------------------------------------------------------%
         function updateForm(app)
-            currentListOfLocations = sort(union(app.projectData.listOfLocations.Manual, app.projectData.listOfLocations.Automatic));
+            currentListOfLocations = getFullListOfLocation(app.projectData, app.measData(app.selectedFileIndexes));
 
             refListOfLocations     = setdiff(app.projectData.referenceListOfLocations, currentListOfLocations, 'stable');
             if ~isempty(app.Filter.Value)
@@ -104,11 +106,14 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
     methods (Access = private)
 
         % Code that executes after component creation
-        function startupFcn(app, callingApp)
+        function startupFcn(app, callingApp, selectedFileIndexes)
             
             app.mainApp      = callingApp.mainApp;
             app.callingApp   = callingApp;
-            app.projectData  = callingApp.mainApp.projectData;
+            
+            app.projectData  = callingApp.projectData;
+            app.measData     = callingApp.measData;
+            app.selectedFileIndexes = selectedFileIndexes;
 
             jsBackDoor_Initialization(app)
             app.Filter.Items = [{''}; app.projectData.referenceListOfStates];
@@ -139,16 +144,20 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
 
                 case app.Add
                     if ~isempty(app.RefLocation.Value)
-                        app.projectData.listOfLocations.Manual = union(app.projectData.listOfLocations.Manual, app.RefLocation.Value);
+                        manualLocations = union(getCurrentManualLocations(app.projectData, app.measData(app.selectedFileIndexes)), app.RefLocation.Value);
+                        addManualLocations(app.projectData, app.measData(app.selectedFileIndexes), manualLocations);
+                        
                         updateForm(app)
                         updateLayout(app, 'AddedLocation')
 
-                        CallingMainApp(app, 'ListOfLocationChanged', true, true)                        
+                        CallingMainApp(app, 'ListOfLocationChanged', true, true)
                     end
 
                 case app.Delete
                     if ~isempty(app.Location.Value)
-                        app.projectData.listOfLocations.Manual = setdiff(app.projectData.listOfLocations.Manual, app.Location.Value);
+                        manualLocations = setdiff(getCurrentManualLocations(app.projectData, app.measData(app.selectedFileIndexes)), app.Location.Value);
+                        addManualLocations(app.projectData, app.measData(app.selectedFileIndexes), manualLocations);
+                        
                         updateForm(app)
                         updateLayout(app, 'DeletedLocation')
 
