@@ -380,14 +380,6 @@
                     ]
                 },
                 {
-                    "Type": "Paragraph",
-                    "Data": {
-                        "Editable": "false",
-                        "Text": "E agora outro parágrafo como introdução à amostra do conteúdo do arquivo, acessível pela variável \"var_Content\"... <i>placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder</i>, conforme pode ser observado a seguir, com uma amostra do arquivo.",
-                        "Variable": []
-                    }
-                },
-                {
                     "Type": "Table",
                     "Data": {
                         "Origin": "FunctionEvaluation",
@@ -495,7 +487,219 @@
                                 "Width": "auto"
                             }
                         ],
-                        "Intro": "{\"Type\":\"ItemN2\",\"Text\":\"Na tabela apresentada a seguir constam informações acerca do processo de validação de arquivos contábeis.\"}",
+                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"Na tabela apresentada a seguir constam informações acerca do processo de validação de arquivos contábeis.\"}",
+                        "Error": [],
+                        "LineBreak": 0
+                    }
+                },
+                {
+                    "Type": "Table",
+                    "Data": {
+                        "Origin": "FunctionEvaluation",
+                        "Source": "table_StationsFilteredByLocation_On",
+                        "Columns": [
+                            "Location",
+                            "Estação",
+                            "Latitude",
+                            "Longitude",
+                            "numberOfMeasures",
+                            "numberOfRiskMeasures",
+                            "minDistanceForMeasure",
+                            "minFieldValue",
+                            "meanFieldValue",
+                            "maxFieldValue",
+                            "maxFieldLatitude",
+                            "maxFieldLongitude",
+                            "Justificativa"
+                        ],
+                        "Caption": "Tabela ordinária criada em função...",
+                        "Settings": [
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Localidade",
+                                "Precision": "%s",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Estação",
+                                "Precision": "%.0f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Latitude",
+                                "Precision": "%.6f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Longitude",
+                                "Precision": "%.6f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Qtd. medidas",
+                                "Precision": "%.0f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Qtd. medidas risco",
+                                "Precision": "%.0f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Distância mínima medição (km)",
+                                "Precision": "%.3f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Campo elétrico mínimo (V/m)",
+                                "Precision": "%.3f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Campo elétrico máximo (V/m)",
+                                "Precision": "%.3f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Campo elétrico médio (V/m)",
+                                "Precision": "%.3f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Latitude (Ponto máximo)",
+                                "Precision": "%.6f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Longitude (Ponto máximo)",
+                                "Precision": "%.6f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Justificativa",
+                                "Precision": "%s",
+                                "Width": "auto"
+                            }
+                        ],
+                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"Na tabela apresentada a seguir constam informações acerca do processo de validação de arquivos contábeis.\"}",
+                        "Error": [],
+                        "LineBreak": 0
+                    }
+                },
+                {
+                    "Type": "Table",
+                    "Data": {
+                        "Origin": "FunctionEvaluation",
+                        "Source": "table_StationsFilteredByLocation_Off",
+                        "Columns": [
+                            "Location",
+                            "Estação",
+                            "Latitude",
+                            "Longitude",
+                            "numberOfMeasures",
+                            "numberOfRiskMeasures",
+                            "minDistanceForMeasure",
+                            "minFieldValue",
+                            "meanFieldValue",
+                            "maxFieldValue",
+                            "maxFieldLatitude",
+                            "maxFieldLongitude",
+                            "Justificativa"
+                        ],
+                        "Caption": "Tabela ordinária criada em função...",
+                        "Settings": [
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Localidade",
+                                "Precision": "%s",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Estação",
+                                "Precision": "%.0f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Latitude",
+                                "Precision": "%.6f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Longitude",
+                                "Precision": "%.6f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Qtd. medidas",
+                                "Precision": "%.0f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Qtd. medidas risco",
+                                "Precision": "%.0f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Distância mínima medição (km)",
+                                "Precision": "%.3f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Campo elétrico mínimo (V/m)",
+                                "Precision": "%.3f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Campo elétrico máximo (V/m)",
+                                "Precision": "%.3f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Campo elétrico médio (V/m)",
+                                "Precision": "%.3f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Latitude (Ponto máximo)",
+                                "Precision": "%.6f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Longitude (Ponto máximo)",
+                                "Precision": "%.6f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Justificativa",
+                                "Precision": "%s",
+                                "Width": "auto"
+                            }
+                        ],
+                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"Na tabela apresentada a seguir constam informações acerca do processo de validação de arquivos contábeis.\"}",
                         "Error": [],
                         "LineBreak": 0
                     }

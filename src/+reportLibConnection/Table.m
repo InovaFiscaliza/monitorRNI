@@ -62,22 +62,51 @@ classdef Table
         end
 
         %-----------------------------------------------------------------%
-        function Table = PointsFilteredByLocation(reportInfo, analyzedData)
+        function Table = PointsFilteredByLocation(reportInfo, analyzedData, measuredFlag)
+            arguments
+                reportInfo
+                analyzedData
+                measuredFlag char {mustBeMember(measuredFlag, {'all', 'on', 'off'})} = 'all'
+            end
+
             pointsTable = reportInfo.Function.table_Points;            
             measData    = analyzedData.InfoSet.measData;
             locations   = unique({measData.Location});
 
             logicalIndexes = cellfun(@(x) any(ismember(x, locations)), pointsTable.DataSourceLocation); 
             Table = pointsTable(logicalIndexes, :);
+
+            switch measuredFlag
+                case 'on'
+                    Table = Table(Table.numberOfMeasures > 0, :);
+                case 'off'
+                    Table = Table(Table.numberOfMeasures == 0, :);
+            end
         end
 
         %-----------------------------------------------------------------%
-        function Table = StationsFilteredByLocation(reportInfo, analyzedData)
-            projectData = reportInfo.Project;
-            measData = analyzedData.InfoSet.measData;
+        function Table = StationsFilteredByLocation(reportInfo, analyzedData, measuredFlag)
+            arguments
+                reportInfo
+                analyzedData
+                measuredFlag char {mustBeMember(measuredFlag, {'all', 'on', 'off'})} = 'all'
+            end
 
-            fullListOfLocation = union(projectData.listOfLocations.Manual, {measData.Location});
-            idxStations = find(ismember(app.mainApp.stationTable.Location, fullListOfLocation));
+            stationTable = reportInfo.Function.table_Stations;
+            measData     = analyzedData.InfoSet.measData;            
+            projectData  = reportInfo.Project;
+            DIST_km      = reportInfo.Settings.MonitoringPlan.Distance_km;
+            locations    = getFullListOfLocation(projectData, measData, stationTable, DIST_km);
+
+            logicalIndexes = ismember(stationTable.Location, locations); 
+            Table = stationTable(logicalIndexes, :);
+
+            switch measuredFlag
+                case 'on'
+                    Table = Table(Table.numberOfMeasures > 0, :);
+                case 'off'
+                    Table = Table(Table.numberOfMeasures == 0, :);
+            end
         end
     end
 end

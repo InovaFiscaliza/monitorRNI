@@ -156,18 +156,17 @@ classdef projectLib < dynamicprops
         end
 
         %-----------------------------------------------------------------%
-        function fullListOfLocation = getFullListOfLocation(obj, measData)
+        function fullListOfLocation = getFullListOfLocation(obj, measData, stationTable, DIST_km)
             hash = strjoin(unique({measData.UUID}));
             hashIndex = find(strcmp({obj.listOfLocations.Hash}, hash), 1);
 
-            if ~isempty(hashIndex)
-                fullListOfLocation = sort(union(...
-                    obj.listOfLocations(hashIndex).Automatic, ...
-                    obj.listOfLocations(hashIndex).Manual ...
-                ));
-            else
-                fullListOfLocation = {};
+            if isempty(hashIndex)
+                hashIndex = addAutomaticLocations(obj, measData, stationTable, DIST_km);
             end
+            fullListOfLocation = sort(union(...
+                obj.listOfLocations(hashIndex).Automatic, ...
+                obj.listOfLocations(hashIndex).Manual ...
+            ));
         end
 
         %-----------------------------------------------------------------%
