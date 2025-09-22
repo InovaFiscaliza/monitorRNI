@@ -1,4 +1,4 @@
-classdef Variable
+classdef (Abstract) Variable
 
     % Relação de variáveis que podem ser manipuladas quando da execução de
     % um dos métodos desta classe estática. Importante, contudo, editar os
@@ -20,6 +20,18 @@ classdef Variable
     %   "Columns", "Caption", "Settings", "Intro", "Error" e "LineBreak".
 
     methods (Static)
+        %-----------------------------------------------------------------%
+        function fieldValue = GeneralSettings(reportInfo, fieldName)
+            appGeneral = reportInfo.Settings;
+
+            switch fieldName
+                case 'MonitoringPlan'
+                    fieldValue = jsonencode(appGeneral.(fieldName));
+                case 'ExternalRequest'
+                    fieldValue = jsonencode(appGeneral.(fieldName));
+            end
+        end
+
         %-----------------------------------------------------------------%
         function fieldValue = ClassProperty(analyzedData, fieldName)
             measData  = analyzedData.InfoSet.measData;
@@ -50,6 +62,16 @@ classdef Variable
                     fieldValue = sprintf('[%.6fº, %.6fº]', minLng, maxLng);
                 case {'Latitude', 'Longitude'}
                     fieldValue = sprintf('%.6fº', mean(measTable.(fieldName)));
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function tableValue = TableProperty(reportInfo, analyzedData, fieldName)
+            switch fieldName
+                case 'PointsTableHeight'
+                    tableValue = reportLibConnection.PointsByLocation(reportInfo, analyzedData, 'all', 'tableHeight');
+                case 'StationsTableHeight'
+                    tableValue = reportLibConnection.StationsByLocation(reportInfo, analyzedData, 'all', 'tableHeight');
             end
         end
     end

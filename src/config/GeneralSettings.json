@@ -1,5 +1,5 @@
 {
-    "version": 0.60,
+    "version": 0.61,
     "operationMode": {
         "Debug": false,
         "Dock": true,
@@ -85,7 +85,7 @@
             "Basemap": "satellite",
             "Colormap": "turbo",
             "Colorbar": "on",
-            "ZoomOrientation": "stations/points"
+            "ZoomOrientation": "measures"
         },
         "RiskMeasures": {
             "Color": [1, 0, 0],

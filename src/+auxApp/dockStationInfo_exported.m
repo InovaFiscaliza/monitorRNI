@@ -418,6 +418,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             % Create LocationPanel
             app.LocationPanel = uipanel(app.StationPanel);
+            app.LocationPanel.AutoResizeChildren = 'off';
             app.LocationPanel.Layout.Row = 5;
             app.LocationPanel.Layout.Column = 5;
 

@@ -262,8 +262,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.progressDialog.Visible = 'visible';
 
             startup_GUIComponents(app)
-            Analysis(app, 'Startup')
-            Analysis(app, 'Update')
+            Analysis(app)
 
             app.progressDialog.Visible = 'hidden';
         end
@@ -306,33 +305,31 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             app.progressDialog.Visible = 'visible';
 
+            % Identifica arquivos selecionados pelo usuário, atualizando essa
+            % informação em app.projectData.
             [idxFile, selectedFileLocations] = FileIndex(app, operationType);
             updateSelectedListOfLocations(app.projectData, selectedFileLocations)
 
-            if ~isempty(idxFile)
-                % Concatena as tabelas de LATITUDE, LONGITUDE E NÍVEL de cada um
-                % dos arquivos cuja localidade coincide com o que foi selecionado
-                % em tela. Além disso, insere o nome do próprio arquivo p/ fins de 
-                % mapeamento entre os dados e os arquivos brutos.
-                app.measTable = createMeasTable(app.measData(idxFile));
+            % Atualiza análise (restrita a app.mainApp.pointsTable).
+            [app.measTable, ~, app.mainApp.pointsTable] = updateAnalysis(...
+                app.projectData, ...
+                app.measData(idxFile), ...
+                [], ...
+                app.mainApp.pointsTable, ...
+                app.mainApp.General, ...
+                'points' ...
+            );
 
-            else
-                app.measTable = [];
+            if strcmp(operationType, 'Startup')
+                return
             end
 
-            if ~isempty(app.measTable)
-                identifyMeasuresForEachPoint(app)
-
-                if operationType == "Startup"
-                    return
-                end
-            end
-
+            % Atualiza elemento de tabela da GUI.
             initialSelection = updateTable(app);
             layout_TableStyle(app)
             layout_updatePeakInfo(app)
 
-            % PLOT
+            % Atualiza plot.
             plot_MeasuresAndPoints(app)
 
             if ~isempty(initialSelection)
@@ -437,52 +434,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             if strcmp(app.mainApp.General.Plot.GeographicAxes.ZoomOrientation, zoomOrientation) || (isempty(app.measTable) && strcmp(app.mainApp.General.Plot.GeographicAxes.ZoomOrientation, 'measures'))
                 geolimits(app.UIAxes, app.UIAxes.LatitudeLimits, app.UIAxes.LongitudeLimits)
                 app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
-            end
-        end
-        
-        %-----------------------------------------------------------------%
-        function identifyMeasuresForEachPoint(app)
-            DIST_km = app.mainApp.General.ExternalRequest.Distance_km;
-
-            for ii = 1:height(app.mainApp.pointsTable)
-                if app.mainApp.pointsTable.AnalysisFlag(ii)
-                    continue
-                end
-
-                app.mainApp.pointsTable.AnalysisFlag(ii) = true;
-
-                % Inicialmente, afere a distância do ponto a cada uma das
-                % medidas, identificando aquelas no entorno.
-                pointDistance      = deg2km(distance(app.mainApp.pointsTable.Latitude(ii), app.mainApp.pointsTable.Longitude(ii), app.measTable.Latitude, app.measTable.Longitude));                
-                idxLogicalMeasures = pointDistance <= DIST_km;
-
-                if any(idxLogicalMeasures)
-                    pointMeasures = app.measTable(idxLogicalMeasures, :);
-                    [maxFieldValue, idxMaxFieldValue] = max(pointMeasures.FieldValue);
-
-                    app.mainApp.pointsTable.numberOfMeasures(ii)     = height(pointMeasures);
-                    app.mainApp.pointsTable.numberOfRiskMeasures(ii) = sum(pointMeasures.FieldValue > app.mainApp.General.ExternalRequest.FieldValue);
-                    app.mainApp.pointsTable.minFieldValue(ii)        = min(pointMeasures.FieldValue);
-                    app.mainApp.pointsTable.meanFieldValue(ii)       = mean(pointMeasures.FieldValue);
-                    app.mainApp.pointsTable.maxFieldValue(ii)        = maxFieldValue;
-                    app.mainApp.pointsTable.maxFieldLatitude(ii)     = pointMeasures.Latitude(idxMaxFieldValue);
-                    app.mainApp.pointsTable.maxFieldLongitude(ii)    = pointMeasures.Longitude(idxMaxFieldValue);
-
-                    dataSourceFile = unique(app.measTable.FileSource(idxLogicalMeasures))';
-                    dataSourceFileIndex = find(ismember({app.measData.Filename}, dataSourceFile));
-                    app.mainApp.pointsTable.DataSourceLocation{ii}   = unique({app.measData(dataSourceFileIndex).Location});
-
-                else
-                    app.mainApp.pointsTable.numberOfMeasures(ii)     = 0;
-                    app.mainApp.pointsTable.numberOfRiskMeasures(ii) = 0;
-                    app.mainApp.pointsTable.minFieldValue(ii)        = 0;
-                    app.mainApp.pointsTable.meanFieldValue(ii)       = 0;
-                    app.mainApp.pointsTable.maxFieldValue(ii)        = 0;
-                    app.mainApp.pointsTable.maxFieldLatitude(ii)     = 0;
-                    app.mainApp.pointsTable.maxFieldLongitude(ii)    = 0;
-                end
-
-                app.mainApp.pointsTable.minDistanceForMeasure(ii)    = min(pointDistance); % km
             end
         end
 
@@ -1269,6 +1220,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Create AddNewPointPanel
             app.AddNewPointPanel = uipanel(app.Control);
+            app.AddNewPointPanel.AutoResizeChildren = 'off';
             app.AddNewPointPanel.Layout.Row = 6;
             app.AddNewPointPanel.Layout.Column = [1 4];
 

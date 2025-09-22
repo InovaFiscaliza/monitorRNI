@@ -50,7 +50,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         MonitoringPlanDistanceLabel   matlab.ui.control.Label
         analysis_FileRefresh          matlab.ui.control.Image
         analysis_FileLabel            matlab.ui.control.Label
-        PLOTTab                       matlab.ui.container.Tab
+        Tab3                          matlab.ui.container.Tab
         CustomPlotGrid                matlab.ui.container.GridLayout
         CustomPlotTitle_2             matlab.ui.control.Label
         Panel                         matlab.ui.container.Panel
@@ -84,7 +84,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         StationsLabel                 matlab.ui.control.Label
         CustomPlotRefresh             matlab.ui.control.Image
         CustomPlotTitle               matlab.ui.control.Label
-        Tab3                          matlab.ui.container.Tab
+        Tab4                          matlab.ui.container.Tab
         Tab3Grid                      matlab.ui.container.GridLayout
         userPathButton                matlab.ui.control.Image
         userPath                      matlab.ui.control.EditField
@@ -1021,6 +1021,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create analysis_FilePanel
             app.analysis_FilePanel = uipanel(app.Tab2Grid);
+            app.analysis_FilePanel.AutoResizeChildren = 'off';
             app.analysis_FilePanel.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.analysis_FilePanel.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
             app.analysis_FilePanel.Layout.Row = 4;
@@ -1212,6 +1213,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create Panel_2
             app.Panel_2 = uipanel(app.Tab2Grid);
+            app.Panel_2.AutoResizeChildren = 'off';
             app.Panel_2.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
             app.Panel_2.Layout.Row = 2;
             app.Panel_2.Layout.Column = [1 2];
@@ -1257,12 +1259,13 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.SortMethod.Layout.Column = 2;
             app.SortMethod.Value = 'LOCALIDADE';
 
-            % Create PLOTTab
-            app.PLOTTab = uitab(app.TabGroup);
-            app.PLOTTab.Title = 'PLOT';
+            % Create Tab3
+            app.Tab3 = uitab(app.TabGroup);
+            app.Tab3.AutoResizeChildren = 'off';
+            app.Tab3.Title = 'PLOT';
 
             % Create CustomPlotGrid
-            app.CustomPlotGrid = uigridlayout(app.PLOTTab);
+            app.CustomPlotGrid = uigridlayout(app.Tab3);
             app.CustomPlotGrid.ColumnWidth = {'1x', 22};
             app.CustomPlotGrid.RowHeight = {17, 182, 22, '1x'};
             app.CustomPlotGrid.RowSpacing = 5;
@@ -1289,6 +1292,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create CustomPlotPanel
             app.CustomPlotPanel = uipanel(app.CustomPlotGrid);
+            app.CustomPlotPanel.AutoResizeChildren = 'off';
             app.CustomPlotPanel.Layout.Row = 4;
             app.CustomPlotPanel.Layout.Column = [1 2];
 
@@ -1434,6 +1438,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create Panel
             app.Panel = uipanel(app.CustomPlotGrid);
+            app.Panel.AutoResizeChildren = 'off';
             app.Panel.Layout.Row = 2;
             app.Panel.Layout.Column = [1 2];
 
@@ -1549,14 +1554,14 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.CustomPlotTitle_2.Layout.Column = 1;
             app.CustomPlotTitle_2.Text = 'ESTAÇÃO/PONTO';
 
-            % Create Tab3
-            app.Tab3 = uitab(app.TabGroup);
-            app.Tab3.AutoResizeChildren = 'off';
-            app.Tab3.Title = 'MAPEAMENTO DE PASTAS';
-            app.Tab3.BackgroundColor = 'none';
+            % Create Tab4
+            app.Tab4 = uitab(app.TabGroup);
+            app.Tab4.AutoResizeChildren = 'off';
+            app.Tab4.Title = 'MAPEAMENTO DE PASTAS';
+            app.Tab4.BackgroundColor = 'none';
 
             % Create Tab3Grid
-            app.Tab3Grid = uigridlayout(app.Tab3);
+            app.Tab3Grid = uigridlayout(app.Tab4);
             app.Tab3Grid.ColumnWidth = {'1x', 20};
             app.Tab3Grid.RowHeight = {17, 22, 22, 22, '1x'};
             app.Tab3Grid.ColumnSpacing = 5;

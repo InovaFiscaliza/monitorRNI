@@ -3,6 +3,8 @@ classdef (Abstract) Plot
     methods (Static = true)
         %-----------------------------------------------------------------%
         function imgFileName = Controller(reportInfo, analyzedData, imgSettings)
+            measTable  = analyzedData.InfoSet.measTable;
+
             % Container
             hFigure    = reportInfo.app.UIFigure;
             hContainer = findobj(hFigure, 'Tag', 'PlotContainer');
@@ -46,7 +48,8 @@ classdef (Abstract) Plot
                 for plotTag = plotNames
                     switch plotTag{1}
                         case 'DriveTest'
-                            reportLibConnection.Plot.DriveTestPlot(hAxes, tempBandObj, idxThread, reportInfo)
+                            plot.draw.Measures(app.UIAxes, app.measTable, app.mainApp.General.MonitoringPlan.FieldValue, app.mainApp.General);
+                            plot.draw.Points(app.UIAxes, refPointsTable, 'Estações de referência PM-RNI', app.mainApp.General)
 
                         case 'ChannelPower'
                             % ...                          

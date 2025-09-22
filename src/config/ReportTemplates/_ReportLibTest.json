@@ -314,6 +314,11 @@
                         },
                         {
                             "Editable": "false",
+                            "Text": "var_Id: %s",
+                            "Variable": ["var_Id"]
+                        },
+                        {
+                            "Editable": "false",
                             "Text": "var_NumFiles: %.0f",
                             "Variable": ["var_NumFiles"]
                         },
@@ -376,6 +381,16 @@
                             "Editable": "false",
                             "Text": "var_Longitude: %s",
                             "Variable": ["var_Longitude"]
+                        },
+                        {
+                            "Editable": "false",
+                            "Text": "settings_ExternalRequest: %s",
+                            "Variable": ["settings_ExternalRequest"]
+                        },
+                        {
+                            "Editable": "false",
+                            "Text": "settings_MonitoringPlan: %s",
+                            "Variable": ["settings_MonitoringPlan"]
                         }
                     ]
                 },
@@ -383,7 +398,7 @@
                     "Type": "Table",
                     "Data": {
                         "Origin": "FunctionEvaluation",
-                        "Source": "table_PointsFilteredByLocation",
+                        "Source": "table_PointsByLocation+on+table",
                         "Columns": [
                             "Type",
                             "Station",
@@ -496,7 +511,7 @@
                     "Type": "Table",
                     "Data": {
                         "Origin": "FunctionEvaluation",
-                        "Source": "table_StationsFilteredByLocation_On",
+                        "Source": "table_StationsByLocation+on+table",
                         "Columns": [
                             "Location",
                             "Estação",
@@ -602,7 +617,7 @@
                     "Type": "Table",
                     "Data": {
                         "Origin": "FunctionEvaluation",
-                        "Source": "table_StationsFilteredByLocation_Off",
+                        "Source": "table_StationsByLocation+off+table",
                         "Columns": [
                             "Location",
                             "Estação",

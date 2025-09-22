@@ -1,4 +1,4 @@
-classdef Table
+classdef (Abstract) Table
 
     % Relação de variáveis que podem ser manipuladas quando da execução de
     % um dos métodos desta classe estática. Importante, contudo, editar os
@@ -62,11 +62,12 @@ classdef Table
         end
 
         %-----------------------------------------------------------------%
-        function Table = PointsFilteredByLocation(reportInfo, analyzedData, measuredFlag)
+        function varargout = PointsByLocation(reportInfo, analyzedData, measuredFlag, outputType)
             arguments
                 reportInfo
                 analyzedData
                 measuredFlag char {mustBeMember(measuredFlag, {'all', 'on', 'off'})} = 'all'
+                outputType   char {mustBeMember(outputType, {'table', 'tableHeight'})} = 'table'
             end
 
             pointsTable = reportInfo.Function.table_Points;            
@@ -82,14 +83,22 @@ classdef Table
                 case 'off'
                     Table = Table(Table.numberOfMeasures == 0, :);
             end
+
+            switch outputType
+                case 'table'
+                    varargout = {Table};
+                case 'tableHeight'
+                    varargout = {height(Table)};
+            end
         end
 
         %-----------------------------------------------------------------%
-        function Table = StationsFilteredByLocation(reportInfo, analyzedData, measuredFlag)
+        function varargout = StationsByLocation(reportInfo, analyzedData, measuredFlag, outputType)
             arguments
                 reportInfo
                 analyzedData
                 measuredFlag char {mustBeMember(measuredFlag, {'all', 'on', 'off'})} = 'all'
+                outputType   char {mustBeMember(outputType, {'table', 'tableHeight'})} = 'table'
             end
 
             stationTable = reportInfo.Function.table_Stations;
@@ -106,6 +115,13 @@ classdef Table
                     Table = Table(Table.numberOfMeasures > 0, :);
                 case 'off'
                     Table = Table(Table.numberOfMeasures == 0, :);
+            end
+
+            switch outputType
+                case 'table'
+                    varargout = {Table};
+                case 'tableHeight'
+                    varargout = {height(Table)};
             end
         end
     end

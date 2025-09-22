@@ -35,8 +35,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         file_OpenFileButton      matlab.ui.control.Image
         Tab2_MonitoringPlan      matlab.ui.container.Tab
         Tab3_ExternalRequest     matlab.ui.container.Tab
-        RFDATAHUBTab             matlab.ui.container.Tab
-        Tab4_Config              matlab.ui.container.Tab
+        Tab4_RFDataHub           matlab.ui.container.Tab
+        Tab5_Config              matlab.ui.container.Tab
         file_ContextMenu         matlab.ui.container.ContextMenu
         file_TreeNodeDelete      matlab.ui.container.Menu
     end
@@ -153,6 +153,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     % MAINAPP
                     case 'mainApp.file_Tree'
                         file_ContextMenu_delTreeNodeSelected(app)
+
+                    % AUXAPP.WINEXTERNALREQUEST
+                    case 'auxApp.winExternalRequest.TreePoints'
+                        hAuxApp = auxAppHandle(app, "EXTERNALREQUEST");
+                        if ~isempty(hAuxApp)
+                            ipcSecundaryMatlabCallsHandler(hAuxApp, app, 'ExternalRequest: DeletePoint')
+                        end
 
                     otherwise
                         error('UnexpectedEvent')
@@ -911,9 +918,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 appUtil.modalWindow(app.UIFigure, "warning", msgWarning);
             end
             
-            % Atualiza app.file_Tree.
+            % Atualiza árvore (app.file_Tree) e tabelas de referência (app.stationTable
+            % e app.pointsTable).
             indexes = file_findSelectedNodeData(app);
             file_TreeBuilding(app, indexes)
+            [~, app.stationTable, app.pointsTable] = updateAnalysis(app.projectData, app.measData, app.stationTable, app.pointsTable, app.General);
 
             delete(d)
 
@@ -964,8 +973,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab1_File = uitab(app.TabGroup);
             app.Tab1_File.AutoResizeChildren = 'off';
             app.Tab1_File.Title = 'FILE';
-            app.Tab1_File.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.Tab1_File.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
 
             % Create file_Grid
             app.file_Grid = uigridlayout(app.Tab1_File);
@@ -979,10 +986,10 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             % Create file_toolGrid
             app.file_toolGrid = uigridlayout(app.file_Grid);
             app.file_toolGrid.ColumnWidth = {22, '1x'};
-            app.file_toolGrid.RowHeight = {'1x', 17, '1x'};
+            app.file_toolGrid.RowHeight = {4, 17, 2};
             app.file_toolGrid.ColumnSpacing = 5;
             app.file_toolGrid.RowSpacing = 0;
-            app.file_toolGrid.Padding = [10 6 10 6];
+            app.file_toolGrid.Padding = [10 5 10 5];
             app.file_toolGrid.Layout.Row = 5;
             app.file_toolGrid.Layout.Column = [1 7];
             app.file_toolGrid.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
@@ -1067,24 +1074,21 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab2_MonitoringPlan = uitab(app.TabGroup);
             app.Tab2_MonitoringPlan.AutoResizeChildren = 'off';
             app.Tab2_MonitoringPlan.Title = 'MONITORINGPLAN';
-            app.Tab2_MonitoringPlan.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.Tab2_MonitoringPlan.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
 
             % Create Tab3_ExternalRequest
             app.Tab3_ExternalRequest = uitab(app.TabGroup);
+            app.Tab3_ExternalRequest.AutoResizeChildren = 'off';
             app.Tab3_ExternalRequest.Title = 'EXTERNALREQUEST';
-            app.Tab3_ExternalRequest.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.Tab3_ExternalRequest.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
 
-            % Create RFDATAHUBTab
-            app.RFDATAHUBTab = uitab(app.TabGroup);
-            app.RFDATAHUBTab.Title = 'RFDATAHUB';
+            % Create Tab4_RFDataHub
+            app.Tab4_RFDataHub = uitab(app.TabGroup);
+            app.Tab4_RFDataHub.AutoResizeChildren = 'off';
+            app.Tab4_RFDataHub.Title = 'RFDATAHUB';
 
-            % Create Tab4_Config
-            app.Tab4_Config = uitab(app.TabGroup);
-            app.Tab4_Config.Title = 'CONFIG';
-            app.Tab4_Config.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.Tab4_Config.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            % Create Tab5_Config
+            app.Tab5_Config = uitab(app.TabGroup);
+            app.Tab5_Config.AutoResizeChildren = 'off';
+            app.Tab5_Config.Title = 'CONFIG';
 
             % Create menu_Grid
             app.menu_Grid = uigridlayout(app.GridLayout);
@@ -1108,7 +1112,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.menu_Button1.Text = '';
             app.menu_Button1.BackgroundColor = [0.2 0.2 0.2];
             app.menu_Button1.FontSize = 11;
-            app.menu_Button1.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.menu_Button1.Layout.Row = [2 4];
             app.menu_Button1.Layout.Column = 4;
             app.menu_Button1.Value = true;
@@ -1133,7 +1136,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.menu_Button2.Text = '';
             app.menu_Button2.BackgroundColor = [0.2 0.2 0.2];
             app.menu_Button2.FontSize = 11;
-            app.menu_Button2.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.menu_Button2.Layout.Row = [2 4];
             app.menu_Button2.Layout.Column = 6;
 
@@ -1148,7 +1150,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.menu_Button3.Text = '';
             app.menu_Button3.BackgroundColor = [0.2 0.2 0.2];
             app.menu_Button3.FontSize = 11;
-            app.menu_Button3.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.menu_Button3.Layout.Row = [2 4];
             app.menu_Button3.Layout.Column = 7;
 
@@ -1171,7 +1172,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.menu_Button4.Text = '';
             app.menu_Button4.BackgroundColor = [0.2 0.2 0.2];
             app.menu_Button4.FontSize = 11;
-            app.menu_Button4.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.menu_Button4.Layout.Row = [2 4];
             app.menu_Button4.Layout.Column = 9;
 
@@ -1185,7 +1185,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.menu_Button5.Text = '';
             app.menu_Button5.BackgroundColor = [0.2 0.2 0.2];
             app.menu_Button5.FontSize = 11;
-            app.menu_Button5.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.menu_Button5.Layout.Row = [2 4];
             app.menu_Button5.Layout.Column = 10;
 
@@ -1253,7 +1252,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             % Create file_TreeNodeDelete
             app.file_TreeNodeDelete = uimenu(app.file_ContextMenu);
             app.file_TreeNodeDelete.MenuSelectedFcn = createCallbackFcn(app, @file_ContextMenu_delTreeNodeSelected, true);
-            app.file_TreeNodeDelete.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.file_TreeNodeDelete.Text = 'Excluir';
 
             % Show the figure after all components are created
