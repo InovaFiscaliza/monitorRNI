@@ -98,13 +98,90 @@ classdef projectLib < dynamicprops
     methods
         %-----------------------------------------------------------------%
         % AUXAPP.WINMONITORINGPLAN
+        % AUXAPP.WINEXTERNALREQUEST
+        %-----------------------------------------------------------------%
+        function [measTable, stationTable, pointsTable] = updateAnalysis(obj, measData, stationTable, pointsTable, generalSettings, updateType)
+            arguments
+                obj
+                measData
+                stationTable
+                pointsTable
+                generalSettings
+                updateType char {mustBeMember(updateType, {'station+points', 'station', 'points'})} = 'station+points'
+            end
+
+            % auxApp.winMonitoringPlan.measTable
+            % auxApp.winExternalRequest.measTable
+            if ~isempty(measData)
+                measTable = createMeasTable(measData);
+
+                % winMonitorRNI.stationTable
+                if contains(updateType, 'station')
+                    addAutomaticLocations(obj, measData, stationTable, generalSettings.MonitoringPlan.Distance_km);
+                    idxStations  = find(ismember(stationTable.Location, getFullListOfLocation(obj, measData)))';
+                    stationTable = identifyMeasuresForEachPoint(obj, stationTable, idxStations, measTable, generalSettings.MonitoringPlan.FieldValue, generalSettings.MonitoringPlan.Distance_km);
+                end
+    
+                % winMonitorRNI.pointsTable
+                if contains(updateType, 'points')
+                    idxPoints    = 1:height(pointsTable);
+                    pointsTable  = identifyMeasuresForEachPoint(obj, pointsTable, idxPoints, measTable, generalSettings.ExternalRequest.FieldValue, generalSettings.ExternalRequest.Distance_km);
+                end
+
+            else
+                measTable = [];
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function referenceTable = identifyMeasuresForEachPoint(obj, referenceTable, referenceTableIndexes, measTable, threshold, dist)
+            for ii = referenceTableIndexes
+                if referenceTable.AnalysisFlag(ii)
+                    continue
+                end
+
+                referenceTable.AnalysisFlag(ii) = true;
+
+                % Inicialmente, afere a distância da estação/ponto a cada uma 
+                % das medidas, identificando aquelas no entorno.
+                pointDistance      = deg2km(distance(referenceTable.Latitude(ii), referenceTable.Longitude(ii), measTable.Latitude, measTable.Longitude));                
+                idxLogicalMeasures = pointDistance <= dist;
+
+                if any(idxLogicalMeasures)
+                    pointMeasures = measTable(idxLogicalMeasures, :);
+                    [maxFieldValue, idxMaxFieldValue] = max(pointMeasures.FieldValue);
+
+                    referenceTable.numberOfMeasures(ii)     = height(pointMeasures);
+                    referenceTable.numberOfRiskMeasures(ii) = sum(pointMeasures.FieldValue > threshold);
+                    referenceTable.minFieldValue(ii)        = min(pointMeasures.FieldValue);
+                    referenceTable.meanFieldValue(ii)       = mean(pointMeasures.FieldValue);
+                    referenceTable.maxFieldValue(ii)        = maxFieldValue;
+                    referenceTable.maxFieldLatitude(ii)     = pointMeasures.Latitude(idxMaxFieldValue);
+                    referenceTable.maxFieldLongitude(ii)    = pointMeasures.Longitude(idxMaxFieldValue);
+                    referenceTable.("Fonte de dados"){ii}   = jsonencode(unique(pointMeasures.FileSource));
+
+                else
+                    referenceTable.numberOfMeasures(ii)     = 0;
+                    referenceTable.numberOfRiskMeasures(ii) = 0;
+                    referenceTable.minFieldValue(ii)        = 0;
+                    referenceTable.meanFieldValue(ii)       = 0;
+                    referenceTable.maxFieldValue(ii)        = 0;
+                    referenceTable.maxFieldLatitude(ii)     = 0;
+                    referenceTable.maxFieldLongitude(ii)    = 0;
+                    referenceTable.("Fonte de dados"){ii}   = jsonencode({''});   % '[""]'
+                end
+
+                referenceTable.minDistanceForMeasure(ii)    = min(pointDistance); % km
+            end
+        end
+
         %-----------------------------------------------------------------%
         function updateSelectedListOfLocations(obj, locations)
             obj.selectedFileLocations = locations;
         end
 
         %-----------------------------------------------------------------%
-        function hashIndex = addAutomaticLocations(obj, measData, stationTable, DIST_km)
+        function hashIndex = addAutomaticLocations(obj, measData, stationTable, dist)
             hash = strjoin(unique({measData.UUID}));
             hashIndex = find(strcmp({obj.listOfLocations.Hash}, hash), 1);
 
@@ -117,8 +194,8 @@ classdef projectLib < dynamicprops
                     % Limites de latitude e longitude relacionados à rota, acrescentando 
                     % a distância máxima à estação p/ fins de cômputo de medidas válidas 
                     % no entorno de uma estação.
-                    [maxLatitude, maxLongitude] = reckon(measData(ii).LatitudeLimits(2), measData(ii).LongitudeLimits(2), km2deg(DIST_km), 45);
-                    [minLatitude, minLongitude] = reckon(measData(ii).LatitudeLimits(1), measData(ii).LongitudeLimits(1), km2deg(DIST_km), 225);
+                    [maxLatitude, maxLongitude] = reckon(measData(ii).LatitudeLimits(2), measData(ii).LongitudeLimits(2), km2deg(dist), 45);
+                    [minLatitude, minLongitude] = reckon(measData(ii).LatitudeLimits(1), measData(ii).LongitudeLimits(1), km2deg(dist), 225);
         
                     idxLogicalStation = stationTable.Latitude  >= minLatitude  & ...
                                         stationTable.Latitude  <= maxLatitude  & ...
@@ -156,17 +233,21 @@ classdef projectLib < dynamicprops
         end
 
         %-----------------------------------------------------------------%
-        function fullListOfLocation = getFullListOfLocation(obj, measData, stationTable, DIST_km)
+        function fullListOfLocation = getFullListOfLocation(obj, measData, stationTable, dist)
             hash = strjoin(unique({measData.UUID}));
             hashIndex = find(strcmp({obj.listOfLocations.Hash}, hash), 1);
 
             if isempty(hashIndex)
-                hashIndex = addAutomaticLocations(obj, measData, stationTable, DIST_km);
+                hashIndex = addAutomaticLocations(obj, measData, stationTable, dist);
             end
+            try
             fullListOfLocation = sort(union(...
                 obj.listOfLocations(hashIndex).Automatic, ...
                 obj.listOfLocations(hashIndex).Manual ...
             ));
+            catch
+                pause(1)
+            end
         end
 
         %-----------------------------------------------------------------%

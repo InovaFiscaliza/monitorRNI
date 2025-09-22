@@ -353,49 +353,33 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             app.progressDialog.Visible = 'visible';
 
+            % Identifica arquivos selecionados pelo usuário, atualizando essa
+            % informação em app.projectData.
             [idxFile, selectedFileLocations] = FileIndex(app, operationType);
             updateSelectedListOfLocations(app.projectData, selectedFileLocations)
 
-            if ~isempty(idxFile)
-                % Concatena as tabelas de LATITUDE, LONGITUDE E NÍVEL de cada um
-                % dos arquivos cuja localidade coincide com o que foi selecionado
-                % em tela. Além disso, insere o nome do próprio arquivo p/ fins de 
-                % mapeamento entre os dados e os arquivos brutos.
-                app.measTable = createMeasTable(app.measData(idxFile));
-                
-                % Identifica localidades relacionadas à monitoração sob análise.
-                addAutomaticLocations(...
-                    app.projectData, ...
-                    app.measData(idxFile), ...
-                    app.mainApp.stationTable, ...
-                    app.mainApp.General.MonitoringPlan.Distance_km ...
-                );
-            else
-                app.measTable  = [];
+            % Atualiza análise (restrita a app.mainApp.pointsTable).
+            [app.measTable, app.mainApp.stationTable] = updateAnalysis(...
+                app.projectData, ...
+                app.measData(idxFile), ...
+                app.mainApp.stationTable, ...
+                [], ...
+                app.mainApp.General, ...
+                'station' ...
+            );
+
+            if strcmp(operationType, 'Startup')
+                return
             end
             
+            % Atualiza elemento de tabela da GUI.
             fullListOfLocation = getFullListOfLocation(app.projectData, app.measData(idxFile));
             idxStations = find(ismember(app.mainApp.stationTable.Location, fullListOfLocation));
-
-            if ~isempty(app.measTable)
-                identifyMeasuresForEachStation(app, idxStations)
-
-                % Na inicialização, preciso garantir que todas as medidas
-                % coletadas serão usadas p/ fins de identificação daqueles
-                % realizadas no entorno de uma estação.
-
-                % Nesse cenário, define-se idxFile = 1:numel(app.measData)
-                % e realiza operação, voltando à startup_Controller(app)
-                % que chamará novamente este método, mas no modo "Update",
-                % quando então será realizada a atualização da GUI (incluso
-                % o plot).
-                if operationType == "Startup"
-                    return
-                end
-            end
             initialSelection = updateTable(app, idxStations);
             layout_TableStyle(app)
 
+            % Atualiza outros elementos da GUI, inclusive painel com quantitativo 
+            % de estações.
             if ~isempty(fullListOfLocation)
                 app.LocationList.Value = fullListOfLocation;
             else
@@ -407,14 +391,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             nStationsOnRoute  = sum(app.UITable.Data.numberOfMeasures > 0);
             nStationsOutRoute = nStations - nStationsOnRoute;
 
-            % Atualiza painel com quantitativo de estações...
             app.Card1_numberOfStations.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: black;   font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS NAS LOCALIDADES SOB ANÁLISE</p>',                  nStations);
             app.Card2_numberOfRiskStations.Text = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES NO ENTORNO DE REGISTROS DE NÍVEIS ACIMA DE %.0f V/m</p></p>', nRiskStations, app.mainApp.General.MonitoringPlan.FieldValue);
             app.Card3_stationsOnRoute .Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: black;   font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS NO ENTORNO DA ROTA</p>',                           nStationsOnRoute);
             app.Card4_stationsOutRoute.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS FORA DA ROTA</p>',                                 nStationsOutRoute);
             layout_updatePeakInfo(app)
 
-            % PLOT
+            % Atualiza plot.
             plot_MeasuresAndPoints(app)
 
             if ~isempty(initialSelection)
@@ -521,52 +504,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             if strcmp(app.mainApp.General.Plot.GeographicAxes.ZoomOrientation, zoomOrientation) || (isempty(app.measTable) && strcmp(app.mainApp.General.Plot.GeographicAxes.ZoomOrientation, 'measures'))
                 geolimits(app.UIAxes, app.UIAxes.LatitudeLimits, app.UIAxes.LongitudeLimits)
                 app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
-            end
-        end
-        
-        %-----------------------------------------------------------------%
-        function identifyMeasuresForEachStation(app, idxStations)
-            DIST_km = app.mainApp.General.MonitoringPlan.Distance_km;
-
-            for ii = idxStations'
-                if app.mainApp.stationTable.AnalysisFlag(ii)
-                    continue
-                end
-
-                app.mainApp.stationTable.AnalysisFlag(ii) = true;
-
-                % Inicialmente, afere a distância da estação a cada uma das
-                % medidas, identificando aquelas no entorno.
-                stationDistance    = deg2km(distance(app.mainApp.stationTable.Latitude(ii), app.mainApp.stationTable.Longitude(ii), app.measTable.Latitude, app.measTable.Longitude));
-                idxLogicalMeasures = stationDistance <= DIST_km;
-
-                if any(idxLogicalMeasures)
-                    stationMeasures = app.measTable(idxLogicalMeasures, :);
-                    [maxFieldValue, idxMaxFieldValue] = max(stationMeasures.FieldValue);
-
-                    app.mainApp.stationTable.numberOfMeasures(ii)     = height(stationMeasures);
-                    app.mainApp.stationTable.numberOfRiskMeasures(ii) = sum(stationMeasures.FieldValue > app.mainApp.General.MonitoringPlan.FieldValue);
-                    app.mainApp.stationTable.minFieldValue(ii)        = min(stationMeasures.FieldValue);
-                    app.mainApp.stationTable.meanFieldValue(ii)       = mean(stationMeasures.FieldValue);
-                    app.mainApp.stationTable.maxFieldValue(ii)        = maxFieldValue;
-                    app.mainApp.stationTable.maxFieldTimestamp(ii)    = stationMeasures.Timestamp(idxMaxFieldValue);
-                    app.mainApp.stationTable.maxFieldLatitude(ii)     = stationMeasures.Latitude(idxMaxFieldValue);
-                    app.mainApp.stationTable.maxFieldLongitude(ii)    = stationMeasures.Longitude(idxMaxFieldValue);
-                    app.mainApp.stationTable.("Fonte de dados"){ii}   = jsonencode(unique(stationMeasures.FileSource));
-
-                else
-                    app.mainApp.stationTable.numberOfMeasures(ii)     = 0;
-                    app.mainApp.stationTable.numberOfRiskMeasures(ii) = 0;
-                    app.mainApp.stationTable.minFieldValue(ii)        = 0;
-                    app.mainApp.stationTable.meanFieldValue(ii)       = 0;
-                    app.mainApp.stationTable.maxFieldValue(ii)        = 0;
-                    app.mainApp.stationTable.maxFieldTimestamp(ii)    = NaT;
-                    app.mainApp.stationTable.maxFieldLatitude(ii)     = 0;
-                    app.mainApp.stationTable.maxFieldLongitude(ii)    = 0;
-                    app.mainApp.stationTable.("Fonte de dados"){ii}   = jsonencode({''});       % '[""]'
-                end
-
-                app.mainApp.stationTable.minDistanceForMeasure(ii)    = min(stationDistance);   % km
             end
         end
 
@@ -932,12 +869,21 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 end
             end
 
-            % SALVA ARQUIVOS NA PASTA "POST" DO SHAREPOINT
+            % SALVA ARQUIVOS NA PASTA "POST" DO SHAREPOINT (EXCETO QUANDO
+            % EXECUTADO EM AMBIENTE DE DESENVOLVIMENTO)
+            if isdeployed()
+                outputFolder = app.mainApp.General.fileFolder.DataHub_POST;
+                outputFolderDescription = '"POST" do Sharepoint';
+            else
+                outputFolder = app.mainApp.General.fileFolder.userPath;
+                outputFolderDescription = 'do usuário (e não a pasta "POST" do Sharepoint), por se tratar de execução no ambiente de desenvolvimento';
+            end
+
             savedFiles   = {};
             errorFiles   = {};
 
             % (a) PLANILHA EXCEL
-            fileName_XLSX = [appUtil.DefaultFileName(app.mainApp.General.fileFolder.DataHub_POST, class.Constants.appName, '-1') '.xlsx'];
+            fileName_XLSX = [appUtil.DefaultFileName(outputFolder, class.Constants.appName, '-1') '.xlsx'];
             [status, msgError] = fileWriter.MonitoringPlan(fileName_XLSX, relatedStationTable, [], app.mainApp.General.MonitoringPlan.FieldValue);
             if status
                 app.mainApp.stationTable.UploadResultFlag(idxStations) = true;
@@ -955,7 +901,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 % ARQUIVOS BRUTOS
                 fileName_RAW = fullfile(app.measData(ii).Filepath, app.measData(ii).Filename);
                 
-                [status, msgError]    = copyfile(fileName_RAW, app.mainApp.General.fileFolder.DataHub_POST, 'f');
+                [status, msgError]    = copyfile(fileName_RAW, outputFolder, 'f');
                 if status
                     savedFiles{end+1} = app.measData(ii).Filename;
                 else
@@ -966,7 +912,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 [~, fileName_JSON] = fileparts(fileName_RAW);
                 fileName_JSON = [fileName_JSON '.json'];
 
-                [status, msgError]    = fileWriter.RawFileMetaData(fullfile(app.mainApp.General.fileFolder.DataHub_POST, fileName_JSON), app.measData(ii));
+                [status, msgError]    = fileWriter.RawFileMetaData(fullfile(outputFolder, fileName_JSON), app.measData(ii));
                 if status
                     savedFiles{end+1} = fileName_JSON;
                 else
@@ -976,7 +922,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             if ~isempty(savedFiles)
                 savedFiles = strcat('•&thinsp;', savedFiles);
-                appUtil.modalWindow(app.UIFigure, 'info', sprintf('Lista de arquivos copiados para o Sharepoint:\n%s', strjoin(savedFiles, '\n')));
+                appUtil.modalWindow(app.UIFigure, 'info', sprintf('Lista de arquivos copiados para a pasta %s:\n%s', outputFolderDescription, strjoin(savedFiles, '\n')));
             end
 
             if ~isempty(errorFiles)
@@ -1372,6 +1318,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create UITable
             app.UITable = uitable(app.Document);
+            app.UITable.BackgroundColor = [1 1 1;0.96078431372549 0.96078431372549 0.96078431372549];
             app.UITable.ColumnName = {'Estação'; 'Localidade'; 'Serviço'; 'Qtd.|Medidas'; 'Qtd.|> 14 V/m'; 'Dmin|(km)'; 'Emin|(V/m)'; 'Emean|(V/m)'; 'Emax|(V/m)'; 'Justificativa'};
             app.UITable.ColumnWidth = {90, 150, 'auto', 70, 70, 70, 70, 70, 70, 'auto'};
             app.UITable.RowName = {};
