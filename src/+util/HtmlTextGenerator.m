@@ -63,13 +63,20 @@ classdef (Abstract) HtmlTextGenerator
         function htmlContent = SelectedFile(measData)
             if isscalar(measData)
                 dataStruct      = struct('group', 'ARQUIVO',  'value', sprintf('"%s"', measData.Filename));
-                dataStruct(2)   = struct('group', 'SENSOR',   'value', measData.MetaData);            
+                dataStruct(2)   = struct('group', 'SENSOR',   'value', measData.MetaData);
+
+                locationInfo = measData.Location;
+                if ~strcmp(measData.Location, measData.Location_I)
+                    locationInfo = sprintf('<del>%s</del> → <font style="color: red;">%s</font>', measData.Location_I, measData.Location);
+                end
+
                 dataStruct(3)   = struct('group', 'ROTA',     'value', struct('LatitudeLimits',   sprintf('[%.6f, %.6f]', measData.LatitudeLimits(:)),  ...
                                                                               'LongitudeLimits',  sprintf('[%.6f, %.6f]', measData.LongitudeLimits(:)), ...
                                                                               'Latitude',         measData.Latitude,        ...
                                                                               'Longitude',        measData.Longitude,       ...
-                                                                              'Location',         measData.Location,        ...
+                                                                              'Location',         locationInfo,             ...
                                                                               'CoveredDistance',  sprintf('%.1f km', measData.CoveredDistance)));
+
                 dataStruct(4)   = struct('group', 'MEDIDAS',  'value', struct('Measures',         measData.Measures,        ...
                                                                               'ObservationTime',  measData.ObservationTime, ...
                                                                               'FieldValueLimits', sprintf('[%.1f - %.1f] V/m', measData.FieldValueLimits(:))));
@@ -97,6 +104,38 @@ classdef (Abstract) HtmlTextGenerator
                 end
             end
             htmlContent     = [freeInitialText, textFormatGUI.struct2PrettyPrintList(dataStruct, 'delete')];
+        end
+
+        %-----------------------------------------------------------------%
+        function htmlContent = MergedFiles(measData, messageType)
+            arguments 
+                measData
+                messageType char {mustBeMember(messageType, {'MergedStatusOn', 'ScalarLocation', 'MoreThanThreeLocations', 'FinalConfirmationBeforeEdition'})}
+            end
+
+            fileInfo = {};            
+            for ii = 1:numel(measData)
+                locationInfo = measData(ii).Location;
+                if ~strcmp(measData(ii).Location, measData(ii).Location_I)
+                    locationInfo = sprintf('<del>%s</del> → <font style="color: red;">%s</font>', measData(ii).Location_I, measData(ii).Location);
+                end
+                
+                fileInfo{end+1} = sprintf('•&thinsp;"%s": %s', measData(ii).Filename, locationInfo);
+            end
+
+            switch messageType
+                case 'MergedStatusOn'
+                    specificContent = 'Deseja desfazer edições?';
+                case 'ScalarLocation'
+                    specificContent = 'Ou seja, os arquivos já estão relacionados a uma mesma LOCALIDADE.';
+                case 'MoreThanThreeLocations'
+                    specificContent = 'Os arquivos estão relacionados a mais de três LOCALIDADES. Caso essa mesclagem seja intencional, ela deve ser conduzida de forma iterativa, com no máximo três LOCALIDADES por iteração.';
+                case 'FinalConfirmationBeforeEdition'
+                    specificContent = 'Deseja confirmar essa edição, escolhendo qual das LOCALIDADES como "localidade de agrupamento"?';
+            end
+
+            htmlContent = sprintf(['No monitorRNI, a informação constante nos arquivos é agrupada por LOCALIDADE.<br><br>' ...
+                                   'A seguir informações acerca dos arquivos selecionados:<br>%s<br><br>%s'], strjoin(fileInfo, '<br>'), specificContent);
         end
 
 
