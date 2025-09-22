@@ -2165,11 +2165,12 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
             % Create tool_Separator
             app.tool_Separator = uiimage(app.Toolbar);
+            app.tool_Separator.ScaleMethod = 'none';
             app.tool_Separator.Enable = 'off';
             app.tool_Separator.Layout.Row = [1 3];
             app.tool_Separator.Layout.Column = 5;
             app.tool_Separator.VerticalAlignment = 'bottom';
-            app.tool_Separator.ImageSource = 'LineV.png';
+            app.tool_Separator.ImageSource = 'LineV.svg';
 
             % Create tool_ExportButton
             app.tool_ExportButton = uiimage(app.Toolbar);

@@ -32,6 +32,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         file_FileSortMethod      matlab.ui.control.DropDown
         file_ModuleIntro         matlab.ui.control.Label
         file_toolGrid            matlab.ui.container.GridLayout
+        file_Separator1          matlab.ui.control.Image
+        file_MergeFiles          matlab.ui.control.Image
         file_OpenFileButton      matlab.ui.control.Image
         Tab2_MonitoringPlan      matlab.ui.container.Tab
         Tab3_ExternalRequest     matlab.ui.container.Tab
@@ -539,9 +541,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             switch app.file_FileSortMethod.Value
                 case 'ARQUIVO'
                     for ii = 1:numel(app.measData)
-                        treeNode = uitreenode(app.file_Tree, 'Text', app.measData(ii).Filename, ...
-                                                             'NodeData', ii, ...
-                                                             'ContextMenu', app.file_ContextMenu);
+                        treeNode = file_createTreeElements(app, ii, app.file_Tree, 'FILE');
 
                         if ismember(ii, selectedNodeData)
                             selectedNode = [selectedNode, treeNode];
@@ -563,15 +563,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                                                      'ContextMenu', app.file_ContextMenu);
 
                         for jj = locationIndexes
-                            [taskBegin, taskEnd] = bounds(app.measData(jj).Data.Timestamp);
-                            treeText = sprintf('%s  - ⌛%s  -  📐%s', ...
-                                app.measData(jj).ObservationTime, ...
-                                string(taskEnd-taskBegin), ...
-                                sprintf('[%.1f - %.1f] V/m', app.measData(jj).FieldValueLimits(:)));
-
-                            treeNode = uitreenode(locationTreeNode, 'Text',        treeText, ...
-                                                                    'NodeData',    jj,                        ...
-                                                                    'ContextMenu', app.file_ContextMenu);
+                            treeNode = file_createTreeElements(app, jj, locationTreeNode, 'LOCATION');
     
                             if ismember(jj, selectedNodeData)
                                 selectedNode = [selectedNode, treeNode];
@@ -601,6 +593,37 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             end
 
             file_TreeSelectionChanged(app)
+        end
+
+        %-----------------------------------------------------------------%
+        function treeNode = file_createTreeElements(app, index, treeNodeParent, treeNodePreffixType)
+            arguments
+                app
+                index
+                treeNodeParent
+                treeNodePreffixType char {mustBeMember(treeNodePreffixType, {'FILE', 'LOCATION'})}
+            end
+
+            currentMeasData = app.measData(index);
+            
+            switch treeNodePreffixType
+                case 'FILE'
+                    treeNodePreffix = currentMeasData.Filename;
+                case 'LOCATION'
+                    treeNodePreffix = currentMeasData.ObservationTime;
+            end
+            
+            [taskBegin, taskEnd] = bounds(currentMeasData.Data.Timestamp);
+            
+            mergeStatusIcon = '';
+            if ~strcmp(currentMeasData.Location, currentMeasData.Location_I)
+                mergeStatusIcon = '  ➕';
+            end
+
+            treeText = sprintf('%s  - ⌛%s  -  📐%s%s', treeNodePreffix, string(taskEnd-taskBegin), sprintf('[%.1f - %.1f] V/m', currentMeasData.FieldValueLimits(:)), mergeStatusIcon);
+            treeNode = uitreenode(treeNodeParent, 'Text', treeText, ...
+                                                  'NodeData', index, ...
+                                                  'ContextMenu', app.file_ContextMenu);
         end
 
         %-----------------------------------------------------------------%
@@ -774,6 +797,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         function file_TreeSelectionChanged(app, event)
 
             indexes = file_findSelectedNodeData(app);
+            app.file_MergeFiles.Enable = 0;
 
             if isempty(indexes)
                 app.file_Metadata.Text     = '';
@@ -786,6 +810,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                 app.file_Metadata.Text     = util.HtmlTextGenerator.SelectedFile(app.measData(indexes));
                 app.file_Metadata.UserData = indexes;
+
+                locationMergedStatus = any(arrayfun(@(x) ~strcmp(x.Location, x.Location_I), app.measData(indexes)));
+                if ~isscalar(indexes) || locationMergedStatus
+                    app.file_MergeFiles.Enable = 1;
+                end
             end
             
         end
@@ -935,6 +964,58 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             file_TreeBuilding(app, indexes)
 
         end
+
+        % Image clicked function: file_MergeFiles
+        function file_MergeFilesImageClicked(app, event)
+            
+            indexes = file_findSelectedNodeData(app);
+
+            locationMergedStatus = any(arrayfun(@(x) ~strcmp(x.Location, x.Location_I), app.measData(indexes)));
+            if locationMergedStatus
+                if strcmp(checkIfAuxiliarAppIsOpen(app, 'MESCLAR ARQUIVOS'), 'Não')
+                    return
+                end
+
+                msgQuestion   = util.HtmlTextGenerator.MergedFiles(app.measData(indexes), 'MergedStatusOn');
+                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
+
+                if userSelection == "Sim"
+                    for ii = indexes
+                        app.measData(ii).Location = app.measData(ii).Location_I;
+                    end
+                    file_TreeBuilding(app, indexes)
+                    return
+                end
+            end
+
+            if numel(indexes) >= 2
+                locationList = unique({app.measData(indexes).Location});
+                if isscalar(locationList)
+                    appUtil.modalWindow(app.UIFigure, 'info', util.HtmlTextGenerator.MergedFiles(app.measData(indexes), 'ScalarLocation'));
+                    return
+                elseif numel(locationList) > 3
+                    appUtil.modalWindow(app.UIFigure, 'info', util.HtmlTextGenerator.MergedFiles(app.measData(indexes), 'MoreThanThreeLocations'));
+                    return
+                end
+
+                if strcmp(checkIfAuxiliarAppIsOpen(app, 'MESCLAR ARQUIVOS'), 'Não')
+                    return
+                end
+
+                msgQuestion   = util.HtmlTextGenerator.MergedFiles(app.measData(indexes), 'FinalConfirmationBeforeEdition');
+                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, [locationList, {'Cancelar'}], numel(locationList)+1, numel(locationList)+1);
+
+                if userSelection == "Cancelar"
+                    return
+                end
+
+                for ii = indexes
+                    app.measData(ii).Location = userSelection;
+                end
+                file_TreeBuilding(app, indexes)
+            end
+
+        end
     end
 
     % Component initialization
@@ -985,7 +1066,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create file_toolGrid
             app.file_toolGrid = uigridlayout(app.file_Grid);
-            app.file_toolGrid.ColumnWidth = {22, '1x'};
+            app.file_toolGrid.ColumnWidth = {22, 5, 22, '1x'};
             app.file_toolGrid.RowHeight = {4, 17, 2};
             app.file_toolGrid.ColumnSpacing = 5;
             app.file_toolGrid.RowSpacing = 0;
@@ -1002,6 +1083,23 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.file_OpenFileButton.Layout.Row = 2;
             app.file_OpenFileButton.Layout.Column = 1;
             app.file_OpenFileButton.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'Import_16.png');
+
+            % Create file_MergeFiles
+            app.file_MergeFiles = uiimage(app.file_toolGrid);
+            app.file_MergeFiles.ImageClickedFcn = createCallbackFcn(app, @file_MergeFilesImageClicked, true);
+            app.file_MergeFiles.Enable = 'off';
+            app.file_MergeFiles.Tooltip = {'Mescla informações'};
+            app.file_MergeFiles.Layout.Row = [1 3];
+            app.file_MergeFiles.Layout.Column = 3;
+            app.file_MergeFiles.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'Merge_32.png');
+
+            % Create file_Separator1
+            app.file_Separator1 = uiimage(app.file_toolGrid);
+            app.file_Separator1.ScaleMethod = 'none';
+            app.file_Separator1.Enable = 'off';
+            app.file_Separator1.Layout.Row = [1 3];
+            app.file_Separator1.Layout.Column = 2;
+            app.file_Separator1.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV.svg');
 
             % Create TabGroup2
             app.TabGroup2 = uitabgroup(app.file_Grid);
@@ -1118,12 +1216,12 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create menu_Separator1
             app.menu_Separator1 = uiimage(app.menu_Grid);
-            app.menu_Separator1.ScaleMethod = 'fill';
+            app.menu_Separator1.ScaleMethod = 'none';
             app.menu_Separator1.Enable = 'off';
             app.menu_Separator1.Layout.Row = [2 4];
             app.menu_Separator1.Layout.Column = 5;
             app.menu_Separator1.VerticalAlignment = 'bottom';
-            app.menu_Separator1.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV_White.png');
+            app.menu_Separator1.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV_White.svg');
 
             % Create menu_Button2
             app.menu_Button2 = uibutton(app.menu_Grid, 'state');
@@ -1155,12 +1253,12 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create menu_Separator2
             app.menu_Separator2 = uiimage(app.menu_Grid);
-            app.menu_Separator2.ScaleMethod = 'fill';
+            app.menu_Separator2.ScaleMethod = 'none';
             app.menu_Separator2.Enable = 'off';
             app.menu_Separator2.Layout.Row = [2 4];
             app.menu_Separator2.Layout.Column = 8;
             app.menu_Separator2.VerticalAlignment = 'bottom';
-            app.menu_Separator2.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV_White.png');
+            app.menu_Separator2.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV_White.svg');
 
             % Create menu_Button4
             app.menu_Button4 = uibutton(app.menu_Grid, 'state');

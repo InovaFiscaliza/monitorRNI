@@ -20,7 +20,9 @@ classdef measData < handle
         LongitudeLimits
         Latitude
         Longitude
+
         Location
+        Location_I
 
         UUID
     end
@@ -69,8 +71,9 @@ classdef measData < handle
             obj.LongitudeLimits  = round([minLong; maxLong], 6);
             
             obj.Latitude         = round(mean(dataTable.Latitude),  6);
-            obj.Longitude        = round(mean(dataTable.Longitude), 6);
-            obj.Location         = gpsLib.findNearestCity(struct('Latitude', obj.Latitude, 'Longitude', obj.Longitude));   
+            obj.Longitude        = round(mean(dataTable.Longitude), 6);            
+            obj.Location         = gpsLib.findNearestCity(struct('Latitude', obj.Latitude, 'Longitude', obj.Longitude));
+            obj.Location_I       = obj.Location;
 
             obj.CoveredDistance  = round(sum(deg2km(distance(dataTable.Latitude(2:end), dataTable.Longitude(2:end), dataTable.Latitude(1:end-1), dataTable.Longitude(1:end-1)))), 6);
             obj.UUID             = char(matlab.lang.internal.uuid());

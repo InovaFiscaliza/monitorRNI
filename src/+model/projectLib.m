@@ -240,14 +240,11 @@ classdef projectLib < dynamicprops
             if isempty(hashIndex)
                 hashIndex = addAutomaticLocations(obj, measData, stationTable, dist);
             end
-            try
+            
             fullListOfLocation = sort(union(...
                 obj.listOfLocations(hashIndex).Automatic, ...
                 obj.listOfLocations(hashIndex).Manual ...
             ));
-            catch
-                pause(1)
-            end
         end
 
         %-----------------------------------------------------------------%

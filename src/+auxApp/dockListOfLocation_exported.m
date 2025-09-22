@@ -8,7 +8,6 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         Filter            matlab.ui.control.DropDown
         FilterLabel       matlab.ui.control.Label
         FilterIcon        matlab.ui.control.Image
-        jsBackDoor        matlab.ui.control.HTML
         btnOK             matlab.ui.control.Button
         Location          matlab.ui.control.ListBox
         LocationLabel     matlab.ui.control.Label
@@ -31,32 +30,6 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         projectData
         measData
         selectedFileIndexes
-    end
-
-
-    methods (Access = private)
-        %-----------------------------------------------------------------%
-        % JSBACKDOOR
-        %-----------------------------------------------------------------%
-        function jsBackDoor_Initialization(app)
-            app.jsBackDoor.HTMLSource = appUtil.jsBackDoorHTMLSource();
-            app.jsBackDoor.HTMLEventReceivedFcn = @(~, evt)jsBackDoor_Listener(app, evt);
-        end
-
-        %-----------------------------------------------------------------%
-        function jsBackDoor_Listener(app, event)
-            switch event.HTMLEventName
-                case 'app.Location'
-                    Callbacks(app, struct('Source', app.Delete))
-            end
-            drawnow
-        end
-
-        %-----------------------------------------------------------------%
-        function jsBackDoor_Customizations(app)
-            app.Location.UserData = struct(app.Location).Controller.ViewModel.Id;
-            sendEventToHTMLSource(app.jsBackDoor, 'addKeyDownListener', struct('componentName', 'app.Location', 'componentDataTag', app.Location.UserData, 'keyEvents', ["Delete", "Backspace"]))
-        end
     end
     
     
@@ -108,19 +81,15 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app, callingApp, selectedFileIndexes)
             
-            app.mainApp      = callingApp.mainApp;
-            app.callingApp   = callingApp;
+            app.mainApp     = callingApp.mainApp;
+            app.callingApp  = callingApp;
             
-            app.projectData  = callingApp.projectData;
-            app.measData     = callingApp.measData;
+            app.projectData = callingApp.projectData;
+            app.measData    = callingApp.measData;
             app.selectedFileIndexes = selectedFileIndexes;
 
-            jsBackDoor_Initialization(app)
             app.Filter.Items = [{''}; app.projectData.referenceListOfStates];
             updateForm(app)
-
-            drawnow
-            jsBackDoor_Customizations(app)
             
         end
 
@@ -303,11 +272,6 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.btnOK.Layout.Row = 5;
             app.btnOK.Layout.Column = 7;
             app.btnOK.Text = 'OK';
-
-            % Create jsBackDoor
-            app.jsBackDoor = uihtml(app.LocationPanel);
-            app.jsBackDoor.Layout.Row = 5;
-            app.jsBackDoor.Layout.Column = 6;
 
             % Create FilterIcon
             app.FilterIcon = uiimage(app.LocationPanel);

@@ -1079,10 +1079,11 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Create tool_Separator
             app.tool_Separator = uiimage(app.toolGrid);
+            app.tool_Separator.ScaleMethod = 'none';
             app.tool_Separator.Enable = 'off';
             app.tool_Separator.Layout.Row = [1 3];
             app.tool_Separator.Layout.Column = 3;
-            app.tool_Separator.ImageSource = 'LineV.png';
+            app.tool_Separator.ImageSource = 'LineV.svg';
 
             % Create tool_GenerateReport
             app.tool_GenerateReport = uiimage(app.toolGrid);
