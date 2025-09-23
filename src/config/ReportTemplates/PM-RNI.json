@@ -33,7 +33,7 @@
                     "Type": "ItemN2",
                     "Data": {
                         "Editable": "false",
-                        "Text": "A fiscalização tributária tem início com a coleta, junto à empresa fiscalizada, dos arquivos contábeis necessários à apuração dos valores devidos ao FUST e ao FUNTTEL. Para cada arquivo, procede-se ao cálculo do respectivo <i>hash</i> e à validação por meio de <i>webservice</i> disponibilizado pela Receita Federal, de modo a verificar se o arquivo coincide com o registrado em sua base de dados.",
+                        "Text": "O Plano de Monitoração de Radiação Não Ionizante (PM-RNI), criado em 2018, visa avaliar a exposição humana a campos elétricos, magnéticos e eletromagnéticos na faixa de 8,3 kHz a 300 GHz. Para isso, realiza medições de campo elétrico com sondas isotrópicas no entorno de estações de telecomunicações que se enquadrem em pelo menos um dos seguintes critérios:",
                         "Variable": []
                     }
                 },
@@ -42,26 +42,53 @@
                     "Data": [
                         {
                             "Editable": "false",
-                            "Text": "O primeiro elemento da lista...",
+                            "Text": "Cumprir o disposto na Lei nº 11.934/2009;",
                             "Variable": []
                         },
                         {
                             "Editable": "false",
-                            "Text": "O segundo elemento da lista...",
+                            "Text": "Apresentar níveis iguais ou superiores a 14 V/m (25% do limite populacional mais restritivo, conforme a Recomendação UIT-T K.113), exigindo medições detalhadas com sondas portáteis;",
                             "Variable": []
                         },
                         {
                             "Editable": "false",
-                            "Text": "A validação aqui apresentada corresponde a uma fotografia no tempo. A empresa fiscalizada pode, a qualquer momento, retificar suas declarações contábeis. Uma nova validação pode ser realizada por meio da inserção do <i>hash</i> do arquivo <a href=\"http://www.sped.fazenda.gov.br/appConsultaSituacaoContabil/\" target=\"_blank\" rel=\"noopener noreferrer\">aqui</a>.",
+                            "Text": "Responder a solicitações encaminhadas por autoridades do Poder Público, em qualquer esfera.",
                             "Variable": []
                         }
                     ]
                 },
                 {
+                    "Type": "ItemN2",
+                    "Data": {
+                        "Editable": "false",
+                        "Text": "Neste ano de 2025, o PM-RNI foi formalizado por meio do <b>Processo nº 53500.100463/2024-81</b>.",
+                        "Variable": []
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "Type": "ItemN1",
+        "Recurrence": 0,
+        "Data": {
+            "Editable": "false",
+            "Text": "METODOLOGIA",
+            "Variable": [],
+            "Component": [
+                {
+                    "Type": "ItemN2",
+                    "Data": {
+                        "Editable": "false",
+                        "Text": "Os dados coletados por sondas móveis (Monitem, NARDA, entre outros) são processados para identificar as medições correspondentes a cada estação de telecomunicações sob análise, gerando representações gráficas. Na tabela apresentada a seguir consta o sumário da análise por localidade de agrupamento.",
+                        "Variable": []
+                    }
+                },
+                {
                     "Type": "Table",
                     "Data": {
                         "Origin": "FunctionEvaluation",
-                        "Source": "table_FileSummary",
+                        "Source": "table_FileByLocation",
                         "Columns": [
                             1,
                             2,
@@ -71,7 +98,7 @@
                             6,
                             7
                         ],
-                        "Caption": "Tabela ordinária criada em função...",
+                        "Caption": "Sumário da análise por localidade de agrupamento.",
                         "Settings": [
                             {
                                 "Editable": "false",
@@ -79,6 +106,119 @@
                                 "Precision": "%.0f",
                                 "Width": "40px"
                             },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Localidade de agrupamento",
+                                "Precision": "%s",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Localidade(s) sob análise",
+                                "Precision": "%s",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Arquivo",
+                                "Precision": "%s",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Período de observação",
+                                "Precision": "%s",
+                                "Width": "220px"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Número de medidas",
+                                "Precision": "%.0f",
+                                "Width": "90px"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Limites",
+                                "Precision": "%s",
+                                "Width": "90px"
+                            }
+                        ],
+                        "Intro": [],
+                        "Error": [],
+                        "LineBreak": 0
+                    }
+                },
+                {
+                    "Type": "Footnote",
+                    "Data": {
+                        "Editable": "false",
+                        "Text": "<span style=\"display: block; margin: 10px; margin-bottom: 20px; text-align: justify; word-break: break-all;\">Configurações:<br>•&thinsp;Módulo \"PM-RNI\": %s<br>•&thinsp;Módulo \"Demanda externa\": %s</span>",
+                        "Variable": [
+                            "settings_MonitoringPlan",
+                            "settings_ExternalRequest"
+                        ]
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "Type": "ItemN1",
+        "Recurrence": 1,
+        "Data": {
+            "Editable": "false",
+            "Text": "RESULTADOS",
+            "Variable": [],
+            "Component": [
+                {
+                    "Type": "ItemN2",
+                    "Data": {
+                        "Editable": "false",
+                        "Text": "#%.0f: <b>%s</b>",
+                        "Variable": [
+                            "var_Index",
+                            "var_Id"
+                        ]
+                    }
+                },
+                {
+                    "Type": "Paragraph",
+                    "Data": {
+                        "Editable": "false",
+                        "Text": "No período %s foram coletadas %.0f medidas de níveis de radiação não ionizante, aferidas na forma de campo elétrico (V/m), registradas em %.0f arquivo(s). A seguir, são apresentados recortes do conteúdo desses arquivos e um resumo das informações contidas neles.",
+                        "Variable": [
+                            "var_ObservationTime",
+                            "var_Measures",
+                            "var_NumFiles"
+                        ]
+                    }
+                },
+                {
+                    "Type": "Paragraph",
+                    "Data": {
+                        "Editable": "false",
+                        "Text": "<span style=\"display: block; padding-left: 92px; font-size:11px;\">%s</span>",
+                        "Variable": [
+                            "var_Content"
+                        ]
+                    }
+                },
+                {
+                    "Type": "Table",
+                    "Data": {
+                        "Origin": "FunctionEvaluation",
+                        "Source": "table_FileSummaryByLocation",
+                        "Columns": [
+                            1,
+                            2,
+                            3,
+                            4,
+                            5,
+                            6,
+                            7
+                        ],
+                        "Caption": "Registro de informações por arquivo.",
+                        "Settings": [
                             {
                                 "Editable": "false",
                                 "ColumnName": "Arquivo",
@@ -111,199 +251,27 @@
                             },
                             {
                                 "Editable": "false",
+                                "ColumnName": "Número de medidas",
+                                "Precision": "%.0f",
+                                "Width": "90px"
+                            },
+                            {
+                                "Editable": "false",
                                 "ColumnName": "Limites",
                                 "Precision": "%s",
                                 "Width": "90px"
                             }
                         ],
-                        "Intro": "{\"Type\":\"ItemN2\",\"Text\":\"Na tabela apresentada a seguir... TABELA 1.\"}",
+                        "Intro": [],
                         "Error": [],
                         "LineBreak": 1
-                    }
-                },
-                {
-                    "Type": "Table",
-                    "Data": {
-                        "Origin": "FunctionEvaluation",
-                        "Source": "table_FileByLocation",
-                        "Columns": [
-                            1,
-                            2,
-                            3,
-                            4
-                        ],
-                        "Caption": "Tabela ordinária criada em função...",
-                        "Settings": [
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Localidade",
-                                "Precision": "%s",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Arquivo",
-                                "Precision": "%s",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Período de observação",
-                                "Precision": "%s",
-                                "Width": "220px"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Limites",
-                                "Precision": "%s",
-                                "Width": "90px"
-                            }
-                        ],
-                        "Intro": "{\"Type\":\"ItemN2\",\"Text\":\"Na tabela apresentada a seguir... TABELA 2.\"}",
-                        "Error": [],
-                        "LineBreak": 0
-                    }
-                },
-                {
-                    "Type": "Table",
-                    "Data": {
-                        "Origin": "FunctionEvaluation",
-                        "Source": "table_Points",
-                        "Columns": [
-                            "Type",
-                            "Station",
-                            "Latitude",
-                            "Longitude",
-                            "Description",
-                            "numberOfMeasures",
-                            "numberOfRiskMeasures",
-                            "minDistanceForMeasure",
-                            "minFieldValue",
-                            "meanFieldValue",
-                            "maxFieldValue",
-                            "maxFieldLatitude",
-                            "maxFieldLongitude",
-                            "Justificativa"
-                        ],
-                        "Caption": "Tabela ordinária criada em função...",
-                        "Settings": [
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Tipo",
-                                "Precision": "%s",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Estação",
-                                "Precision": "%.0f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Latitude",
-                                "Precision": "%.6f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Longitude",
-                                "Precision": "%.6f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Descrição",
-                                "Precision": "%s",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Qtd. medidas",
-                                "Precision": "%.0f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Qtd. medidas risco",
-                                "Precision": "%.0f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Distância mínima medição (km)",
-                                "Precision": "%.3f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Campo elétrico mínimo (V/m)",
-                                "Precision": "%.3f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Campo elétrico máximo (V/m)",
-                                "Precision": "%.3f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Campo elétrico médio (V/m)",
-                                "Precision": "%.3f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Latitude (Ponto máximo)",
-                                "Precision": "%.6f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Longitude (Ponto máximo)",
-                                "Precision": "%.6f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Justificativa",
-                                "Precision": "%s",
-                                "Width": "auto"
-                            }
-                        ],
-                        "Intro": "{\"Type\":\"ItemN2\",\"Text\":\"Na tabela apresentada a seguir... TABELA 3.\"}",
-                        "Error": [],
-                        "LineBreak": 0
-                    }
-                }
-            ]
-        }
-    },
-    {
-        "Type": "ItemN1",
-        "Recurrence": 1,
-        "Data": {
-            "Editable": "false",
-            "Text": "RESULTADOS",
-            "Variable": [],
-            "Component": [
-                {
-                    "Type": "ItemN2",
-                    "Data": {
-                        "Editable": "false",
-                        "Text": "#%.0f: <b>%s</b>",
-                        "Variable": [
-                            "var_Index",
-                            "var_Id"
-                        ]
                     }
                 },
                 {
                     "Type": "Paragraph",
                     "Data": {
                         "Editable": "false",
-                        "Text": "Um parágrafo para chamar atenção de algo, e enquanto isso... <i>placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder</i>, conforme pode ser observado a seguir, com uma amostra do arquivo.",
+                        "Text": "A representação gráfica apresentada a seguir inclui tanto as medições quanto as estações de telecomunicações sob análise.",
                         "Variable": []
                     }
                 },
@@ -314,228 +282,15 @@
                     "Source": "image_Plot",
                     "Name": "DriveTest",
                     "Layout": "1",
-                    "Caption": "A legenda da imagem...",
+                    "Caption": "Representação gráfica.",
                     "Settings": {
-                      "Width": "100%",
+                      "Width": "90%",
                       "Height": "auto"
                     },
-                    "LineBreak": 1,
-                    "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"IMAGEM 1 incluída com sucesso...\"}",
-                    "Error": "{\"Type\":\"Paragraph\",\"Text\":\"IMAGEM 1 não foi incluída com sucesso, infelizmente!\"}"
+                    "LineBreak": 0,
+                    "Intro": [],
+                    "Error": []
                   }
-                },
-                {
-                    "Type": "List",
-                    "Data": [
-                        {
-                            "Editable": "false",
-                            "Text": "var_Issue: %.0f",
-                            "Variable": ["var_Issue"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_Unit: %s",
-                            "Variable": ["var_Unit"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_NumFiles: %.0f",
-                            "Variable": ["var_NumFiles"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_FileName: %s",
-                            "Variable": ["var_FileName"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_Sensor: %s",
-                            "Variable": ["var_Sensor"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_Location: %s",
-                            "Variable": ["var_Location"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_Location_I: %s",
-                            "Variable": ["var_Location_I"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_LocationSummary: %s",
-                            "Variable": ["var_LocationSummary"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_MetaData: %s",
-                            "Variable": ["var_MetaData"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_Measures: %s",
-                            "Variable": ["var_Measures"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_CoveredDistance: %s",
-                            "Variable": ["var_CoveredDistance"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_FieldValueLimits: %s",
-                            "Variable": ["var_FieldValueLimits"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_ObservationTime: %s",
-                            "Variable": ["var_ObservationTime"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_LatitudeLimits: %s",
-                            "Variable": ["var_LatitudeLimits"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_LongitudeLimits: %s",
-                            "Variable": ["var_LongitudeLimits"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_Latitude: %s",
-                            "Variable": ["var_Latitude"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "var_Longitude: %s",
-                            "Variable": ["var_Longitude"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "settings_ExternalRequest: %s",
-                            "Variable": ["settings_ExternalRequest"]
-                        },
-                        {
-                            "Editable": "false",
-                            "Text": "settings_MonitoringPlan: %s",
-                            "Variable": ["settings_MonitoringPlan"]
-                        }
-                    ]
-                },
-                {
-                    "Type": "Table",
-                    "Data": {
-                        "Origin": "FunctionEvaluation",
-                        "Source": "table_PointsByLocation+on+table",
-                        "Columns": [
-                            "Type",
-                            "Station",
-                            "Latitude",
-                            "Longitude",
-                            "Description",
-                            "numberOfMeasures",
-                            "numberOfRiskMeasures",
-                            "minDistanceForMeasure",
-                            "minFieldValue",
-                            "meanFieldValue",
-                            "maxFieldValue",
-                            "maxFieldLatitude",
-                            "maxFieldLongitude",
-                            "Justificativa"
-                        ],
-                        "Caption": "Tabela ordinária criada em função...",
-                        "Settings": [
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Tipo",
-                                "Precision": "%s",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Estação",
-                                "Precision": "%.0f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Latitude",
-                                "Precision": "%.6f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Longitude",
-                                "Precision": "%.6f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Descrição",
-                                "Precision": "%s",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Qtd. medidas",
-                                "Precision": "%.0f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Qtd. medidas risco",
-                                "Precision": "%.0f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Distância mínima medição (km)",
-                                "Precision": "%.3f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Campo elétrico mínimo (V/m)",
-                                "Precision": "%.3f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Campo elétrico máximo (V/m)",
-                                "Precision": "%.3f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Campo elétrico médio (V/m)",
-                                "Precision": "%.3f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Latitude (Ponto máximo)",
-                                "Precision": "%.6f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Longitude (Ponto máximo)",
-                                "Precision": "%.6f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Justificativa",
-                                "Precision": "%s",
-                                "Width": "auto"
-                            }
-                        ],
-                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"Na tabela apresentada a seguir constam informações acerca do processo de validação de arquivos contábeis.\"}",
-                        "Error": [],
-                        "LineBreak": 0
-                    }
                 },
                 {
                     "Type": "Table",
@@ -554,10 +309,9 @@
                             "meanFieldValue",
                             "maxFieldValue",
                             "maxFieldLatitude",
-                            "maxFieldLongitude",
-                            "Justificativa"
+                            "maxFieldLongitude"
                         ],
-                        "Caption": "Tabela ordinária criada em função...",
+                        "Caption": "Estações de telecomunicações sob análise com medições no entorno.",
                         "Settings": [
                             {
                                 "Editable": "false",
@@ -609,38 +363,32 @@
                             },
                             {
                                 "Editable": "false",
-                                "ColumnName": "Campo elétrico máximo (V/m)",
-                                "Precision": "%.3f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
                                 "ColumnName": "Campo elétrico médio (V/m)",
                                 "Precision": "%.3f",
                                 "Width": "auto"
                             },
                             {
                                 "Editable": "false",
-                                "ColumnName": "Latitude (Ponto máximo)",
+                                "ColumnName": "Campo elétrico máximo (V/m)",
+                                "Precision": "%.3f",
+                                "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Ponto máximo<br>(Latitude)",
                                 "Precision": "%.6f",
                                 "Width": "auto"
                             },
                             {
                                 "Editable": "false",
-                                "ColumnName": "Longitude (Ponto máximo)",
+                                "ColumnName": "Ponto máximo<br>(Longitude)",
                                 "Precision": "%.6f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Justificativa",
-                                "Precision": "%s",
                                 "Width": "auto"
                             }
                         ],
-                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"Na tabela apresentada a seguir constam informações acerca do processo de validação de arquivos contábeis.\"}",
-                        "Error": [],
-                        "LineBreak": 0
+                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"Ao comparar as medições com a tabela de referência do PM-RNI, observa-se que foram realizadas medições no entorno das seguintes estações de telecomunicações.\"}",
+                        "Error": "{\"Type\":\"Paragraph\",\"Text\":\"Ao comparar as medições com a tabela de referência do PM-RNI, observa-se que não foram realizadas medições no entorno de NENHUMA das estações de telecomunicações sob análise.\"}",
+                        "LineBreak": 1
                     }
                 },
                 {
@@ -654,16 +402,10 @@
                             "Latitude",
                             "Longitude",
                             "numberOfMeasures",
-                            "numberOfRiskMeasures",
                             "minDistanceForMeasure",
-                            "minFieldValue",
-                            "meanFieldValue",
-                            "maxFieldValue",
-                            "maxFieldLatitude",
-                            "maxFieldLongitude",
                             "Justificativa"
                         ],
-                        "Caption": "Tabela ordinária criada em função...",
+                        "Caption": "Estações de telecomunicações sob análise sem medições no entorno.",
                         "Settings": [
                             {
                                 "Editable": "false",
@@ -697,44 +439,8 @@
                             },
                             {
                                 "Editable": "false",
-                                "ColumnName": "Qtd. medidas risco",
-                                "Precision": "%.0f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
                                 "ColumnName": "Distância mínima medição (km)",
                                 "Precision": "%.3f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Campo elétrico mínimo (V/m)",
-                                "Precision": "%.3f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Campo elétrico máximo (V/m)",
-                                "Precision": "%.3f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Campo elétrico médio (V/m)",
-                                "Precision": "%.3f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Latitude (Ponto máximo)",
-                                "Precision": "%.6f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Longitude (Ponto máximo)",
-                                "Precision": "%.6f",
                                 "Width": "auto"
                             },
                             {
@@ -744,27 +450,9 @@
                                 "Width": "auto"
                             }
                         ],
-                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"Na tabela apresentada a seguir constam informações acerca do processo de validação de arquivos contábeis.\"}",
+                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"A seguir, apresenta-se a relação de estações de telecomunicações que, embora constem na tabela de referência do PM-RNI, não foram efetivamente avaliadas.\"}",
                         "Error": [],
                         "LineBreak": 0
-                    }
-                },
-                {
-                    "Type": "Paragraph",
-                    "Data": {
-                        "Editable": "false",
-                        "Text": "E agora outro parágrafo como introdução à amostra do conteúdo do arquivo, acessível pela variável \"var_Content\"... <i>placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder placeholder</i>, conforme pode ser observado a seguir, com uma amostra do arquivo.",
-                        "Variable": []
-                    }
-                },
-                {
-                    "Type": "Paragraph",
-                    "Data": {
-                        "Editable": "false",
-                        "Text": "<span style=\"display: block; padding-left: 92px; font-size:11px;\">%s</span>",
-                        "Variable": [
-                            "var_Content"
-                        ]
                     }
                 }
             ]

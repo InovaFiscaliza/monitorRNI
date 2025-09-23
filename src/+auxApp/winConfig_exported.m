@@ -86,6 +86,8 @@ classdef winConfig_exported < matlab.apps.AppBase
         Tab4Grid                      matlab.ui.container.GridLayout
         reportPanel                   matlab.ui.container.Panel
         reportGrid                    matlab.ui.container.GridLayout
+        reportBasemap                 matlab.ui.control.DropDown
+        reportBasemapLabel            matlab.ui.control.Label
         reportVersion                 matlab.ui.control.DropDown
         reportVersionLabel            matlab.ui.control.Label
         reportModelName               matlab.ui.control.DropDown
@@ -398,6 +400,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             set(app.unit,            'Items', app.mainApp.General.eFiscaliza.defaultValues.unit,    'Value', app.mainApp.General.Report.unit)
             set(app.reportModelName, 'Items', [{''}, {app.mainApp.projectData.documentModel.Name}], 'Value', app.mainApp.General.Report.model)
             app.reportVersion.Value = app.mainApp.General.Report.reportVersion;
+            app.reportBasemap.Value = app.mainApp.General.Report.Basemap;
 
             if checkEdition(app, 'REPORT')
                 app.eFiscalizaRefresh.Visible = 1;
@@ -832,8 +835,8 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         end
 
-        % Value changed function: issueId, reportModelName, reportVersion, 
-        % ...and 2 other components
+        % Value changed function: issueId, reportBasemap, reportModelName, 
+        % ...and 3 other components
         function Config_ProjectParameterValueChanged(app, event)
 
             switch event.Source
@@ -855,6 +858,9 @@ classdef winConfig_exported < matlab.apps.AppBase
 
                 case app.reportVersion
                     app.mainApp.General.Report.reportVersion = event.Value;
+
+                case app.reportBasemap
+                    app.mainApp.General.Report.Basemap = event.Value;
             end
 
             app.mainApp.General_I.Report = app.mainApp.General.Report;
@@ -1736,7 +1742,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create reportGrid
             app.reportGrid = uigridlayout(app.reportPanel);
             app.reportGrid.ColumnWidth = {350, 110, 110};
-            app.reportGrid.RowHeight = {22, 22};
+            app.reportGrid.RowHeight = {22, 22, 22};
             app.reportGrid.RowSpacing = 5;
             app.reportGrid.BackgroundColor = [1 1 1];
 
@@ -1774,6 +1780,23 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportVersion.Layout.Row = 2;
             app.reportVersion.Layout.Column = [2 3];
             app.reportVersion.Value = 'Preliminar';
+
+            % Create reportBasemapLabel
+            app.reportBasemapLabel = uilabel(app.reportGrid);
+            app.reportBasemapLabel.FontSize = 11;
+            app.reportBasemapLabel.Layout.Row = 3;
+            app.reportBasemapLabel.Layout.Column = 1;
+            app.reportBasemapLabel.Text = 'Basemap dos plots:';
+
+            % Create reportBasemap
+            app.reportBasemap = uidropdown(app.reportGrid);
+            app.reportBasemap.Items = {'darkwater', 'none', 'satellite', 'streets-dark', 'streets-light', 'topographic'};
+            app.reportBasemap.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
+            app.reportBasemap.FontSize = 11;
+            app.reportBasemap.BackgroundColor = [1 1 1];
+            app.reportBasemap.Layout.Row = 3;
+            app.reportBasemap.Layout.Column = [2 3];
+            app.reportBasemap.Value = 'streets-dark';
 
             % Create Tab5
             app.Tab5 = uitab(app.TabGroup);

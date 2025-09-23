@@ -40,14 +40,16 @@ classdef (Abstract) Variable
             measTable = analyzedData.InfoSet.measTable;
 
             switch fieldName
-                case {'Filename', 'Sensor', 'Location', 'Location_I'}
+                case 'Filename'
+                    fieldValue = strjoin(unique(strcat('"', {measData.(fieldName)}, '"')), ', ');
+                case {'Sensor', 'Location', 'Location_I'}
                     fieldValue = strjoin(unique({measData.(fieldName)}), ', ');
                 case 'Content'
                     fieldValue = strjoin(strcat({measData.Content}, '<br><font style="color: red;">[Texto truncado — Fonte:&thinsp;', ' ', {measData.Filename}, ']</font>'), '<br><br>');
                 case 'MetaData'
                     fieldValue = strjoin(unique(arrayfun(@(x) jsonencode(x.MetaData), measData, 'UniformOutput', false)), '<br>');
                 case 'Measures'
-                    fieldValue = num2str(sum([measData.(fieldName)]));
+                    fieldValue = sum([measData.(fieldName)]);
                 case 'FieldValueLimits'
                     [minFieldValue, maxFieldValue] = bounds(measTable.FieldValue);
                     fieldValue = sprintf('%.1f - %.1f V/m', minFieldValue, maxFieldValue);
@@ -71,15 +73,19 @@ classdef (Abstract) Variable
 
         %-----------------------------------------------------------------%
         function fieldValue = ProjectProperty(reportInfo, analyzedData, fieldName)
-            projectData = reportInfo.Project;
+            generalSettings = reportInfo.Settings;
+            projectData  = reportInfo.Project;
+            stationTable = reportInfo.Function.table_Stations;
             measData = analyzedData.InfoSet.measData;
 
             switch fieldName
                 case 'LocationSummary'
                     hash = strjoin(unique({measData.UUID}));
                     hashIndex = find(strcmp({projectData.listOfLocations.Hash}, hash), 1);
-
                     fieldValue = jsonencode(projectData.listOfLocations(hashIndex));
+
+                case 'LocationList'
+                    fieldValue = strjoin(getFullListOfLocation(projectData, measData, stationTable, max(generalSettings.MonitoringPlan.Distance_km, generalSettings.ExternalRequest.Distance_km)), ', ');
                 otherwise
                     error('UnexpectedFieldName')
             end
