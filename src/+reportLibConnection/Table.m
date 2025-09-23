@@ -70,12 +70,7 @@ classdef (Abstract) Table
                 outputType   char {mustBeMember(outputType, {'table', 'tableHeight'})} = 'table'
             end
 
-            pointsTable = reportInfo.Function.table_Points;            
-            measData    = analyzedData.InfoSet.measData;
-            locations   = unique({measData.Location});
-
-            logicalIndexes = cellfun(@(x) any(ismember(x, locations)), pointsTable.DataSourceLocation); 
-            Table = pointsTable(logicalIndexes, :);
+            Table = analyzedData.InfoSet.pointsTable;
 
             switch measuredFlag
                 case 'on'

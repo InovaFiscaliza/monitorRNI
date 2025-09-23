@@ -27,6 +27,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         play_ControlsTab1Label_2     matlab.ui.control.Label
         play_ControlsTab1Image_2     matlab.ui.control.Image
         toolGrid                     matlab.ui.container.GridLayout
+        tool_GenerateReport          matlab.ui.control.Image
         tool_peakIcon                matlab.ui.control.Image
         tool_peakLabel               matlab.ui.control.Label
         tool_UploadFinalFile         matlab.ui.control.Image
@@ -334,6 +335,40 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             layout_TreeFileLocationBuilding(app)
                         
             app.tool_TableVisibility.UserData = 1;
+        end
+
+        %-----------------------------------------------------------------%
+        function menu_LayoutPopupApp(app, auxiliarApp, varargin)
+            arguments
+                app
+                auxiliarApp char {mustBeMember(auxiliarApp, {'ListOfLocation', 'StationInfo'})}
+            end
+
+            arguments (Repeating)
+                varargin 
+            end
+
+            % Inicialmente ajusta as dimensões do container.
+            switch auxiliarApp
+                case 'ListOfLocation'
+                    screenWidth  = 540;
+                    screenHeight = 440;
+                case 'StationInfo'
+                    screenWidth  = 540;
+                    screenHeight = 440;
+            end
+
+            ui.PopUpContainer(app, class.Constants.appName, screenWidth, screenHeight)
+
+            % Executa o app auxiliar.
+            inputArguments = [{app}, varargin];
+            
+            if app.mainApp.General.operationMode.Debug
+                eval(sprintf('auxApp.dock%s(inputArguments{:})', auxiliarApp))
+            else
+                eval(sprintf('auxApp.dock%s_exported(app.popupContainer, inputArguments{:})', auxiliarApp))
+                app.popupContainer.Parent.Visible = 1;
+            end            
         end
     end
 
@@ -843,8 +878,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 msgQuestion   = ['Todos os registros de estações já tiveram os seus resultados exportados para a pasta "POST" ' ...
                                  'do Sharepoint na presente sessão. Esses registros estão destacados com a fonte cinza.' ...
                                  '<br><br>Deseja realizar uma nova exportação?'];
-                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'SIM', 'NÃO'}, 2, 2);
-                if userSelection == "NÃO"
+                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
+                if userSelection == "Não"
                     return
                 end
 
@@ -862,8 +897,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             else
                 msgQuestion   = 'Confirma a exportação da análise para a pasta "POST" do Sharepoint?';
-                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'SIM', 'NÃO'}, 2, 2);
-                if userSelection == "NÃO"
+                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
+                if userSelection == "Não"
                     return
                 end
             end
@@ -997,13 +1032,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function UITableOpenPopUpEditionMode(app, event)
             
             if ~isempty(app.UITable.Selection)
-                app.progressDialog.Visible = 'visible';
-
-                ui.PopUpContainer(app, class.Constants.appName, 540, 440)
-                auxApp.dockStationInfo_exported(app.popupContainer, app)
-                app.popupContainer.Parent.Visible = "on";
-
-                app.progressDialog.Visible = 'hidden';
+                menu_LayoutPopupApp(app, 'StationInfo')
             end
 
         end
@@ -1011,13 +1040,38 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Image clicked function: LocationListEdit
         function LocationListEditClicked(app, event)
             
-            app.progressDialog.Visible = 'visible';
+            menu_LayoutPopupApp(app, 'ListOfLocation', FileIndex(app))
 
-            ui.PopUpContainer(app, class.Constants.appName, 540, 440)
-            auxApp.dockListOfLocation_exported(app.popupContainer, app, FileIndex(app))
-            app.popupContainer.Parent.Visible = "on";
+        end
 
-            app.progressDialog.Visible = 'hidden';
+        % Image clicked function: tool_GenerateReport
+        function tool_GenerateReportImageClicked(app, event)
+            
+            indexes = FileIndex(app);
+
+            if ~isempty(indexes)
+                if numel(indexes) < numel(app.measData)
+                    msgQuestion   = 'Deseja gerar relatório que apresente os dados armazenados em TODOS os arquivos lidos, ou apenas no SELECIONADO?';
+                    userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Todos', 'Selecionado', 'Cancelar'}, 1, 3);
+
+                    switch userSelection
+                        case 'Cancelar'
+                            return
+                        case 'Todos'
+                            indexes = 1:numel(app.measData);
+                    end
+                end
+
+                app.progressDialog.Visible = 'visible';
+
+                try
+                    reportLibConnection.Controller.Run(app, app.projectData, app.measData(indexes), app.mainApp.stationTable, app.mainApp.pointsTable, app.mainApp.General)
+                catch ME
+                    appUtil.modalWindow(app.UIFigure, 'error', getReport(ME));
+                end
+
+                app.progressDialog.Visible = 'hidden';
+            end
 
         end
     end
@@ -1067,7 +1121,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create toolGrid
             app.toolGrid = uigridlayout(app.GridLayout);
-            app.toolGrid.ColumnWidth = {22, 22, 22, 5, 22, 22, '1x', 150, 22};
+            app.toolGrid.ColumnWidth = {22, 22, 22, 5, 22, 22, 22, '1x', 150, 22};
             app.toolGrid.RowHeight = {4, 17, '1x'};
             app.toolGrid.ColumnSpacing = 5;
             app.toolGrid.RowSpacing = 0;
@@ -1117,7 +1171,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_ExportFiles.Enable = 'off';
             app.tool_ExportFiles.Tooltip = {'Exporta análise'};
             app.tool_ExportFiles.Layout.Row = 2;
-            app.tool_ExportFiles.Layout.Column = 5;
+            app.tool_ExportFiles.Layout.Column = 6;
             app.tool_ExportFiles.ImageSource = 'Export_16.png';
 
             % Create tool_UploadFinalFile
@@ -1126,7 +1180,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_UploadFinalFile.Enable = 'off';
             app.tool_UploadFinalFile.Tooltip = {'Upload do arquivo final para o Sharepoint'};
             app.tool_UploadFinalFile.Layout.Row = 2;
-            app.tool_UploadFinalFile.Layout.Column = 6;
+            app.tool_UploadFinalFile.Layout.Column = 7;
             app.tool_UploadFinalFile.ImageSource = 'Up_24.png';
 
             % Create tool_peakLabel
@@ -1135,7 +1189,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_peakLabel.FontSize = 10;
             app.tool_peakLabel.Visible = 'off';
             app.tool_peakLabel.Layout.Row = [1 3];
-            app.tool_peakLabel.Layout.Column = 8;
+            app.tool_peakLabel.Layout.Column = 9;
             app.tool_peakLabel.Text = {'5.3 V/m'; '(-12.354321, -38.123456)'};
 
             % Create tool_peakIcon
@@ -1145,8 +1199,17 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_peakIcon.Visible = 'off';
             app.tool_peakIcon.Tooltip = {'Zoom em torno do local de máximo'};
             app.tool_peakIcon.Layout.Row = [1 3];
-            app.tool_peakIcon.Layout.Column = 9;
+            app.tool_peakIcon.Layout.Column = 10;
             app.tool_peakIcon.ImageSource = 'Detection_18.png';
+
+            % Create tool_GenerateReport
+            app.tool_GenerateReport = uiimage(app.toolGrid);
+            app.tool_GenerateReport.ScaleMethod = 'none';
+            app.tool_GenerateReport.ImageClickedFcn = createCallbackFcn(app, @tool_GenerateReportImageClicked, true);
+            app.tool_GenerateReport.Tooltip = {'Gera relatório'};
+            app.tool_GenerateReport.Layout.Row = 2;
+            app.tool_GenerateReport.Layout.Column = 5;
+            app.tool_GenerateReport.ImageSource = 'Publish_HTML_16.png';
 
             % Create Control
             app.Control = uigridlayout(app.GridLayout);
@@ -1372,6 +1435,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create ContextMenu
             app.ContextMenu = uicontextmenu(app.UIFigure);
+            app.ContextMenu.Tag = 'auxApp.winMonitoringPlan';
 
             % Create EditSelectedUITableRow
             app.EditSelectedUITableRow = uimenu(app.ContextMenu);

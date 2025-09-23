@@ -1,34 +1,42 @@
-classdef projectLib < dynamicprops
+classdef projectLib < handle
 
     properties
         %-----------------------------------------------------------------%
-        name  (1,:) char   = ''
-        file  (1,:) char   = ''
-        issue (1,1) double = -1
-        unit  (1,:) char   = ''
+        name  (1,:) char
+        file  (1,:) char
+        issue (1,1) double
+        unit  (1,:) char
 
         documentType {mustBeMember(documentType, {'Relatório de Atividades', 'Relatório de Fiscalização', 'Informe'})} = 'Relatório de Atividades'
-        documentModel      = ''
-        documentScript     = []
-        generatedFiles     = []
+        documentModel
+        documentScript
+        generatedFiles
+
+        rawListOfYears
+        referenceListOfLocations
+        referenceListOfStates
+
+        selectedFileLocations
+        listOfLocations    = struct('Hash', {}, 'Automatic', {}, 'Manual', {})
     end
 
     
     properties (Access = private)
         %-----------------------------------------------------------------%
-        callingApp
-        defaultFilePreffix = ''
-        customProperties   = {}
+        mainApp
+        rootFolder
+        defaultFilePreffix = 'monitorRNI'
     end
 
 
     methods
         %-----------------------------------------------------------------%
-        function obj = projectLib(callingApp, varargin)            
-            obj.callingApp = callingApp;
+        function obj = projectLib(mainApp)            
+            obj.mainApp    = mainApp;
+            obj.rootFolder = mainApp.rootFolder;
 
-            obj.defaultFilePreffix = 'monitorRNI';
-            obj.customProperties   = {'rawListOfYears', 'referenceListOfLocations', 'referenceListOfStates', 'selectedFileLocations', 'listOfLocations'};
+            Restart(obj)
+            ReadReportTemplates(obj)
 
             % A planilha de referência do PM-RNI possui uma relação de estações 
             % de telecomunicações que deve ser avaliada. Dessa planilha, extrai-se:
@@ -51,15 +59,6 @@ classdef projectLib < dynamicprops
             % • listOfLocations: a lista de localidades sob análise no módulo 
             %   auxApp.winMonitoringPlan p/ fins de geração da planilha que será 
             %   submetida ao Centralizador do PM-RNI.
-
-            addprop(obj, 'rawListOfYears');
-            addprop(obj, 'referenceListOfLocations');
-            addprop(obj, 'referenceListOfStates');
-            addprop(obj, 'selectedFileLocations');
-            addprop(obj, 'listOfLocations');
-            
-            obj.selectedFileLocations = {};
-            obj.listOfLocations = struct('Hash', {}, 'Automatic', {}, 'Manual', {});
         end
 
         %-----------------------------------------------------------------%
@@ -70,27 +69,35 @@ classdef projectLib < dynamicprops
             obj.unit           = '';
 
             obj.documentType   = 'Relatório de Atividades';
-            obj.documentModel  = '';
             obj.documentScript = [];
             obj.generatedFiles = [];
 
-            customPropertiesList = obj.customProperties;
-            for ii = 1:numel(customPropertiesList)
-                propertyName = customPropertiesList{ii};
+            obj.selectedFileLocations = {};
+        end
 
-                switch class(obj.(propertyName))
-                    case 'table'
-                        obj.(propertyName)(:,:) = [];
-                    case 'struct'
-                        obj.(propertyName)(:)   = [];
-                    case 'cell'
-                        obj.(propertyName)      = {};
-                    case 'char'
-                        obj.(propertyName)      = '';
-                    otherwise
-                        obj.(propertyName)      = [];
+        %-----------------------------------------------------------------%
+        function ReadReportTemplates(obj)
+            [projectFolder, ...
+             externalFolder] = appUtil.Path(class.Constants.appName, obj.rootFolder);
+            projectFilePath  = fullfile(projectFolder,  'ReportTemplates.json');
+            externalFilePath = fullfile(externalFolder, 'ReportTemplates.json');
+
+            try
+                if ~isdeployed()
+                    error('ForceDebugMode')
                 end
+                obj.documentModel = jsondecode(fileread(externalFilePath));
+            catch
+                obj.documentModel = jsondecode(fileread(projectFilePath));
             end
+        end
+
+        %-----------------------------------------------------------------%
+        function stationTable = ReadStationTable(obj, generalSettings)
+            [stationTable,                ...
+            obj.rawListOfYears,           ...
+            obj.referenceListOfLocations, ...
+            obj.referenceListOfStates] = fileReader.MonitoringPlan(class.Constants.appName, obj.rootFolder, generalSettings);
         end
     end
 
@@ -117,8 +124,7 @@ classdef projectLib < dynamicprops
 
                 % winMonitorRNI.stationTable
                 if contains(updateType, 'station')
-                    addAutomaticLocations(obj, measData, stationTable, generalSettings.MonitoringPlan.Distance_km);
-                    idxStations  = find(ismember(stationTable.Location, getFullListOfLocation(obj, measData)))';
+                    idxStations  = find(ismember(stationTable.Location, getFullListOfLocation(obj, measData, stationTable, max(generalSettings.MonitoringPlan.Distance_km, generalSettings.ExternalRequest.Distance_km))))';
                     stationTable = identifyMeasuresForEachPoint(obj, stationTable, idxStations, measTable, generalSettings.MonitoringPlan.FieldValue, generalSettings.MonitoringPlan.Distance_km);
                 end
     
@@ -186,10 +192,7 @@ classdef projectLib < dynamicprops
             hashIndex = find(strcmp({obj.listOfLocations.Hash}, hash), 1);
 
             if isempty(hashIndex)
-                selectedLocations  = unique({measData.Location});                
                 automaticLocations = {};
-                manualLocations    = {};
-
                 for ii = 1:numel(measData)
                     % Limites de latitude e longitude relacionados à rota, acrescentando 
                     % a distância máxima à estação p/ fins de cômputo de medidas válidas 
@@ -205,20 +208,35 @@ classdef projectLib < dynamicprops
                     if any(idxLogicalStation)
                         automaticLocations = [automaticLocations; unique(stationTable.Location(idxLogicalStation))];
                     end
+                end
 
-                    % Caso se trate de uma visualização de mais de uma localidade, 
-                    % inicia-se a lista de municípios incluídos manualmente com
-                    % aquilo que foi inserido para os municípios isoladamente, 
-                    % caso aplicável.
-                    if numel(selectedLocations) > 1
-                        manualLocationsIndex = find(cellfun(@(x) isequal(x, {measData(ii).Location}), {obj.listOfLocations.Automatic}), 1);
-                        if ~isempty(manualLocationsIndex)
-                            manualLocations = [manualLocations, obj.listOfLocations(manualLocationsIndex).Manual];
-                        end
+                % Caso se trate de uma visualização de mais de uma localidade, 
+                % inicia-se a lista de municípios incluídos manualmente com
+                % aquilo que foi inserido para os municípios isoladamente, 
+                % caso aplicável.
+                manualLocations = {};
+                if numel(unique({measData.Location_I})) > 1
+                    rawHashIndexes  = ismember({obj.listOfLocations.Hash}, {measData.UUID});
+                    if any(rawHashIndexes)
+                        manualLocations = vertcat(obj.listOfLocations(rawHashIndexes).Manual);
                     end
                 end
 
-                obj.listOfLocations(end+1) = struct('Hash', hash, 'Automatic', {unique(automaticLocations)}, 'Manual', {unique(manualLocations)});
+                hashIndex = numel(obj.listOfLocations) + 1;
+                obj.listOfLocations(hashIndex) = struct('Hash', hash, 'Automatic', {unique(automaticLocations)}, 'Manual', {unique(manualLocations)});
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function delLocationCache(obj, measData, indexes)
+            currentLocation = unique({measData(indexes).Location});
+            currentLocationIndexes = ismember({measData.Location}, currentLocation);
+
+            hash = strjoin(unique({measData(currentLocationIndexes).UUID}));
+            hashIndex = find(strcmp({obj.listOfLocations.Hash}, hash), 1);
+
+            if ~isempty(hashIndex)
+                obj.listOfLocations(hashIndex) = [];
             end
         end
 
