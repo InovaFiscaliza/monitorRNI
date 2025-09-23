@@ -1256,7 +1256,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.config_geoAxesLabel_2.Layout.Row = 2;
             app.config_geoAxesLabel_2.Layout.Column = [1 2];
             app.config_geoAxesLabel_2.Interpreter = 'html';
-            app.config_geoAxesLabel_2.Text = {'LOCALIDADES:'; '<font style="color: gray; font-size: 9px;">(relacionadas aos arquivos de medição)</font>'};
+            app.config_geoAxesLabel_2.Text = {'LOCALIDADES DE AGRUPAMENTO:'; '<font style="color: gray; font-size: 9px;">(relacionadas aos arquivos de medição)</font>'};
 
             % Create TreeFileLocations
             app.TreeFileLocations = uitree(app.Control);

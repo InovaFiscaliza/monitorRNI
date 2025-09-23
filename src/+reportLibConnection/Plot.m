@@ -39,7 +39,7 @@ classdef (Abstract) Plot
                 
                 switch axesType{ii}
                     case 'Geographic'
-                        hAxes = plot.axes.Creation(axesParent, 'Geographic',  {'Basemap',  generalSettings.Plot.GeographicAxes.Basemap, ...
+                        hAxes = plot.axes.Creation(axesParent, 'Geographic',  {'Basemap',  generalSettings.Report.Basemap, ...
                                                                                'Color',    [.2, .2, .2], 'GridColor', [.5, .5, .5]});
 
                         if ismember(generalSettings.Plot.GeographicAxes.Basemap, {'darkwater', 'none'})
@@ -71,6 +71,7 @@ classdef (Abstract) Plot
                     switch plotTag{1}
                         case 'DriveTest'
                             plot.draw.Measures(hAxes, measTable, generalSettings.MonitoringPlan.FieldValue, generalSettings);
+                            geolimits(hAxes, hAxes.LatitudeLimits, hAxes.LongitudeLimits)
                             plot.draw.Points(hAxes, refPointsTable, 'Estações de referência PM-RNI', generalSettings)
 
                         case 'ChannelPower'

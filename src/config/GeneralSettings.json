@@ -1,5 +1,5 @@
 {
-    "version": 0.70,
+    "version": 0.71,
     "operationMode": {
         "Debug": false,
         "Dock": true,
@@ -137,6 +137,7 @@
         "unit": "",
         "model": "",
         "reportVersion": "Preliminar",
+        "Basemap": "streets-dark",
         "Image": {
             "Format": "jpeg",
             "Resolution": 120

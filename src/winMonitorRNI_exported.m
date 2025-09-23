@@ -439,6 +439,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     % Base64 são menores (uma imagem com Basemap "sattelite" pode 
                     % ter 500 kB, enquanto uma imagem sem Basemap pode ter 25 kB).
                     app.General_I.Plot.GeographicAxes.Basemap = 'none';
+                    app.General_I.Report.Basemap              = 'none';
 
                 otherwise    
                     % Resgata a pasta de trabalho do usuário (configurável).

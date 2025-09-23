@@ -78,9 +78,9 @@ classdef projectLib < handle
         %-----------------------------------------------------------------%
         function ReadReportTemplates(obj)
             [projectFolder, ...
-             externalFolder] = appUtil.Path(class.Constants.appName, obj.rootFolder);
-            projectFilePath  = fullfile(projectFolder,  'ReportTemplates.json');
-            externalFilePath = fullfile(externalFolder, 'ReportTemplates.json');
+             programDataFolder] = appUtil.Path(class.Constants.appName, obj.rootFolder);
+            projectFilePath  = fullfile(projectFolder,     'ReportTemplates.json');
+            externalFilePath = fullfile(programDataFolder, 'ReportTemplates.json');
 
             try
                 if ~isdeployed()
