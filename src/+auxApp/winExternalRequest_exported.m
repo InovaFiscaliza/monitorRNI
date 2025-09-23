@@ -2,51 +2,50 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                       matlab.ui.Figure
-        GridLayout                     matlab.ui.container.GridLayout
-        dockModuleGrid                 matlab.ui.container.GridLayout
-        dockModule_Undock              matlab.ui.control.Image
-        dockModule_Close               matlab.ui.control.Image
-        Document                       matlab.ui.container.GridLayout
-        AxesToolbar                    matlab.ui.container.GridLayout
-        axesTool_RegionZoom            matlab.ui.control.Image
-        axesTool_RestoreView           matlab.ui.control.Image
-        plotPanel                      matlab.ui.container.Panel
-        UITable                        matlab.ui.control.Table
-        Control                        matlab.ui.container.GridLayout
-        TreeFileMultipleSelectionFlag  matlab.ui.control.CheckBox
-        TreePoints                     matlab.ui.container.Tree
-        AddNewPointPanel               matlab.ui.container.Panel
-        AddNewPointGrid                matlab.ui.container.GridLayout
-        NewPointDescription            matlab.ui.control.EditField
-        NewPointDescriptionLabel       matlab.ui.control.Label
-        NewPointLongitude              matlab.ui.control.NumericEditField
-        NewPointLongitudeLabel         matlab.ui.control.Label
-        NewPointLatitude               matlab.ui.control.NumericEditField
-        NewPointLatitudeLabel          matlab.ui.control.Label
-        NewPointStation                matlab.ui.control.NumericEditField
-        NewPointStationLabel           matlab.ui.control.Label
-        NewPointType                   matlab.ui.control.DropDown
-        NewPointTypeLabel              matlab.ui.control.Label
-        AddNewPointCancel              matlab.ui.control.Image
-        AddNewPointConfirm             matlab.ui.control.Image
-        AddNewPointMode                matlab.ui.control.Image
-        TreePointsLabel                matlab.ui.control.Label
-        TreeFileLocations              matlab.ui.container.CheckBoxTree
-        config_geoAxesLabel            matlab.ui.control.Label
-        play_ControlsTab1Grid_2        matlab.ui.container.GridLayout
-        menu_Button1Label              matlab.ui.control.Label
-        play_ControlsTab1Image_2       matlab.ui.control.Image
-        toolGrid                       matlab.ui.container.GridLayout
-        tool_peakIcon                  matlab.ui.control.Image
-        tool_peakLabel                 matlab.ui.control.Label
-        tool_ExportFiles               matlab.ui.control.Image
-        tool_GenerateReport            matlab.ui.control.Image
-        tool_Separator                 matlab.ui.control.Image
-        tool_TableVisibility           matlab.ui.control.Image
-        tool_ControlPanelVisibility    matlab.ui.control.Image
-        ContextMenu                    matlab.ui.container.ContextMenu
-        DeletePoint                    matlab.ui.container.Menu
+        UIFigure                     matlab.ui.Figure
+        GridLayout                   matlab.ui.container.GridLayout
+        dockModuleGrid               matlab.ui.container.GridLayout
+        dockModule_Undock            matlab.ui.control.Image
+        dockModule_Close             matlab.ui.control.Image
+        Document                     matlab.ui.container.GridLayout
+        AxesToolbar                  matlab.ui.container.GridLayout
+        axesTool_RegionZoom          matlab.ui.control.Image
+        axesTool_RestoreView         matlab.ui.control.Image
+        plotPanel                    matlab.ui.container.Panel
+        UITable                      matlab.ui.control.Table
+        Control                      matlab.ui.container.GridLayout
+        TreePoints                   matlab.ui.container.Tree
+        AddNewPointPanel             matlab.ui.container.Panel
+        AddNewPointGrid              matlab.ui.container.GridLayout
+        NewPointDescription          matlab.ui.control.EditField
+        NewPointDescriptionLabel     matlab.ui.control.Label
+        NewPointLongitude            matlab.ui.control.NumericEditField
+        NewPointLongitudeLabel       matlab.ui.control.Label
+        NewPointLatitude             matlab.ui.control.NumericEditField
+        NewPointLatitudeLabel        matlab.ui.control.Label
+        NewPointStation              matlab.ui.control.NumericEditField
+        NewPointStationLabel         matlab.ui.control.Label
+        NewPointType                 matlab.ui.control.DropDown
+        NewPointTypeLabel            matlab.ui.control.Label
+        AddNewPointCancel            matlab.ui.control.Image
+        AddNewPointConfirm           matlab.ui.control.Image
+        AddNewPointMode              matlab.ui.control.Image
+        TreePointsLabel              matlab.ui.control.Label
+        TreeFileLocations            matlab.ui.container.Tree
+        config_geoAxesLabel          matlab.ui.control.Label
+        play_ControlsTab1Grid_2      matlab.ui.container.GridLayout
+        menu_Button1Label            matlab.ui.control.Label
+        play_ControlsTab1Image_2     matlab.ui.control.Image
+        toolGrid                     matlab.ui.container.GridLayout
+        tool_peakIcon                matlab.ui.control.Image
+        tool_peakLabel               matlab.ui.control.Label
+        tool_ExportFiles             matlab.ui.control.Image
+        tool_GenerateReport          matlab.ui.control.Image
+        tool_Separator               matlab.ui.control.Image
+        tool_TableVisibility         matlab.ui.control.Image
+        tool_ControlPanelVisibility  matlab.ui.control.Image
+        ContextMenu                  matlab.ui.container.ContextMenu
+        DeletePoint                  matlab.ui.container.Menu
     end
 
     
@@ -282,10 +281,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             
             app.tool_TableVisibility.UserData = 1;
 
-            if numel(app.projectData.selectedFileLocations) > 1
-                app.TreeFileMultipleSelectionFlag.Value = 1;
-            end
-
             % Especificidades do auxApp.winExternalRequest em relação ao
             % auxApp.winMonitoringPlan:
             layout_TreePointsBuilding(app)
@@ -356,8 +351,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                     idxFile = 1:numel(app.measData);
 
                 otherwise
-                    if ~isempty(app.TreeFileLocations.CheckedNodes)
-                        selectedFileLocations = {app.TreeFileLocations.CheckedNodes.Text};
+                    if ~isempty(app.TreeFileLocations.SelectedNodes)
+                        selectedFileLocations = {app.TreeFileLocations.SelectedNodes.Text};
                         idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
                     else
                         selectedFileLocations = {};
@@ -504,17 +499,21 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             end
 
             listOfFileLocations = unique({app.measData.Location});
+            selectedNodes = [];
             for ii = 1:numel(listOfFileLocations)
                 treeNode = uitreenode(app.TreeFileLocations, 'Text', listOfFileLocations{ii});
 
                 if ismember(listOfFileLocations{ii}, app.projectData.selectedFileLocations)
-                    app.TreeFileLocations.CheckedNodes = [app.TreeFileLocations.CheckedNodes; treeNode];
+                    selectedNodes = [selectedNodes; treeNode];
                 end
             end
 
-            if isempty(app.TreeFileLocations.CheckedNodes)
-                app.TreeFileLocations.CheckedNodes = app.TreeFileLocations.Children(1);
+            if isempty(selectedNodes)
+                selectedNodes = app.TreeFileLocations.Children(1);
+            elseif ~isscalar(selectedNodes)
+                selectedNodes = selectedNodes(1);
             end
+            app.TreeFileLocations.SelectedNodes = selectedNodes;
         end
 
         %-----------------------------------------------------------------%
@@ -539,7 +538,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 case 'on'
                     set(app.AddNewPointMode, 'ImageSource', 'addFiles_32Filled.png', 'Tooltip', 'Desabilita painel de inclusão de ponto', 'UserData', true)
                     
-                    app.Control.RowHeight{6} = 170;
+                    app.Control.RowHeight{5} = 170;
                     app.Control.ColumnWidth(end-1:end) = {18, 18};
                     app.AddNewPointConfirm.Enable = 1;
                     app.AddNewPointCancel.Enable  = 1;
@@ -547,7 +546,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 case 'off'
                     set(app.AddNewPointMode, 'ImageSource', 'addFiles_32.png',       'Tooltip', 'Habilita painel de inclusão de ponto',   'UserData', false)
 
-                    app.Control.RowHeight{6} = 0;
+                    app.Control.RowHeight{5} = 0;
                     app.Control.ColumnWidth(end-1:end) = {0,0};
                     app.AddNewPointConfirm.Enable = 0;
                     app.AddNewPointCancel.Enable  = 0;
@@ -656,13 +655,13 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             if ~isempty(indexes)
                 if numel(indexes) < numel(app.measData)
-                    msgQuestion   = 'Deseja gerar relatório que apresente os dados armazenados em TODOS os arquivos lidos, ou apenas nos SELECIONADOS?';
-                    userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'TODOS', 'SELECIONADOS', 'CANCELAR'}, 1, 3);
+                    msgQuestion   = 'Deseja gerar relatório que apresente os dados armazenados em TODOS os arquivos lidos, ou apenas no SELECIONADO?';
+                    userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Todos', 'Selecionado', 'Cancelar'}, 1, 3);
 
                     switch userSelection
-                        case 'CANCELAR'
+                        case 'Cancelar'
                             return
-                        case 'TODOS'
+                        case 'Todos'
                             indexes = 1:numel(app.measData);
                     end
                 end
@@ -670,7 +669,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 app.progressDialog.Visible = 'visible';
 
                 try
-                    reportLibConnection.Controller.Run(app, app.projectData, app.measData(indexes), app.mainApp.General.ExternalRequest.Orientation, app.mainApp.stationTable, app.mainApp.pointsTable)
+                    reportLibConnection.Controller.Run(app, app.projectData, app.measData(indexes), app.mainApp.stationTable, app.mainApp.pointsTable, app.mainApp.General)
                 catch ME
                     appUtil.modalWindow(app.UIFigure, 'error', getReport(ME));
                 end
@@ -804,36 +803,16 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         end
 
-        % Callback function: TreeFileLocations
-        function TreeFileLocationsCheckedNodesChanged(app, event)
+        % Selection changed function: TreeFileLocations
+        function TreeFileLocationsSelectionChanged(app, event)
             
-            if app.TreeFileMultipleSelectionFlag.Value
-                checkedNodes = event.CheckedNodes;
-
-            else
-                checkedNodes = setdiff(event.CheckedNodes, event.PreviousCheckedNodes);    
-                if isempty(checkedNodes)
-                    app.TreeFileLocations.CheckedNodes = event.PreviousCheckedNodes;
-                    return
-                end
-                checkedNodes = checkedNodes(1);
+            if isempty(event.SelectedNodes)
+                app.TreeFileLocations.SelectedNodes = event.PreviousSelectedNodes;
+                return
             end
 
-            app.TreeFileLocations.CheckedNodes = checkedNodes;
             Analysis(app)
 
-        end
-
-        % Value changed function: TreeFileMultipleSelectionFlag
-        function TreeFileMultipleSelectionFlagValueChanged(app, event)
-            
-            if ~app.TreeFileMultipleSelectionFlag.Value
-                if numel(app.TreeFileLocations.CheckedNodes) > 1
-                    app.TreeFileLocations.CheckedNodes = app.TreeFileLocations.CheckedNodes(1);
-                    Analysis(app)
-                end
-            end
-            
         end
 
         % Cell edit callback: UITable
@@ -1127,7 +1106,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % Create Control
             app.Control = uigridlayout(app.GridLayout);
             app.Control.ColumnWidth = {'1x', 18, 0, 0};
-            app.Control.RowHeight = {22, 32, '1x', 17, 37, 0, 176};
+            app.Control.RowHeight = {22, 32, '1x', 37, 0, 176};
             app.Control.ColumnSpacing = 5;
             app.Control.RowSpacing = 5;
             app.Control.Padding = [0 0 0 0];
@@ -1173,19 +1152,17 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.config_geoAxesLabel.Text = {'LOCALIDADES:'; '<font style="color: gray; font-size: 9px;">(relacionadas aos arquivos de medição)</font>'};
 
             % Create TreeFileLocations
-            app.TreeFileLocations = uitree(app.Control, 'checkbox');
+            app.TreeFileLocations = uitree(app.Control);
+            app.TreeFileLocations.SelectionChangedFcn = createCallbackFcn(app, @TreeFileLocationsSelectionChanged, true);
             app.TreeFileLocations.FontSize = 11;
             app.TreeFileLocations.Layout.Row = 3;
             app.TreeFileLocations.Layout.Column = [1 4];
-
-            % Assign Checked Nodes
-            app.TreeFileLocations.CheckedNodesChangedFcn = createCallbackFcn(app, @TreeFileLocationsCheckedNodesChanged, true);
 
             % Create TreePointsLabel
             app.TreePointsLabel = uilabel(app.Control);
             app.TreePointsLabel.VerticalAlignment = 'bottom';
             app.TreePointsLabel.FontSize = 10;
-            app.TreePointsLabel.Layout.Row = 5;
+            app.TreePointsLabel.Layout.Row = 4;
             app.TreePointsLabel.Layout.Column = 1;
             app.TreePointsLabel.Interpreter = 'html';
             app.TreePointsLabel.Text = {'PONTOS CRÍTICOS SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionados àquilo que fora pedido pelo demandante)</font>'};
@@ -1194,7 +1171,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.AddNewPointMode = uiimage(app.Control);
             app.AddNewPointMode.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
             app.AddNewPointMode.Tooltip = {'Habilita painel de inclusão de ponto'};
-            app.AddNewPointMode.Layout.Row = 5;
+            app.AddNewPointMode.Layout.Row = 4;
             app.AddNewPointMode.Layout.Column = 2;
             app.AddNewPointMode.VerticalAlignment = 'bottom';
             app.AddNewPointMode.ImageSource = 'addFiles_32.png';
@@ -1204,7 +1181,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.AddNewPointConfirm.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
             app.AddNewPointConfirm.Enable = 'off';
             app.AddNewPointConfirm.Tooltip = {'Confirma edição'};
-            app.AddNewPointConfirm.Layout.Row = 5;
+            app.AddNewPointConfirm.Layout.Row = 4;
             app.AddNewPointConfirm.Layout.Column = 3;
             app.AddNewPointConfirm.VerticalAlignment = 'bottom';
             app.AddNewPointConfirm.ImageSource = 'Ok_32Green.png';
@@ -1214,7 +1191,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.AddNewPointCancel.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
             app.AddNewPointCancel.Enable = 'off';
             app.AddNewPointCancel.Tooltip = {'Cancela edição'};
-            app.AddNewPointCancel.Layout.Row = 5;
+            app.AddNewPointCancel.Layout.Row = 4;
             app.AddNewPointCancel.Layout.Column = 4;
             app.AddNewPointCancel.VerticalAlignment = 'bottom';
             app.AddNewPointCancel.ImageSource = 'Delete_32Red.png';
@@ -1222,7 +1199,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % Create AddNewPointPanel
             app.AddNewPointPanel = uipanel(app.Control);
             app.AddNewPointPanel.AutoResizeChildren = 'off';
-            app.AddNewPointPanel.Layout.Row = 6;
+            app.AddNewPointPanel.Layout.Row = 5;
             app.AddNewPointPanel.Layout.Column = [1 4];
 
             % Create AddNewPointGrid
@@ -1327,16 +1304,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.TreePoints = uitree(app.Control);
             app.TreePoints.SelectionChangedFcn = createCallbackFcn(app, @TreePointsSelectionChanged, true);
             app.TreePoints.FontSize = 11;
-            app.TreePoints.Layout.Row = 7;
+            app.TreePoints.Layout.Row = 6;
             app.TreePoints.Layout.Column = [1 4];
-
-            % Create TreeFileMultipleSelectionFlag
-            app.TreeFileMultipleSelectionFlag = uicheckbox(app.Control);
-            app.TreeFileMultipleSelectionFlag.ValueChangedFcn = createCallbackFcn(app, @TreeFileMultipleSelectionFlagValueChanged, true);
-            app.TreeFileMultipleSelectionFlag.Text = 'Habilita seleção múltipla.';
-            app.TreeFileMultipleSelectionFlag.FontSize = 11;
-            app.TreeFileMultipleSelectionFlag.Layout.Row = 4;
-            app.TreeFileMultipleSelectionFlag.Layout.Column = [1 4];
 
             % Create Document
             app.Document = uigridlayout(app.GridLayout);
@@ -1434,6 +1403,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Create ContextMenu
             app.ContextMenu = uicontextmenu(app.UIFigure);
+            app.ContextMenu.Tag = 'auxApp.winExternalRequest';
 
             % Create DeletePoint
             app.DeletePoint = uimenu(app.ContextMenu);

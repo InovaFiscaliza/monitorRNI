@@ -3,12 +3,19 @@ classdef (Abstract) Plot
     methods (Static = true)
         %-----------------------------------------------------------------%
         function imgFileName = Controller(reportInfo, analyzedData, imgSettings)
-            measTable  = analyzedData.InfoSet.measTable;
+            arguments
+                reportInfo
+                analyzedData
+                imgSettings
+            end
+
+            generalSettings = reportInfo.Settings;
+            measTable       = analyzedData.InfoSet.measTable;
+            refPointsTable  = analyzedData.InfoSet.stationTable;
 
             % Container
-            hFigure    = reportInfo.app.UIFigure;
-            hContainer = findobj(hFigure, 'Tag', 'PlotContainer');
-
+            hFigure    = reportInfo.App.UIFigure;
+            hContainer = findobj(hFigure, 'Tag', 'reportGeneratorContainer');
             if isempty(hContainer)
                 hContainer = reportLibConnection.Plot.ContainerCreation(hFigure);
             end
@@ -19,7 +26,7 @@ classdef (Abstract) Plot
 
             % Cria eixos de acordo com estabelecido no JSON.
             tiledPos     = 1;
-            tiledSpan    = [imgSettings.Layout];
+            tiledSpan    = str2double(strsplit(imgSettings.Layout, ':'));
 
             axesParent   = tiledlayout(hContainer, sum(tiledSpan), 1, "Padding", "tight", "TileSpacing", "tight");           
             [axesType,   ...
@@ -27,12 +34,27 @@ classdef (Abstract) Plot
              axesYLabel, ...
              axesYScale] = plot.axes.TypeMapping({imgSettings.Name});
 
-            for ii = 1:numel(imgSettings)
+            for ii = 1:numel(axesType)
                 xLabelFlag  = true;
                 
                 switch axesType{ii}
                     case 'Geographic'
-                        hAxes = plot.axes.Creation(axesParent, 'Geographic');
+                        hAxes = plot.axes.Creation(axesParent, 'Geographic',  {'Basemap',  generalSettings.Plot.GeographicAxes.Basemap, ...
+                                                                               'Color',    [.2, .2, .2], 'GridColor', [.5, .5, .5]});
+
+                        if ismember(generalSettings.Plot.GeographicAxes.Basemap, {'darkwater', 'none'})
+                            hAxes.Grid = 'on';
+                        end
+                    
+                        set(hAxes.LatitudeAxis,  'TickLabels', {}, 'Color', 'none')
+                        set(hAxes.LongitudeAxis, 'TickLabels', {}, 'Color', 'none')
+                        
+                        geolimits(hAxes, 'auto')
+                    
+                        plot.axes.Colormap(hAxes, generalSettings.Plot.GeographicAxes.Colormap)
+                        plot.axes.Colorbar(hAxes, generalSettings.Plot.GeographicAxes.Colorbar)
+
+                        legend(hAxes, 'Location', 'southwest', 'Color', [.94,.94,.94], 'EdgeColor', [.9,.9,.9], 'NumColumns', 4, 'LineWidth', .5, 'FontSize', 7.5, 'PickableParts', 'none')
 
                     case 'Cartesian'
                         hAxes = plot.axes.Creation(axesParent, 'Cartesian', {'XColor', [.15,.15,.15], 'YColor', [.15,.15,.15]});
@@ -48,8 +70,8 @@ classdef (Abstract) Plot
                 for plotTag = plotNames
                     switch plotTag{1}
                         case 'DriveTest'
-                            plot.draw.Measures(app.UIAxes, app.measTable, app.mainApp.General.MonitoringPlan.FieldValue, app.mainApp.General);
-                            plot.draw.Points(app.UIAxes, refPointsTable, 'Estações de referência PM-RNI', app.mainApp.General)
+                            plot.draw.Measures(hAxes, measTable, generalSettings.MonitoringPlan.FieldValue, generalSettings);
+                            plot.draw.Points(hAxes, refPointsTable, 'Estações de referência PM-RNI', generalSettings)
 
                         case 'ChannelPower'
                             % ...                          
@@ -60,7 +82,7 @@ classdef (Abstract) Plot
                 end
                 
                 % POST-PLOT
-                plot.axes.StackingOrder.execute(hAxes, tempBandObj.Context)
+                %plot.axes.StackingOrder.execute(hAxes, tempBandObj.Context)
                 switch axesType{ii}
                     case 'Geographic'
                         % ...
@@ -90,13 +112,13 @@ classdef (Abstract) Plot
             drawnow
 
             % Espera renderizar e salva a imagem...
-            defaultFilename = appUtil.DefaultFileName(reportInfo.General.TempPath, sprintf('Image_ID%d', specData(idxThread).RelatedFiles.ID(1)), -1);
-            imgFileName     = sprintf('%s.%s', defaultFilename, reportInfo.General.Image.Format);
+            defaultFilename = appUtil.DefaultFileName(generalSettings.fileFolder.tempPath, class.Constants.appName, reportInfo.Function.var_Issue);
+            imgFileName     = sprintf('%s.%s', defaultFilename, generalSettings.Report.Image.Format);
             if ~ismember(reportInfo.Model.Version, {'final', 'Definitiva'})
                 imgFileName = replace(imgFileName, 'Image', '~Image');
             end
             
-            exportgraphics(hContainer, imgFileName, 'ContentType', 'image', 'Resolution', reportInfo.General.Image.Resolution)
+            exportgraphics(hContainer, imgFileName, 'ContentType', 'image', 'Resolution', generalSettings.Report.Image.Resolution)
             
             while true
                 pause(1)
@@ -115,7 +137,7 @@ classdef (Abstract) Plot
                                           BorderType='none',                 ...
                                           BackgroundColor=[0 0 0],           ...
                                           Visible=0,                         ...
-                                          Tag="PlotContainer");
+                                          Tag="reportGeneratorContainer");
         end
     end
 

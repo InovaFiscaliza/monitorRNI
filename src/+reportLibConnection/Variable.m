@@ -29,6 +29,8 @@ classdef (Abstract) Variable
                     fieldValue = jsonencode(appGeneral.(fieldName));
                 case 'ExternalRequest'
                     fieldValue = jsonencode(appGeneral.(fieldName));
+                otherwise
+                    error('UnexpectedFieldName')
             end
         end
 
@@ -38,7 +40,7 @@ classdef (Abstract) Variable
             measTable = analyzedData.InfoSet.measTable;
 
             switch fieldName
-                case {'Filename', 'Sensor', 'Location'}
+                case {'Filename', 'Sensor', 'Location', 'Location_I'}
                     fieldValue = strjoin(unique({measData.(fieldName)}), ', ');
                 case 'Content'
                     fieldValue = strjoin(strcat({measData.Content}, '<br><font style="color: red;">[Texto truncado — Fonte:&thinsp;', ' ', {measData.Filename}, ']</font>'), '<br><br>');
@@ -62,6 +64,24 @@ classdef (Abstract) Variable
                     fieldValue = sprintf('[%.6fº, %.6fº]', minLng, maxLng);
                 case {'Latitude', 'Longitude'}
                     fieldValue = sprintf('%.6fº', mean(measTable.(fieldName)));
+                otherwise
+                    error('UnexpectedFieldName')
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function fieldValue = ProjectProperty(reportInfo, analyzedData, fieldName)
+            projectData = reportInfo.Project;
+            measData = analyzedData.InfoSet.measData;
+
+            switch fieldName
+                case 'LocationSummary'
+                    hash = strjoin(unique({measData.UUID}));
+                    hashIndex = find(strcmp({projectData.listOfLocations.Hash}, hash), 1);
+
+                    fieldValue = jsonencode(projectData.listOfLocations(hashIndex));
+                otherwise
+                    error('UnexpectedFieldName')
             end
         end
 
@@ -72,6 +92,8 @@ classdef (Abstract) Variable
                     tableValue = reportLibConnection.PointsByLocation(reportInfo, analyzedData, 'all', 'tableHeight');
                 case 'StationsTableHeight'
                     tableValue = reportLibConnection.StationsByLocation(reportInfo, analyzedData, 'all', 'tableHeight');
+                otherwise
+                    error('UnexpectedFieldName')
             end
         end
     end

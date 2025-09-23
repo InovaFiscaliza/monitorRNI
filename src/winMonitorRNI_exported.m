@@ -207,7 +207,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                     file_FileSortMethodValueChanged(app)
                                 end
                             case 'PM-RNI: updateReferenceTable'
-                                ReadStationTable(app)
+                                app.stationTable = ReadStationTable(app.projectData, app.General);
 
                                 hAuxApp = auxAppHandle(app, "MONITORINGPLAN");
                                 if ~isempty(hAuxApp)
@@ -486,8 +486,16 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % app.projectData
             app.projectData  = model.projectLib(app);
-            ReadStationTable(app)
+            app.stationTable = ReadStationTable(app.projectData, app.General);
             app.pointsTable  = fileReader.ExternalRequest(app.General);
+
+            % app.GeneralSettings (VALIDA ALGUMAS INFORMAÇÕES)
+            documentModelNames = [{''}, {app.projectData.documentModel.Name}];
+            if ~ismember(app.General.Report.model, documentModelNames)
+                app.General.Report.model = documentModelNames{1};
+            end
+
+            app.General.Report.issue = -1;
         end
 
         %-----------------------------------------------------------------%
@@ -516,12 +524,20 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function ReadStationTable(app)
-            % app.stationTable (PM-RNI)
-            [app.stationTable,                        ...
-            app.projectData.rawListOfYears,           ...
-            app.projectData.referenceListOfLocations, ...
-            app.projectData.referenceListOfStates] = fileReader.MonitoringPlan(class.Constants.appName, app.rootFolder, app.General);
+        function file_ProjectRestart(app, operationType)
+            arguments
+                app
+                operationType char {mustBeMember(operationType, {'add', 'delete', 'merge', 'unmerge'})}
+            end
+
+            % Reinicializa propriedades do objeto app.projectData.
+            Restart(app.projectData)
+
+            % Atualiza árvore (app.file_Tree) e tabelas de referência (app.stationTable
+            % e app.pointsTable).
+            indexes = file_findSelectedNodeData(app);
+            file_TreeBuilding(app, indexes)
+            [~, app.stationTable, app.pointsTable] = updateAnalysis(app.projectData, app.measData, app.stationTable, app.pointsTable, app.General);
         end
         
         %-----------------------------------------------------------------%
@@ -829,8 +845,10 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 end
 
                 % EXCLUIR ARQUIVO(S)
-                idx = [app.file_Tree.SelectedNodes.NodeData];
-                app.measData(idx) = [];
+                indexes = [app.file_Tree.SelectedNodes.NodeData];
+                app.measData(indexes) = [];
+
+                file_ProjectRestart(app, 'delete')
                 file_TreeBuilding(app)
             end
 
@@ -947,11 +965,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 appUtil.modalWindow(app.UIFigure, "warning", msgWarning);
             end
             
-            % Atualiza árvore (app.file_Tree) e tabelas de referência (app.stationTable
-            % e app.pointsTable).
-            indexes = file_findSelectedNodeData(app);
-            file_TreeBuilding(app, indexes)
-            [~, app.stationTable, app.pointsTable] = updateAnalysis(app.projectData, app.measData, app.stationTable, app.pointsTable, app.General);
+            file_ProjectRestart(app, 'add')
+            file_TreeBuilding(app)
 
             delete(d)
 
@@ -980,9 +995,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
 
                 if userSelection == "Sim"
+                    delLocationCache(app.projectData, app.measData, indexes)
+                    
                     for ii = indexes
                         app.measData(ii).Location = app.measData(ii).Location_I;
                     end
+                    
+                    file_ProjectRestart(app, 'unmerge')
                     file_TreeBuilding(app, indexes)
                     return
                 end
@@ -1012,6 +1031,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 for ii = indexes
                     app.measData(ii).Location = userSelection;
                 end
+                file_ProjectRestart(app, 'merge')
                 file_TreeBuilding(app, indexes)
             end
 
@@ -1346,6 +1366,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create file_ContextMenu
             app.file_ContextMenu = uicontextmenu(app.UIFigure);
+            app.file_ContextMenu.Tag = 'winMonitorRNI';
 
             % Create file_TreeNodeDelete
             app.file_TreeNodeDelete = uimenu(app.file_ContextMenu);

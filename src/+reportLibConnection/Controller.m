@@ -2,56 +2,43 @@ classdef (Abstract) Controller
 
     properties (Constant)
         %-----------------------------------------------------------------%
-        fileName   = 'ReportTemplates.json'
         docVersion = dictionary(["Preliminar", "Definitiva"], ...
             [struct('version', 'preview', 'encoding', 'UTF-8'), struct('version', 'final', 'encoding', 'ISO-8859-1')])
     end
 
     methods (Static)
         %-----------------------------------------------------------------%
-        function [modelFileContent, projectFolder, externalFolder] = Read(rootFolder)
-            [projectFolder, ...
-             externalFolder] = appUtil.Path(class.Constants.appName, rootFolder);
-            fileName         = reportLibConnection.Controller.fileName;
-        
-            projectFilePath  = fullfile(projectFolder,  fileName);
-            externalFilePath = fullfile(externalFolder, fileName);
-
-            try
-                % !! INSERIDO AQUI APENAS P/ DEBUG, DEPOIS REMOVER !!        
-                % % % % modelFileContent = jsondecode(fileread(externalFilePath));
-                modelFileContent = jsondecode(fileread(projectFilePath));
-            catch
-                modelFileContent = jsondecode(fileread(projectFilePath));
-            end        
-        end
-
-        %-----------------------------------------------------------------%
-        function Run(app, projectData, measData, orientation, stationTable, pointsTable, issueId, modelNameIndex, reportVersion)
+        function Run(app, projectData, measData, stationTable, pointsTable, generalSettings)
             arguments
                 app
                 projectData
                 measData
-                orientation    char {mustBeMember(orientation, {'file', 'location'})}
                 stationTable
                 pointsTable
-                issueId        double = -1
-                modelNameIndex double =  1
-                reportVersion  char {mustBeMember(reportVersion, {'Preliminar', 'Definitivo'})} = 'Preliminar'
+                generalSettings
             end
-        
-            [modelFileContent, ...
-             projectFolder,    ...
-             programDataFolder] = reportLibConnection.Controller.Read(app.mainApp.rootFolder);
-        
-            docIndex   = modelNameIndex;
-            docName    = modelFileContent(docIndex).Name;
-            docType    = modelFileContent(docIndex).DocumentType;
-            
-            % BAGUNCEI AQUI TAMBÉM
-            % % docScript  = jsondecode(fileread(fullfile(programDataFolder, 'ReportTemplates', modelFileContent(docIndex).File)));
-            docScript  = jsondecode(fileread(fullfile(projectFolder, 'ReportTemplates', modelFileContent(docIndex).File)));            
-            docVersion = reportLibConnection.Controller.docVersion(reportVersion);
+
+            [projectFolder, ...
+             programDataFolder] = appUtil.Path(class.Constants.appName, app.mainApp.rootFolder);
+
+            issueId    = num2str(generalSettings.Report.issue);
+            docName    = generalSettings.Report.model;
+            docIndex   = find(strcmp({projectData.documentModel.Name}, docName), 1);
+            if isempty(docIndex)
+                error('Pendente escolha do modelo de relatório')
+            end
+
+            docType    = projectData.documentModel(docIndex).DocumentType;
+            docVersion = reportLibConnection.Controller.docVersion(generalSettings.Report.reportVersion);
+
+            try
+                if ~isdeployed()
+                    error('ForceDebugMode')
+                end
+                docScript = jsondecode(fileread(fullfile(programDataFolder, 'ReportTemplates', projectData.documentModel(docIndex).File)));
+            catch
+                docScript = jsondecode(fileread(fullfile(projectFolder,     'ReportTemplates', projectData.documentModel(docIndex).File)));
+            end
         
             % reportInfo
             % Importante observar que o campo "Function" armazena informações
@@ -59,10 +46,10 @@ classdef (Abstract) Controller
             % e informações específicas, a compor itens com recorrências, como 
             % "Resultados".
             reportInfo = struct('App',      app, ...
-                                'Version',  app.mainApp.General.AppVersion,  ...
+                                'Version',  generalSettings.AppVersion,  ...
                                 'Path',     struct('rootFolder',     app.mainApp.rootFolder, ...
-                                                   'userFolder',     app.mainApp.General.fileFolder.userPath, ...
-                                                   'tempFolder',     app.mainApp.General.fileFolder.tempPath, ...
+                                                   'userFolder',     generalSettings.fileFolder.userPath, ...
+                                                   'tempFolder',     generalSettings.fileFolder.tempPath, ...
                                                    'appConnection',  projectFolder, ...
                                                    'appDataFolder',  programDataFolder), ...
                                 'Model',    struct('Name',           docName, ...
@@ -79,16 +66,19 @@ classdef (Abstract) Controller
                                                    'table_StationsByLocation',  'reportLibConnection.Table.StationsByLocation(reportInfo, analyzedData, tableOptArgs{:})',       ...
                                                    'var_NumStationsByLocation', 'reportLibConnection.Variable.TableProperty(reportInfo,   analyzedData, "StationsTableHeight")', ...
                                                    ...
-                                                   'image_DriveTest',      'reportLibConnection.Plot.Controller(reportInfo, dataOverview, analyzedData, imgSettings, "DriveTest")',    ...
-                                                   'image_ChannelPower',   'reportLibConnection.Plot.Controller(reportInfo, dataOverview, analyzedData, imgSettings, "ChannelPower")', ...
-                                                   'image_Route',          'reportLibConnection.Plot.Controller(reportInfo, dataOverview, analyzedData, imgSettings, "Route")',        ...
+                                                   'image_Plot',           'reportLibConnection.Plot.Controller(reportInfo, analyzedData, imgSettings)', ...
                                                    ... 
                                                    'var_Issue',            issueId, ...
+                                                   'var_Unit',             generalSettings.Report.unit, ...
+                                                   ...
+                                                   'var_RelatedLocations', strjoin(unique({measData.Location}), ', '), ...
                                                    'var_Id',               'analyzedData.ID', ...
                                                    'var_NumFiles',         'numel(analyzedData.InfoSet.measData)', ...
                                                    'var_FileName',         'reportLibConnection.Variable.ClassProperty(analyzedData, "Filename")', ...
                                                    'var_Sensor',           'reportLibConnection.Variable.ClassProperty(analyzedData, "Sensor")', ...
                                                    'var_Location',         'reportLibConnection.Variable.ClassProperty(analyzedData, "Location")', ...
+                                                   'var_Location_I',       'reportLibConnection.Variable.ClassProperty(analyzedData, "Location_I")', ...
+                                                   'var_LocationSummary',  'reportLibConnection.Variable.ProjectProperty(reportInfo, analyzedData, "LocationSummary")', ...
                                                    'var_Content',          'reportLibConnection.Variable.ClassProperty(analyzedData, "Content")', ...
                                                    'var_MetaData',         'reportLibConnection.Variable.ClassProperty(analyzedData, "MetaData")', ...
                                                    'var_Measures',         'reportLibConnection.Variable.ClassProperty(analyzedData, "Measures")', ...
@@ -106,7 +96,7 @@ classdef (Abstract) Controller
                                                    'settings_MonitoringPlan', 'reportLibConnection.Variable.GeneralSettings(reportInfo, "MonitoringPlan")'), ...
                                 'Project',  projectData, ...
                                 'Object',   measData, ...
-                                'Settings', app.mainApp.General);
+                                'Settings', generalSettings);
             
             fieldsUnnecessary = {'rootFolder', 'entryPointFolder', 'tempSessionFolder', 'ctfRoot'};
             fieldsUnnecessary(cellfun(@(x) ~isfield(reportInfo.Version.application, x), fieldsUnnecessary)) = [];
@@ -120,56 +110,41 @@ classdef (Abstract) Controller
             % em "reportInfo.Function.var_Index".
             dataOverview = struct('ID', {}, 'InfoSet', {}, 'HTML', {});
 
-            switch orientation
-                case 'file'
-                    for ii = 1:numel(measData)
-                        dataOverview(end+1) = struct('ID',       measData(ii).Filename, ...
-                                                     'InfoSet',  struct('orientation', orientation, 'indexes', ii, 'measData', measData(ii), 'measTable', createMeasTable(measData(ii))), ...
-                                                     'HTML',     struct('Component', {}, 'Source', {}, 'Value', {}));
-                        
-                        % if ~isempty(measData(ii).UserData) && isfield(measData(ii).UserData, 'externalFiles')
-                        %     dataOverview(end).HTML = measData(ii).UserData.externalFiles;
-                        % end
+            locationList = {measData.Location};
+            locations    = unique(locationList);
+
+            for ii = 1:numel(locations)
+                idIndexes   = find(strcmp(locationList, locations{ii}));
+                [~, idSort] = sort(arrayfun(@(x) x.Data.Timestamp(1), measData(idIndexes)));
+                idIndexes   = idIndexes(idSort);
+                
+                fileList    = unique({measData(idIndexes).Filename});
+                pointsTableIndexes = [];
+                for jj = 1:height(pointsTable)
+                    sourceFiles = jsondecode(pointsTable.("Fonte de dados"){jj});
+                    if ~iscellstr(sourceFiles)
+                        sourceFiles = cellstr(sourceFiles);
                     end
 
-                case 'location'
-                    locationList = {measData.Location};
-                    locations    = unique(locationList);
-        
-                    for ii = 1:numel(locations)
-                        idIndexes   = find(strcmp(locationList, locations{ii}));
-                        [~, idSort] = sort(arrayfun(@(x) x.Data.Timestamp(1), measData(idIndexes)));
-                        idIndexes   = idIndexes(idSort);
-                        
-                        fileList    = unique({measData(idIndexes).Filename});
-                        pointsTableIndexes = [];
-                        for jj = 1:height(pointsTable)
-                            sourceFiles = jsondecode(pointsTable.("Fonte de dados"){jj});
-                            if ~iscellstr(sourceFiles)
-                                sourceFiles = cellstr(sourceFiles);
-                            end
-
-                            if any(ismember(sourceFiles, fileList))
-                                pointsTableIndexes = [pointsTableIndexes, jj];
-                            end
-                        end                   
-                        
-                        locationSubList = getFullListOfLocation(projectData, measData(idIndexes), stationTable, app.mainApp.General.MonitoringPlan.Distance_km);
-                        stationTableIndexes = ismember(stationTable.Location, locationSubList);
-
-                        dataOverview(end+1) = struct('ID',      measData(idIndexes(1)).Location,                              ...
-                                                     'InfoSet', struct('orientation',  orientation,                           ...
-                                                                       'indexes',      idIndexes,                             ...
-                                                                       'measData',     measData(idIndexes),                   ...
-                                                                       'measTable',    createMeasTable(measData(idIndexes)),  ...
-                                                                       'pointsTable',  pointsTable(pointsTableIndexes, :),    ...
-                                                                       'stationTable', stationTable(stationTableIndexes, :)), ...
-                                                     'HTML',    struct('Component', {}, 'Source', {}, 'Value', {}));
-                            
-                        % if ~isempty(measData(idIndexes(1)).UserData) && isfield(measData(idIndexes(1)).UserData, 'externalFiles')
-                        %     dataOverview(end).HTML = vertcat([measData(idIndexes).UserData].externalFiles);
-                        % end
+                    if any(ismember(sourceFiles, fileList))
+                        pointsTableIndexes = [pointsTableIndexes, jj];
                     end
+                end                   
+                
+                locationSubList = getFullListOfLocation(projectData, measData(idIndexes), stationTable, max(generalSettings.MonitoringPlan.Distance_km, generalSettings.ExternalRequest.Distance_km));
+                stationTableIndexes = ismember(stationTable.Location, locationSubList);
+
+                dataOverview(end+1) = struct('ID',      measData(idIndexes(1)).Location,                              ...
+                                             'InfoSet', struct('indexes',      idIndexes,                             ...
+                                                               'measData',     measData(idIndexes),                   ...
+                                                               'measTable',    createMeasTable(measData(idIndexes)),  ...
+                                                               'pointsTable',  pointsTable(pointsTableIndexes, :),    ...
+                                                               'stationTable', stationTable(stationTableIndexes, :)), ...
+                                             'HTML',    struct('Component', {}, 'Source', {}, 'Value', {}));
+                    
+                % if ~isempty(measData(idIndexes(1)).UserData) && isfield(measData(idIndexes(1)).UserData, 'externalFiles')
+                %     dataOverview(end).HTML = vertcat([measData(idIndexes).UserData].externalFiles);
+                % end
             end
             
             % Cria relatório:
@@ -178,7 +153,7 @@ classdef (Abstract) Controller
             % Em sendo a versão "Preliminar", apenas apresenta o html no
             % navegador. Por outro lado, em sendo a versão "Definitiva",
             % salva-se o arquivo ZIP em pasta local.
-            [baseFullFileName, baseFileName] = appUtil.DefaultFileName(app.mainApp.General.fileFolder.tempPath, 'Report', issueId);
+            [baseFullFileName, baseFileName] = appUtil.DefaultFileName(generalSettings.fileFolder.tempPath, 'Report', issueId);
             HTMLFile = [baseFullFileName '.html'];
             
             writematrix(HTMLDocContent, HTMLFile, 'QuoteStrings', 'none', 'FileType', 'text', 'Encoding', docVersion.encoding)
@@ -192,15 +167,15 @@ classdef (Abstract) Controller
 
                     % JSONFile = [baseFullFileName '.json'];
                     % XLSXFile = [baseFullFileName '.xlsx'];
-                    % ZIPFile  = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', {'*.zip', 'SCH (*.zip)'}, fullfile(app.mainApp.General.fileFolder.userPath, [baseFileName '.zip']));
+                    % ZIPFile  = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', {'*.zip', 'SCH (*.zip)'}, fullfile(generalSettings.fileFolder.userPath, [baseFileName '.zip']));
                     % if isempty(ZIPFile)
                     %     return
                     % end
                     % 
                     % % Salva em pasta temporária os arquivos JSON e XLSX. E salva
                     % % em pasta escolhida pelo usuário o arquivo ZIP.
-                    % jsonFileConfig  = {app.mainApp.General.ui.reportTable.exportedFiles.sharepoint.name, ...
-                    %                    app.mainApp.General.ui.reportTable.exportedFiles.sharepoint.label};
+                    % jsonFileConfig  = {generalSettings.ui.reportTable.exportedFiles.sharepoint.name, ...
+                    %                    generalSettings.ui.reportTable.exportedFiles.sharepoint.label};
                     % jsonFileTable   = renamevars(app.projectData.listOfProducts, jsonFileConfig{:});
                     % 
                     % jsonFileContent = struct('issueId', issueId,                    ...
@@ -209,7 +184,7 @@ classdef (Abstract) Controller
                     %                                            'name', entityName), ...
                     %                          'items',   jsonFileTable);
                     % 
-                    % xlsxFileConfig  = app.mainApp.General.ui.reportTable.exportedFiles.eFiscaliza;
+                    % xlsxFileConfig  = generalSettings.ui.reportTable.exportedFiles.eFiscaliza;
                     % xlsxFileContent = reportLibConnection.tableProducts(app.projectData.listOfProducts, xlsxFileConfig);
                     % 
                     % writematrix(jsonencode(jsonFileContent, 'PrettyPrint', true), JSONFile, "FileType", "text", "QuoteStrings", "none", "WriteMode", "overwrite")

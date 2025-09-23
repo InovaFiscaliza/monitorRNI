@@ -131,7 +131,7 @@ classdef (Abstract) HtmlTextGenerator
                 case 'MoreThanThreeLocations'
                     specificContent = 'Os arquivos estão relacionados a mais de três LOCALIDADES. Caso essa mesclagem seja intencional, ela deve ser conduzida de forma iterativa, com no máximo três LOCALIDADES por iteração.';
                 case 'FinalConfirmationBeforeEdition'
-                    specificContent = 'Deseja confirmar essa edição, escolhendo qual das LOCALIDADES como "localidade de agrupamento"?';
+                    specificContent = 'Qual das LOCALIDADES deve ser escolhida como "localidade de agrupamento"?';
             end
 
             htmlContent = sprintf(['No monitorRNI, a informação constante nos arquivos é agrupada por LOCALIDADE.<br><br>' ...

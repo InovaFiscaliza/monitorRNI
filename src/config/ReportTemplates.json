@@ -1,12 +1,22 @@
 [
     {
-        "Name": "_ReportLibTest",
-        "File": "_ReportLibTest.json",
+        "Name": "PM-RNI",
+        "File": "PM-RNI.json",
         "DocumentType": "Relatório de Atividades",
-        "Description": "Exemplo de relatório, apresentando alguns dos elementos HTML hoje contemplados na lib \"reportLib\".",
+        "Description": "Relatório de medições de níveis de radiação não ionizante realizadas no âmbito do Plano de Monitoração de Radiação Não Ionizante (PM-RNI)",
         "Author": "Eric Magalhães Delgado",
         "Version": "1.00",
-        "Release": "19/09/2025",
+        "Release": "22/09/2025",
+        "UserData": ""
+    },
+    {
+        "Name": "Demanda Externa",
+        "File": "Demanda Externa.json",
+        "DocumentType": "Relatório de Atividades",
+        "Description": "Relatório de medições de níveis de radiação não ionizante realizadas no entorno de pontos de interesse para atender demanda externa",
+        "Author": "Eric Magalhães Delgado",
+        "Version": "1.00",
+        "Release": "22/09/2025",
         "UserData": ""
     }
 ]
