@@ -1,34 +1,15 @@
 classdef (Abstract) Variable
 
-    % Relação de variáveis que podem ser manipuladas quando da execução de
-    % um dos métodos desta classe estática. Importante, contudo, editar os
-    % argumentos previstos por método em "reportLibConnection.Controller".
-
-    % • reportInfo....: estrutura com os campos "App", "Version", "Path", 
-    %   "Model", "Function" e "Project" (este último, opcional).
-
-    % • dataOverview..: lista de estruturas com os campos "ID", "InfoSet" e
-    %   "HTML". Em "InfoSet", armazena-se um handle para instância da classe 
-    %   model.measData. As instância desse classe são organizadas, em dataOverview, 
-    %   ordenadas à Localidade (ordenação primária) e Início de observação
-    %   (secundária).
-
-    % • analyzedData..: instância da classe model.measData.
-    
-    % • tableSettings.: campo extraído do script .JSON que norteia a criação
-    %   do relatório, o qual é uma estrutura com os campos "Origin", "Source", 
-    %   "Columns", "Caption", "Settings", "Intro", "Error" e "LineBreak".
-
     methods (Static)
         %-----------------------------------------------------------------%
         function fieldValue = GeneralSettings(reportInfo, fieldName)
-            appGeneral = reportInfo.Settings;
+            generalSettings = reportInfo.Settings;
 
             switch fieldName
                 case 'MonitoringPlan'
-                    fieldValue = jsonencode(appGeneral.(fieldName));
+                    fieldValue = jsonencode(generalSettings.(fieldName));
                 case 'ExternalRequest'
-                    fieldValue = jsonencode(appGeneral.(fieldName));
+                    fieldValue = jsonencode(generalSettings.(fieldName));
                 otherwise
                     error('UnexpectedFieldName')
             end
@@ -42,6 +23,8 @@ classdef (Abstract) Variable
             switch fieldName
                 case 'Filename'
                     fieldValue = strjoin(unique(strcat('"', {measData.(fieldName)}, '"')), ', ');
+                case 'NumFiles'
+                    fieldValue = numel(analyzedData.InfoSet.measData);
                 case {'Sensor', 'Location', 'Location_I'}
                     fieldValue = strjoin(unique({measData.(fieldName)}), ', ');
                 case 'Content'
@@ -75,17 +58,41 @@ classdef (Abstract) Variable
         function fieldValue = ProjectProperty(reportInfo, analyzedData, fieldName)
             generalSettings = reportInfo.Settings;
             projectData  = reportInfo.Project;
-            stationTable = reportInfo.Function.table_Stations;
-            measData = analyzedData.InfoSet.measData;
+            stationTable = reportInfo.Function.tbl_StationTable;
 
             switch fieldName
-                case 'LocationSummary'
+                case 'LocationFullList'
+                    measData = reportInfo.Object;
+                    
+                    locationList = {measData.Location};
+                    locations    = unique(locationList);
+                    
+                    locationSubList = {};
+                    for ii = 1:numel(locations)
+                        idIndexes   = find(strcmp(locationList, locations{ii}));
+                        [~, idSort] = sort(arrayfun(@(x) x.Data.Timestamp(1), measData(idIndexes)));
+                        idIndexes   = idIndexes(idSort);
+                        
+                        locationSubList = union(locationSubList, getFullListOfLocation(projectData, measData(idIndexes), stationTable, max(generalSettings.MonitoringPlan.Distance_km, generalSettings.ExternalRequest.Distance_km)));
+                    end
+
+                    fieldValue = strjoin(unique(locationSubList), ', ');
+
+                case 'LocationFullSummary'
+                    measData = reportInfo.Object;
                     hash = strjoin(unique({measData.UUID}));
                     hashIndex = find(strcmp({projectData.listOfLocations.Hash}, hash), 1);
-                    fieldValue = jsonencode(projectData.listOfLocations(hashIndex));
+                    fieldValue = jsonencode(projectData.listOfLocations(hashIndex)); 
 
                 case 'LocationList'
+                    measData = analyzedData.InfoSet.measData;
                     fieldValue = strjoin(getFullListOfLocation(projectData, measData, stationTable, max(generalSettings.MonitoringPlan.Distance_km, generalSettings.ExternalRequest.Distance_km)), ', ');
+                    
+                case 'LocationSummary'
+                    measData = analyzedData.InfoSet.measData;
+                    hash = strjoin(unique({measData.UUID}));
+                    hashIndex = find(strcmp({projectData.listOfLocations.Hash}, hash), 1);
+                    fieldValue = jsonencode(projectData.listOfLocations(hashIndex));                
                 otherwise
                     error('UnexpectedFieldName')
             end
@@ -95,9 +102,9 @@ classdef (Abstract) Variable
         function tableValue = TableProperty(reportInfo, analyzedData, fieldName)
             switch fieldName
                 case 'PointsTableHeight'
-                    tableValue = reportLibConnection.PointsByLocation(reportInfo, analyzedData, 'all', 'tableHeight');
-                case 'StationsTableHeight'
-                    tableValue = reportLibConnection.StationsByLocation(reportInfo, analyzedData, 'all', 'tableHeight');
+                    tableValue = reportLibConnection.Table.PointsByLocation(reportInfo, analyzedData, 'all', 'tableHeight');
+                case 'StationTableHeight'
+                    tableValue = reportLibConnection.Table.StationsByLocation(reportInfo, analyzedData, 'all', 'tableHeight');
                 otherwise
                     error('UnexpectedFieldName')
             end
