@@ -43,7 +43,7 @@ classdef (Abstract) Controller
 
             switch class(callingApp)
                 case 'winMonitorRNI'
-                    app = callinApp;
+                    app = callingApp;
                 case {'auxApp.winMonitoringPlan',  'auxApp.winMonitoringPlan_exported', ...
                       'auxApp.winExternalRequest', 'auxApp.winExternalRequest_exported'}
                     app = callingApp.mainApp;
