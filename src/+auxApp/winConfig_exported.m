@@ -10,32 +10,25 @@ classdef winConfig_exported < matlab.apps.AppBase
         TabGroup                      matlab.ui.container.TabGroup
         Tab1                          matlab.ui.container.Tab
         Tab1Grid                      matlab.ui.container.GridLayout
-        tool_RFDataHubButton          matlab.ui.control.Image
-        tool_versionInfoRefresh       matlab.ui.control.Image
         openAuxiliarApp2Debug         matlab.ui.control.CheckBox
         openAuxiliarAppAsDocked       matlab.ui.control.CheckBox
+        tool_RFDataHubButton          matlab.ui.control.Image
+        tool_versionInfoRefresh       matlab.ui.control.Image
         versionInfo                   matlab.ui.control.Label
         versionInfoLabel              matlab.ui.control.Label
         Tab2                          matlab.ui.container.Tab
         Tab2Grid                      matlab.ui.container.GridLayout
-        Panel_2                       matlab.ui.container.Panel
-        GridLayout3                   matlab.ui.container.GridLayout
-        SortMethod                    matlab.ui.control.DropDown
-        SortMethodLabel               matlab.ui.control.Label
-        InputType                     matlab.ui.control.DropDown
-        InputTypeLabel                matlab.ui.control.Label
-        PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel  matlab.ui.control.Label
-        analysis_ElevationPanel       matlab.ui.container.Panel
-        ExternalRequestGrid           matlab.ui.container.GridLayout
+        configAnalysisPanel3          matlab.ui.container.Panel
+        configAnalysisGrid3           matlab.ui.container.GridLayout
         ExternalRequestExportKML      matlab.ui.control.CheckBox
         ExternalRequestExportXLSX     matlab.ui.control.CheckBox
         ExternalRequestLevel          matlab.ui.control.NumericEditField
         ExternalRequestLevelLabel     matlab.ui.control.Label
         ExternalRequestDistance       matlab.ui.control.NumericEditField
         ExternalRequestDistanceLabel  matlab.ui.control.Label
-        analysis_ElevationLabel       matlab.ui.control.Label
-        analysis_FilePanel            matlab.ui.container.Panel
-        MonitoringPlanGrid            matlab.ui.container.GridLayout
+        configAnalysisPanel3Label     matlab.ui.control.Label
+        configAnalysisPanel2          matlab.ui.container.Panel
+        configAnalysisGrid2           matlab.ui.container.GridLayout
         MonitoringPlanExportKML       matlab.ui.control.CheckBox
         MonitoringPlanExportXLSX      matlab.ui.control.CheckBox
         MonitoringPlanPeriod          matlab.ui.container.CheckBoxTree
@@ -46,8 +39,15 @@ classdef winConfig_exported < matlab.apps.AppBase
         MonitoringPlanLevelLabel      matlab.ui.control.Label
         MonitoringPlanDistance        matlab.ui.control.NumericEditField
         MonitoringPlanDistanceLabel   matlab.ui.control.Label
-        analysis_FileRefresh          matlab.ui.control.Image
-        analysis_FileLabel            matlab.ui.control.Label
+        configAnalysisPanel2Label     matlab.ui.control.Label
+        configAnalysisPanel1          matlab.ui.container.Panel
+        configAnalysisGrid1           matlab.ui.container.GridLayout
+        SortMethod                    matlab.ui.control.DropDown
+        SortMethodLabel               matlab.ui.control.Label
+        InputType                     matlab.ui.control.DropDown
+        InputTypeLabel                matlab.ui.control.Label
+        configAnalysisRefresh         matlab.ui.control.Image
+        configAnalysisPanel1Label     matlab.ui.control.Label
         Tab3                          matlab.ui.container.Tab
         Tab3Grid                      matlab.ui.container.GridLayout
         configPlotPanel2              matlab.ui.container.Panel
@@ -296,7 +296,7 @@ classdef winConfig_exported < matlab.apps.AppBase
                 app.tool_openDevTools.Enable = 1;
 
                 set([app.DataHubPOSTButton, app.userPathButton], 'Enable', 1)
-                app.tool_versionInfoRefresh.Enable      = 1;
+                app.tool_versionInfoRefresh.Enable = 1;
                 app.openAuxiliarAppAsDocked.Enable = 1;
             end
 
@@ -352,9 +352,9 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.ExternalRequestExportKML.Value  = app.mainApp.General.ExternalRequest.Export.KML;
 
             if checkEdition(app, 'ANALYSIS')
-                app.analysis_FileRefresh.Visible = 1;
+                app.configAnalysisRefresh.Visible = 1;
             else
-                app.analysis_FileRefresh.Visible = 0;
+                app.configAnalysisRefresh.Visible = 0;
             end
         end
 
@@ -492,10 +492,10 @@ classdef winConfig_exported < matlab.apps.AppBase
                 case app.dockModule_Undock
                     appGeneral = app.mainApp.General;
                     appGeneral.operationMode.Dock = false;
-                    
-                    app.mainApp.tabGroupController.Components.appHandle{idx} = [];
 
                     inputArguments = ipcMainMatlabCallsHandler(app.mainApp, app, 'dockButtonPushed', auxAppTag);
+                    app.mainApp.tabGroupController.Components.appHandle{idx} = [];
+                    
                     openModule(app.mainApp.tabGroupController, relatedButton, false, appGeneral, inputArguments{:})
                     closeModule(app.mainApp.tabGroupController, auxAppTag, app.mainApp.General, 'undock')
                     
@@ -600,11 +600,11 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         end
 
-        % Image clicked function: analysis_FileRefresh
+        % Image clicked function: configAnalysisRefresh
         function Config_AnalysisRefreshImageClicked(app, event)
             
             if ~checkEdition(app, 'ANALYSIS')
-                app.analysis_FileRefresh.Visible = 0;
+                app.configAnalysisRefresh.Visible = 0;
                 return
 
             else
@@ -1037,26 +1037,6 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.versionInfo.Interpreter = 'html';
             app.versionInfo.Text = '';
 
-            % Create openAuxiliarAppAsDocked
-            app.openAuxiliarAppAsDocked = uicheckbox(app.Tab1Grid);
-            app.openAuxiliarAppAsDocked.ValueChangedFcn = createCallbackFcn(app, @Config_GeneralParameterValueChanged, true);
-            app.openAuxiliarAppAsDocked.Enable = 'off';
-            app.openAuxiliarAppAsDocked.Text = 'Modo DOCK: módulos auxiliares abertos na janela principal do app';
-            app.openAuxiliarAppAsDocked.FontSize = 11;
-            app.openAuxiliarAppAsDocked.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.openAuxiliarAppAsDocked.Layout.Row = 4;
-            app.openAuxiliarAppAsDocked.Layout.Column = 1;
-
-            % Create openAuxiliarApp2Debug
-            app.openAuxiliarApp2Debug = uicheckbox(app.Tab1Grid);
-            app.openAuxiliarApp2Debug.ValueChangedFcn = createCallbackFcn(app, @Config_GeneralParameterValueChanged, true);
-            app.openAuxiliarApp2Debug.Enable = 'off';
-            app.openAuxiliarApp2Debug.Text = 'Modo DEBUG';
-            app.openAuxiliarApp2Debug.FontSize = 11;
-            app.openAuxiliarApp2Debug.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.openAuxiliarApp2Debug.Layout.Row = 5;
-            app.openAuxiliarApp2Debug.Layout.Column = 1;
-
             % Create tool_versionInfoRefresh
             app.tool_versionInfoRefresh = uiimage(app.Tab1Grid);
             app.tool_versionInfoRefresh.ScaleMethod = 'none';
@@ -1077,6 +1057,26 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.tool_RFDataHubButton.Layout.Column = 3;
             app.tool_RFDataHubButton.ImageSource = 'mosaic_32.png';
 
+            % Create openAuxiliarAppAsDocked
+            app.openAuxiliarAppAsDocked = uicheckbox(app.Tab1Grid);
+            app.openAuxiliarAppAsDocked.ValueChangedFcn = createCallbackFcn(app, @Config_GeneralParameterValueChanged, true);
+            app.openAuxiliarAppAsDocked.Enable = 'off';
+            app.openAuxiliarAppAsDocked.Text = 'Modo DOCK: módulos auxiliares abertos na janela principal do app';
+            app.openAuxiliarAppAsDocked.FontSize = 11;
+            app.openAuxiliarAppAsDocked.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.openAuxiliarAppAsDocked.Layout.Row = 4;
+            app.openAuxiliarAppAsDocked.Layout.Column = 1;
+
+            % Create openAuxiliarApp2Debug
+            app.openAuxiliarApp2Debug = uicheckbox(app.Tab1Grid);
+            app.openAuxiliarApp2Debug.ValueChangedFcn = createCallbackFcn(app, @Config_GeneralParameterValueChanged, true);
+            app.openAuxiliarApp2Debug.Enable = 'off';
+            app.openAuxiliarApp2Debug.Text = 'Modo DEBUG';
+            app.openAuxiliarApp2Debug.FontSize = 11;
+            app.openAuxiliarApp2Debug.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.openAuxiliarApp2Debug.Layout.Row = 5;
+            app.openAuxiliarApp2Debug.Layout.Column = 1;
+
             % Create Tab2
             app.Tab2 = uitab(app.TabGroup);
             app.Tab2.AutoResizeChildren = 'off';
@@ -1090,223 +1090,48 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.Tab2Grid.RowSpacing = 5;
             app.Tab2Grid.BackgroundColor = [1 1 1];
 
-            % Create analysis_FileLabel
-            app.analysis_FileLabel = uilabel(app.Tab2Grid);
-            app.analysis_FileLabel.VerticalAlignment = 'bottom';
-            app.analysis_FileLabel.FontSize = 10;
-            app.analysis_FileLabel.Layout.Row = 3;
-            app.analysis_FileLabel.Layout.Column = 1;
-            app.analysis_FileLabel.Text = 'PM-RNI';
+            % Create configAnalysisPanel1Label
+            app.configAnalysisPanel1Label = uilabel(app.Tab2Grid);
+            app.configAnalysisPanel1Label.VerticalAlignment = 'bottom';
+            app.configAnalysisPanel1Label.FontSize = 10;
+            app.configAnalysisPanel1Label.Layout.Row = 1;
+            app.configAnalysisPanel1Label.Layout.Column = 1;
+            app.configAnalysisPanel1Label.Text = 'PROCESSO DE LEITURA DOS ARQUIVOS E VISUALIZAÇÃO DOS SEUS METADADOS';
 
-            % Create analysis_FileRefresh
-            app.analysis_FileRefresh = uiimage(app.Tab2Grid);
-            app.analysis_FileRefresh.ScaleMethod = 'none';
-            app.analysis_FileRefresh.ImageClickedFcn = createCallbackFcn(app, @Config_AnalysisRefreshImageClicked, true);
-            app.analysis_FileRefresh.Visible = 'off';
-            app.analysis_FileRefresh.Tooltip = {'Retorna às configurações iniciais'};
-            app.analysis_FileRefresh.Layout.Row = 1;
-            app.analysis_FileRefresh.Layout.Column = 2;
-            app.analysis_FileRefresh.VerticalAlignment = 'bottom';
-            app.analysis_FileRefresh.ImageSource = 'Refresh_18.png';
+            % Create configAnalysisRefresh
+            app.configAnalysisRefresh = uiimage(app.Tab2Grid);
+            app.configAnalysisRefresh.ScaleMethod = 'none';
+            app.configAnalysisRefresh.ImageClickedFcn = createCallbackFcn(app, @Config_AnalysisRefreshImageClicked, true);
+            app.configAnalysisRefresh.Visible = 'off';
+            app.configAnalysisRefresh.Tooltip = {'Retorna às configurações iniciais'};
+            app.configAnalysisRefresh.Layout.Row = 1;
+            app.configAnalysisRefresh.Layout.Column = 2;
+            app.configAnalysisRefresh.VerticalAlignment = 'bottom';
+            app.configAnalysisRefresh.ImageSource = 'Refresh_18.png';
 
-            % Create analysis_FilePanel
-            app.analysis_FilePanel = uipanel(app.Tab2Grid);
-            app.analysis_FilePanel.AutoResizeChildren = 'off';
-            app.analysis_FilePanel.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.analysis_FilePanel.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.analysis_FilePanel.Layout.Row = 4;
-            app.analysis_FilePanel.Layout.Column = [1 2];
+            % Create configAnalysisPanel1
+            app.configAnalysisPanel1 = uipanel(app.Tab2Grid);
+            app.configAnalysisPanel1.AutoResizeChildren = 'off';
+            app.configAnalysisPanel1.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
+            app.configAnalysisPanel1.Layout.Row = 2;
+            app.configAnalysisPanel1.Layout.Column = [1 2];
 
-            % Create MonitoringPlanGrid
-            app.MonitoringPlanGrid = uigridlayout(app.analysis_FilePanel);
-            app.MonitoringPlanGrid.ColumnWidth = {350, 90, '1x', 20};
-            app.MonitoringPlanGrid.RowHeight = {22, 22, 22, '1x', 1, 17, 17};
-            app.MonitoringPlanGrid.ColumnSpacing = 5;
-            app.MonitoringPlanGrid.RowSpacing = 5;
-            app.MonitoringPlanGrid.BackgroundColor = [1 1 1];
-
-            % Create MonitoringPlanDistanceLabel
-            app.MonitoringPlanDistanceLabel = uilabel(app.MonitoringPlanGrid);
-            app.MonitoringPlanDistanceLabel.WordWrap = 'on';
-            app.MonitoringPlanDistanceLabel.FontSize = 11;
-            app.MonitoringPlanDistanceLabel.Layout.Row = 1;
-            app.MonitoringPlanDistanceLabel.Layout.Column = [1 2];
-            app.MonitoringPlanDistanceLabel.Text = 'Distância limite entre ponto de medição e a estação sob análise (m):';
-
-            % Create MonitoringPlanDistance
-            app.MonitoringPlanDistance = uieditfield(app.MonitoringPlanGrid, 'numeric');
-            app.MonitoringPlanDistance.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
-            app.MonitoringPlanDistance.FontSize = 11;
-            app.MonitoringPlanDistance.Layout.Row = 1;
-            app.MonitoringPlanDistance.Layout.Column = 2;
-            app.MonitoringPlanDistance.Value = 200;
-
-            % Create MonitoringPlanLevelLabel
-            app.MonitoringPlanLevelLabel = uilabel(app.MonitoringPlanGrid);
-            app.MonitoringPlanLevelLabel.WordWrap = 'on';
-            app.MonitoringPlanLevelLabel.FontSize = 11;
-            app.MonitoringPlanLevelLabel.Layout.Row = 2;
-            app.MonitoringPlanLevelLabel.Layout.Column = 1;
-            app.MonitoringPlanLevelLabel.Text = 'Nível de referência de campo elétrico: (V/m)';
-
-            % Create MonitoringPlanLevel
-            app.MonitoringPlanLevel = uieditfield(app.MonitoringPlanGrid, 'numeric');
-            app.MonitoringPlanLevel.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
-            app.MonitoringPlanLevel.FontSize = 11;
-            app.MonitoringPlanLevel.Layout.Row = 2;
-            app.MonitoringPlanLevel.Layout.Column = 2;
-            app.MonitoringPlanLevel.Value = 14;
-
-            % Create MonitoringPlanFileLabel
-            app.MonitoringPlanFileLabel = uilabel(app.MonitoringPlanGrid);
-            app.MonitoringPlanFileLabel.WordWrap = 'on';
-            app.MonitoringPlanFileLabel.FontSize = 11;
-            app.MonitoringPlanFileLabel.Layout.Row = 3;
-            app.MonitoringPlanFileLabel.Layout.Column = 1;
-            app.MonitoringPlanFileLabel.Text = 'Arquivo de referência:';
-
-            % Create MonitoringPlanFileName
-            app.MonitoringPlanFileName = uieditfield(app.MonitoringPlanGrid, 'text');
-            app.MonitoringPlanFileName.Editable = 'off';
-            app.MonitoringPlanFileName.FontSize = 11;
-            app.MonitoringPlanFileName.Layout.Row = 3;
-            app.MonitoringPlanFileName.Layout.Column = [2 3];
-
-            % Create MonitoringPlanOpenFile
-            app.MonitoringPlanOpenFile = uiimage(app.MonitoringPlanGrid);
-            app.MonitoringPlanOpenFile.ImageClickedFcn = createCallbackFcn(app, @Config_AnalysisOpenReferenceFile, true);
-            app.MonitoringPlanOpenFile.Tooltip = {'Abrir no Excel a planilha de referência'};
-            app.MonitoringPlanOpenFile.Layout.Row = 3;
-            app.MonitoringPlanOpenFile.Layout.Column = 4;
-            app.MonitoringPlanOpenFile.ImageSource = 'OpenFile_36x36.png';
-
-            % Create MonitoringPlanPeriod
-            app.MonitoringPlanPeriod = uitree(app.MonitoringPlanGrid, 'checkbox');
-            app.MonitoringPlanPeriod.FontSize = 11;
-            app.MonitoringPlanPeriod.Layout.Row = 4;
-            app.MonitoringPlanPeriod.Layout.Column = [2 3];
-
-            % Assign Checked Nodes
-            app.MonitoringPlanPeriod.CheckedNodesChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
-
-            % Create MonitoringPlanExportXLSX
-            app.MonitoringPlanExportXLSX = uicheckbox(app.MonitoringPlanGrid);
-            app.MonitoringPlanExportXLSX.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
-            app.MonitoringPlanExportXLSX.Text = 'Ao exportar a tabela de dados, cria uma segunda aba na planilha com as medidas brutas.';
-            app.MonitoringPlanExportXLSX.FontSize = 11;
-            app.MonitoringPlanExportXLSX.Layout.Row = 6;
-            app.MonitoringPlanExportXLSX.Layout.Column = [1 3];
-
-            % Create MonitoringPlanExportKML
-            app.MonitoringPlanExportKML = uicheckbox(app.MonitoringPlanGrid);
-            app.MonitoringPlanExportKML.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
-            app.MonitoringPlanExportKML.Text = 'Ao exportar a tabela de dados, cria arquivos no formato "kml".';
-            app.MonitoringPlanExportKML.FontSize = 11;
-            app.MonitoringPlanExportKML.Layout.Row = 7;
-            app.MonitoringPlanExportKML.Layout.Column = [1 3];
-
-            % Create analysis_ElevationLabel
-            app.analysis_ElevationLabel = uilabel(app.Tab2Grid);
-            app.analysis_ElevationLabel.VerticalAlignment = 'bottom';
-            app.analysis_ElevationLabel.FontSize = 10;
-            app.analysis_ElevationLabel.Layout.Row = 5;
-            app.analysis_ElevationLabel.Layout.Column = 1;
-            app.analysis_ElevationLabel.Text = 'DEMANDA EXTERNA';
-
-            % Create analysis_ElevationPanel
-            app.analysis_ElevationPanel = uipanel(app.Tab2Grid);
-            app.analysis_ElevationPanel.AutoResizeChildren = 'off';
-            app.analysis_ElevationPanel.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.analysis_ElevationPanel.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.analysis_ElevationPanel.Layout.Row = 6;
-            app.analysis_ElevationPanel.Layout.Column = [1 2];
-
-            % Create ExternalRequestGrid
-            app.ExternalRequestGrid = uigridlayout(app.analysis_ElevationPanel);
-            app.ExternalRequestGrid.ColumnWidth = {350, 90, 130};
-            app.ExternalRequestGrid.RowHeight = {22, 22, 1, 17, 17};
-            app.ExternalRequestGrid.RowSpacing = 5;
-            app.ExternalRequestGrid.BackgroundColor = [1 1 1];
-
-            % Create ExternalRequestDistanceLabel
-            app.ExternalRequestDistanceLabel = uilabel(app.ExternalRequestGrid);
-            app.ExternalRequestDistanceLabel.WordWrap = 'on';
-            app.ExternalRequestDistanceLabel.FontSize = 11;
-            app.ExternalRequestDistanceLabel.Layout.Row = 1;
-            app.ExternalRequestDistanceLabel.Layout.Column = [1 2];
-            app.ExternalRequestDistanceLabel.Text = 'Distância limite entre ponto de medição e a estação sob análise (m):';
-
-            % Create ExternalRequestDistance
-            app.ExternalRequestDistance = uieditfield(app.ExternalRequestGrid, 'numeric');
-            app.ExternalRequestDistance.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
-            app.ExternalRequestDistance.FontSize = 11;
-            app.ExternalRequestDistance.Layout.Row = 1;
-            app.ExternalRequestDistance.Layout.Column = 2;
-            app.ExternalRequestDistance.Value = 1000;
-
-            % Create ExternalRequestLevelLabel
-            app.ExternalRequestLevelLabel = uilabel(app.ExternalRequestGrid);
-            app.ExternalRequestLevelLabel.WordWrap = 'on';
-            app.ExternalRequestLevelLabel.FontSize = 11;
-            app.ExternalRequestLevelLabel.Layout.Row = 2;
-            app.ExternalRequestLevelLabel.Layout.Column = 1;
-            app.ExternalRequestLevelLabel.Text = 'Nível de referência de campo elétrico: (V/m)';
-
-            % Create ExternalRequestLevel
-            app.ExternalRequestLevel = uieditfield(app.ExternalRequestGrid, 'numeric');
-            app.ExternalRequestLevel.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
-            app.ExternalRequestLevel.FontSize = 11;
-            app.ExternalRequestLevel.Layout.Row = 2;
-            app.ExternalRequestLevel.Layout.Column = 2;
-            app.ExternalRequestLevel.Value = 14;
-
-            % Create ExternalRequestExportXLSX
-            app.ExternalRequestExportXLSX = uicheckbox(app.ExternalRequestGrid);
-            app.ExternalRequestExportXLSX.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
-            app.ExternalRequestExportXLSX.Text = 'Ao exportar a tabela de dados, cria uma segunda aba na planilha com as medidas brutas.';
-            app.ExternalRequestExportXLSX.FontSize = 11;
-            app.ExternalRequestExportXLSX.Layout.Row = 4;
-            app.ExternalRequestExportXLSX.Layout.Column = [1 3];
-
-            % Create ExternalRequestExportKML
-            app.ExternalRequestExportKML = uicheckbox(app.ExternalRequestGrid);
-            app.ExternalRequestExportKML.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
-            app.ExternalRequestExportKML.Text = 'Ao exportar a tabela de dados, cria arquivos no formato "kml".';
-            app.ExternalRequestExportKML.FontSize = 11;
-            app.ExternalRequestExportKML.Layout.Row = 5;
-            app.ExternalRequestExportKML.Layout.Column = [1 3];
-
-            % Create PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel
-            app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel = uilabel(app.Tab2Grid);
-            app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel.VerticalAlignment = 'bottom';
-            app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel.FontSize = 10;
-            app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel.Layout.Row = 1;
-            app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel.Layout.Column = 1;
-            app.PROCESSODELEITURADOSARQUIVOSEVISUALIZAODOSSEUSMETADADOSLabel.Text = 'PROCESSO DE LEITURA DOS ARQUIVOS E VISUALIZAÇÃO DOS SEUS METADADOS';
-
-            % Create Panel_2
-            app.Panel_2 = uipanel(app.Tab2Grid);
-            app.Panel_2.AutoResizeChildren = 'off';
-            app.Panel_2.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.Panel_2.Layout.Row = 2;
-            app.Panel_2.Layout.Column = [1 2];
-
-            % Create GridLayout3
-            app.GridLayout3 = uigridlayout(app.Panel_2);
-            app.GridLayout3.ColumnWidth = {350, 230};
-            app.GridLayout3.RowHeight = {22, 22};
-            app.GridLayout3.RowSpacing = 5;
-            app.GridLayout3.BackgroundColor = [1 1 1];
+            % Create configAnalysisGrid1
+            app.configAnalysisGrid1 = uigridlayout(app.configAnalysisPanel1);
+            app.configAnalysisGrid1.ColumnWidth = {350, 230};
+            app.configAnalysisGrid1.RowHeight = {22, 22};
+            app.configAnalysisGrid1.RowSpacing = 5;
+            app.configAnalysisGrid1.BackgroundColor = [1 1 1];
 
             % Create InputTypeLabel
-            app.InputTypeLabel = uilabel(app.GridLayout3);
+            app.InputTypeLabel = uilabel(app.configAnalysisGrid1);
             app.InputTypeLabel.FontSize = 11;
             app.InputTypeLabel.Layout.Row = 1;
             app.InputTypeLabel.Layout.Column = 1;
             app.InputTypeLabel.Text = 'Entrada:';
 
             % Create InputType
-            app.InputType = uidropdown(app.GridLayout3);
+            app.InputType = uidropdown(app.configAnalysisGrid1);
             app.InputType.Items = {'file', 'folder'};
             app.InputType.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
             app.InputType.FontSize = 11;
@@ -1316,14 +1141,14 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.InputType.Value = 'file';
 
             % Create SortMethodLabel
-            app.SortMethodLabel = uilabel(app.GridLayout3);
+            app.SortMethodLabel = uilabel(app.configAnalysisGrid1);
             app.SortMethodLabel.FontSize = 11;
             app.SortMethodLabel.Layout.Row = 2;
             app.SortMethodLabel.Layout.Column = 1;
             app.SortMethodLabel.Text = 'Visualização árvore:';
 
             % Create SortMethod
-            app.SortMethod = uidropdown(app.GridLayout3);
+            app.SortMethod = uidropdown(app.configAnalysisGrid1);
             app.SortMethod.Items = {'ARQUIVO', 'LOCALIDADE'};
             app.SortMethod.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
             app.SortMethod.FontSize = 11;
@@ -1331,6 +1156,181 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.SortMethod.Layout.Row = 2;
             app.SortMethod.Layout.Column = 2;
             app.SortMethod.Value = 'LOCALIDADE';
+
+            % Create configAnalysisPanel2Label
+            app.configAnalysisPanel2Label = uilabel(app.Tab2Grid);
+            app.configAnalysisPanel2Label.VerticalAlignment = 'bottom';
+            app.configAnalysisPanel2Label.FontSize = 10;
+            app.configAnalysisPanel2Label.Layout.Row = 3;
+            app.configAnalysisPanel2Label.Layout.Column = 1;
+            app.configAnalysisPanel2Label.Text = 'PM-RNI';
+
+            % Create configAnalysisPanel2
+            app.configAnalysisPanel2 = uipanel(app.Tab2Grid);
+            app.configAnalysisPanel2.AutoResizeChildren = 'off';
+            app.configAnalysisPanel2.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.configAnalysisPanel2.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
+            app.configAnalysisPanel2.Layout.Row = 4;
+            app.configAnalysisPanel2.Layout.Column = [1 2];
+
+            % Create configAnalysisGrid2
+            app.configAnalysisGrid2 = uigridlayout(app.configAnalysisPanel2);
+            app.configAnalysisGrid2.ColumnWidth = {350, 90, '1x', 20};
+            app.configAnalysisGrid2.RowHeight = {22, 22, 22, '1x', 1, 17, 17};
+            app.configAnalysisGrid2.ColumnSpacing = 5;
+            app.configAnalysisGrid2.RowSpacing = 5;
+            app.configAnalysisGrid2.BackgroundColor = [1 1 1];
+
+            % Create MonitoringPlanDistanceLabel
+            app.MonitoringPlanDistanceLabel = uilabel(app.configAnalysisGrid2);
+            app.MonitoringPlanDistanceLabel.WordWrap = 'on';
+            app.MonitoringPlanDistanceLabel.FontSize = 11;
+            app.MonitoringPlanDistanceLabel.Layout.Row = 1;
+            app.MonitoringPlanDistanceLabel.Layout.Column = [1 2];
+            app.MonitoringPlanDistanceLabel.Text = 'Distância limite entre ponto de medição e a estação sob análise (m):';
+
+            % Create MonitoringPlanDistance
+            app.MonitoringPlanDistance = uieditfield(app.configAnalysisGrid2, 'numeric');
+            app.MonitoringPlanDistance.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.MonitoringPlanDistance.FontSize = 11;
+            app.MonitoringPlanDistance.Layout.Row = 1;
+            app.MonitoringPlanDistance.Layout.Column = 2;
+            app.MonitoringPlanDistance.Value = 200;
+
+            % Create MonitoringPlanLevelLabel
+            app.MonitoringPlanLevelLabel = uilabel(app.configAnalysisGrid2);
+            app.MonitoringPlanLevelLabel.WordWrap = 'on';
+            app.MonitoringPlanLevelLabel.FontSize = 11;
+            app.MonitoringPlanLevelLabel.Layout.Row = 2;
+            app.MonitoringPlanLevelLabel.Layout.Column = 1;
+            app.MonitoringPlanLevelLabel.Text = 'Nível de referência de campo elétrico: (V/m)';
+
+            % Create MonitoringPlanLevel
+            app.MonitoringPlanLevel = uieditfield(app.configAnalysisGrid2, 'numeric');
+            app.MonitoringPlanLevel.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.MonitoringPlanLevel.FontSize = 11;
+            app.MonitoringPlanLevel.Layout.Row = 2;
+            app.MonitoringPlanLevel.Layout.Column = 2;
+            app.MonitoringPlanLevel.Value = 14;
+
+            % Create MonitoringPlanFileLabel
+            app.MonitoringPlanFileLabel = uilabel(app.configAnalysisGrid2);
+            app.MonitoringPlanFileLabel.WordWrap = 'on';
+            app.MonitoringPlanFileLabel.FontSize = 11;
+            app.MonitoringPlanFileLabel.Layout.Row = 3;
+            app.MonitoringPlanFileLabel.Layout.Column = 1;
+            app.MonitoringPlanFileLabel.Text = 'Arquivo de referência:';
+
+            % Create MonitoringPlanFileName
+            app.MonitoringPlanFileName = uieditfield(app.configAnalysisGrid2, 'text');
+            app.MonitoringPlanFileName.Editable = 'off';
+            app.MonitoringPlanFileName.FontSize = 11;
+            app.MonitoringPlanFileName.Layout.Row = 3;
+            app.MonitoringPlanFileName.Layout.Column = [2 3];
+
+            % Create MonitoringPlanOpenFile
+            app.MonitoringPlanOpenFile = uiimage(app.configAnalysisGrid2);
+            app.MonitoringPlanOpenFile.ImageClickedFcn = createCallbackFcn(app, @Config_AnalysisOpenReferenceFile, true);
+            app.MonitoringPlanOpenFile.Tooltip = {'Abrir no Excel a planilha de referência'};
+            app.MonitoringPlanOpenFile.Layout.Row = 3;
+            app.MonitoringPlanOpenFile.Layout.Column = 4;
+            app.MonitoringPlanOpenFile.ImageSource = 'OpenFile_36x36.png';
+
+            % Create MonitoringPlanPeriod
+            app.MonitoringPlanPeriod = uitree(app.configAnalysisGrid2, 'checkbox');
+            app.MonitoringPlanPeriod.FontSize = 11;
+            app.MonitoringPlanPeriod.Layout.Row = 4;
+            app.MonitoringPlanPeriod.Layout.Column = [2 3];
+
+            % Assign Checked Nodes
+            app.MonitoringPlanPeriod.CheckedNodesChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+
+            % Create MonitoringPlanExportXLSX
+            app.MonitoringPlanExportXLSX = uicheckbox(app.configAnalysisGrid2);
+            app.MonitoringPlanExportXLSX.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.MonitoringPlanExportXLSX.Text = 'Ao exportar a tabela de dados, cria uma segunda aba na planilha com as medidas brutas.';
+            app.MonitoringPlanExportXLSX.FontSize = 11;
+            app.MonitoringPlanExportXLSX.Layout.Row = 6;
+            app.MonitoringPlanExportXLSX.Layout.Column = [1 3];
+
+            % Create MonitoringPlanExportKML
+            app.MonitoringPlanExportKML = uicheckbox(app.configAnalysisGrid2);
+            app.MonitoringPlanExportKML.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.MonitoringPlanExportKML.Text = 'Ao exportar a tabela de dados, cria arquivos no formato "kml".';
+            app.MonitoringPlanExportKML.FontSize = 11;
+            app.MonitoringPlanExportKML.Layout.Row = 7;
+            app.MonitoringPlanExportKML.Layout.Column = [1 3];
+
+            % Create configAnalysisPanel3Label
+            app.configAnalysisPanel3Label = uilabel(app.Tab2Grid);
+            app.configAnalysisPanel3Label.VerticalAlignment = 'bottom';
+            app.configAnalysisPanel3Label.FontSize = 10;
+            app.configAnalysisPanel3Label.Layout.Row = 5;
+            app.configAnalysisPanel3Label.Layout.Column = 1;
+            app.configAnalysisPanel3Label.Text = 'DEMANDA EXTERNA';
+
+            % Create configAnalysisPanel3
+            app.configAnalysisPanel3 = uipanel(app.Tab2Grid);
+            app.configAnalysisPanel3.AutoResizeChildren = 'off';
+            app.configAnalysisPanel3.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.configAnalysisPanel3.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
+            app.configAnalysisPanel3.Layout.Row = 6;
+            app.configAnalysisPanel3.Layout.Column = [1 2];
+
+            % Create configAnalysisGrid3
+            app.configAnalysisGrid3 = uigridlayout(app.configAnalysisPanel3);
+            app.configAnalysisGrid3.ColumnWidth = {350, 90, 130};
+            app.configAnalysisGrid3.RowHeight = {22, 22, 1, 17, 17};
+            app.configAnalysisGrid3.RowSpacing = 5;
+            app.configAnalysisGrid3.BackgroundColor = [1 1 1];
+
+            % Create ExternalRequestDistanceLabel
+            app.ExternalRequestDistanceLabel = uilabel(app.configAnalysisGrid3);
+            app.ExternalRequestDistanceLabel.WordWrap = 'on';
+            app.ExternalRequestDistanceLabel.FontSize = 11;
+            app.ExternalRequestDistanceLabel.Layout.Row = 1;
+            app.ExternalRequestDistanceLabel.Layout.Column = [1 2];
+            app.ExternalRequestDistanceLabel.Text = 'Distância limite entre ponto de medição e a estação sob análise (m):';
+
+            % Create ExternalRequestDistance
+            app.ExternalRequestDistance = uieditfield(app.configAnalysisGrid3, 'numeric');
+            app.ExternalRequestDistance.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.ExternalRequestDistance.FontSize = 11;
+            app.ExternalRequestDistance.Layout.Row = 1;
+            app.ExternalRequestDistance.Layout.Column = 2;
+            app.ExternalRequestDistance.Value = 1000;
+
+            % Create ExternalRequestLevelLabel
+            app.ExternalRequestLevelLabel = uilabel(app.configAnalysisGrid3);
+            app.ExternalRequestLevelLabel.WordWrap = 'on';
+            app.ExternalRequestLevelLabel.FontSize = 11;
+            app.ExternalRequestLevelLabel.Layout.Row = 2;
+            app.ExternalRequestLevelLabel.Layout.Column = 1;
+            app.ExternalRequestLevelLabel.Text = 'Nível de referência de campo elétrico: (V/m)';
+
+            % Create ExternalRequestLevel
+            app.ExternalRequestLevel = uieditfield(app.configAnalysisGrid3, 'numeric');
+            app.ExternalRequestLevel.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.ExternalRequestLevel.FontSize = 11;
+            app.ExternalRequestLevel.Layout.Row = 2;
+            app.ExternalRequestLevel.Layout.Column = 2;
+            app.ExternalRequestLevel.Value = 14;
+
+            % Create ExternalRequestExportXLSX
+            app.ExternalRequestExportXLSX = uicheckbox(app.configAnalysisGrid3);
+            app.ExternalRequestExportXLSX.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.ExternalRequestExportXLSX.Text = 'Ao exportar a tabela de dados, cria uma segunda aba na planilha com as medidas brutas.';
+            app.ExternalRequestExportXLSX.FontSize = 11;
+            app.ExternalRequestExportXLSX.Layout.Row = 4;
+            app.ExternalRequestExportXLSX.Layout.Column = [1 3];
+
+            % Create ExternalRequestExportKML
+            app.ExternalRequestExportKML = uicheckbox(app.configAnalysisGrid3);
+            app.ExternalRequestExportKML.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
+            app.ExternalRequestExportKML.Text = 'Ao exportar a tabela de dados, cria arquivos no formato "kml".';
+            app.ExternalRequestExportKML.FontSize = 11;
+            app.ExternalRequestExportKML.Layout.Row = 5;
+            app.ExternalRequestExportKML.Layout.Column = [1 3];
 
             % Create Tab3
             app.Tab3 = uitab(app.TabGroup);
