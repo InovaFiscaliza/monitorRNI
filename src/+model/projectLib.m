@@ -18,6 +18,10 @@ classdef projectLib < handle
 
         selectedFileLocations
         listOfLocations    = struct('Hash', {}, 'Automatic', {}, 'Manual', {})
+
+        numMeasurements
+        numAboveMonitoringPlanTHR
+        numAboveExternalRequestTHR
     end
 
     
@@ -134,8 +138,53 @@ classdef projectLib < handle
                     pointsTable  = identifyMeasuresForEachPoint(obj, pointsTable, idxPoints, measTable, generalSettings.ExternalRequest.FieldValue, generalSettings.ExternalRequest.Distance_km);
                 end
 
+                if strcmp(updateType, 'station+points')
+                    obj.numMeasurements = height(measTable);
+                    obj.numAboveMonitoringPlanTHR = sum(measTable.FieldValue > generalSettings.MonitoringPlan.FieldValue);
+                    if generalSettings.MonitoringPlan.FieldValue == generalSettings.ExternalRequest.FieldValue
+                        obj.numAboveExternalRequestTHR = obj.numAboveMonitoringPlanTHR;
+                    else
+                        obj.numAboveExternalRequestTHR = sum(measTable.FieldValue > generalSettings.ExternalRequest.FieldValue);
+                    end
+                end
+
             else
                 measTable = [];
+
+                if strcmp(updateType, 'station+points')
+                    obj.numMeasurements = 0;
+                    obj.numAboveMonitoringPlanTHR  = 0;
+                    obj.numAboveExternalRequestTHR = 0;
+                end
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function stationTable = prepareStationTableForExport(obj, stationTable, charReplace)
+            arguments
+                obj
+                stationTable
+                charReplace char = ''
+            end
+
+            % Insere coordenadas geográficas da estação no campo "Observações", 
+            % caso editadas.
+            idxEditedCoordinates = find((stationTable.("Lat") ~= stationTable.("Latitude")) | (stationTable.("Long") ~= stationTable.("Longitude")))';
+            for ii = idxEditedCoordinates
+                Coordinates = struct('Latitude_Editada',  stationTable.("Latitude")(ii), ...
+                                     'Longitude_Editada', stationTable.("Longitude")(ii));
+        
+                if ~isempty(stationTable.("Observações"){ii})
+                    Coordinates.NotaAdicional = stationTable.("Observações"){ii};
+                end
+        
+                stationTable.("Observações"){ii} = jsonencode(Coordinates);
+            end
+
+            % Troca valores inválidos ("-1", por exemplo) por valores nulos.
+            stationTable.("Justificativa") = replace(cellstr(stationTable.("Justificativa")), '-1', charReplace);
+            if ~isempty(charReplace)
+                stationTable.("Observações")(strcmp(stationTable.("Observações"), '')) = {charReplace};
             end
         end
 

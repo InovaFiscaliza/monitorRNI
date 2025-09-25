@@ -2,39 +2,26 @@ classdef (Abstract) Table
 
     methods (Static)
         %-----------------------------------------------------------------%
-        function Table = FileByLocation(reportInfo)
-            generalSettings = reportInfo.Settings;
-            projectData  = reportInfo.Project;
-            stationTable = reportInfo.Function.tbl_StationTable;
-            measData = reportInfo.Object;
+        function Table = FileByLocation(dataOverview)
+            Table = table('Size',          [0, 8],                                                                 ...
+                          'VariableTypes', {'double', 'cell', 'cell', 'cell', 'cell', 'double', 'double', 'cell'}, ...
+                          'VariableNames', {'#', 'Localidade de agrupamento', 'Localidades sob análise', 'Arquivo', 'Período de observação', 'Qtd. medidas', 'Qtd. medidas superior limar', 'Limites'});
 
-            Table    = table('Size',          [0, 7],                                                       ...
-                             'VariableTypes', {'double', 'cell', 'cell', 'cell', 'cell', 'double', 'cell'}, ...
-                             'VariableNames', {'#', 'Localidade de agrupamento', 'Localidades sob análise', 'Arquivo', 'Período de observação', 'Número de medidas', 'Limites'});
+            groupLocationList = {dataOverview.ID};
 
-            locationList = {measData.Location};
-            locations    = unique(locationList);
-
-            for ii = 1:numel(locations)
-                idIndexes   = find(strcmp(locationList, locations{ii}));
-                [~, idSort] = sort(arrayfun(@(x) x.Data.Timestamp(1), measData(idIndexes)));
-                idIndexes   = idIndexes(idSort);
-
-                locationSubList = strjoin(getFullListOfLocation(projectData, measData(idIndexes), stationTable, max(generalSettings.MonitoringPlan.Distance_km, generalSettings.ExternalRequest.Distance_km)), '<br>');
-                fileList    = strjoin({measData(idIndexes).Filename}, '<br>');
-                numMeasures = sum(arrayfun(@(x) height(x.Data), measData(idIndexes)));
-                [beginTime, endTime] = bounds([arrayfun(@(x) x.Data.Timestamp(1), measData(idIndexes)), arrayfun(@(x) x.Data.Timestamp(end), measData(idIndexes))]);
-                durationTime = sum(arrayfun(@(x) x.Data.Timestamp(end) - x.Data.Timestamp(1), measData(idIndexes)));
-                [minField, maxField] = bounds([measData(idIndexes).FieldValueLimits]);
+            for ii = 1:numel(groupLocationList)
+                groupLocation = groupLocationList{ii};
+                groupIndex    = find(strcmp(groupLocationList, groupLocation), 1);
 
                 Table(end+1,:) = {...
                     ii, ...
-                    locations{ii}, ...
-                    locationSubList, ...
-                    fileList, ...
-                    sprintf('%s - %s<br>⌛%s', beginTime, endTime, durationTime), ...
-                    numMeasures, ...
-                    sprintf('[%.1f - %.1f] V/m', minField, maxField) ...
+                    groupLocation, ...
+                    strjoin(dataOverview(groupIndex).InfoSet.locations,           '<br>'), ...
+                    strjoin({dataOverview(groupIndex).InfoSet.measData.Filename}, '<br>'), ...
+                    dataOverview(groupIndex).InfoSet.period, ...
+                    dataOverview(groupIndex).InfoSet.numMeasures, ...
+                    dataOverview(groupIndex).InfoSet.numAboveTHR, ...
+                    dataOverview(groupIndex).InfoSet.limits ...
                 };
             end
         end
@@ -42,35 +29,38 @@ classdef (Abstract) Table
         %-----------------------------------------------------------------%
         function Table = SummaryByLocation(analyzedData)
             measData = analyzedData.InfoSet.measData;
-            Table    = table('Size',          [0, 7],                                                     ...
-                             'VariableTypes', {'cell', 'cell', 'cell', 'cell', 'cell', 'double', 'cell'}, ...
-                             'VariableNames', {'Arquivo', 'Sensor', 'Metadados', 'Região', 'Período de observação', 'Número de medidas', 'Limites'});
+            measIdx  = analyzedData.Index;
+            Table    = table('Size',          [0, 9],                                                                       ...
+                             'VariableTypes', {'cell', 'cell', 'cell', 'cell', 'cell', 'cell', 'double', 'double', 'cell'}, ...
+                             'VariableNames', {'#', 'Arquivo', 'Sensor', 'Metadados', 'Região', 'Período de observação', 'Qtd. medidas', 'Qtd. medidas superior limar', 'Limites'});
         
             for ii = 1:numel(measData)
                 durationTime = measData(ii).Data.Timestamp(end) - measData(ii).Data.Timestamp(1);
 
                 Table(end+1,:) = { ...
+                    sprintf('%d.%d', measIdx, ii), ...
                     measData(ii).Filename, ...
                     measData(ii).Sensor, ...
                     jsonencode(measData(ii).MetaData), ...
                     jsonencode(struct('latLimits', measData(ii).LatitudeLimits, 'lngLimits', measData(ii).LongitudeLimits)), ...
-                    sprintf('%s - %s<br>⌛%s', string(measData(ii).Data.Timestamp(1)), string(measData(ii).Data.Timestamp(end)), durationTime), ...
-                    height(measData(ii).Data), ...
+                    sprintf('%s<br>⌛%s', measData(ii).ObservationTime, durationTime), ...
+                    measData(ii).Measures, ...
+                    analyzedData.InfoSet.numAboveTHR, ...
                     sprintf('[%.1f - %.1f] V/m', measData(ii).FieldValueLimits(:)) ...
                 };
             end
         end
 
         %-----------------------------------------------------------------%
-        function varargout = PointsByLocation(reportInfo, analyzedData, measuredFlag, outputType)
+        function varargout = PointsByLocation(analyzedData, measuredFlag, outputType)
             arguments
-                reportInfo
                 analyzedData
                 measuredFlag char {mustBeMember(measuredFlag, {'all', 'on', 'off'})} = 'all'
                 outputType   char {mustBeMember(outputType, {'table', 'tableHeight'})} = 'table'
             end
 
             Table = analyzedData.InfoSet.pointsTable;
+            Table.("Justificativa") = strcat('<font style="color: red;">', replace(cellstr(Table.("Justificativa")), '-1', '-'), '</font>');
 
             switch measuredFlag
                 case 'on'
@@ -96,14 +86,13 @@ classdef (Abstract) Table
                 outputType   char {mustBeMember(outputType, {'table', 'tableHeight'})} = 'table'
             end
 
-            stationTable = reportInfo.Function.tbl_StationTable;
-            measData     = analyzedData.InfoSet.measData;            
             projectData  = reportInfo.Project;
-            DIST_km      = reportInfo.Settings.MonitoringPlan.Distance_km;
-            locations    = getFullListOfLocation(projectData, measData, stationTable, DIST_km);
+            stationTable = analyzedData.InfoSet.stationTable;
 
-            logicalIndexes = ismember(stationTable.Location, locations); 
-            Table = stationTable(logicalIndexes, :);
+            % Insere coordenadas geográficas da estação no campo "Observações", 
+            % caso editadas, e troca valores inválidos ("-1", por exemplo) por 
+            % valores nulos.
+            Table = prepareStationTableForExport(projectData, stationTable, '-');
 
             switch measuredFlag
                 case 'on'

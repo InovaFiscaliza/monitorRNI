@@ -14,7 +14,7 @@
                         "Text": "Atendimento à demanda de fiscalização cadastrada no eFiscaliza sob a <b>Atividade de Inspeção nº %.0f</b>, relacionada à monitoração realizada na(s) localidade(s) <b>%s</b>.",
                         "Variable": [
                             "var_Issue",
-                            "var_LocationFullList"
+                            "var_LocationListGlobal"
                         ]
                     }
                 }
@@ -33,7 +33,7 @@
                     "Type": "ItemN2",
                     "Data": {
                         "Editable": "false",
-                        "Text": "O Plano de Monitoração de Radiação Não Ionizante (PM-RNI), criado em 2018, visa avaliar a exposição humana a campos elétricos, magnéticos e eletromagnéticos na faixa de 8,3 kHz a 300 GHz. Para isso, realiza medições de campo elétrico com sondas isotrópicas no entorno de estações de telecomunicações ou pontos de interesse que se enquadrem em pelo menos um dos seguintes critérios:",
+                        "Text": "O Plano de Monitoração de Radiação Não Ionizante (PM-RNI), criado em 2018, visa avaliar a exposição humana a campos elétricos, magnéticos e eletromagnéticos na faixa de 8.3 kHz a 300 GHz. Para isso, realiza medições de campo elétrico com sondas isotrópicas no entorno de estações de telecomunicações, radiodifusão e outros locais que se enquadrem em pelo menos um dos seguintes critérios:",
                         "Variable": []
                     }
                 },
@@ -42,12 +42,12 @@
                     "Data": [
                         {
                             "Editable": "false",
-                            "Text": "Cumprir o disposto na Lei nº 11.934/2009;",
+                            "Text": "Cumprir o disposto na Lei nº 11934/2009;",
                             "Variable": []
                         },
                         {
                             "Editable": "false",
-                            "Text": "Apresentar níveis iguais ou superiores a 14 V/m (25% do limite populacional mais restritivo, conforme a Recomendação UIT-T K.113), exigindo medições detalhadas com sondas portáteis;",
+                            "Text": "Apresentar níveis iguais ou superiores a 14.0 V/m (50% do limite populacional mais restritivo, conforme a Recomendação UIT-T K.113), exigindo medições detalhadas com sondas portáteis;",
                             "Variable": []
                         },
                         {
@@ -80,8 +80,20 @@
                     "Type": "ItemN2",
                     "Data": {
                         "Editable": "false",
-                        "Text": "Os dados coletados por sondas móveis (Monitem, NARDA, entre outros) são processados para identificar as medições correspondentes a cada estação de telecomunicações sob análise, gerando representações gráficas. Na tabela apresentada a seguir consta o sumário da análise por localidade de agrupamento.",
+                        "Text": "Os dados coletados por sondas móveis (Monitem, NARDA, entre outros) são processados para identificar as medições correspondentes a cada ponto de interesse sob análise, gerando representações gráficas.",
                         "Variable": []
+                    }
+                },
+                {
+                    "Type": "ItemN2",
+                    "Data": {
+                        "Editable": "false",
+                        "Text": "Na tabela apresentada a seguir consta o sumário da informação por localidade de agrupamento. Da análise desses dados, constata-se que das %.0f medições realizadas, %s delas apresentou nível acima do limiar de %s.",
+                        "Variable": [
+                            "var_MeasuresGlobal",
+                            "var_MonitoringPlanRisk",
+                            "cfg_MonitoringPlanTHR"                            
+                        ]
                     }
                 },
                 {
@@ -96,7 +108,8 @@
                             4,
                             5,
                             6,
-                            7
+                            7,
+                            8
                         ],
                         "Caption": "Sumário da análise por localidade de agrupamento.",
                         "Settings": [
@@ -104,7 +117,7 @@
                                 "Editable": "false",
                                 "ColumnName": "#",
                                 "Precision": "%.0f",
-                                "Width": "40px"
+                                "Width": "50px"
                             },
                             {
                                 "Editable": "false",
@@ -132,13 +145,19 @@
                             },
                             {
                                 "Editable": "false",
-                                "ColumnName": "Número de medidas",
+                                "ColumnName": "Qtd. medidas",
                                 "Precision": "%.0f",
                                 "Width": "90px"
                             },
                             {
                                 "Editable": "false",
-                                "ColumnName": "Limites",
+                                "ColumnName": "Qtd. medidas superior limiar",
+                                "Precision": "%.0f",
+                                "Width": "90px"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Intervalo de valores medidos",
                                 "Precision": "%s",
                                 "Width": "90px"
                             }
@@ -152,10 +171,10 @@
                     "Type": "Footnote",
                     "Data": {
                         "Editable": "false",
-                        "Text": "<span style=\"display: block; margin: 10px; margin-bottom: 20px; text-align: justify; word-break: break-all;\">Configurações:<br>•&thinsp;Módulo \"PM-RNI\": %s<br>•&thinsp;Módulo \"Demanda externa\": %s</span>",
+                        "Text": "<span style=\"display: block; margin: 10px; margin-bottom: 20px; text-align: justify; word-break: break-all;\">Configurações:<br>•&thinsp;Módulo \"PM-RNI\": %s<br>•&thinsp;Modelo do relatório: %s</span>",
                         "Variable": [
                             "cfg_MonitoringPlan",
-                            "cfg_ExternalRequest"
+                            "cfg_ReportTemplate"
                         ]
                     }
                 }
@@ -185,21 +204,11 @@
                     "Type": "Paragraph",
                     "Data": {
                         "Editable": "false",
-                        "Text": "No período %s foram coletadas %.0f medidas de níveis de radiação não ionizante, aferidas na forma de campo elétrico (V/m), registradas em %.0f arquivo(s). A seguir, são apresentados recortes do conteúdo desses arquivos e um resumo das informações contidas neles.",
+                        "Text": "No período %s foram coletadas %.0f medidas de níveis de radiação não ionizante, aferidas na forma de campo elétrico (V/m), registradas em %.0f arquivo(s).",
                         "Variable": [
                             "var_ObservationTime",
                             "var_Measures",
                             "var_NumFiles"
-                        ]
-                    }
-                },
-                {
-                    "Type": "Paragraph",
-                    "Data": {
-                        "Editable": "false",
-                        "Text": "<span style=\"display: block; padding-left: 92px; font-size:11px;\">%s</span>",
-                        "Variable": [
-                            "var_Content"
                         ]
                     }
                 },
@@ -215,10 +224,18 @@
                             4,
                             5,
                             6,
-                            7
+                            7,
+                            8,
+                            9
                         ],
                         "Caption": "Registro de informações por arquivo.",
                         "Settings": [
+                            {
+                                "Editable": "false",
+                                "ColumnName": "#",
+                                "Precision": "%s",
+                                "Width": "50px"
+                            },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Arquivo",
@@ -251,13 +268,19 @@
                             },
                             {
                                 "Editable": "false",
-                                "ColumnName": "Número de medidas",
+                                "ColumnName": "Qtd. medidas",
                                 "Precision": "%.0f",
                                 "Width": "90px"
                             },
                             {
                                 "Editable": "false",
-                                "ColumnName": "Limites",
+                                "ColumnName": "Qtd. medidas superior limiar",
+                                "Precision": "%.0f",
+                                "Width": "90px"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Intervalo de valores medidos",
                                 "Precision": "%s",
                                 "Width": "90px"
                             }
@@ -271,8 +294,18 @@
                     "Type": "Paragraph",
                     "Data": {
                         "Editable": "false",
-                        "Text": "A representação gráfica apresentada a seguir inclui tanto as medições quanto as estações de telecomunicações sob análise.",
+                        "Text": "Apresenta-se, a seguir, recorte do conteúdo textual do(s) arquivo(s), além de representação gráfica que inclui tanto as medições quanto os pontos de interesse sob análise.",
                         "Variable": []
+                    }
+                },
+                {
+                    "Type": "Paragraph",
+                    "Data": {
+                        "Editable": "false",
+                        "Text": "<span style=\"display: block; line-height: 12px; font-size:11px;\">%s</span>",
+                        "Variable": [
+                            "var_Content"
+                        ]
                     }
                 },
                 {
@@ -311,7 +344,7 @@
                             "maxFieldLatitude",
                             "maxFieldLongitude"
                         ],
-                        "Caption": "Estações de telecomunicações sob análise com medições no entorno.",
+                        "Caption": "Pontos de interesse sob análise com medições no entorno.",
                         "Settings": [
                             {
                                 "Editable": "false",
@@ -323,71 +356,71 @@
                                 "Editable": "false",
                                 "ColumnName": "Estação",
                                 "Precision": "%.0f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Latitude",
                                 "Precision": "%.6f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Longitude",
                                 "Precision": "%.6f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Qtd. medidas",
                                 "Precision": "%.0f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
-                                "ColumnName": "Qtd. medidas risco",
+                                "ColumnName": "Qtd. medidas superior limiar",
                                 "Precision": "%.0f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Distância mínima medição (km)",
                                 "Precision": "%.3f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Campo elétrico mínimo (V/m)",
                                 "Precision": "%.3f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Campo elétrico médio (V/m)",
                                 "Precision": "%.3f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Campo elétrico máximo (V/m)",
                                 "Precision": "%.3f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Ponto máximo<br>(Latitude)",
                                 "Precision": "%.6f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Ponto máximo<br>(Longitude)",
                                 "Precision": "%.6f",
-                                "Width": "auto"
+                                "Width": "90px"
                             }
                         ],
-                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"Ao comparar as medições com a tabela de referência do PM-RNI, observa-se que foram realizadas medições no entorno das seguintes estações de telecomunicações.\"}",
-                        "Error": "{\"Type\":\"Paragraph\",\"Text\":\"Ao comparar as medições com a tabela de referência do PM-RNI, observa-se que não foram realizadas medições no entorno de NENHUMA das estações de telecomunicações sob análise.\"}",
+                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"Ao comparar as medições com a tabela de referência do PM-RNI, observa-se que foram realizadas medições no entorno dos seguintes pontos de interesse.\"}",
+                        "Error": "{\"Type\":\"Paragraph\",\"Text\":\"Ao comparar as medições com a tabela de referência do PM-RNI, observa-se que não foram realizadas medições no entorno de NENHUM dos pontos de interesse sob análise.\"}",
                         "LineBreak": 1
                     }
                 },
@@ -401,11 +434,11 @@
                             "Estação",
                             "Latitude",
                             "Longitude",
-                            "numberOfMeasures",
                             "minDistanceForMeasure",
-                            "Justificativa"
+                            "Justificativa",
+                            "Observações"
                         ],
-                        "Caption": "Estações de telecomunicações sob análise sem medições no entorno.",
+                        "Caption": "Pontos de interesse sob análise sem medições no entorno.",
                         "Settings": [
                             {
                                 "Editable": "false",
@@ -417,40 +450,40 @@
                                 "Editable": "false",
                                 "ColumnName": "Estação",
                                 "Precision": "%.0f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Latitude",
                                 "Precision": "%.6f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Longitude",
                                 "Precision": "%.6f",
-                                "Width": "auto"
-                            },
-                            {
-                                "Editable": "false",
-                                "ColumnName": "Qtd. medidas",
-                                "Precision": "%.0f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Distância mínima medição (km)",
                                 "Precision": "%.3f",
-                                "Width": "auto"
+                                "Width": "90px"
                             },
                             {
                                 "Editable": "false",
                                 "ColumnName": "Justificativa",
                                 "Precision": "%s",
                                 "Width": "auto"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Observações",
+                                "Precision": "%s",
+                                "Width": "auto"
                             }
                         ],
-                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"A seguir, apresenta-se a relação de estações de telecomunicações que, embora constem na tabela de referência do PM-RNI, não foram efetivamente avaliadas.\"}",
+                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"A seguir, apresenta-se a relação de pontos de interesse que, embora constem na tabela de referência do PM-RNI, não foram efetivamente avaliados.\"}",
                         "Error": [],
                         "LineBreak": 0
                     }
