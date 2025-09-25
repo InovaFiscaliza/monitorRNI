@@ -799,7 +799,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % (a) Arquivo no formato .XLSX
             %     (um único arquivo de saída)
             fileName_XLSX = [defaultTempName '.xlsx'];
-            [status, msgError] = fileWriter.MonitoringPlan(fileName_XLSX, app.mainApp.stationTable(idxStations, :), timetable2table(app.measTable), app.mainApp.General.MonitoringPlan.FieldValue, app.mainApp.General.MonitoringPlan.Export.XLSX);
+            [status, msgError] = fileWriter.MonitoringPlan(app.projectData, fileName_XLSX, app.mainApp.stationTable(idxStations, :), timetable2table(app.measTable), app.mainApp.General.MonitoringPlan.FieldValue, app.mainApp.General.MonitoringPlan.Export.XLSX);
             if status
                 savedFiles{end+1} = fileName_XLSX;
             else
@@ -918,7 +918,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % (a) PLANILHA EXCEL
             fileName_XLSX = [appUtil.DefaultFileName(outputFolder, class.Constants.appName, '-1') '.xlsx'];
-            [status, msgError] = fileWriter.MonitoringPlan(fileName_XLSX, relatedStationTable, [], app.mainApp.General.MonitoringPlan.FieldValue);
+            [status, msgError] = fileWriter.MonitoringPlan(app.projectData, fileName_XLSX, relatedStationTable, [], app.mainApp.General.MonitoringPlan.FieldValue);
             if status
                 app.mainApp.stationTable.UploadResultFlag(idxStations) = true;
                 layout_TableStyle(app)

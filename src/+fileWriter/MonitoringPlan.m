@@ -1,6 +1,7 @@
-function [status, msgError] = MonitoringPlan(fileName, stationTable, measTable, ReferenceFielValue, RawMeasuresExportFlag)
+function [status, msgError] = MonitoringPlan(projectData, fileName, stationTable, measTable, ReferenceFielValue, RawMeasuresExportFlag)
 
     arguments
+        projectData
         fileName 
         stationTable 
         measTable 
@@ -14,28 +15,16 @@ function [status, msgError] = MonitoringPlan(fileName, stationTable, measTable, 
     try
         % PREPARA TABELA
         % (a) Insere coordenadas geográficas da estação no campo "Observações", 
-        %     caso editadas.
-        idxEditedCoordinates = find((stationTable.("Lat") ~= stationTable.("Latitude")) | (stationTable.("Long") ~= stationTable.("Longitude")))';
-        for ii = idxEditedCoordinates
-            Coordinates = struct('Latitude_Editada',  stationTable.("Latitude")(ii), ...
-                                 'Longitude_Editada', stationTable.("Longitude")(ii));
-    
-            if ~isempty(stationTable.("Observações"){ii})
-                Coordinates.NotaAdicional = stationTable.("Observações"){ii};
-            end
-    
-            stationTable.("Observações"){ii} = jsonencode(Coordinates);
-        end
+        %     caso editadas, e troca valores inválidos ("-1", por exemplo) por 
+        %     valores nulos.
+        stationTable = prepareStationTableForExport(projectData, stationTable);
     
         % (b) Seleciona colunas que irão compor o arquivo .XLSX, criando coluna 
         %     com informação do "Limite".
         stationTable = stationTable(:, [1:13, 19:30]);
         stationTable.("Limite (V/m)")(:) = ReferenceFielValue;
     
-        % (c) Troca valores inválidos ("-1", por exemplo) por valores nulos.
-        stationTable.("Justificativa") = replace(cellstr(stationTable.("Justificativa")), '-1', '');
-    
-        % (d) Edita nomes de algumas das colunas da tabela.
+        % (c) Edita nomes de algumas das colunas da tabela.
         stationTable.Properties.VariableNames(14:22) = {'Qtd. Medidas',                 ...
                                                         'Qtd. Medidas Acima do Limite', ...
                                                         'Distância Mínima (km)',        ...
