@@ -36,9 +36,9 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
     methods (Access = private)
         %-----------------------------------------------------------------%
         function updateForm(app)
-            currentListOfLocations = getFullListOfLocation(app.projectData, app.measData(app.selectedFileIndexes));
+            currentListOfLocations = getFullListOfLocation(app.projectData, app.measData(app.selectedFileIndexes), app.mainApp.General.MonitoringPlan.Distance_km);
 
-            refListOfLocations     = setdiff(app.projectData.referenceListOfLocations, currentListOfLocations, 'stable');
+            refListOfLocations     = setdiff(app.projectData.modules.MonitoringPlan.referenceData.locations, currentListOfLocations, 'stable');
             if ~isempty(app.Filter.Value)
                 refListOfLocations = refListOfLocations(endsWith(refListOfLocations, app.Filter.Value));
             end
@@ -88,7 +88,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.measData    = callingApp.measData;
             app.selectedFileIndexes = selectedFileIndexes;
 
-            app.Filter.Items = [{''}; app.projectData.referenceListOfStates];
+            app.Filter.Items = [{''}; app.projectData.modules.MonitoringPlan.referenceData.states];
             updateForm(app)
             
         end
@@ -96,7 +96,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         % Callback function: UIFigure, btnClose, btnOK
         function closeFcn(app, event)
             
-            CallingMainApp(app, 'CLOSE', false, false)
+            CallingMainApp(app, 'closeFcn', false, false)
             delete(app)
             
         end
@@ -119,7 +119,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
                         updateForm(app)
                         updateLayout(app, 'AddedLocation')
 
-                        CallingMainApp(app, 'ListOfLocationChanged', true, true)
+                        CallingMainApp(app, 'MonitoringPlan:ManualLocationListChanged', true, true)
                     end
 
                 case app.Delete
@@ -130,7 +130,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
                         updateForm(app)
                         updateLayout(app, 'DeletedLocation')
 
-                        CallingMainApp(app, 'ListOfLocationChanged', true, true)
+                        CallingMainApp(app, 'MonitoringPlan:ManualLocationListChanged', true, true)
                     end
             end
             

@@ -1,5 +1,5 @@
 {
-    "version": 0.72,
+    "version": 0.75,
     "operationMode": {
         "Debug": false,
         "Dock": true,
@@ -133,10 +133,8 @@
     },
     "Report": {
         "system": "eFiscaliza",
-        "issue": -1,
         "unit": "",
-        "model": "",
-        "reportVersion": "Preliminar",
+        "Document": "Relatório de Atividades",
         "Basemap": "streets-dark",
         "Image": {
             "Format": "jpeg",

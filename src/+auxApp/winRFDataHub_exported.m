@@ -337,43 +337,21 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function startup_AppProperties(app)
+            % RFDataHub
+            global RFDataHub
+            global RFDataHubLog
+
+            app.rfDataHub        = RFDataHub;
+            app.rfDataHubLOG     = RFDataHubLog;
+            app.rfDataHubSummary = app.mainApp.rfDataHubSummary;
+
             % refRX: armazena o valor inicial da estação receptora de referência
             %        para fins de análise da edição.
             rxSite = referenceRX_InitialValue(app);
             app.referenceRX_Refresh.UserData.InitialValue = rxSite;
             referenceRX_UpdatePanel(app, rxSite)
 
-            % app.rfDataHub
-            global RFDataHub
-            global RFDataHubLog
-            
-            app.rfDataHub = RFDataHub;
-            app.rfDataHubLOG = RFDataHubLog;
-            
-            % Contorna erro da função inROI, que retorna como se todos os
-            % pontos estivessem internos ao ROI, quando as coordenadas
-            % estão em float32. No float64 isso não acontece... aberto BUG
-            % na Mathworks, que indicou estar ciente.
-            app.rfDataHub.Latitude    = double(app.rfDataHub.Latitude);
-            app.rfDataHub.Longitude   = double(app.rfDataHub.Longitude);
-
-            app.rfDataHub.ID          = "#" + string((1:height(RFDataHub))');
-            app.rfDataHub.Description = "[" + string(RFDataHub.Source) + "] " + string(RFDataHub.Status) + ", " + string(RFDataHub.StationClass) + ", " + string(RFDataHub.Name) + ", " + string(RFDataHub.Location) + "/" + string(RFDataHub.State) + " (M=" + string(RFDataHub.MergeCount) + ")";
             referenceRX_CalculateDistance(app, rxSite)
-                        
-            % app.rfDataHubSummary
-            app.rfDataHubSummary = summary(RFDataHub);
-
-            % A coluna "Source" possui agrupamentos da fonte dos dados,
-            % decorrente da mesclagem de estações.
-            tempSourceList = cellfun(@(x) strsplit(x, ' | '), app.rfDataHubSummary.Source.Categories, 'UniformOutput', false);
-            app.rfDataHubSummary.Source.RawCategories = unique(horzcat(tempSourceList{:}))';
-
-            % A coluna "Location" não está sendo corretamente ordenada por
-            % conta dos caracteres especiais.
-            tempLocationList = textAnalysis.preProcessedData(app.rfDataHubSummary.Location.Categories);
-            [app.rfDataHubSummary.Location.CacheCategories, idxSort] = sort(tempLocationList);
-            app.rfDataHubSummary.Location.Categories = app.rfDataHubSummary.Location.Categories(idxSort);
 
             % lastPrimarySearch
             filter_getReferenceSearch(app)

@@ -86,21 +86,20 @@ classdef winConfig_exported < matlab.apps.AppBase
         Tab4Grid                      matlab.ui.container.GridLayout
         reportPanel                   matlab.ui.container.Panel
         reportGrid                    matlab.ui.container.GridLayout
+        reportImgDpi                  matlab.ui.control.DropDown
+        reportImgFormat               matlab.ui.control.DropDown
+        reportImageLabel              matlab.ui.control.Label
         reportBasemap                 matlab.ui.control.DropDown
         reportBasemapLabel            matlab.ui.control.Label
-        reportVersion                 matlab.ui.control.DropDown
-        reportVersionLabel            matlab.ui.control.Label
-        reportModelName               matlab.ui.control.DropDown
-        reportoModelNameLabel         matlab.ui.control.Label
+        reportDocType                 matlab.ui.control.DropDown
+        reportDocTypeLabel            matlab.ui.control.Label
         reportLabel                   matlab.ui.control.Label
         eFiscalizaPanel               matlab.ui.container.Panel
         eFiscalizaGrid                matlab.ui.container.GridLayout
-        unit                          matlab.ui.control.DropDown
-        unitLabel                     matlab.ui.control.Label
-        issueId                       matlab.ui.control.NumericEditField
-        issueIdLabel                  matlab.ui.control.Label
-        systemVersion                 matlab.ui.control.DropDown
-        systemVersionLabel            matlab.ui.control.Label
+        reportUnit                    matlab.ui.control.DropDown
+        reportUnitLabel               matlab.ui.control.Label
+        reportVersion                 matlab.ui.control.DropDown
+        reportSystemLabel             matlab.ui.control.Label
         eFiscalizaRefresh             matlab.ui.control.Image
         eFiscalizaLabel               matlab.ui.control.Label
         Tab5                          matlab.ui.container.Tab
@@ -328,7 +327,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.MonitoringPlanLevel.Value       = app.mainApp.General.MonitoringPlan.FieldValue;
             app.MonitoringPlanFileName.Value    = app.mainApp.General.MonitoringPlan.ReferenceFile;
             
-            MonitoringPlanYearsOptions          = app.mainApp.projectData.rawListOfYears;
+            MonitoringPlanYearsOptions          = app.mainApp.projectData.modules.MonitoringPlan.referenceData.years;
             MonitoringPlanYearsValue            = app.mainApp.General.MonitoringPlan.Period;
 
             if ~isempty(app.MonitoringPlanPeriod.Children)
@@ -395,12 +394,13 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function updatePanel_Report(app)
-            app.systemVersion.Value = app.mainApp.General.Report.system;
-            app.issueId.Value       = app.mainApp.General.Report.issue;
-            set(app.unit,            'Items', app.mainApp.General.eFiscaliza.defaultValues.unit,    'Value', app.mainApp.General.Report.unit)
-            set(app.reportModelName, 'Items', [{''}, {app.mainApp.projectData.documentModel.Name}], 'Value', app.mainApp.General.Report.model)
-            app.reportVersion.Value = app.mainApp.General.Report.reportVersion;
-            app.reportBasemap.Value = app.mainApp.General.Report.Basemap;
+            app.reportVersion.Value   = app.mainApp.General.Report.system;
+            set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, 'Value', app.mainApp.General.Report.unit)
+            
+            app.reportDocType.Value   = app.mainApp.General.Report.Document;
+            app.reportBasemap.Value   = app.mainApp.General.Report.Basemap;
+            app.reportImgFormat.Value = app.mainApp.General.Report.Image.Format;
+            app.reportImgDpi.Value    = num2str(app.mainApp.General.Report.Image.Resolution);
 
             if checkEdition(app, 'REPORT')
                 app.eFiscalizaRefresh.Visible = 1;
@@ -623,8 +623,8 @@ classdef winConfig_exported < matlab.apps.AppBase
                 updatePanel_Analysis(app)
                 saveGeneralSettings(app)
                 
-                ipcMainMatlabCallsHandler(app.mainApp, app, 'PM-RNI: updateAnalysis')
-                ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest: updateAnalysis')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'MonitoringPlan:AnalysisParameterChanged')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest:AnalysisParameterChanged')
             end
 
         end
@@ -645,11 +645,11 @@ classdef winConfig_exported < matlab.apps.AppBase
 
                 case app.MonitoringPlanDistance
                     app.mainApp.General.MonitoringPlan.Distance_km  = app.MonitoringPlanDistance.Value / 1000;
-                    updateAnalysisName = 'PM-RNI: updateAnalysis';
+                    updateAnalysisName = 'MonitoringPlan:AnalysisParameterChanged';
 
                 case app.MonitoringPlanLevel
                     app.mainApp.General.MonitoringPlan.FieldValue   = app.MonitoringPlanLevel.Value;
-                    updateAnalysisName = 'PM-RNI: updateAnalysis';
+                    updateAnalysisName = 'MonitoringPlan:AnalysisParameterChanged';
 
                 case app.MonitoringPlanPeriod
                     if isempty(app.MonitoringPlanPeriod.CheckedNodes)
@@ -657,7 +657,7 @@ classdef winConfig_exported < matlab.apps.AppBase
                         return
                     end
                     app.mainApp.General.MonitoringPlan.Period       = str2double({app.MonitoringPlanPeriod.CheckedNodes.Text});
-                    updateAnalysisName = 'PM-RNI: updateAnalysis';
+                    updateAnalysisName = 'MonitoringPlan:AnalysisParameterChanged';
 
                 case app.MonitoringPlanExportXLSX
                     app.mainApp.General.MonitoringPlan.Export.XLSX  = app.MonitoringPlanExportXLSX.Value;
@@ -667,11 +667,11 @@ classdef winConfig_exported < matlab.apps.AppBase
 
                 case app.ExternalRequestDistance
                     app.mainApp.General.ExternalRequest.Distance_km = app.ExternalRequestDistance.Value / 1000;
-                    updateAnalysisName = 'ExternalRequest: updateAnalysis';
+                    updateAnalysisName = 'ExternalRequest:AnalysisParameterChanged';
 
                 case app.ExternalRequestLevel
                     app.mainApp.General.ExternalRequest.FieldValue  = app.ExternalRequestLevel.Value;
-                    updateAnalysisName = 'ExternalRequest: updateAnalysis';
+                    updateAnalysisName = 'ExternalRequest:AnalysisParameterChanged';
 
                 case app.ExternalRequestExportXLSX
                     app.mainApp.General.ExternalRequest.Export.XLSX  = app.ExternalRequestExportXLSX.Value;
@@ -721,10 +721,10 @@ classdef winConfig_exported < matlab.apps.AppBase
                 updatePanel_Plot(app)
                 saveGeneralSettings(app)
     
-                ipcMainMatlabCallsHandler(app.mainApp, app, 'PM-RNI: updateAxes')
-                ipcMainMatlabCallsHandler(app.mainApp, app, 'PM-RNI: updatePlot')
-                ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest: updateAxes')
-                ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest: updatePlot')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'MonitoringPlan:AxesParameterChanged')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'MonitoringPlan:PlotParameterChanged')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest:AxesParameterChanged')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest:PlotParameterChanged')
             end
 
         end
@@ -748,8 +748,8 @@ classdef winConfig_exported < matlab.apps.AppBase
             updatePanel_Plot(app)
             saveGeneralSettings(app)
             
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'PM-RNI: updateAxes')
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest: updateAxes')
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'MonitoringPlan:AxesParameterChanged')
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest:AxesParameterChanged')
 
         end
 
@@ -813,8 +813,8 @@ classdef winConfig_exported < matlab.apps.AppBase
             updatePanel_Plot(app)
             saveGeneralSettings(app)
             
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'PM-RNI: updatePlot')
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest: updatePlot')
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'MonitoringPlan:PlotParameterChanged')
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest:PlotParameterChanged')
             
         end
 
@@ -835,32 +835,28 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         end
 
-        % Value changed function: issueId, reportBasemap, reportModelName, 
-        % ...and 3 other components
+        % Value changed function: reportBasemap, reportDocType, 
+        % ...and 4 other components
         function Config_ProjectParameterValueChanged(app, event)
 
             switch event.Source
-                case app.systemVersion
-                    app.mainApp.General.Report.system = event.Value;
-
-                case app.issueId
-                    if isinf(event.Value)
-                        app.issueId.Value = event.PreviousValue;
-                        return
-                    end
-                    app.mainApp.General.Report.issue  = event.Value;
-
-                case app.unit
-                    app.mainApp.General.Report.unit   = event.Value;
-
-                case app.reportModelName
-                    app.mainApp.General.Report.model  = event.Value;
-
                 case app.reportVersion
-                    app.mainApp.General.Report.reportVersion = event.Value;
+                    app.mainApp.General.Report.system           = event.Value;
+
+                case app.reportUnit
+                    app.mainApp.General.Report.unit             = event.Value;
+
+                case app.reportDocType
+                    app.mainApp.General.Report.Document         = event.Value;
 
                 case app.reportBasemap
-                    app.mainApp.General.Report.Basemap = event.Value;
+                    app.mainApp.General.Report.Basemap          = event.Value;
+
+                case app.reportImgFormat
+                    app.mainApp.General.Report.Image.Format     = event.Value;
+
+                case app.reportImgDpi
+                    app.mainApp.General.Report.Image.Resolution = str2double(event.Value);
             end
 
             app.mainApp.General_I.Report = app.mainApp.General.Report;
@@ -1230,11 +1226,12 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create MonitoringPlanOpenFile
             app.MonitoringPlanOpenFile = uiimage(app.configAnalysisGrid2);
+            app.MonitoringPlanOpenFile.ScaleMethod = 'none';
             app.MonitoringPlanOpenFile.ImageClickedFcn = createCallbackFcn(app, @Config_AnalysisOpenReferenceFile, true);
             app.MonitoringPlanOpenFile.Tooltip = {'Abrir no Excel a planilha de referência'};
             app.MonitoringPlanOpenFile.Layout.Row = 3;
             app.MonitoringPlanOpenFile.Layout.Column = 4;
-            app.MonitoringPlanOpenFile.ImageSource = 'OpenFile_36x36.png';
+            app.MonitoringPlanOpenFile.ImageSource = 'Import_16.png';
 
             % Create MonitoringPlanPeriod
             app.MonitoringPlanPeriod = uitree(app.configAnalysisGrid2, 'checkbox');
@@ -1634,7 +1631,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create Tab4Grid
             app.Tab4Grid = uigridlayout(app.Tab4);
             app.Tab4Grid.ColumnWidth = {'1x', 22};
-            app.Tab4Grid.RowHeight = {17, 100, 22, '1x'};
+            app.Tab4Grid.RowHeight = {17, 70, 22, '1x'};
             app.Tab4Grid.RowSpacing = 5;
             app.Tab4Grid.BackgroundColor = [1 1 1];
 
@@ -1665,65 +1662,45 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create eFiscalizaGrid
             app.eFiscalizaGrid = uigridlayout(app.eFiscalizaPanel);
             app.eFiscalizaGrid.ColumnWidth = {350, 110, 110};
-            app.eFiscalizaGrid.RowHeight = {22, 22, 22};
+            app.eFiscalizaGrid.RowHeight = {22, 22};
             app.eFiscalizaGrid.RowSpacing = 5;
             app.eFiscalizaGrid.BackgroundColor = [1 1 1];
 
-            % Create systemVersionLabel
-            app.systemVersionLabel = uilabel(app.eFiscalizaGrid);
-            app.systemVersionLabel.WordWrap = 'on';
-            app.systemVersionLabel.FontSize = 11;
-            app.systemVersionLabel.Layout.Row = 1;
-            app.systemVersionLabel.Layout.Column = 1;
-            app.systemVersionLabel.Text = 'Versão do sistema:';
+            % Create reportSystemLabel
+            app.reportSystemLabel = uilabel(app.eFiscalizaGrid);
+            app.reportSystemLabel.WordWrap = 'on';
+            app.reportSystemLabel.FontSize = 11;
+            app.reportSystemLabel.Layout.Row = 1;
+            app.reportSystemLabel.Layout.Column = 1;
+            app.reportSystemLabel.Text = 'Versão do sistema de gestão à fiscalização:';
 
-            % Create systemVersion
-            app.systemVersion = uidropdown(app.eFiscalizaGrid);
-            app.systemVersion.Items = {'eFiscaliza', 'eFiscaliza DS', 'eFiscaliza HM'};
-            app.systemVersion.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
-            app.systemVersion.FontSize = 11;
-            app.systemVersion.BackgroundColor = [1 1 1];
-            app.systemVersion.Layout.Row = 1;
-            app.systemVersion.Layout.Column = [2 3];
-            app.systemVersion.Value = 'eFiscaliza';
+            % Create reportVersion
+            app.reportVersion = uidropdown(app.eFiscalizaGrid);
+            app.reportVersion.Items = {'eFiscaliza', 'eFiscaliza DS', 'eFiscaliza HM'};
+            app.reportVersion.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
+            app.reportVersion.FontSize = 11;
+            app.reportVersion.BackgroundColor = [1 1 1];
+            app.reportVersion.Layout.Row = 1;
+            app.reportVersion.Layout.Column = [2 3];
+            app.reportVersion.Value = 'eFiscaliza';
 
-            % Create issueIdLabel
-            app.issueIdLabel = uilabel(app.eFiscalizaGrid);
-            app.issueIdLabel.WordWrap = 'on';
-            app.issueIdLabel.FontSize = 11;
-            app.issueIdLabel.Layout.Row = 2;
-            app.issueIdLabel.Layout.Column = 1;
-            app.issueIdLabel.Text = 'Atividade de inspeção (# ID):';
+            % Create reportUnitLabel
+            app.reportUnitLabel = uilabel(app.eFiscalizaGrid);
+            app.reportUnitLabel.WordWrap = 'on';
+            app.reportUnitLabel.FontSize = 11;
+            app.reportUnitLabel.Layout.Row = 2;
+            app.reportUnitLabel.Layout.Column = 1;
+            app.reportUnitLabel.Text = 'Unidade responsável pela fiscalização:';
 
-            % Create issueId
-            app.issueId = uieditfield(app.eFiscalizaGrid, 'numeric');
-            app.issueId.Limits = [-1 Inf];
-            app.issueId.RoundFractionalValues = 'on';
-            app.issueId.ValueDisplayFormat = '%d';
-            app.issueId.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
-            app.issueId.FontSize = 11;
-            app.issueId.FontColor = [0.149 0.149 0.149];
-            app.issueId.Layout.Row = 2;
-            app.issueId.Layout.Column = 2;
-            app.issueId.Value = -1;
-
-            % Create unitLabel
-            app.unitLabel = uilabel(app.eFiscalizaGrid);
-            app.unitLabel.WordWrap = 'on';
-            app.unitLabel.FontSize = 11;
-            app.unitLabel.Layout.Row = 3;
-            app.unitLabel.Layout.Column = 1;
-            app.unitLabel.Text = 'Unidade responsável:';
-
-            % Create unit
-            app.unit = uidropdown(app.eFiscalizaGrid);
-            app.unit.Items = {};
-            app.unit.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
-            app.unit.FontSize = 11;
-            app.unit.BackgroundColor = [1 1 1];
-            app.unit.Layout.Row = 3;
-            app.unit.Layout.Column = 2;
-            app.unit.Value = {};
+            % Create reportUnit
+            app.reportUnit = uidropdown(app.eFiscalizaGrid);
+            app.reportUnit.Items = {};
+            app.reportUnit.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
+            app.reportUnit.FontSize = 11;
+            app.reportUnit.BackgroundColor = [1 1 1];
+            app.reportUnit.Layout.Row = 2;
+            app.reportUnit.Layout.Column = 2;
+            app.reportUnit.Value = {};
 
             % Create reportLabel
             app.reportLabel = uilabel(app.Tab4Grid);
@@ -1731,7 +1708,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportLabel.FontSize = 10;
             app.reportLabel.Layout.Row = 3;
             app.reportLabel.Layout.Column = 1;
-            app.reportLabel.Text = 'RELATÓRIO';
+            app.reportLabel.Text = 'RELATÓRIO + BASEMAP + IMAGEM';
 
             % Create reportPanel
             app.reportPanel = uipanel(app.Tab4Grid);
@@ -1746,47 +1723,30 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportGrid.RowSpacing = 5;
             app.reportGrid.BackgroundColor = [1 1 1];
 
-            % Create reportoModelNameLabel
-            app.reportoModelNameLabel = uilabel(app.reportGrid);
-            app.reportoModelNameLabel.FontSize = 11;
-            app.reportoModelNameLabel.Layout.Row = 1;
-            app.reportoModelNameLabel.Layout.Column = 1;
-            app.reportoModelNameLabel.Text = 'Modelo (.json):';
+            % Create reportDocTypeLabel
+            app.reportDocTypeLabel = uilabel(app.reportGrid);
+            app.reportDocTypeLabel.WordWrap = 'on';
+            app.reportDocTypeLabel.FontSize = 11;
+            app.reportDocTypeLabel.Layout.Row = 1;
+            app.reportDocTypeLabel.Layout.Column = 1;
+            app.reportDocTypeLabel.Text = 'Tipo de documento a gerar:';
 
-            % Create reportModelName
-            app.reportModelName = uidropdown(app.reportGrid);
-            app.reportModelName.Items = {''};
-            app.reportModelName.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
-            app.reportModelName.FontSize = 11;
-            app.reportModelName.BackgroundColor = [1 1 1];
-            app.reportModelName.Layout.Row = 1;
-            app.reportModelName.Layout.Column = [2 3];
-            app.reportModelName.Value = '';
-
-            % Create reportVersionLabel
-            app.reportVersionLabel = uilabel(app.reportGrid);
-            app.reportVersionLabel.WordWrap = 'on';
-            app.reportVersionLabel.FontSize = 11;
-            app.reportVersionLabel.Layout.Row = 2;
-            app.reportVersionLabel.Layout.Column = 1;
-            app.reportVersionLabel.Text = 'Versão do relatório:';
-
-            % Create reportVersion
-            app.reportVersion = uidropdown(app.reportGrid);
-            app.reportVersion.Items = {'Preliminar', 'Definitiva'};
-            app.reportVersion.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
-            app.reportVersion.FontSize = 11;
-            app.reportVersion.BackgroundColor = [1 1 1];
-            app.reportVersion.Layout.Row = 2;
-            app.reportVersion.Layout.Column = [2 3];
-            app.reportVersion.Value = 'Preliminar';
+            % Create reportDocType
+            app.reportDocType = uidropdown(app.reportGrid);
+            app.reportDocType.Items = {'Relatório de Atividades', 'Relatório de Fiscalização', 'Informe'};
+            app.reportDocType.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
+            app.reportDocType.FontSize = 11;
+            app.reportDocType.BackgroundColor = [1 1 1];
+            app.reportDocType.Layout.Row = 1;
+            app.reportDocType.Layout.Column = [2 3];
+            app.reportDocType.Value = 'Relatório de Atividades';
 
             % Create reportBasemapLabel
             app.reportBasemapLabel = uilabel(app.reportGrid);
             app.reportBasemapLabel.FontSize = 11;
-            app.reportBasemapLabel.Layout.Row = 3;
+            app.reportBasemapLabel.Layout.Row = 2;
             app.reportBasemapLabel.Layout.Column = 1;
-            app.reportBasemapLabel.Text = 'Basemap dos plots:';
+            app.reportBasemapLabel.Text = 'Basemap do eixo geográfico dos plots:';
 
             % Create reportBasemap
             app.reportBasemap = uidropdown(app.reportGrid);
@@ -1794,9 +1754,38 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportBasemap.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
             app.reportBasemap.FontSize = 11;
             app.reportBasemap.BackgroundColor = [1 1 1];
-            app.reportBasemap.Layout.Row = 3;
+            app.reportBasemap.Layout.Row = 2;
             app.reportBasemap.Layout.Column = [2 3];
             app.reportBasemap.Value = 'streets-dark';
+
+            % Create reportImageLabel
+            app.reportImageLabel = uilabel(app.reportGrid);
+            app.reportImageLabel.FontSize = 11;
+            app.reportImageLabel.Layout.Row = 3;
+            app.reportImageLabel.Layout.Column = 1;
+            app.reportImageLabel.Text = 'Formato e resolução (dpi) das imagens:';
+
+            % Create reportImgFormat
+            app.reportImgFormat = uidropdown(app.reportGrid);
+            app.reportImgFormat.Items = {'jpeg', 'png'};
+            app.reportImgFormat.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
+            app.reportImgFormat.FontSize = 11;
+            app.reportImgFormat.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.reportImgFormat.BackgroundColor = [1 1 1];
+            app.reportImgFormat.Layout.Row = 3;
+            app.reportImgFormat.Layout.Column = 2;
+            app.reportImgFormat.Value = 'jpeg';
+
+            % Create reportImgDpi
+            app.reportImgDpi = uidropdown(app.reportGrid);
+            app.reportImgDpi.Items = {'100', '120', '150', '200'};
+            app.reportImgDpi.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
+            app.reportImgDpi.FontSize = 11;
+            app.reportImgDpi.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.reportImgDpi.BackgroundColor = [1 1 1];
+            app.reportImgDpi.Layout.Row = 3;
+            app.reportImgDpi.Layout.Column = 3;
+            app.reportImgDpi.Value = '100';
 
             % Create Tab5
             app.Tab5 = uitab(app.TabGroup);

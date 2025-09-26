@@ -92,16 +92,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         % informação lida dos arquivos de medida. O cacheData armazena tudo
         % o que foi lido, e o measData apenas aquilo que consta na lista de
         % arquivos.
-        cacheData   = model.measData.empty
-        measData    = model.measData.empty
-
-        % Dados das estações do Plano Anual de RNI:
-        % (pendente criar possibilidade de atualizar planilha, no módulo
-        % auxApp.winConfig)
-        stationTable
-
-        % Dados de pontos relacionados a demandas externas:
-        pointsTable
+        cacheData = model.measData.empty
+        measData  = model.measData.empty
     end
 
 
@@ -206,19 +198,12 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                     app.file_FileSortMethod.Value = app.General.File.sortMethod;
                                     file_FileSortMethodValueChanged(app)
                                 end
-                            case 'PM-RNI: updateReferenceTable'
-                                app.stationTable = ReadStationTable(app.projectData, app.General);
-
+                            case {'MonitoringPlan:AnalysisParameterChanged', 'MonitoringPlan:AxesParameterChanged', 'MonitoringPlan:PlotParameterChanged'}
                                 hAuxApp = auxAppHandle(app, "MONITORINGPLAN");
                                 if ~isempty(hAuxApp)
                                     ipcSecundaryMatlabCallsHandler(hAuxApp, app, operationType);
                                 end
-                            case {'PM-RNI: updateAnalysis', 'PM-RNI: updatePlot', 'PM-RNI: updateAxes'}
-                                hAuxApp = auxAppHandle(app, "MONITORINGPLAN");
-                                if ~isempty(hAuxApp)
-                                    ipcSecundaryMatlabCallsHandler(hAuxApp, app, operationType);
-                                end
-                            case {'ExternalRequest: updateAnalysis', 'ExternalRequest: updatePlot', 'ExternalRequest: updateAxes'}
+                            case {'ExternalRequest:AnalysisParameterChanged', 'ExternalRequest:AxesParameterChanged', 'ExternalRequest:PlotParameterChanged'}
                                 hAuxApp = auxAppHandle(app, "EXTERNALREQUEST");
                                 if ~isempty(hAuxApp)
                                     ipcSecundaryMatlabCallsHandler(hAuxApp, app, operationType);
@@ -237,14 +222,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                 varargout{1} = auxAppInputArguments(app, auxAppTag);
                             otherwise
                                 error('UnexpectedCall')
-                        end
-
-                    % MONITORINGPLAN:DOCK_MODULES
-                    case {'auxApp.dockStationInfo',    'auxApp.dockStationInfo_exported', ...
-                          'auxApp.dockListOfLocation', 'auxApp.dockListOfLocation_exported'}
-                        hAuxApp = auxAppHandle(app, "MONITORINGPLAN");
-                        if ~isempty(hAuxApp)
-                            ipcSecundaryMatlabCallsHandler(hAuxApp, callingApp, operationType, varargin{:});
                         end
 
                     % EXTERNALREQUEST
@@ -283,6 +260,14 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             % app auxiliar coincide com o do appAnalise. Força-se, portanto, 
             % a condição abaixo para evitar possível bloqueio da tela.
             app.progressDialog.Visible = 'hidden';
+        end
+
+        %-----------------------------------------------------------------%
+        function ipcMainMatlabCallAuxiliarApp(app, auxAppName, operationType, varargin)
+            hAuxApp = auxAppHandle(app, auxAppName);
+            if ~isempty(hAuxApp)
+                ipcSecundaryMatlabCallsHandler(hAuxApp, app, operationType, varargin{:});
+            end
         end
     end
 
@@ -468,35 +453,28 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function startup_AppProperties(app)
+        function startup_AppProperties(app)            
+            % RFDataHub
             global RFDataHub
             global RFDataHubLog
-            
-            app.rfDataHub = RFDataHub;
-            app.rfDataHubLOG = RFDataHubLog;
-            
-            % Contorna erro da função inROI, que retorna como se todos os
-            % pontos estivessem internos ao ROI, quando as coordenadas
-            % estão em float32. No float64 isso não acontece... aberto BUG
-            % na Mathworks, que indicou estar ciente.
-            app.rfDataHub.Latitude  = double(app.rfDataHub.Latitude);
-            app.rfDataHub.Longitude = double(app.rfDataHub.Longitude);
 
-            % app.rfDataHubSummary
+            app.rfDataHub        = RFDataHub;
+            app.rfDataHubLOG     = RFDataHubLog;
             app.rfDataHubSummary = summary(RFDataHub);
 
+            % A coluna "Source" possui agrupamentos da fonte dos dados,
+            % decorrente da mesclagem de estações.
+            tempSourceList = cellfun(@(x) strsplit(x, ' | '), app.rfDataHubSummary.Source.Categories, 'UniformOutput', false);
+            app.rfDataHubSummary.Source.RawCategories = unique(horzcat(tempSourceList{:}))';
+
+            % A coluna "Location" não está sendo corretamente ordenada por
+            % conta dos caracteres especiais.
+            tempLocationList = textAnalysis.preProcessedData(app.rfDataHubSummary.Location.Categories);
+            [app.rfDataHubSummary.Location.CacheCategories, idxSort] = sort(tempLocationList);
+            app.rfDataHubSummary.Location.Categories = app.rfDataHubSummary.Location.Categories(idxSort);
+
             % app.projectData
-            app.projectData  = model.projectLib(app);
-            app.stationTable = ReadStationTable(app.projectData, app.General);
-            app.pointsTable  = fileReader.ExternalRequest(app.General);
-
-            % app.GeneralSettings (VALIDA ALGUMAS INFORMAÇÕES)
-            documentModelNames = [{''}, {app.projectData.documentModel.Name}];
-            if ~ismember(app.General.Report.model, documentModelNames)
-                app.General.Report.model = documentModelNames{1};
-            end
-
-            app.General.Report.issue = -1;
+            app.projectData = model.projectLib(app, app.rootFolder, app.General);
         end
 
         %-----------------------------------------------------------------%
@@ -525,27 +503,20 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function file_ProjectRestart(app, operationType)
-            arguments
-                app
-                operationType char {mustBeMember(operationType, {'add', 'delete', 'merge', 'unmerge'})}
-            end
-
-            % Reinicializa propriedades do objeto app.projectData.
-            Restart(app.projectData)
-
-            % Atualiza árvore (app.file_Tree) e tabelas de referência (app.stationTable
-            % e app.pointsTable).
-            indexes = file_findSelectedNodeData(app);
+        function file_ProjectRestart(app, indexes, updateType)
             file_TreeBuilding(app, indexes)
-            [~, app.stationTable, app.pointsTable] = updateAnalysis( ...
-                app.projectData, ...
-                app.measData, ...
-                app.stationTable, ...
-                app.pointsTable, ...
-                app.General, ...
-                'station+points' ...
-            );
+
+            if ismember(updateType, {'FileListChanged:Add', 'FileListChanged:Del'})
+                updateAnalysis( ...
+                    app.projectData, ...
+                    app.measData, ...
+                    app.General, ...
+                    updateType ...
+                );
+            end
+            
+            ipcMainMatlabCallAuxiliarApp(app, 'MONITORINGPLAN',  updateType)
+            ipcMainMatlabCallAuxiliarApp(app, 'EXTERNALREQUEST', updateType)
         end
         
         %-----------------------------------------------------------------%
@@ -608,12 +579,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                         app.file_Tree.SelectedNodes = app.file_Tree.Children(1).Children(1);
                     end
                 end
-
-                app.menu_Button2.Enable = 1;
-                app.menu_Button3.Enable = 1;
-            else
-                app.menu_Button2.Enable = 0;
-                app.menu_Button3.Enable = 0;
             end
 
             file_TreeSelectionChanged(app)
@@ -670,6 +635,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
     methods (Access = private)
         %-----------------------------------------------------------------%
+        % TABGROUPCONTROLLER
+        %-----------------------------------------------------------------%
         function hAuxApp = auxAppHandle(app, auxAppName)
             arguments
                 app
@@ -692,44 +659,93 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             inputArguments = {app};
 
             switch auxAppName
-                case 'MONITORINGPLAN'
-                    if auxAppIsOpen
-                        % ...
-                    end
-
                 case 'RFDATAHUB'
                     if auxAppIsOpen
                         filterTable         = auxAppHandle.filterTable;
                         rfDataHubAnnotation = auxAppHandle.rfDataHubAnnotation;
                         inputArguments      = {app, filterTable, rfDataHubAnnotation};
                     end
+
+                otherwise
+                    % ...
             end
+        end
+    end
+
+
+    methods
+        %-----------------------------------------------------------------%
+        % SISTEMA DE GESTÃO DA FISCALIZAÇÃO (eFiscaliza/SEI)
+        %-----------------------------------------------------------------%                
+        function status = report_checkEFiscalizaIssueId(app, issue)
+            status = (issue > 0) && (issue < inf);
         end
 
         %-----------------------------------------------------------------%
-        function userSelection = checkIfAuxiliarAppIsOpen(app, operationType)
-            userSelection    = 'Sim';
+        function report_uploadInfoController(app, credentials, operation, eFiscalizaVersion, unit)
+            communicationStatus = report_sendHTMLDocToSEIviaEFiscaliza(app, credentials, operation, eFiscalizaVersion, unit);
+            if communicationStatus && strcmp(eFiscalizaVersion, 'eFiscaliza')
+                report_sendJSONFileToSharepoint(app)
+            end
+        end
 
-            hMonitoringPlan  = auxAppHandle(app, "MONITORINGPLAN");
-            hExternalRequest = auxAppHandle(app, "EXTERNALREQUEST");
+        %-------------------------------------------------------------------------%
+        function communicationStatus = report_sendHTMLDocToSEIviaEFiscaliza(app, credentials, operation, eFiscalizaVersion, unit)
+            app.progressDialog.Visible = 'visible';
+            communicationStatus = false;
 
-            if (~isempty(hMonitoringPlan)  && isvalid(hMonitoringPlan)) || ...
-               (~isempty(hExternalRequest) && isvalid(hExternalRequest))
-
-                msgQuestion   = sprintf(['A operação "%s" demanda que os módulos auxiliares "PM-RNI" e "DEMANDA EXTERNA" sejam fechados, '          ...
-                                         'caso abertos, pois as informações espectrais consumidas por esses módulos poderão ficar desatualizadas. ' ...
-                                         'Deseja continuar?'], operationType);
-                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
-
-                if userSelection == "Sim"
-                    if ~isempty(hMonitoringPlan)  && isvalid(hMonitoringPlan)
-                        closeModule(app.tabGroupController, "MONITORINGPLAN",  app.General)
-                    end
-        
-                    if ~isempty(hExternalRequest) && isvalid(hExternalRequest)
-                        closeModule(app.tabGroupController, "EXTERNALREQUEST", app.General)
-                    end
+            try
+                if ~isempty(credentials)
+                    app.eFiscalizaObj = ws.eFiscaliza(credentials.login, credentials.password);
                 end
+
+                switch operation
+                    case 'uploadDocument'
+                        env = strsplit(eFiscalizaVersion);
+                        if numel(env) < 2
+                            env = 'PD';
+                        else
+                            env = env{2};
+                        end
+
+                        issue    = struct('type', 'ATIVIDADE DE INSPEÇÃO', 'id', app.report_Issue.Value);
+                        fileName = getGeneratedDocumentFileName(app.projectData, '.html');
+                        docSpec  = app.General.eFiscaliza;
+                        docSpec.originId = docSpec.internal.originId;
+                        docSpec.typeId   = docSpec.internal.typeId;
+
+                        msg = run(app.eFiscalizaObj, env, operation, issue, unit, docSpec, fileName);
+        
+                    otherwise
+                        error('Unexpected call')
+                end
+                
+                if ~contains(msg, 'Documento cadastrado no SEI', 'IgnoreCase', true)
+                    error(msg)
+                end
+
+                modalWindowIcon     = 'success';
+                modalWindowMessage  = msg;
+                communicationStatus = true;
+
+            catch ME
+                app.eFiscalizaObj   = [];
+                
+                modalWindowIcon     = 'error';
+                modalWindowMessage  = ME.message;
+            end
+
+            appUtil.modalWindow(app.UIFigure, modalWindowIcon, modalWindowMessage);
+            app.progressDialog.Visible = 'hidden';
+        end
+
+        %------------------------------------------------------------------------%
+        function report_sendJSONFileToSharepoint(app)
+            JSONFile = getGeneratedDocumentFileName(app.projectData.generatedFiles, '.json');
+            [status, msg] = copyfile(JSONFile, app.General.fileFolder.DataHub_POST, 'f');
+
+            if ~status
+                appUtil.modalWindow(app.UIFigure, 'error', msg);
             end
         end
     end
@@ -847,28 +863,15 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         function file_ContextMenu_delTreeNodeSelected(app, event)
             
             if ~isempty(app.file_Tree.SelectedNodes)
-                % VALIDAÇÃO
-                if strcmp(checkIfAuxiliarAppIsOpen(app, 'EXCLUIR ARQUIVO'), 'Não')
-                    return
-                end
-
-                % EXCLUIR ARQUIVO(S)
                 indexes = [app.file_Tree.SelectedNodes.NodeData];
                 app.measData(indexes) = [];
-
-                file_ProjectRestart(app, 'delete')
-                file_TreeBuilding(app)
+                file_ProjectRestart(app, [], 'FileListChanged:Del')
             end
 
         end
 
         % Image clicked function: file_OpenFileButton
         function file_OpenFileButtonImageClicked(app, event)
-
-            % VALIDAÇÃO
-            if strcmp(checkIfAuxiliarAppIsOpen(app, 'INCLUIR ARQUIVO'), 'Não')
-                return
-            end
 
             d = [];
             fileFullName = {};
@@ -973,8 +976,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 appUtil.modalWindow(app.UIFigure, "warning", msgWarning);
             end
             
-            file_ProjectRestart(app, 'add')
-            file_TreeBuilding(app)
+            indexes = file_findSelectedNodeData(app);
+            file_ProjectRestart(app, indexes, 'FileListChanged:Add')
 
             delete(d)
 
@@ -991,14 +994,14 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         % Image clicked function: file_MergeFiles
         function file_MergeFilesImageClicked(app, event)
             
+            % O processo de "mesclagem" é apenas o controle da localidade
+            % de agrupamento, não tendo impacto na análise, mas apenas na
+            % visualização da informação no app (e no relatório).
+
             indexes = file_findSelectedNodeData(app);
 
             locationMergedStatus = any(arrayfun(@(x) ~strcmp(x.Location, x.Location_I), app.measData(indexes)));
             if locationMergedStatus
-                if strcmp(checkIfAuxiliarAppIsOpen(app, 'MESCLAR ARQUIVOS'), 'Não')
-                    return
-                end
-
                 msgQuestion   = util.HtmlTextGenerator.MergedFiles(app.measData(indexes), 'MergedStatusOn');
                 userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
 
@@ -1008,9 +1011,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     for ii = indexes
                         app.measData(ii).Location = app.measData(ii).Location_I;
                     end
-                    
-                    file_ProjectRestart(app, 'unmerge')
-                    file_TreeBuilding(app, indexes)
+                    file_ProjectRestart(app, indexes, 'FileListChanged:Unmerge')
                     return
                 end
             end
@@ -1025,10 +1026,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     return
                 end
 
-                if strcmp(checkIfAuxiliarAppIsOpen(app, 'MESCLAR ARQUIVOS'), 'Não')
-                    return
-                end
-
                 msgQuestion   = util.HtmlTextGenerator.MergedFiles(app.measData(indexes), 'FinalConfirmationBeforeEdition');
                 userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, [locationList, {'Cancelar'}], numel(locationList)+1, numel(locationList)+1);
 
@@ -1039,8 +1036,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 for ii = indexes
                     app.measData(ii).Location = userSelection;
                 end
-                file_ProjectRestart(app, 'merge')
-                file_TreeBuilding(app, indexes)
+                file_ProjectRestart(app, indexes, 'FileListChanged:Merge')
             end
 
         end
@@ -1255,7 +1251,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.menu_Button2 = uibutton(app.menu_Grid, 'state');
             app.menu_Button2.ValueChangedFcn = createCallbackFcn(app, @menu_mainButtonPushed, true);
             app.menu_Button2.Tag = 'MONITORINGPLAN';
-            app.menu_Button2.Enable = 'off';
             app.menu_Button2.Tooltip = {'PM-RNI'};
             app.menu_Button2.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'Detection_32White.png');
             app.menu_Button2.IconAlignment = 'right';
@@ -1269,7 +1264,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.menu_Button3 = uibutton(app.menu_Grid, 'state');
             app.menu_Button3.ValueChangedFcn = createCallbackFcn(app, @menu_mainButtonPushed, true);
             app.menu_Button3.Tag = 'EXTERNALREQUEST';
-            app.menu_Button3.Enable = 'off';
             app.menu_Button3.Tooltip = {'Demanda externa'};
             app.menu_Button3.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'exceptionList_32White.png');
             app.menu_Button3.IconAlignment = 'right';

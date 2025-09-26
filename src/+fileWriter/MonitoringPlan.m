@@ -1,7 +1,6 @@
-function [status, msgError] = MonitoringPlan(projectData, fileName, stationTable, measTable, ReferenceFielValue, RawMeasuresExportFlag)
+function [status, msgError] = MonitoringPlan(fileName, stationTable, measTable, ReferenceFielValue, RawMeasuresExportFlag)
 
     arguments
-        projectData
         fileName 
         stationTable 
         measTable 
@@ -17,7 +16,7 @@ function [status, msgError] = MonitoringPlan(projectData, fileName, stationTable
         % (a) Insere coordenadas geográficas da estação no campo "Observações", 
         %     caso editadas, e troca valores inválidos ("-1", por exemplo) por 
         %     valores nulos.
-        stationTable = prepareStationTableForExport(projectData, stationTable);
+        stationTable = model.projectLib.prepareStationTableForExport(stationTable);
     
         % (b) Seleciona colunas que irão compor o arquivo .XLSX, criando coluna 
         %     com informação do "Limite".

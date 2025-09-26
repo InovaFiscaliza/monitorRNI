@@ -1,10 +1,10 @@
-function [stationTable, rawListOfYears, refListOfLocations, refListOfStates] = MonitoringPlan(appName, rootFolder, appGeneral)
+function [stationTable, referenceData] = MonitoringPlan(appName, rootFolder, generalSettings)
     
     [projectFolder, ...
      programDataFolder] = appUtil.Path(appName, rootFolder);
 
-    projectFilePath     = fullfile(projectFolder,     appGeneral.MonitoringPlan.ReferenceFile);
-    programDataFilePath = fullfile(programDataFolder, appGeneral.MonitoringPlan.ReferenceFile);
+    projectFilePath     = fullfile(projectFolder,     generalSettings.MonitoringPlan.ReferenceFile);
+    programDataFilePath = fullfile(programDataFolder, generalSettings.MonitoringPlan.ReferenceFile);
 
     if isfile(programDataFilePath)
         stationTable = readtable(programDataFilePath, 'VariableNamingRule', 'preserve');
@@ -19,8 +19,8 @@ function [stationTable, rawListOfYears, refListOfLocations, refListOfStates] = M
     end
 
     % Filtro por ano:
-    rawListOfYears = unique(stationTable.Ano);
-    idxFilter = ~ismember(stationTable.Ano, appGeneral.MonitoringPlan.Period);
+    listOfYears = unique(stationTable.Ano);
+    idxFilter   = ~ismember(stationTable.Ano, generalSettings.MonitoringPlan.Period);
     if any(idxFilter)
         stationTable(idxFilter, :)        = [];
     end
@@ -54,7 +54,7 @@ function [stationTable, rawListOfYears, refListOfLocations, refListOfStates] = M
     stationTable.maxFieldLongitude(:)     = 0;
 
     stationTable.("Fonte de dados")(:)    = {''};
-    stationTable.("Justificativa")(:)     = categorical("-1", appGeneral.MonitoringPlan.NoMeasureReasons);
+    stationTable.("Justificativa")(:)     = categorical("-1", generalSettings.MonitoringPlan.NoMeasureReasons);
     stationTable.("Observações")(:)       = {''};
 
     stationTable.AnalysisFlag(:)          = false;
@@ -63,10 +63,14 @@ function [stationTable, rawListOfYears, refListOfLocations, refListOfStates] = M
 
     % Ordenando lista (evitando que "Águas Claras" seja apresentada 
     % depois dos municípios que se iniciam com a letra "z")
-    referenceList = unique(stationTable.Location);
+    referenceList   = unique(stationTable.Location);
     referenceEditedList = textAnalysis.normalizeWords(lower(referenceList));
     [~, idxSort] = sort(referenceEditedList);
     
-    refListOfLocations = referenceList(idxSort);
-    refListOfStates    = unique(stationTable.UF);
+    listOfLocations = referenceList(idxSort);
+    listOfStates    = unique(stationTable.UF);
+
+    referenceData   = struct('years',      listOfYears,      ...
+                             'locations', {listOfLocations}, ...
+                             'states',    {listOfStates});
 end
