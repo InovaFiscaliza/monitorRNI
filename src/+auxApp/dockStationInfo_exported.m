@@ -36,6 +36,8 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
         mainApp     % winRNI
         callingApp  % winMonitoringPlan | winMonitoringPlan_exported
         jsBackDoor
+
+        projectData
     end
     
     
@@ -55,7 +57,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function initialValues(app)
-            app.Reason.Items = categories(app.mainApp.stationTable.("Justificativa"));
+            app.Reason.Items = categories(app.projectData.modules.MonitoringPlan.stationTable.("Justificativa"));
             updateForm(app)
         end
 
@@ -73,19 +75,19 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
         
         %-----------------------------------------------------------------%
         function updateFormValues(app, idxStation)
-            app.Station.Text   = util.HtmlTextGenerator.StationInfo(app.mainApp.stationTable, idxStation, app.mainApp.rfDataHub);
-            app.Reason.Value   = char(app.mainApp.stationTable.("Justificativa")(idxStation));
-            app.optNotes.Value = app.mainApp.stationTable.("Observações"){idxStation};
+            app.Station.Text   = util.HtmlTextGenerator.StationInfo(app.projectData.modules.MonitoringPlan.stationTable, idxStation, app.mainApp.rfDataHub);
+            app.Reason.Value   = char(app.projectData.modules.MonitoringPlan.stationTable.("Justificativa")(idxStation));
+            app.optNotes.Value = app.projectData.modules.MonitoringPlan.stationTable.("Observações"){idxStation};
 
-            set(app.Latitude,  'Value', app.mainApp.stationTable.("Latitude")(idxStation),  'UserData', app.mainApp.stationTable.("Latitude")(idxStation))
-            set(app.Longitude, 'Value', app.mainApp.stationTable.("Longitude")(idxStation), 'UserData', app.mainApp.stationTable.("Longitude")(idxStation))            
+            set(app.Latitude,  'Value', app.projectData.modules.MonitoringPlan.stationTable.("Latitude")(idxStation),  'UserData', app.projectData.modules.MonitoringPlan.stationTable.("Latitude")(idxStation))
+            set(app.Longitude, 'Value', app.projectData.modules.MonitoringPlan.stationTable.("Longitude")(idxStation), 'UserData', app.projectData.modules.MonitoringPlan.stationTable.("Longitude")(idxStation))            
         end
 
         %-----------------------------------------------------------------%
         function updateFormLayout(app, idxStation)
             % Identifica se ocorreu alteração nas coordenadas geográficas:
-            if (app.mainApp.stationTable.("Lat")(idxStation)  ~= app.mainApp.stationTable.("Latitude")(idxStation)) || ...
-               (app.mainApp.stationTable.("Long")(idxStation) ~= app.mainApp.stationTable.("Longitude")(idxStation))
+            if (app.projectData.modules.MonitoringPlan.stationTable.("Lat")(idxStation)  ~= app.projectData.modules.MonitoringPlan.stationTable.("Latitude")(idxStation)) || ...
+               (app.projectData.modules.MonitoringPlan.stationTable.("Long")(idxStation) ~= app.projectData.modules.MonitoringPlan.stationTable.("Longitude")(idxStation))
                 app.LocationRefresh.Visible = 1;
             else
                 app.LocationRefresh.Visible = 0;
@@ -141,10 +143,11 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app, callingApp)
             
-            app.mainApp    = callingApp.mainApp;
-            app.callingApp = callingApp;
+            app.mainApp     = callingApp.mainApp;
+            app.callingApp  = callingApp;
+            app.projectData = app.mainApp.projectData;
 
-            app.jsBackDoor = app.callingApp.jsBackDoor;
+            app.jsBackDoor  = app.callingApp.jsBackDoor;
             jsBackDoor_Customizations(app)
             
             initialValues(app)
@@ -154,7 +157,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
         % Callback function: UIFigure, btnClose
         function closeFcn(app, event)
             
-            CallingMainApp(app, 'CLOSE', false, false)
+            CallingMainApp(app, 'closeFcn', false, false)
             delete(app)
             
         end
@@ -176,7 +179,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
                     newLatitude  = app.Latitude.Value;
                     newLongitude = app.Longitude.Value;
-                    CallingMainApp(app, 'StationTableValueChanged: Location', true, true, newLatitude, newLongitude)
+                    CallingMainApp(app, 'MonitoringPlan:StationCoordinatesEdited', true, true, newLatitude, newLongitude)
             end
             
             updateForm(app)
@@ -190,8 +193,8 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             switch event.Source
                 case app.LocationRefresh
                     idxStation = selectedStation(app);
-                    app.Latitude.Value  = app.mainApp.stationTable.("Lat")(idxStation);
-                    app.Longitude.Value = app.mainApp.stationTable.("Long")(idxStation);
+                    app.Latitude.Value  = app.projectData.modules.MonitoringPlan.stationTable.("Lat")(idxStation);
+                    app.Longitude.Value = app.projectData.modules.MonitoringPlan.stationTable.("Long")(idxStation);
 
                     FormValueChanged(app, struct('Source', event.Source))
 

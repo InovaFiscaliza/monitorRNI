@@ -2,26 +2,42 @@ classdef projectLib < handle
 
     properties
         %-----------------------------------------------------------------%
-        name  (1,:) char
-        file  (1,:) char
-        issue (1,1) double
-        unit  (1,:) char
+        name (1,:) char = ''
+        file (1,:) char = ''
 
-        documentType {mustBeMember(documentType, {'Relatório de Atividades', 'Relatório de Fiscalização', 'Informe'})} = 'Relatório de Atividades'
-        documentModel
-        documentScript
-        generatedFiles
+        report  = struct( ...
+            'templates', [], ...
+            'settings',  [] ...
+        )
 
-        rawListOfYears
-        referenceListOfLocations
-        referenceListOfStates
-
-        selectedFileLocations
-        listOfLocations    = struct('Hash', {}, 'Automatic', {}, 'Manual', {})
-
-        numMeasurements
-        numAboveMonitoringPlanTHR
-        numAboveExternalRequestTHR
+        modules = struct( ...
+            'MonitoringPlan',  struct('stationTable',    [], ...
+                                      'stationTable_I',  [], ...
+                                      'annotationTable', [], ...
+                                      'referenceData',   struct('years',      [],   ...
+                                                                'locations', {{}},  ...
+                                                                'states',    {{}}), ...
+                                      'generatedFiles',  struct('lastHTMLDocFullPath', '', 'lastTableFullPath', ''), ...
+                                      'numMeasurements', [],  ...
+                                      'threshold',       [], ...
+                                      'numAboveTHR',     [],  ...
+                                      'ui',              struct('templates',    struct('options', {{}}, ...
+                                                                                       'selected', ''), ...
+                                                                'selectedGroup', '', ...
+                                                                'groupMapping', struct('hash',   {}, ...
+                                                                                       'auto',   {}, ...
+                                                                                       'manual', {}))), ...
+            'ExternalRequest', struct('pointsTable',     [], ...
+                                      'pointsTable_I',   [], ...
+                                      'annotationTable', [], ...
+                                      'generatedFiles',  struct('lastHTMLDocFullPath', '', 'lastTableFullPath', ''), ...
+                                      'numMeasurements', [],  ...
+                                      'threshold',       [], ...
+                                      'numAboveTHR',     [],  ...
+                                      'ui',              struct('templates',    struct('options', {{}}, ...
+                                                                                       'selected', ''), ...
+                                                                'selectedGroup', '')) ...
+        )
     end
 
     
@@ -29,60 +45,52 @@ classdef projectLib < handle
         %-----------------------------------------------------------------%
         mainApp
         rootFolder
-        defaultFilePreffix = 'monitorRNI'
     end
 
 
     methods
         %-----------------------------------------------------------------%
-        function obj = projectLib(mainApp)            
+        function obj = projectLib(mainApp, rootFolder, generalSettings)            
             obj.mainApp    = mainApp;
-            obj.rootFolder = mainApp.rootFolder;
+            obj.rootFolder = rootFolder;
 
-            Restart(obj)
-            ReadReportTemplates(obj)
+            % "ReportTemplates.json"
+            ReadReportTemplates(obj, rootFolder)
 
-            % A planilha de referência do PM-RNI possui uma relação de estações 
-            % de telecomunicações que deve ser avaliada. Dessa planilha, extrai-se:
-            % • rawListOfYears: a lista com todos os anos da planilha 
-            %   bruta - Coluna "Ano".
-            
-            % • referenceListOfLocation: a lista com todas as localidades 
-            %   relacionadas às estações da planilha filtrada (pelo ano sob 
-            %   análise).
-            
-            % • referenceListOfStates: a lista com todas as UFs relacionadas 
-            %   às estações da planilha filtrada.
+            % "PM-RNI - Lista de estações.xlsx"
+            % (stationTable)
+            ReadStationTable(obj, generalSettings)
 
-            % O monitorRNI identifica a localidade relacionada às coordenadas 
-            % centrais de cada arquivo. Essa lista é apresentada nos modos 
-            % auxiliares auxApp.winRNI e auxApp.ExternalRequest.
-            % • selectedFileLocations: a lista com as localidades selecionadas 
-            %   pelo usuário em um dos modos auxiliares.
-
-            % • listOfLocations: a lista de localidades sob análise no módulo 
-            %   auxApp.winMonitoringPlan p/ fins de geração da planilha que será 
-            %   submetida ao Centralizador do PM-RNI.
+            % Tabelas vazias
+            % (pointsTable e annotationTable)
+            CreatePointsTable(obj, generalSettings)
+            CreateAnnotationTable(obj)
         end
 
         %-----------------------------------------------------------------%
         function Restart(obj)
-            obj.name           = '';
-            obj.file           = '';
-            obj.issue          = -1;
-            obj.unit           = '';
+            updateAnnotationTable(obj, 'MonitoringPlan',  'stationTable', 'save')
+            updateAnnotationTable(obj, 'ExternalRequest', 'pointsTable',  'save')
 
-            obj.documentType   = 'Relatório de Atividades';
-            obj.documentScript = [];
-            obj.generatedFiles = [];
+            obj.modules.MonitoringPlan.stationTable      = obj.modules.MonitoringPlan.stationTable_I;
+            obj.modules.MonitoringPlan.generatedFiles    = struct('lastHTMLDocFullPath', '', 'lastTableFullPath', '');
+            obj.modules.MonitoringPlan.numMeasurements   = [];
+            obj.modules.MonitoringPlan.threshold         = [];
+            obj.modules.MonitoringPlan.numAboveTHR       = [];
+            obj.modules.MonitoringPlan.ui.selectedGroup  = '';
 
-            obj.selectedFileLocations = {};
+            obj.modules.ExternalRequest.pointsTable      = obj.modules.ExternalRequest.pointsTable_I;
+            obj.modules.ExternalRequest.generatedFiles   = struct('lastHTMLDocFullPath', '', 'lastTableFullPath', '');
+            obj.modules.ExternalRequest.numMeasurements  = [];
+            obj.modules.ExternalRequest.threshold        = [];
+            obj.modules.ExternalRequest.numAboveTHR      = [];
+            obj.modules.ExternalRequest.ui.selectedGroup = '';
         end
 
         %-----------------------------------------------------------------%
-        function ReadReportTemplates(obj)
+        function ReadReportTemplates(obj, rootFolder)
             [projectFolder, ...
-             programDataFolder] = appUtil.Path(class.Constants.appName, obj.rootFolder);
+             programDataFolder] = appUtil.Path(class.Constants.appName, rootFolder);
             projectFilePath  = fullfile(projectFolder,     'ReportTemplates.json');
             externalFilePath = fullfile(programDataFolder, 'ReportTemplates.json');
 
@@ -90,155 +98,250 @@ classdef projectLib < handle
                 if ~isdeployed()
                     error('ForceDebugMode')
                 end
-                obj.documentModel = jsondecode(fileread(externalFilePath));
+                obj.report.templates = jsondecode(fileread(externalFilePath));
             catch
-                obj.documentModel = jsondecode(fileread(projectFilePath));
+                obj.report.templates = jsondecode(fileread(projectFilePath));
+            end
+
+            % Identifica lista de templates por módulo...
+            moduleNameList   = fieldnames(obj.modules);
+            templateNameList = {obj.report.templates.Name};
+
+            for ii = 1:numel(moduleNameList)
+                templateIndexes = ismember({obj.report.templates.Module}, moduleNameList(ii));
+                obj.modules.(moduleNameList{ii}).ui.templates.options = [{''}, templateNameList(templateIndexes)];
             end
         end
 
         %-----------------------------------------------------------------%
-        function stationTable = ReadStationTable(obj, generalSettings)
-            [stationTable,                ...
-            obj.rawListOfYears,           ...
-            obj.referenceListOfLocations, ...
-            obj.referenceListOfStates] = fileReader.MonitoringPlan(class.Constants.appName, obj.rootFolder, generalSettings);
+        function ReadStationTable(obj, generalSettings)
+            [stationTable, referenceData] = fileReader.MonitoringPlan(class.Constants.appName, obj.rootFolder, generalSettings);
+
+            obj.modules.MonitoringPlan.stationTable_I = stationTable;
+            obj.modules.MonitoringPlan.stationTable   = stationTable;
+
+            obj.modules.MonitoringPlan.referenceData  = referenceData;
+        end
+
+        %-----------------------------------------------------------------%
+        function CreatePointsTable(obj, generalSettings)
+            pointsTable = table('Size',          [0, 19],                                                                                       ...
+                                'VariableTypes', {'cell', 'cell', 'int32', 'double', 'double', 'cell', 'cell', 'double', 'double', 'double',    ...
+                                                  'double', 'double', 'double', 'double', 'double', 'cell', 'categorical', 'cell', 'logical'},  ...
+                                'VariableNames', {'ID', 'Type', 'Station', 'Latitude', 'Longitude', 'Description', 'Base64Hash',                ...
+                                                  'numberOfMeasures', 'numberOfRiskMeasures', 'minDistanceForMeasure', 'minFieldValue',         ...
+                                                  'meanFieldValue', 'maxFieldValue', 'maxFieldLatitude', 'maxFieldLongitude', 'Fonte de dados', ...
+                                                  'Justificativa', 'Observações', 'AnalysisFlag'});
+        
+            pointsTable.Justificativa = categorical(pointsTable.Justificativa, generalSettings.ExternalRequest.NoMeasureReasons);
+
+            obj.modules.ExternalRequest.pointsTable_I = pointsTable;
+            obj.modules.ExternalRequest.pointsTable   = pointsTable;
+        end
+
+        %-----------------------------------------------------------------%
+        function CreateAnnotationTable(obj)
+            cacheTable  = table('Size',          [0, 5],                                       ...
+                                'VariableTypes', {'cell', 'double', 'double', 'cell', 'cell'}, ...
+                                'VariableNames', {'Base64Hash', 'Latitude', 'Longitude', 'Justificativa', 'Observações'});
+
+            obj.modules.MonitoringPlan.annotationTable  = cacheTable;
+            obj.modules.ExternalRequest.annotationTable = cacheTable;
         end
     end
 
 
     methods
         %-----------------------------------------------------------------%
-        % AUXAPP.WINMONITORINGPLAN
-        % AUXAPP.WINEXTERNALREQUEST
+        function updateAnnotationTable(obj, context, tableName, operationType)
+            arguments
+                obj
+                context       char {mustBeMember(context,       {'MonitoringPlan', 'ExternalRequest'})}
+                tableName     char {mustBeMember(tableName,     {'stationTable', 'pointsTable'})}
+                operationType char {mustBeMember(operationType, {'save', 'load'})}
+            end
+
+            cachedColumns = {'Latitude', 'Longitude', 'Justificativa', 'Observações'};
+
+            switch operationType
+                case 'save'
+                    cachedColumns = [{'Base64Hash'}, cachedColumns];
+
+                    refTable   = model.projectLib.generateHash(obj.modules.(context).(tableName)(:, cachedColumns));
+                    refTable_I = model.projectLib.generateHash(obj.modules.(context).([tableName '_I'])(:, cachedColumns));
+
+                    refIndex   = ~strcmp(refTable.("EditionHash"), refTable_I.("EditionHash"));
+                    if any(refIndex)
+                        cacheTable = obj.modules.(context).annotationTable;
+                        cacheTable = [cacheTable; refTable(refIndex, cachedColumns)];
+
+                        [~, uniqueIndex] = unique(cacheTable.("Base64Hash"));
+                        cacheTable = cacheTable(uniqueIndex, :);
+                        obj.modules.(context).annotationTable = cacheTable;
+                    end
+
+                case 'load'
+                    refTable   = obj.modules.(context).(tableName);
+                    cacheTable = obj.modules.(context).annotationTable;
+
+                    if ~isempty(cacheTable)
+                        [refIndex, cacheIndex] = ismember(refTable.("Base64Hash"), cacheTable.("Base64Hash"));
+
+                        if any(refIndex)
+                            refTable(refIndex, cachedColumns) = cacheTable(cacheIndex(refIndex), cachedColumns);
+                            obj.modules.(context).(tableName) = refTable;
+                        end
+                    end
+            end
+        end
+
         %-----------------------------------------------------------------%
-        function [measTable, stationTable, pointsTable] = updateAnalysis(obj, measData, stationTable, pointsTable, generalSettings, updateType)
+        function updateAnalysis(obj, measData, generalSettings, updateType)
             arguments
                 obj
                 measData
-                stationTable
-                pointsTable
                 generalSettings
-                updateType char {mustBeMember(updateType, {'station+points', 'station', 'points'})} = 'station+points'
+                updateType char {mustBeMember(updateType, {'FileListChanged:Add',                      ... % winMonitorRNI
+                                                           'FileListChanged:Del',                      ... % winMonitorRNI
+                                                           'MonitoringPlan:AnalysisParameterChanged',  ... % auxApp.winConfig
+                                                           'MonitoringPlan:ManualLocationListChanged', ... % auxApp.winMonitoringPlan >> auxApp.dockListOfLocation
+                                                           'MonitoringPlan:StationCoordinatesEdited',  ... % auxApp.winMonitoringPlan >> auxApp.dockStationInfo
+                                                           'ExternalRequest:AnalysisParameterChanged', ... % auxApp.winConfig
+                                                           'ExternalRequest:PointsTableChanged'})}         % auxApp.winExternalRequest
             end
 
-            % auxApp.winMonitoringPlan.measTable
-            % auxApp.winExternalRequest.measTable
             if ~isempty(measData)
                 measTable = createMeasTable(measData);
 
-                % winMonitorRNI.stationTable
-                if contains(updateType, 'station')
-                    idxStations  = find(ismember(stationTable.Location, getFullListOfLocation(obj, measData, stationTable, max(generalSettings.MonitoringPlan.Distance_km, generalSettings.ExternalRequest.Distance_km))))';
-                    stationTable = identifyMeasuresForEachPoint(obj, stationTable, idxStations, measTable, generalSettings.MonitoringPlan.FieldValue, generalSettings.MonitoringPlan.Distance_km);
-                end
+                switch updateType
+                    case {'FileListChanged:Add', ...
+                          'FileListChanged:Del'}
+                        updateStationTableAnalysis(obj, measData, measTable, generalSettings)
+                        updatePointsTableAnalysis(obj, measTable, generalSettings)
     
-                % winMonitorRNI.pointsTable
-                if contains(updateType, 'points')
-                    idxPoints    = 1:height(pointsTable);
-                    pointsTable  = identifyMeasuresForEachPoint(obj, pointsTable, idxPoints, measTable, generalSettings.ExternalRequest.FieldValue, generalSettings.ExternalRequest.Distance_km);
-                end
-
-                if strcmp(updateType, 'station+points')
-                    obj.numMeasurements = height(measTable);
-                    obj.numAboveMonitoringPlanTHR = sum(measTable.FieldValue > generalSettings.MonitoringPlan.FieldValue);
-                    if generalSettings.MonitoringPlan.FieldValue == generalSettings.ExternalRequest.FieldValue
-                        obj.numAboveExternalRequestTHR = obj.numAboveMonitoringPlanTHR;
-                    else
-                        obj.numAboveExternalRequestTHR = sum(measTable.FieldValue > generalSettings.ExternalRequest.FieldValue);
-                    end
+                    case {'MonitoringPlan:AnalysisParameterChanged', ...
+                          'MonitoringPlan:ManualLocationListChanged'}
+                        updateStationTableAnalysis(obj, measData, measTable, generalSettings)
+    
+                    case {'ExternalRequest:AnalysisParameterChanged', ...
+                          'ExternalRequest:PointsTableChanged'}
+                        updatePointsTableAnalysis(obj, measTable, generalSettings)
                 end
 
             else
-                measTable = [];
-
-                if strcmp(updateType, 'station+points')
-                    obj.numMeasurements = 0;
-                    obj.numAboveMonitoringPlanTHR  = 0;
-                    obj.numAboveExternalRequestTHR = 0;
-                end
+                Restart(obj)
             end
         end
 
         %-----------------------------------------------------------------%
-        function stationTable = prepareStationTableForExport(obj, stationTable, charReplace)
-            arguments
-                obj
-                stationTable
-                charReplace char = ''
-            end
+        function updateStationTableAnalysis(obj, measData, measTable, generalSettings)
+            stationTable = obj.modules.MonitoringPlan.stationTable_I;
+            idxStations  = find(ismember(stationTable.Location, getFullListOfLocation(obj, measData, generalSettings.MonitoringPlan.Distance_km)))';
+            stationTable = identifyMeasuresForEachPoint(obj, stationTable, idxStations, measTable, generalSettings.MonitoringPlan.FieldValue, generalSettings.MonitoringPlan.Distance_km);
+            
+            obj.modules.MonitoringPlan.stationTable     = stationTable;
+            obj.modules.MonitoringPlan.numMeasurements  = height(measTable);
+            obj.modules.MonitoringPlan.threshold        = generalSettings.MonitoringPlan.FieldValue;
+            obj.modules.MonitoringPlan.numAboveTHR      = sum(measTable.FieldValue > generalSettings.MonitoringPlan.FieldValue);
 
-            % Insere coordenadas geográficas da estação no campo "Observações", 
-            % caso editadas.
-            idxEditedCoordinates = find((stationTable.("Lat") ~= stationTable.("Latitude")) | (stationTable.("Long") ~= stationTable.("Longitude")))';
-            for ii = idxEditedCoordinates
-                Coordinates = struct('Latitude_Editada',  stationTable.("Latitude")(ii), ...
-                                     'Longitude_Editada', stationTable.("Longitude")(ii));
-        
-                if ~isempty(stationTable.("Observações"){ii})
-                    Coordinates.NotaAdicional = stationTable.("Observações"){ii};
-                end
-        
-                stationTable.("Observações"){ii} = jsonencode(Coordinates);
-            end
-
-            % Troca valores inválidos ("-1", por exemplo) por valores nulos.
-            stationTable.("Justificativa") = replace(cellstr(stationTable.("Justificativa")), '-1', charReplace);
-            if ~isempty(charReplace)
-                stationTable.("Observações")(strcmp(stationTable.("Observações"), '')) = {charReplace};
-            end
+            updateAnnotationTable(obj, 'MonitoringPlan',  'stationTable', 'load')
         end
 
         %-----------------------------------------------------------------%
-        function referenceTable = identifyMeasuresForEachPoint(obj, referenceTable, referenceTableIndexes, measTable, threshold, dist)
-            for ii = referenceTableIndexes
-                if referenceTable.AnalysisFlag(ii)
+        function updatePointsTableAnalysis(obj, measTable, generalSettings)
+            pointsTable  = obj.modules.ExternalRequest.pointsTable_I;
+            idxPoints    = 1:height(pointsTable);
+            pointsTable  = identifyMeasuresForEachPoint(obj, pointsTable, idxPoints, measTable, generalSettings.ExternalRequest.FieldValue, generalSettings.ExternalRequest.Distance_km);
+            
+            obj.modules.ExternalRequest.pointsTable     = pointsTable;
+            obj.modules.ExternalRequest.numMeasurements = obj.modules.MonitoringPlan.numMeasurements;
+            obj.modules.ExternalRequest.threshold       = generalSettings.ExternalRequest.FieldValue;
+            obj.modules.ExternalRequest.numAboveTHR     = sum(measTable.FieldValue > generalSettings.ExternalRequest.FieldValue);
+
+            updateAnnotationTable(obj, 'ExternalRequest', 'pointsTable',  'load')
+        end
+
+        %-----------------------------------------------------------------%
+        function refTable = identifyMeasuresForEachPoint(obj, refTable, refTableIndexes, measTable, threshold, dist)
+            for ii = refTableIndexes
+                if refTable.AnalysisFlag(ii)
                     continue
                 end
 
-                referenceTable.AnalysisFlag(ii) = true;
+                refTable.AnalysisFlag(ii) = true;
 
                 % Inicialmente, afere a distância da estação/ponto a cada uma 
                 % das medidas, identificando aquelas no entorno.
-                pointDistance      = deg2km(distance(referenceTable.Latitude(ii), referenceTable.Longitude(ii), measTable.Latitude, measTable.Longitude));                
+                pointDistance      = deg2km(distance(refTable.Latitude(ii), refTable.Longitude(ii), measTable.Latitude, measTable.Longitude));                
                 idxLogicalMeasures = pointDistance <= dist;
 
                 if any(idxLogicalMeasures)
                     pointMeasures = measTable(idxLogicalMeasures, :);
                     [maxFieldValue, idxMaxFieldValue] = max(pointMeasures.FieldValue);
 
-                    referenceTable.numberOfMeasures(ii)     = height(pointMeasures);
-                    referenceTable.numberOfRiskMeasures(ii) = sum(pointMeasures.FieldValue > threshold);
-                    referenceTable.minFieldValue(ii)        = min(pointMeasures.FieldValue);
-                    referenceTable.meanFieldValue(ii)       = mean(pointMeasures.FieldValue);
-                    referenceTable.maxFieldValue(ii)        = maxFieldValue;
-                    referenceTable.maxFieldLatitude(ii)     = pointMeasures.Latitude(idxMaxFieldValue);
-                    referenceTable.maxFieldLongitude(ii)    = pointMeasures.Longitude(idxMaxFieldValue);
-                    referenceTable.("Fonte de dados"){ii}   = jsonencode(unique(pointMeasures.FileSource));
+                    refTable.numberOfMeasures(ii)     = height(pointMeasures);
+                    refTable.numberOfRiskMeasures(ii) = sum(pointMeasures.FieldValue > threshold);
+                    refTable.minFieldValue(ii)        = min(pointMeasures.FieldValue);
+                    refTable.meanFieldValue(ii)       = mean(pointMeasures.FieldValue);
+                    refTable.maxFieldValue(ii)        = maxFieldValue;
+                    refTable.maxFieldLatitude(ii)     = pointMeasures.Latitude(idxMaxFieldValue);
+                    refTable.maxFieldLongitude(ii)    = pointMeasures.Longitude(idxMaxFieldValue);
+                    refTable.("Fonte de dados"){ii}   = jsonencode(unique(pointMeasures.FileSource));
 
                 else
-                    referenceTable.numberOfMeasures(ii)     = 0;
-                    referenceTable.numberOfRiskMeasures(ii) = 0;
-                    referenceTable.minFieldValue(ii)        = 0;
-                    referenceTable.meanFieldValue(ii)       = 0;
-                    referenceTable.maxFieldValue(ii)        = 0;
-                    referenceTable.maxFieldLatitude(ii)     = 0;
-                    referenceTable.maxFieldLongitude(ii)    = 0;
-                    referenceTable.("Fonte de dados"){ii}   = jsonencode({''});   % '[""]'
+                    refTable.numberOfMeasures(ii)     = 0;
+                    refTable.numberOfRiskMeasures(ii) = 0;
+                    refTable.minFieldValue(ii)        = 0;
+                    refTable.meanFieldValue(ii)       = 0;
+                    refTable.maxFieldValue(ii)        = 0;
+                    refTable.maxFieldLatitude(ii)     = 0;
+                    refTable.maxFieldLongitude(ii)    = 0;
+                    refTable.("Fonte de dados"){ii}   = jsonencode({''});   % '[""]'
                 end
 
-                referenceTable.minDistanceForMeasure(ii)    = min(pointDistance); % km
+                refTable.minDistanceForMeasure(ii)    = min(pointDistance); % km
             end
         end
 
         %-----------------------------------------------------------------%
-        function updateSelectedListOfLocations(obj, locations)
-            obj.selectedFileLocations = locations;
+        function filename = getGeneratedDocumentFileName(obj, fileExt, context)
+            arguments
+                obj
+                fileExt (1,:) char {mustBeMember(fileExt, {'.html', '.json', '.xlsx', '.csv'})}   = '.html'
+                context (1,:) char {mustBeMember(context, {'MonitoringPlan', 'ExternalRequest'})} = 'MonitoringPlan'
+            end
+
+            switch fileExt
+                case '.html'
+                    filename = obj.(context).generatedFiles.lastHTMLDocFullPath;
+                otherwise
+                    filename = obj.(context).generatedFiles.lastTableFullPath;
+            end
         end
 
         %-----------------------------------------------------------------%
+        function updateSelectedListOfLocations(obj, location, context)
+            arguments
+                obj
+                location (1,:) char
+                context  (1,:) char {mustBeMember(context, {'MonitoringPlan', 'ExternalRequest'})} = 'MonitoringPlan'
+            end
+
+            obj.modules.(context).ui.selectedGroup = location;
+        end
+
+        %-----------------------------------------------------------------%
+        function preReportGenerator(obj, generalSettings)
+            obj.report.settings = generalSettings.Report.userSelection;
+        end
+
+
+        %-----------------------------------------------------------------%
+        % AUXAPP.WINMONITORINGPLAN
+        %-----------------------------------------------------------------%
         function hashIndex = addAutomaticLocations(obj, measData, stationTable, dist)
             hash = strjoin(unique({measData.UUID}));
-            hashIndex = find(strcmp({obj.listOfLocations.Hash}, hash), 1);
+            hashIndex = find(strcmp({obj.modules.MonitoringPlan.ui.groupMapping.hash}, hash), 1);
 
             if isempty(hashIndex)
                 automaticLocations = {};
@@ -265,14 +368,14 @@ classdef projectLib < handle
                 % caso aplicável.
                 manualLocations = {};
                 if numel(unique({measData.Location_I})) > 1
-                    rawHashIndexes  = ismember({obj.listOfLocations.Hash}, {measData.UUID});
+                    rawHashIndexes  = ismember({obj.modules.MonitoringPlan.ui.groupMapping.hash}, {measData.UUID});
                     if any(rawHashIndexes)
-                        manualLocations = vertcat(obj.listOfLocations(rawHashIndexes).Manual);
+                        manualLocations = vertcat(obj.modules.MonitoringPlan.ui.groupMapping(rawHashIndexes).manual);
                     end
                 end
 
-                hashIndex = numel(obj.listOfLocations) + 1;
-                obj.listOfLocations(hashIndex) = struct('Hash', hash, 'Automatic', {unique(automaticLocations)}, 'Manual', {unique(manualLocations)});
+                hashIndex = numel(obj.modules.MonitoringPlan.ui.groupMapping) + 1;
+                obj.modules.MonitoringPlan.ui.groupMapping(hashIndex) = struct('hash', hash, 'auto', {unique(automaticLocations)}, 'manual', {unique(manualLocations)});
             end
         end
 
@@ -282,48 +385,90 @@ classdef projectLib < handle
             currentLocationIndexes = ismember({measData.Location}, currentLocation);
 
             hash = strjoin(unique({measData(currentLocationIndexes).UUID}));
-            hashIndex = find(strcmp({obj.listOfLocations.Hash}, hash), 1);
+            hashIndex = find(strcmp({obj.modules.MonitoringPlan.ui.groupMapping.hash}, hash), 1);
 
             if ~isempty(hashIndex)
-                obj.listOfLocations(hashIndex) = [];
+                obj.modules.MonitoringPlan.ui.groupMapping(hashIndex) = [];
             end
         end
 
         %-----------------------------------------------------------------%
         function hashIndex = addManualLocations(obj, measData, locations)
             hash = strjoin(unique({measData.UUID}));
-            hashIndex = find(strcmp({obj.listOfLocations.Hash}, hash), 1);
+            hashIndex = find(strcmp({obj.modules.MonitoringPlan.ui.groupMapping.hash}, hash), 1);
             
             if ~isempty(hashIndex)
-                obj.listOfLocations(hashIndex).Manual = locations;
+                obj.modules.MonitoringPlan.ui.groupMapping(hashIndex).manual = locations;
             end
         end
 
         %-----------------------------------------------------------------%
-        function fullListOfLocation = getFullListOfLocation(obj, measData, stationTable, dist)
+        function fullListOfLocation = getFullListOfLocation(obj, measData, dist)
             hash = strjoin(unique({measData.UUID}));
-            hashIndex = find(strcmp({obj.listOfLocations.Hash}, hash), 1);
+            hashIndex = find(strcmp({obj.modules.MonitoringPlan.ui.groupMapping.hash}, hash), 1);
 
             if isempty(hashIndex)
-                hashIndex = addAutomaticLocations(obj, measData, stationTable, dist);
+                hashIndex = addAutomaticLocations(obj, measData, obj.modules.MonitoringPlan.stationTable, dist);
             end
             
             fullListOfLocation = sort(union(...
-                obj.listOfLocations(hashIndex).Automatic, ...
-                obj.listOfLocations(hashIndex).Manual ...
+                obj.modules.MonitoringPlan.ui.groupMapping(hashIndex).auto, ...
+                obj.modules.MonitoringPlan.ui.groupMapping(hashIndex).manual ...
             ));
         end
 
         %-----------------------------------------------------------------%
         function manualLocations = getCurrentManualLocations(obj, measData)
             hash = strjoin(unique({measData.UUID}));
-            hashIndex = find(strcmp({obj.listOfLocations.Hash}, hash), 1);
+            hashIndex = find(strcmp({obj.modules.MonitoringPlan.ui.groupMapping.hash}, hash), 1);
 
             if ~isempty(hashIndex)
-                manualLocations = obj.listOfLocations(hashIndex).Manual;
+                manualLocations = obj.modules.MonitoringPlan.ui.groupMapping(hashIndex).manual;
             else
                 manualLocations = {};
             end
         end
     end
+
+
+    methods (Static = true)
+        %-----------------------------------------------------------------%
+        function stationTable = prepareStationTableForExport(obj, charReplace)
+            arguments
+                obj
+                charReplace char = ''
+            end
+
+            stationTable = obj.modules.MonitoringPlan.stationTable;
+
+            % Insere coordenadas geográficas da estação no campo "Observações", 
+            % caso editadas.
+            idxEditedCoordinates = find((stationTable.("Lat") ~= stationTable.("Latitude")) | (stationTable.("Long") ~= stationTable.("Longitude")))';
+            for ii = idxEditedCoordinates
+                Coordinates = struct('Latitude_Editada',  stationTable.("Latitude")(ii), ...
+                                     'Longitude_Editada', stationTable.("Longitude")(ii));
+        
+                if ~isempty(stationTable.("Observações"){ii})
+                    Coordinates.NotaAdicional = stationTable.("Observações"){ii};
+                end
+        
+                stationTable.("Observações"){ii} = jsonencode(Coordinates);
+            end
+
+            % Troca valores inválidos ("-1", por exemplo) por valores nulos.
+            stationTable.("Justificativa") = replace(cellstr(stationTable.("Justificativa")), '-1', charReplace);
+            if ~isempty(charReplace)
+                stationTable.("Observações")(strcmp(stationTable.("Observações"), '')) = {charReplace};
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function referenceTable = generateHash(referenceTable)
+            referenceTable.("EditionHash") = cellfun(@(x) Base64Hash.encode(x), strcat(cellstr(string(referenceTable.("Latitude"))  + "; " + ...
+                                                                                               string(referenceTable.("Longitude"))), '; ',  ...
+                                                                                cellstr(referenceTable.("Justificativa")), '; ',             ...
+                                                                                referenceTable.("Observações")), 'UniformOutput', false);
+        end
+    end
+
 end
