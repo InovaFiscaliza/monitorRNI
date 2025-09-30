@@ -31,10 +31,9 @@ function [stationTable, referenceData] = MonitoringPlan(appName, rootFolder, gen
 
     % Dados inválidos (Duplicados por possuírem mesmos valores p/ colunas 
     % "Fistel", "Nº estação", "Lat" e "Long"):
-    strHashBase = cellstr(string(stationTable.Fistel) + "; " + string(stationTable.("Estação")) + "; " + string(stationTable.Lat) + "; " + string(stationTable.Long));
-    stationTable.Base64Hash               = cellfun(@(x) Base64Hash.encode(x), strHashBase, 'UniformOutput', false);
+    stationTable   =  model.projectLib.generateHash(stationTable, 'stationTable');
     [~, idxUnique] = unique(stationTable.Base64Hash, 'stable');
-    stationTable = stationTable(idxUnique, :);
+    stationTable   = stationTable(idxUnique, :);
     
     % Novas colunas:
     stationTable.Location                 = strcat(stationTable.("Município"), '/', stationTable.UF);
@@ -58,7 +57,6 @@ function [stationTable, referenceData] = MonitoringPlan(appName, rootFolder, gen
     stationTable.("Observações")(:)       = {''};
 
     stationTable.AnalysisFlag(:)          = false;
-    stationTable.UploadResultFlag(:)      = false;
     
 
     % Ordenando lista (evitando que "Águas Claras" seja apresentada 

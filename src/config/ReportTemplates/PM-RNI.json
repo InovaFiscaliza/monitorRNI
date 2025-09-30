@@ -33,7 +33,7 @@
                     "Type": "ItemN2",
                     "Data": {
                         "Editable": "false",
-                        "Text": "O Plano de Monitoração de Radiação Não Ionizante (PM-RNI), criado em 2018, visa avaliar a exposição humana a campos elétricos, magnéticos e eletromagnéticos na faixa de 8.3 kHz a 300 GHz. Para isso, realiza medições de campo elétrico com sondas isotrópicas no entorno de estações de telecomunicações, radiodifusão e outros locais que se enquadrem em pelo menos um dos seguintes critérios:",
+                        "Text": "O Plano de Monitoração de Radiação Não Ionizante (PM-RNI), criado em 2018, visa avaliar a exposição humana a campos elétricos, magnéticos e eletromagnéticos na faixa de 8.3 kHz a 300 GHz. Para isso, realizam-se medições de campo elétrico com sondas isotrópicas no entorno de estações de telecomunicações, radiodifusão e outros locais que se enquadrem em pelo menos um dos seguintes critérios:",
                         "Variable": []
                     }
                 },
@@ -88,11 +88,11 @@
                     "Type": "ItemN2",
                     "Data": {
                         "Editable": "false",
-                        "Text": "Na tabela apresentada a seguir consta o sumário da informação por localidade de agrupamento. Da análise desses dados, constata-se que das %.0f medições realizadas, %s delas apresentou nível acima do limiar de %s.",
+                        "Text": "Na tabela apresentada a seguir consta o sumário da informação por localidade de agrupamento. Da análise desses dados, constata-se que das %.0f medições realizadas, %s delas apresentou nível acima do limiar de %.1f V/m.",
                         "Variable": [
-                            "var_MeasuresGlobal",
-                            "var_MonitoringPlanRisk",
-                            "cfg_MonitoringPlanTHR"                            
+                            "var_MeasurementsGlobal",
+                            "var_NumAboveTHRGlobal",
+                            "var_ThresholdGlobal"                            
                         ]
                     }
                 },
@@ -171,9 +171,10 @@
                     "Type": "Footnote",
                     "Data": {
                         "Editable": "false",
-                        "Text": "<span style=\"display: block; margin: 10px; margin-bottom: 20px; text-align: justify; word-break: break-all;\">Configurações:<br>•&thinsp;Módulo \"PM-RNI\": %s<br>•&thinsp;Modelo do relatório: %s</span>",
+                        "Text": "<span style=\"display: block; margin: 10px; margin-bottom: 20px; text-align: justify; word-break: break-all;\">Configurações:<br>•&thinsp;Módulo \"PM-RNI\": %s<br>•&thinsp;DataBinning: %s<br>•&thinsp;Modelo do relatório: %s</span>",
                         "Variable": [
-                            "cfg_MonitoringPlan",
+                            "cfg_Context",
+                            "cfg_DataBinning",
                             "cfg_ReportTemplate"
                         ]
                     }
@@ -286,6 +287,49 @@
                             }
                         ],
                         "Intro": [],
+                        "Error": [],
+                        "LineBreak": 1
+                    }
+                },
+                {
+                    "Type": "Table",
+                    "Data": {
+                        "Origin": "FunctionEvaluation",
+                        "Source": "tbl_AboveTHR",
+                        "Columns": [
+                            1,
+                            2,
+                            3,
+                            4
+                        ],
+                        "Caption": "Sumário dos pontos que apresentaram níveis superiores ao limiar.",
+                        "Settings": [
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Latitude",
+                                "Precision": "%.6f",
+                                "Width": "90px"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Longitude",
+                                "Precision": "%.6f",
+                                "Width": "90px"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Campo elétrico sumarizado (V/m)",
+                                "Precision": "%.1f",
+                                "Width": "90px"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Qtd. medidas superior limiar",
+                                "Precision": "%.0f",
+                                "Width": "auto"
+                            }
+                        ],
+                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"Aplicou-se a técnica de <i>data binning</i> aos pontos que apresentaram níveis superiores ao limiar, agrupando-os em quadrículas e, posteriormente, sumarizando as suas medições por função estatística.\"}",
                         "Error": [],
                         "LineBreak": 1
                     }

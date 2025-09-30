@@ -19,8 +19,8 @@ classdef (Abstract) Table
                     strjoin(dataOverview(groupIndex).InfoSet.locations,           '<br>'), ...
                     strjoin({dataOverview(groupIndex).InfoSet.measData.Filename}, '<br>'), ...
                     dataOverview(groupIndex).InfoSet.period, ...
-                    dataOverview(groupIndex).InfoSet.numMeasures, ...
-                    dataOverview(groupIndex).InfoSet.numAboveTHR, ...
+                    dataOverview(groupIndex).InfoSet.numMeasurements, ...
+                    sum(dataOverview(groupIndex).InfoSet.numAboveTHR), ...
                     dataOverview(groupIndex).InfoSet.limits ...
                 };
             end
@@ -45,7 +45,7 @@ classdef (Abstract) Table
                     jsonencode(struct('latLimits', measData(ii).LatitudeLimits, 'lngLimits', measData(ii).LongitudeLimits)), ...
                     sprintf('%s<br>⌛%s', measData(ii).ObservationTime, durationTime), ...
                     measData(ii).Measures, ...
-                    analyzedData.InfoSet.numAboveTHR, ...
+                    analyzedData.InfoSet.numAboveTHR(ii), ...
                     sprintf('[%.1f - %.1f] V/m', measData(ii).FieldValueLimits(:)) ...
                 };
             end
@@ -60,8 +60,7 @@ classdef (Abstract) Table
             end
 
             Table = analyzedData.InfoSet.pointsTable;
-            Table.("Justificativa") = strcat('<font style="color: red;">', replace(cellstr(Table.("Justificativa")), '-1', '-'), '</font>');
-
+            
             switch measuredFlag
                 case 'on'
                     Table = Table(Table.numberOfMeasures > 0, :);
@@ -78,21 +77,19 @@ classdef (Abstract) Table
         end
 
         %-----------------------------------------------------------------%
-        function varargout = StationsByLocation(reportInfo, analyzedData, measuredFlag, outputType)
+        function varargout = StationsByLocation(analyzedData, measuredFlag, outputType)
             arguments
-                reportInfo
                 analyzedData
                 measuredFlag char {mustBeMember(measuredFlag, {'all', 'on', 'off'})} = 'all'
                 outputType   char {mustBeMember(outputType, {'table', 'tableHeight'})} = 'table'
             end
 
-            projectData  = reportInfo.Project;
             stationTable = analyzedData.InfoSet.stationTable;
 
             % Insere coordenadas geográficas da estação no campo "Observações", 
             % caso editadas, e troca valores inválidos ("-1", por exemplo) por 
             % valores nulos.
-            Table = prepareStationTableForExport(projectData, stationTable, '-');
+            Table = model.projectLib.prepareStationTableForExport(stationTable, 'stationTable', '-');
 
             switch measuredFlag
                 case 'on'
