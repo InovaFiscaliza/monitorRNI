@@ -133,7 +133,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     case 'customForm'
                         switch event.HTMLEventData.uuid
                             case 'eFiscalizaSignInPage'
-                                report_uploadInfoController(app, event.HTMLEventData, 'uploadDocument')
+                                report_uploadInfoController(app, event.HTMLEventData, 'uploadDocument', event.HTMLEventData.context)
                             case 'openDevTools'
                                 if isequal(app.General.operationMode.DevTools, rmfield(event.HTMLEventData, 'uuid'))
                                     webWin = struct(struct(struct(app.UIFigure).Controller).PlatformHost).CEF;
@@ -152,7 +152,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     case 'auxApp.winExternalRequest.TreePoints'
                         hAuxApp = auxAppHandle(app, "EXTERNALREQUEST");
                         if ~isempty(hAuxApp)
-                            ipcSecundaryMatlabCallsHandler(hAuxApp, app, 'ExternalRequest: DeletePoint')
+                            ipcSecundaryJSEventsHandler(hAuxApp, event)
                         end
 
                     otherwise
@@ -682,15 +682,15 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function report_uploadInfoController(app, credentials, operation, eFiscalizaVersion, unit)
-            communicationStatus = report_sendHTMLDocToSEIviaEFiscaliza(app, credentials, operation, eFiscalizaVersion, unit);
+        function report_uploadInfoController(app, credentials, operation, context)
+            communicationStatus = report_sendHTMLDocToSEIviaEFiscaliza(app, credentials, operation, context);
             if communicationStatus && strcmp(eFiscalizaVersion, 'eFiscaliza')
-                report_sendJSONFileToSharepoint(app)
+                report_sendFilesToSharepoint(app, context)
             end
         end
 
         %-------------------------------------------------------------------------%
-        function communicationStatus = report_sendHTMLDocToSEIviaEFiscaliza(app, credentials, operation, eFiscalizaVersion, unit)
+        function communicationStatus = report_sendHTMLDocToSEIviaEFiscaliza(app, credentials, operation, context)
             app.progressDialog.Visible = 'visible';
             communicationStatus = false;
 
@@ -699,17 +699,17 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     app.eFiscalizaObj = ws.eFiscaliza(credentials.login, credentials.password);
                 end
 
+                % Parâmetros configurados no módulo auxiliar:
+                env   = strsplit(app.projectData.modules.(context).ui.system);
+                if numel(env) < 2; env = 'PD';
+                else;              env = env{2};
+                end
+                unit  = app.projectData.modules.(context).ui.unit;
+                issue = struct('type', 'ATIVIDADE DE INSPEÇÃO', 'id', app.projectData.modules.(context).ui.issue);                
+
                 switch operation
                     case 'uploadDocument'
-                        env = strsplit(eFiscalizaVersion);
-                        if numel(env) < 2
-                            env = 'PD';
-                        else
-                            env = env{2};
-                        end
-
-                        issue    = struct('type', 'ATIVIDADE DE INSPEÇÃO', 'id', app.report_Issue.Value);
-                        fileName = getGeneratedDocumentFileName(app.projectData, '.html');
+                        fileName = getGeneratedDocumentFileName(app.projectData, '.html', context);
                         docSpec  = app.General.eFiscaliza;
                         docSpec.originId = docSpec.internal.originId;
                         docSpec.typeId   = docSpec.internal.typeId;
@@ -740,12 +740,40 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %------------------------------------------------------------------------%
-        function report_sendJSONFileToSharepoint(app)
-            JSONFile = getGeneratedDocumentFileName(app.projectData.generatedFiles, '.json');
-            [status, msg] = copyfile(JSONFile, app.General.fileFolder.DataHub_POST, 'f');
+        function report_sendFilesToSharepoint(app, context)
+            % Evita subir por engano, quando no ambiente de desenvolvimento,
+            % de arquivos na pasta "POST"
+            try
+                if ~isdeployed()
+                    error('ForceDebugMode')
+                end
+                outputFolder = app.General.fileFolder.DataHub_POST;
+            catch
+                outputFolder = app.General.fileFolder.userPath;
+            end
 
-            if ~status
-                appUtil.modalWindow(app.UIFigure, 'error', msg);
+            xlsxFilename = getGeneratedDocumentFileName(app.projectData, '.xlsx',    context);
+            rawFileList  = getGeneratedDocumentFileName(app.projectData, 'rawFiles', context);
+            fileList     = {app.measData.Filename};
+            
+            try
+                fileWriter.MonitoringPlan(xlsxFilename, relatedStationTable, [], app.mainApp.General.MonitoringPlan.FieldValue);
+
+                for ii = 1:numel(rawFileList)
+                    rawFilename = rawFileList{ii};
+                    [~, rawFilenameIndex] = ismember(rawFilename, fileList);
+                    
+                    if isfile(rawFilename) && rawFilenameIndex > 0
+                        [~, baseFilename] = fileparts(rawFilename);
+                        jsonFilename = [baseFilename '.json'];
+        
+                        copyfile(rawFilename, outputFolder, 'f');                
+                        fileWriter.RawFileMetaData(fullfile(outputFolder, jsonFilename), app.measData(rawFilenameIndex));
+                    end
+                end
+
+            catch ME
+                appUtil.modalWindow(app.UIFigure, 'error', getReport(ME))
             end
         end
     end

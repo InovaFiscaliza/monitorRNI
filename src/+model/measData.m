@@ -86,12 +86,16 @@ classdef measData < handle
             % em tela. Além disso, insere o nome do próprio arquivo p/ fins de 
             % mapeamento entre os dados e os arquivos brutos.
 
-            listOfTables  = {obj.Data};
-            listOfFiles   = cellfun(@(x,y) repmat({x}, y, 1), {obj.Filename}, {obj.Measures}, 'UniformOutput', false);
-            tempMeasTable = vertcat(listOfTables{:});
-            tempMeasTable.FileSource = vertcat(listOfFiles{:});
-    
-            measTable     = sortrows(tempMeasTable, 'Timestamp');
+            measTable = [];
+            listOfTables = {obj.Data};
+
+            if ~isempty(listOfTables)
+                listOfFiles   = cellfun(@(x,y) repmat({x}, y, 1), {obj.Filename}, {obj.Measures}, 'UniformOutput', false);
+                tempMeasTable = vertcat(listOfTables{:});
+                tempMeasTable.FileSource = vertcat(listOfFiles{:});
+        
+                measTable     = sortrows(tempMeasTable, 'Timestamp');                
+            end
         end
     end
 end

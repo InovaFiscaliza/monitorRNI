@@ -2,26 +2,6 @@ classdef (Abstract) Variable
 
     methods (Static)
         %-----------------------------------------------------------------%
-        function fieldValue = GeneralSettings(reportInfo, fieldName)
-            generalSettings = reportInfo.Settings;
-
-            switch fieldName
-                case 'MonitoringPlan'
-                    fieldValue = jsonencode(generalSettings.(fieldName));
-                case 'MonitoringPlanTHR'
-                    fieldValue = sprintf('%.1f V/m', generalSettings.MonitoringPlan.FieldValue);
-                case 'ExternalRequest'
-                    fieldValue = jsonencode(generalSettings.(fieldName));
-                case 'ExternalRequestTHR'
-                    fieldValue = sprintf('%.1f V/m', generalSettings.ExternalRequest.FieldValue);
-                case 'ReportTemplate'
-                    fieldValue = '...';
-                otherwise
-                    error('UnexpectedFieldName')
-            end
-        end
-
-        %-----------------------------------------------------------------%
         function fieldValue = ClassProperty(analyzedData, fieldName)
             measData  = analyzedData.InfoSet.measData;
             measTable = analyzedData.InfoSet.measTable;
@@ -72,7 +52,7 @@ classdef (Abstract) Variable
         function fieldValue = ProjectProperty(reportInfo, analyzedData, fieldName)
             generalSettings = reportInfo.Settings;
             projectData  = reportInfo.Project;
-            stationTable = reportInfo.Function.tbl_StationTable;
+            context = analyzedData.InfoSet.context;
 
             if endsWith(fieldName, 'Global')
                 measData = reportInfo.Object;
@@ -81,50 +61,32 @@ classdef (Abstract) Variable
             end
 
             switch fieldName
-                case 'LocationListGlobal'
-                    locationList = {measData.Location};
-                    locations    = unique(locationList);
+                case 'LocationListGlobal' 
+                    groupLocationList = {measData.Location};
+                    groupLocations    = unique(groupLocationList);
                     
-                    locationSubList = {};
-                    for ii = 1:numel(locations)
-                        idIndexes   = find(strcmp(locationList, locations{ii}));
-                        [~, idSort] = sort(arrayfun(@(x) x.Data.Timestamp(1), measData(idIndexes)));
-                        idIndexes   = idIndexes(idSort);
-                        
-                        locationSubList = union(locationSubList, getFullListOfLocation(projectData, measData(idIndexes), stationTable, max(generalSettings.MonitoringPlan.Distance_km, generalSettings.ExternalRequest.Distance_km)));
+                    locations = {};
+                    for ii = 1:numel(groupLocations)
+                        idIndexes = strcmp(groupLocationList, groupLocations{ii});                        
+                        locations = union(locations, getFullListOfLocation(projectData, measData(idIndexes), generalSettings.MonitoringPlan.Distance_km));
                     end
-
-                    fieldValue = strjoin(unique(locationSubList), ', ');
-
-                case 'LocationSummaryGlobal'
-                    hash = strjoin(unique({measData.UUID}));
-                    hashIndex = find(strcmp({projectData.listOfLocations.Hash}, hash), 1);
-                    fieldValue = jsonencode(projectData.listOfLocations(hashIndex)); 
-
-                case 'MeasuresGlobal'
-                    fieldValue = projectData.numMeasurements;
-
-                case 'MonitoringPlanMeasuresRiskGlobal'
-                    if projectData.numAboveMonitoringPlanTHR == 0
-                        fieldValue = 'NENHUMA';
-                    else
-                        fieldValue = num2str(projectData.numAboveMonitoringPlanTHR);
-                    end
-
-                case 'ExternalRequestsMeasuresRiskGlobal'
-                    if projectData.numAboveExternalRequestTHR == 0
-                        fieldValue = 'NENHUMA';
-                    else
-                        fieldValue = num2str(projectData.numAboveExternalRequestTHR);
-                    end
+                    
+                    fieldValue = strjoin(unique(locations), ', ');
 
                 case 'LocationList'
-                    fieldValue = strjoin(getFullListOfLocation(projectData, measData, stationTable, max(generalSettings.MonitoringPlan.Distance_km, generalSettings.ExternalRequest.Distance_km)), ', ');
-                    
-                case 'LocationSummary'
+                    fieldValue = strjoin(getFullListOfLocation(projectData, measData, generalSettings.MonitoringPlan.Distance_km), ', ');
+
+                case {'LocationSummaryGlobal', 'LocationSummary'}
                     hash = strjoin(unique({measData.UUID}));
-                    hashIndex = find(strcmp({projectData.listOfLocations.Hash}, hash), 1);
-                    fieldValue = jsonencode(projectData.listOfLocations(hashIndex));
+                    hashIndex = find(strcmp({projectData.modules.(context).referenceData.locations.Hash}, hash), 1);
+                    fieldValue = jsonencode(projectData.modules.(context).referenceData.locations(hashIndex)); 
+
+                case 'NumAboveTHRGlobal'
+                    if projectData.modules.(context).numAboveTHR == 0
+                        fieldValue = 'NENHUMA';
+                    else
+                        fieldValue = num2str(projectData.modules.(context).numAboveTHR);
+                    end
 
                 otherwise
                     error('UnexpectedFieldName')

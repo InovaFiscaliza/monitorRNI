@@ -1,5 +1,5 @@
 {
-    "version": 0.75,
+    "version": 0.77,
     "operationMode": {
         "Debug": false,
         "Dock": true,
@@ -139,6 +139,10 @@
         "Image": {
             "Format": "jpeg",
             "Resolution": 120
+        },
+        "DataBinning": {
+            "length_m": 100,
+            "function": "mean-linear"
         }
     },
     "eFiscaliza": {

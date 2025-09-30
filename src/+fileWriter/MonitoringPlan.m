@@ -1,7 +1,7 @@
 function [status, msgError] = MonitoringPlan(fileName, stationTable, measTable, ReferenceFielValue, RawMeasuresExportFlag)
 
     arguments
-        fileName 
+        fileName
         stationTable 
         measTable 
         ReferenceFielValue 
@@ -13,17 +13,21 @@ function [status, msgError] = MonitoringPlan(fileName, stationTable, measTable, 
 
     try
         % PREPARA TABELA
-        % (a) Insere coordenadas geográficas da estação no campo "Observações", 
+        % (a) Elimina linhas idênticas, caso existentes.
+        [~, uniqueIdx] = unique(stationTable.("Base64Hash"), "stable");
+        stationTable   = stationTable(uniqueIdx, :);
+
+        % (b) Insere coordenadas geográficas da estação no campo "Observações", 
         %     caso editadas, e troca valores inválidos ("-1", por exemplo) por 
         %     valores nulos.
-        stationTable = model.projectLib.prepareStationTableForExport(stationTable);
+        stationTable = model.projectLib.prepareStationTableForExport(stationTable, 'stationTable');
     
-        % (b) Seleciona colunas que irão compor o arquivo .XLSX, criando coluna 
+        % (c) Seleciona colunas que irão compor o arquivo .XLSX, criando coluna 
         %     com informação do "Limite".
         stationTable = stationTable(:, [1:13, 19:30]);
         stationTable.("Limite (V/m)")(:) = ReferenceFielValue;
     
-        % (c) Edita nomes de algumas das colunas da tabela.
+        % (d) Edita nomes de algumas das colunas da tabela.
         stationTable.Properties.VariableNames(14:22) = {'Qtd. Medidas',                 ...
                                                         'Qtd. Medidas Acima do Limite', ...
                                                         'Distância Mínima (km)',        ...

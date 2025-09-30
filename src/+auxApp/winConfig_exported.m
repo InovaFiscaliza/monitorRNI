@@ -86,6 +86,13 @@ classdef winConfig_exported < matlab.apps.AppBase
         Tab4Grid                      matlab.ui.container.GridLayout
         reportPanel                   matlab.ui.container.Panel
         reportGrid                    matlab.ui.container.GridLayout
+        reportBinningPanel            matlab.ui.container.Panel
+        reportBinningGrid             matlab.ui.container.GridLayout
+        reportBinningFcn              matlab.ui.control.DropDown
+        reportBinningFcnLabel         matlab.ui.control.Label
+        reportBinningLength           matlab.ui.control.Spinner
+        reportBinningLengthLabel      matlab.ui.control.Label
+        reportBinningLabel            matlab.ui.control.Label
         reportImgDpi                  matlab.ui.control.DropDown
         reportImgFormat               matlab.ui.control.DropDown
         reportImageLabel              matlab.ui.control.Label
@@ -394,13 +401,15 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function updatePanel_Report(app)
-            app.reportVersion.Value   = app.mainApp.General.Report.system;
+            app.reportVersion.Value       = app.mainApp.General.Report.system;
             set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, 'Value', app.mainApp.General.Report.unit)
             
-            app.reportDocType.Value   = app.mainApp.General.Report.Document;
-            app.reportBasemap.Value   = app.mainApp.General.Report.Basemap;
-            app.reportImgFormat.Value = app.mainApp.General.Report.Image.Format;
-            app.reportImgDpi.Value    = num2str(app.mainApp.General.Report.Image.Resolution);
+            app.reportDocType.Value       = app.mainApp.General.Report.Document;
+            app.reportBasemap.Value       = app.mainApp.General.Report.Basemap;
+            app.reportImgFormat.Value     = app.mainApp.General.Report.Image.Format;
+            app.reportImgDpi.Value        = num2str(app.mainApp.General.Report.Image.Resolution);
+            app.reportBinningLength.Value = app.mainApp.General.Report.DataBinning.length_m;
+            app.reportBinningFcn.Value    = app.mainApp.General.Report.DataBinning.function;
 
             if checkEdition(app, 'REPORT')
                 app.eFiscalizaRefresh.Visible = 1;
@@ -835,8 +844,8 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         end
 
-        % Value changed function: reportBasemap, reportDocType, 
-        % ...and 4 other components
+        % Value changed function: reportBasemap, reportBinningFcn, 
+        % ...and 6 other components
         function Config_ProjectParameterValueChanged(app, event)
 
             switch event.Source
@@ -857,6 +866,12 @@ classdef winConfig_exported < matlab.apps.AppBase
 
                 case app.reportImgDpi
                     app.mainApp.General.Report.Image.Resolution = str2double(event.Value);
+
+                case app.reportBinningLength
+                    app.mainApp.General.Report.DataBinning.length_m = event.Value;
+
+                case app.reportBinningFcn
+                    app.mainApp.General.Report.DataBinning.function = event.Value;
             end
 
             app.mainApp.General_I.Report = app.mainApp.General.Report;
@@ -1641,7 +1656,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.eFiscalizaLabel.FontSize = 10;
             app.eFiscalizaLabel.Layout.Row = 1;
             app.eFiscalizaLabel.Layout.Column = 1;
-            app.eFiscalizaLabel.Text = 'eFISCALIZA';
+            app.eFiscalizaLabel.Text = 'INICIALIZAÇÃO eFISCALIZA';
 
             % Create eFiscalizaRefresh
             app.eFiscalizaRefresh = uiimage(app.Tab4Grid);
@@ -1672,7 +1687,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportSystemLabel.FontSize = 11;
             app.reportSystemLabel.Layout.Row = 1;
             app.reportSystemLabel.Layout.Column = 1;
-            app.reportSystemLabel.Text = 'Versão do sistema de gestão à fiscalização:';
+            app.reportSystemLabel.Text = 'Ambiente do sistema de gestão à fiscalização:';
 
             % Create reportVersion
             app.reportVersion = uidropdown(app.eFiscalizaGrid);
@@ -1708,7 +1723,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportLabel.FontSize = 10;
             app.reportLabel.Layout.Row = 3;
             app.reportLabel.Layout.Column = 1;
-            app.reportLabel.Text = 'RELATÓRIO + BASEMAP + IMAGEM';
+            app.reportLabel.Text = 'RELATÓRIO + BASEMAP + IMAGEM + DATABINNING';
 
             % Create reportPanel
             app.reportPanel = uipanel(app.Tab4Grid);
@@ -1719,7 +1734,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create reportGrid
             app.reportGrid = uigridlayout(app.reportPanel);
             app.reportGrid.ColumnWidth = {350, 110, 110};
-            app.reportGrid.RowHeight = {22, 22, 22};
+            app.reportGrid.RowHeight = {22, 22, 22, 22, 48, '1x'};
             app.reportGrid.RowSpacing = 5;
             app.reportGrid.BackgroundColor = [1 1 1];
 
@@ -1733,7 +1748,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create reportDocType
             app.reportDocType = uidropdown(app.reportGrid);
-            app.reportDocType.Items = {'Relatório de Atividades', 'Relatório de Fiscalização', 'Informe'};
+            app.reportDocType.Items = {'Relatório de Atividades'};
             app.reportDocType.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
             app.reportDocType.FontSize = 11;
             app.reportDocType.BackgroundColor = [1 1 1];
@@ -1786,6 +1801,73 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportImgDpi.Layout.Row = 3;
             app.reportImgDpi.Layout.Column = 3;
             app.reportImgDpi.Value = '100';
+
+            % Create reportBinningLabel
+            app.reportBinningLabel = uilabel(app.reportGrid);
+            app.reportBinningLabel.VerticalAlignment = 'top';
+            app.reportBinningLabel.FontSize = 11;
+            app.reportBinningLabel.Layout.Row = [4 5];
+            app.reportBinningLabel.Layout.Column = 1;
+            app.reportBinningLabel.Text = {'Sumarização de pontos com níveis superiores ao limiar:'; '(Data-Binning)'};
+
+            % Create reportBinningPanel
+            app.reportBinningPanel = uipanel(app.reportGrid);
+            app.reportBinningPanel.AutoResizeChildren = 'off';
+            app.reportBinningPanel.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.reportBinningPanel.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
+            app.reportBinningPanel.Layout.Row = [4 5];
+            app.reportBinningPanel.Layout.Column = [2 3];
+
+            % Create reportBinningGrid
+            app.reportBinningGrid = uigridlayout(app.reportBinningPanel);
+            app.reportBinningGrid.ColumnWidth = {100, 100};
+            app.reportBinningGrid.RowHeight = {'1x', 22};
+            app.reportBinningGrid.RowSpacing = 5;
+            app.reportBinningGrid.Padding = [10 10 10 5];
+            app.reportBinningGrid.BackgroundColor = [1 1 1];
+
+            % Create reportBinningLengthLabel
+            app.reportBinningLengthLabel = uilabel(app.reportBinningGrid);
+            app.reportBinningLengthLabel.VerticalAlignment = 'bottom';
+            app.reportBinningLengthLabel.WordWrap = 'on';
+            app.reportBinningLengthLabel.FontSize = 11;
+            app.reportBinningLengthLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.reportBinningLengthLabel.Layout.Row = 1;
+            app.reportBinningLengthLabel.Layout.Column = 1;
+            app.reportBinningLengthLabel.Text = 'Comprimento quadrícula (metros):';
+
+            % Create reportBinningLength
+            app.reportBinningLength = uispinner(app.reportBinningGrid);
+            app.reportBinningLength.Step = 50;
+            app.reportBinningLength.Limits = [50 1500];
+            app.reportBinningLength.RoundFractionalValues = 'on';
+            app.reportBinningLength.ValueDisplayFormat = '%.0f';
+            app.reportBinningLength.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
+            app.reportBinningLength.FontSize = 11;
+            app.reportBinningLength.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.reportBinningLength.Layout.Row = 2;
+            app.reportBinningLength.Layout.Column = 1;
+            app.reportBinningLength.Value = 100;
+
+            % Create reportBinningFcnLabel
+            app.reportBinningFcnLabel = uilabel(app.reportBinningGrid);
+            app.reportBinningFcnLabel.VerticalAlignment = 'bottom';
+            app.reportBinningFcnLabel.WordWrap = 'on';
+            app.reportBinningFcnLabel.FontSize = 11;
+            app.reportBinningFcnLabel.Layout.Row = 1;
+            app.reportBinningFcnLabel.Layout.Column = 2;
+            app.reportBinningFcnLabel.Text = {'Função'; 'estatística:'};
+
+            % Create reportBinningFcn
+            app.reportBinningFcn = uidropdown(app.reportBinningGrid);
+            app.reportBinningFcn.Items = {'min', 'mean-linear', 'median-linear', 'rms-linear', 'max'};
+            app.reportBinningFcn.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
+            app.reportBinningFcn.FontSize = 11;
+            app.reportBinningFcn.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.reportBinningFcn.BackgroundColor = [1 1 1];
+            app.reportBinningFcn.Layout.Row = 2;
+            app.reportBinningFcn.Layout.Column = 2;
+            app.reportBinningFcn.Value = 'mean-linear';
 
             % Create Tab5
             app.Tab5 = uitab(app.TabGroup);
