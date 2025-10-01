@@ -2100,7 +2100,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.Toolbar.RowHeight = {4, 17, 2};
             app.Toolbar.ColumnSpacing = 5;
             app.Toolbar.RowSpacing = 0;
-            app.Toolbar.Padding = [5 5 10 5];
+            app.Toolbar.Padding = [10 5 10 5];
             app.Toolbar.Layout.Row = 6;
             app.Toolbar.Layout.Column = [1 7];
             app.Toolbar.BackgroundColor = [0.9412 0.9412 0.9412];
@@ -2154,6 +2154,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.tool_ExportButton = uiimage(app.Toolbar);
             app.tool_ExportButton.ScaleMethod = 'none';
             app.tool_ExportButton.ImageClickedFcn = createCallbackFcn(app, @Toolbar_exportButtonPushed, true);
+            app.tool_ExportButton.Tooltip = {'Exporta planilha filtrada'};
             app.tool_ExportButton.Layout.Row = 2;
             app.tool_ExportButton.Layout.Column = 6;
             app.tool_ExportButton.ImageSource = 'Export_16.png';

@@ -522,7 +522,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             context = 'MonitoringPlan';
 
             measDataNonEmpty                = ~isempty(app.measData);
-            meastTableNonEmpty              = ~isempty(app.measTable);
+            measTableNonEmpty               = ~isempty(app.measTable);
             rowTableSelected                = ~isempty(app.UITable.Selection);
             reportModelSelected             = ~isempty(app.reportModelName.Value);
             reportFinalVersionGenerated     = ~isempty(app.projectData.modules.(context).generatedFiles.lastHTMLDocFullPath);
@@ -533,10 +533,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_GenerateReport.Enable  = measDataNonEmpty & reportModelSelected;
             app.tool_UploadFinalFile.Enable = reportFinalVersionGenerated;
 
-            app.tool_peakLabel.Visible      = meastTableNonEmpty;
-            app.tool_peakIcon.Enable        = meastTableNonEmpty;
+            app.tool_peakLabel.Visible      = measTableNonEmpty;
+            app.tool_peakIcon.Enable        = measTableNonEmpty;
 
-            if meastTableNonEmpty
+            if measTableNonEmpty
                 [~, maxIndex] = max(app.measTable.FieldValue);
 
                 app.tool_peakLabel.Text    = sprintf('%.2f V/m\n(%.6f, %.6f)', app.measTable.FieldValue(maxIndex), ...

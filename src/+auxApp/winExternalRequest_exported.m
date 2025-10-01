@@ -411,18 +411,19 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             context = 'ExternalRequest';
 
             measDataNonEmpty                = ~isempty(app.measData);
-            meastTableNonEmpty              = ~isempty(app.measTable);
+            measTableNonEmpty               = ~isempty(app.measTable);
+            pointsTableNonEmpty             = ~isempty(app.projectData.modules.(context).pointsTable);
             reportModelSelected             = ~isempty(app.reportModelName.Value);
             reportFinalVersionGenerated     = ~isempty(app.projectData.modules.(context).generatedFiles.lastHTMLDocFullPath);
             
-            app.tool_ExportFiles.Enable     = measDataNonEmpty;
-            app.tool_GenerateReport.Enable  = measDataNonEmpty & reportModelSelected;
+            app.tool_ExportFiles.Enable     = pointsTableNonEmpty & measDataNonEmpty;
+            app.tool_GenerateReport.Enable  = pointsTableNonEmpty & measDataNonEmpty & reportModelSelected;
             app.tool_UploadFinalFile.Enable = reportFinalVersionGenerated;
 
-            app.tool_peakLabel.Visible      = meastTableNonEmpty;
-            app.tool_peakIcon.Enable        = meastTableNonEmpty;
+            app.tool_peakLabel.Visible      = measTableNonEmpty;
+            app.tool_peakIcon.Enable        = measTableNonEmpty;
 
-            if meastTableNonEmpty
+            if measTableNonEmpty
                 [~, maxIndex] = max(app.measTable.FieldValue);
 
                 app.tool_peakLabel.Text    = sprintf('%.2f V/m\n(%.6f, %.6f)', app.measTable.FieldValue(maxIndex), ...
@@ -699,7 +700,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         % Image clicked function: tool_ExportFiles
         function Toolbar_ExportTableAsExcelSheet(app, event)
             
-            context = 'ExternaRequest';
+            context = 'ExternalRequest';
             indexes = FileIndex(app);
 
             pointsTable = app.projectData.modules.(context).pointsTable;
