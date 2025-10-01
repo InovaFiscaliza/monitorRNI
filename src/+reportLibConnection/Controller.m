@@ -267,7 +267,7 @@ classdef (Abstract) Controller
             % navegador. Por outro lado, em sendo a versão "Definitiva",
             % salva-se o arquivo ZIP em pasta local.
             %-------------------------------------------------------------%
-            [baseFullFileName, baseFileName] = appUtil.DefaultFileName(generalSettings.fileFolder.tempPath, 'monitorRNI_Report', issueId);
+            [baseFullFileName, baseFileName] = appUtil.DefaultFileName(generalSettings.fileFolder.tempPath, 'monitorRNI_FinalReport', issueId);
             HTMLFile = [baseFullFileName '.html'];
             
             writematrix(HTMLDocContent, HTMLFile, 'QuoteStrings', 'none', 'FileType', 'text', 'Encoding', docVersion.encoding)
@@ -308,7 +308,7 @@ classdef (Abstract) Controller
 
                     zip(ZIPFile, [{HTMLFile}, {XLSXFile}, RAWFiles])
                 
-                    app.projectData.modules.(context).generatedFiles.rawFiles            = HTMLFile;
+                    app.projectData.modules.(context).generatedFiles.rawFiles            = RAWFiles;
                     app.projectData.modules.(context).generatedFiles.lastHTMLDocFullPath = HTMLFile;
                     app.projectData.modules.(context).generatedFiles.lastTableFullPath   = XLSXFile;
                     app.projectData.modules.(context).generatedFiles.lastZIPFullPath     = ZIPFile;
