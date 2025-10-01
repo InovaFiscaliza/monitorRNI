@@ -355,10 +355,12 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 'ExternalRequest' ...
             )
 
-            % Atualiza elemento de tabela da GUI.
             initialSelection = updateTable(app);
             layout_TableStyle(app)
-            layout_updatePeakInfo(app)
+
+            % Atualiza outros elementos da GUI, inclusive painel com quantitativo 
+            % de estações.
+            updateToolbar(app)            
 
             % Atualiza plot.
             plot_MeasuresAndPoints(app)
@@ -402,6 +404,34 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                                                                                    'maxFieldValue',         ...
                                                                                    'Justificativa'});
             set(app.UITable, 'Data', table2Render, 'Selection', [])
+        end
+
+        %-----------------------------------------------------------------%
+        function updateToolbar(app)
+            context = 'ExternalRequest';
+
+            measDataNonEmpty                = ~isempty(app.measData);
+            meastTableNonEmpty              = ~isempty(app.measTable);
+            reportModelSelected             = ~isempty(app.reportModelName.Value);
+            reportFinalVersionGenerated     = ~isempty(app.projectData.modules.(context).generatedFiles.lastHTMLDocFullPath);
+            
+            app.tool_ExportFiles.Enable     = measDataNonEmpty;
+            app.tool_GenerateReport.Enable  = measDataNonEmpty & reportModelSelected;
+            app.tool_UploadFinalFile.Enable = reportFinalVersionGenerated;
+
+            app.tool_peakLabel.Visible      = meastTableNonEmpty;
+            app.tool_peakIcon.Enable        = meastTableNonEmpty;
+
+            if meastTableNonEmpty
+                [~, maxIndex] = max(app.measTable.FieldValue);
+
+                app.tool_peakLabel.Text    = sprintf('%.2f V/m\n(%.6f, %.6f)', app.measTable.FieldValue(maxIndex), ...
+                                                                               app.measTable.Latitude(maxIndex),   ...
+                                                                               app.measTable.Longitude(maxIndex));
+                app.tool_peakIcon.UserData = struct('idxMax',    maxIndex,                         ...
+                                                    'Latitude',  app.measTable.Latitude(maxIndex), ...
+                                                    'Longitude', app.measTable.Longitude(maxIndex));
+            end
         end
 
         %-----------------------------------------------------------------%
@@ -498,24 +528,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function layout_updatePeakInfo(app)
-            if ~isempty(app.measTable)
-                [~, idxMax] = max(app.measTable.FieldValue);
-                peakLabel   = sprintf('%.2f V/m\n(%.6f, %.6f)', app.measTable.FieldValue(idxMax), ...
-                                                                app.measTable.Latitude(idxMax),   ...
-                                                                app.measTable.Longitude(idxMax));
-
-                set(app.tool_peakLabel, 'Visible', 1, 'Text', peakLabel)
-                set(app.tool_peakIcon,  'Enable',  1, 'UserData', struct('idxMax',    idxMax,                         ...
-                                                                         'Latitude',  app.measTable.Latitude(idxMax), ...
-                                                                         'Longitude', app.measTable.Longitude(idxMax)))
-            else
-                app.tool_peakLabel.Visible = 0;
-                app.tool_peakIcon.Enable   = 0;
-            end
-        end
-
-        %-----------------------------------------------------------------%
         function TreeFileLocationBuilding(app)
             if ~isempty(app.TreeFileLocations.Children)
                 delete(app.TreeFileLocations.Children)
@@ -545,11 +557,9 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
                 plot_RestartAxes(app)
                 updateTable(app);
-                layout_updatePeakInfo(app)
             end
 
-            app.tool_ExportFiles.Enable = measDataNonEmpty;
-            app.tool_UploadFinalFile.Enable = ~isempty(app.projectData.modules.ExternalRequest.generatedFiles.lastHTMLDocFullPath);
+            updateToolbar(app)
         end
 
         %-----------------------------------------------------------------%
@@ -875,7 +885,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                     appUtil.modalWindow(app.UIFigure, 'error', getReport(ME));
                 end
 
-                app.tool_UploadFinalFile.Enable = ~isempty(app.projectData.modules.(context).generatedFiles.lastHTMLDocFullPath);
+                updateToolbar(app)
 
                 app.progressDialog.Visible = 'hidden';
                 % </PROCESSO>
@@ -1150,11 +1160,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         % Value changed function: reportModelName
         function reportModelNameValueChanged(app, event)
             
-            if isempty(app.reportModelName.Value)
-                app.tool_GenerateReport.Enable = 0;
-            else
-                app.tool_GenerateReport.Enable = ~isempty(app.measData);
-            end
+            updateToolbar(app)
 
         end
 

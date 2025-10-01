@@ -449,6 +449,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Atualiza outros elementos da GUI, inclusive painel com quantitativo 
             % de estações.
             updatePanel(app, fullListOfLocation, idxStations)
+            updateToolbar(app)
 
             % Atualiza plot.
             plot_MeasuresAndPoints(app)
@@ -514,7 +515,37 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card2_numberOfRiskStations.Text = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES NO ENTORNO DE REGISTROS DE NÍVEIS ACIMA DE %.0f V/m</p></p>', nRiskStations, app.mainApp.General.MonitoringPlan.FieldValue);
             app.Card3_stationsOnRoute .Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: black;   font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS NO ENTORNO DA ROTA</p>',                           nStationsOnRoute);
             app.Card4_stationsOutRoute.Text     = sprintf('<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">%d</font>\nESTAÇÕES INSTALADAS FORA DA ROTA</p>',                                 nStationsOutRoute);
-            layout_updatePeakInfo(app)
+        end
+
+        %-----------------------------------------------------------------%
+        function updateToolbar(app)
+            context = 'MonitoringPlan';
+
+            measDataNonEmpty                = ~isempty(app.measData);
+            meastTableNonEmpty              = ~isempty(app.measTable);
+            rowTableSelected                = ~isempty(app.UITable.Selection);
+            reportModelSelected             = ~isempty(app.reportModelName.Value);
+            reportFinalVersionGenerated     = ~isempty(app.projectData.modules.(context).generatedFiles.lastHTMLDocFullPath);
+
+            app.LocationListEdit.Enable     = measDataNonEmpty;
+            app.tool_TableEdition.Enable    = measDataNonEmpty & rowTableSelected;
+            app.tool_ExportFiles.Enable     = measDataNonEmpty;
+            app.tool_GenerateReport.Enable  = measDataNonEmpty & reportModelSelected;
+            app.tool_UploadFinalFile.Enable = reportFinalVersionGenerated;
+
+            app.tool_peakLabel.Visible      = meastTableNonEmpty;
+            app.tool_peakIcon.Enable        = meastTableNonEmpty;
+
+            if meastTableNonEmpty
+                [~, maxIndex] = max(app.measTable.FieldValue);
+
+                app.tool_peakLabel.Text    = sprintf('%.2f V/m\n(%.6f, %.6f)', app.measTable.FieldValue(maxIndex), ...
+                                                                               app.measTable.Latitude(maxIndex),   ...
+                                                                               app.measTable.Longitude(maxIndex));
+                app.tool_peakIcon.UserData = struct('idxMax',    maxIndex,                         ...
+                                                    'Latitude',  app.measTable.Latitude(maxIndex), ...
+                                                    'Longitude', app.measTable.Longitude(maxIndex));
+            end
         end
 
         %-----------------------------------------------------------------%
@@ -650,24 +681,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function layout_updatePeakInfo(app)
-            if ~isempty(app.measTable)
-                [~, idxMax] = max(app.measTable.FieldValue);
-                peakLabel   = sprintf('%.2f V/m\n(%.6f, %.6f)', app.measTable.FieldValue(idxMax), ...
-                                                                app.measTable.Latitude(idxMax),   ...
-                                                                app.measTable.Longitude(idxMax));
-
-                set(app.tool_peakLabel, 'Visible', 1, 'Text', peakLabel)
-                set(app.tool_peakIcon,  'Enable',  1, 'UserData', struct('idxMax',    idxMax,                         ...
-                                                                         'Latitude',  app.measTable.Latitude(idxMax), ...
-                                                                         'Longitude', app.measTable.Longitude(idxMax)))
-            else
-                app.tool_peakLabel.Visible = 0;
-                app.tool_peakIcon.Enable   = 0;
-            end
-        end
-
-        %-----------------------------------------------------------------%
         function TreeFileLocationBuilding(app)
             if ~isempty(app.TreeFileLocations.Children)
                 delete(app.TreeFileLocations.Children)
@@ -698,13 +711,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 plot_RestartAxes(app)
                 updateTable(app, []);
                 updatePanel(app, {}, [])
-
-                app.tool_TableEdition.Enable = false;
             end
 
-            app.LocationListEdit.Enable = measDataNonEmpty;
-            app.tool_ExportFiles.Enable = measDataNonEmpty;
-            app.tool_UploadFinalFile.Enable = ~isempty(app.projectData.modules.MonitoringPlan.generatedFiles.lastHTMLDocFullPath);
+            updateToolbar(app)
         end
 
         %-----------------------------------------------------------------%
@@ -1011,7 +1020,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     appUtil.modalWindow(app.UIFigure, 'error', getReport(ME));
                 end
 
-                app.tool_UploadFinalFile.Enable = ~isempty(app.projectData.modules.(context).generatedFiles.lastHTMLDocFullPath);
+                updateToolbar(app)
 
                 app.progressDialog.Visible = 'hidden';
                 % </PROCESSO>
@@ -1118,15 +1127,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             end
 
             if isempty(event.Selection)
-                app.tool_TableEdition.Enable = "off";
                 app.UITable.ContextMenu = [];
             else
-                app.tool_TableEdition.Enable = "on";
                 if isempty(app.UITable.ContextMenu)
                     app.UITable.ContextMenu = app.ContextMenu;
                 end
             end
 
+            updateToolbar(app)
             plot_SelectedPoint(app)
             
         end
@@ -1141,11 +1149,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Value changed function: reportModelName
         function reportModelNameValueChanged(app, event)
             
-            if isempty(app.reportModelName.Value)
-                app.tool_GenerateReport.Enable = 0;
-            else
-                app.tool_GenerateReport.Enable = ~isempty(app.measData);
-            end
+            updateToolbar(app)
 
         end
 
