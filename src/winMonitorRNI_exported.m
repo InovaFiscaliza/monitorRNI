@@ -106,6 +106,12 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         %
         % • ipcMainMatlabCallsHandler
         %   Eventos recebidos dos apps secundários.
+        %
+        % • ipcMainMatlabCallAuxiliarApp
+        %   Reencaminha eventos recebidos aos apps secundários, viabilizando
+        %   comunicação entre apps secundários e, também, redirecionando os 
+        %   eventos JS quando o app secundário é executado em modo DOCK (e, 
+        %   por essa razão, usa o "jsBackDoor" do app principal).
         %-----------------------------------------------------------------%
         function ipcMainJSEventsHandler(app, event)
             try
@@ -126,6 +132,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                 if isvalid(app.popupContainerGrid)
                                     delete(app.popupContainerGrid)
                                 end
+
                             otherwise
                                 error('UnexpectedEvent')
                         end
@@ -134,6 +141,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                         switch event.HTMLEventData.uuid
                             case 'eFiscalizaSignInPage'
                                 report_uploadInfoController(app, event.HTMLEventData, 'uploadDocument', event.HTMLEventData.context)
+
                             case 'openDevTools'
                                 if isequal(app.General.operationMode.DevTools, rmfield(event.HTMLEventData, 'uuid'))
                                     webWin = struct(struct(struct(app.UIFigure).Controller).PlatformHost).CEF;
@@ -150,10 +158,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                     % AUXAPP.WINEXTERNALREQUEST
                     case 'auxApp.winExternalRequest.TreePoints'
-                        hAuxApp = auxAppHandle(app, "EXTERNALREQUEST");
-                        if ~isempty(hAuxApp)
-                            ipcSecundaryJSEventsHandler(hAuxApp, event)
-                        end
+                        ipcMainMatlabCallAuxiliarApp(app, 'EXTERNALREQUEST', 'JS', event)
 
                     otherwise
                         error('UnexpectedEvent')
@@ -171,20 +176,24 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             try
                 switch class(callingApp)
-                    % CONFIG
+                    % auxApp.winConfig
                     case {'auxApp.winConfig', 'auxApp.winConfig_exported'}
                         switch operationType
                             case 'closeFcn'
                                 closeModule(app.tabGroupController, "CONFIG", app.General)
+
                             case 'dockButtonPushed'
                                 auxAppTag = varargin{1};
                                 varargout{1} = auxAppInputArguments(app, auxAppTag);
+
                             case 'checkDataHubLampStatus'
                                 DataHubWarningLamp(app)
+
                             case 'openDevTools'
                                 dialogBox    = struct('id', 'login',    'label', 'Usuário: ', 'type', 'text');
                                 dialogBox(2) = struct('id', 'password', 'label', 'Senha: ',   'type', 'password');
                                 sendEventToHTMLSource(app.jsBackDoor, 'customForm', struct('UUID', 'openDevTools', 'Fields', dialogBox))
+
                             case 'simulationModeChanged'
                                 if app.General.operationMode.Simulation
                                     file_OpenFileButtonImageClicked(app)
@@ -193,57 +202,65 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                     set(app.menu_Button1, 'Enable', 1, 'Value', 1)                    
                                     menu_mainButtonPushed(app, struct('Source', app.menu_Button1, 'PreviousValue', false))
                                 end
+
                             case 'fileSortMethodChanged'
                                 if ~strcmp(app.file_FileSortMethod.Value, app.General.File.sortMethod)
                                     app.file_FileSortMethod.Value = app.General.File.sortMethod;
                                     file_FileSortMethodValueChanged(app)
                                 end
-                            case {'MonitoringPlan:AnalysisParameterChanged', 'MonitoringPlan:AxesParameterChanged', 'MonitoringPlan:PlotParameterChanged'}
-                                hAuxApp = auxAppHandle(app, "MONITORINGPLAN");
-                                if ~isempty(hAuxApp)
-                                    ipcSecundaryMatlabCallsHandler(hAuxApp, app, operationType);
-                                end
-                            case {'ExternalRequest:AnalysisParameterChanged', 'ExternalRequest:AxesParameterChanged', 'ExternalRequest:PlotParameterChanged'}
-                                hAuxApp = auxAppHandle(app, "EXTERNALREQUEST");
-                                if ~isempty(hAuxApp)
-                                    ipcSecundaryMatlabCallsHandler(hAuxApp, app, operationType);
-                                end
+
+                            case {'MonitoringPlan:AnalysisParameterChanged', ...
+                                  'MonitoringPlan:AxesParameterChanged', ...
+                                  'MonitoringPlan:PlotParameterChanged'}
+                                ipcMainMatlabCallAuxiliarApp(app, 'MONITORINGPLAN', 'MATLAB', operationType)
+
+                            case {'ExternalRequest:AnalysisParameterChanged', ...
+                                  'ExternalRequest:AxesParameterChanged', ...
+                                  'ExternalRequest:PlotParameterChanged'}
+                                ipcMainMatlabCallAuxiliarApp(app, 'EXTERNALREQUEST', 'MATLAB', operationType)
+
                             otherwise
                                 error('UnexpectedCall')
                         end
 
-                    % MONITORINGPLAN
+                    % auxApp.winMonitoringPlan
                     case {'auxApp.winMonitoringPlan',  'auxApp.winMonitoringPlan_exported'}
                         switch operationType
                             case 'closeFcn'
                                 closeModule(app.tabGroupController, "MONITORINGPLAN", app.General)
+
                             case 'dockButtonPushed'
                                 auxAppTag = varargin{1};
                                 varargout{1} = auxAppInputArguments(app, auxAppTag);
+
                             otherwise
                                 error('UnexpectedCall')
                         end
 
-                    % EXTERNALREQUEST
+                    % auxApp.winExternalRequest
                     case {'auxApp.winExternalRequest',  'auxApp.winExternalRequest_exported'}
                         switch operationType
                             case 'closeFcn'
                                 closeModule(app.tabGroupController, "EXTERNALREQUEST", app.General)
+
                             case 'dockButtonPushed'
                                 auxAppTag = varargin{1};
                                 varargout{1} = auxAppInputArguments(app, auxAppTag);
+
                             otherwise
                                 error('UnexpectedCall')
                         end
 
-                    % RFDATAHUB
+                    % auxApp.winRFDataHub
                     case {'auxApp.winRFDataHub', 'auxApp.winRFDataHub_exported'}
                         switch operationType
                             case 'closeFcn'
                                 closeModule(app.tabGroupController, "RFDATAHUB", app.General)
+
                             case 'dockButtonPushed'
                                 auxAppTag = varargin{1};
                                 varargout{1} = auxAppInputArguments(app, auxAppTag);
+
                             otherwise
                                 error('UnexpectedCall')
                         end
@@ -263,10 +280,18 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function ipcMainMatlabCallAuxiliarApp(app, auxAppName, operationType, varargin)
+        function ipcMainMatlabCallAuxiliarApp(app, auxAppName, communicationType, varargin)
             hAuxApp = auxAppHandle(app, auxAppName);
+
             if ~isempty(hAuxApp)
-                ipcSecundaryMatlabCallsHandler(hAuxApp, app, operationType, varargin{:});
+                switch communicationType
+                    case 'MATLAB'
+                        operationType = varargin{1};
+                        ipcSecundaryMatlabCallsHandler(hAuxApp, app, operationType, varargin{2:end});
+                    case 'JS'
+                        event = varargin{1};
+                        ipcSecundaryJSEventsHandler(hAuxApp, event)
+                end
             end
         end
     end
@@ -504,6 +529,15 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function file_ProjectRestart(app, indexes, updateType)
+            arguments
+                app
+                indexes
+                updateType char {mustBeMember(updateType, {'FileListChanged:Add', ...
+                                                           'FileListChanged:Del', ...
+                                                           'FileListChanged:Unmerge', ...
+                                                           'FileListChanged:Merge'})}
+            end
+
             file_TreeBuilding(app, indexes)
 
             if ismember(updateType, {'FileListChanged:Add', 'FileListChanged:Del'})
@@ -515,8 +549,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 );
             end
             
-            ipcMainMatlabCallAuxiliarApp(app, 'MONITORINGPLAN',  updateType)
-            ipcMainMatlabCallAuxiliarApp(app, 'EXTERNALREQUEST', updateType)
+            ipcMainMatlabCallAuxiliarApp(app, 'MONITORINGPLAN',  'MATLAB', updateType)
+            ipcMainMatlabCallAuxiliarApp(app, 'EXTERNALREQUEST', 'MATLAB', updateType)
         end
         
         %-----------------------------------------------------------------%
@@ -741,6 +775,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         %------------------------------------------------------------------------%
         function report_sendFilesToSharepoint(app, context)
+            % Fucionalidade aplicável apenas ao módulo "PM-RNI"...
+            if ~strcmp(context, 'MonitoringPlan')
+                return
+            end
+
             % Evita subir por engano, quando no ambiente de desenvolvimento,
             % de arquivos na pasta "POST"
             try
@@ -757,7 +796,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             fileList     = {app.measData.Filename};
             
             try
-                fileWriter.MonitoringPlan(xlsxFilename, relatedStationTable, [], app.mainApp.General.MonitoringPlan.FieldValue);
+                fileWriter.MonitoringPlan(xlsxFilename, relatedStationTable, [], app.mainApp.General.(context).FieldValue);
 
                 for ii = 1:numel(rawFileList)
                     rawFilename = rawFileList{ii};

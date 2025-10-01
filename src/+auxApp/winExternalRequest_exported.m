@@ -86,6 +86,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         % apenas a sua visibilidade - e tornando desnecessário criá-la a
         % cada chamada (usando uiprogressdlg, por exemplo).
         progressDialog
+        popupContainer
         
         %-----------------------------------------------------------------%
         % ESPECIFICIDADES AUXAPP.WINEXTERNALREQUEST
@@ -114,6 +115,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                         switch event.HTMLEventData.uuid
                             case 'eFiscalizaSignInPage'
                                 report_uploadInfoController(app.mainApp, event.HTMLEventData, 'uploadDocument')
+
                             otherwise
                                 error('UnexpectedEvent')
                         end
@@ -244,11 +246,21 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                             end
 
                         case 2
-                            app.reportSystem.Value    = app.mainApp.General.Report.system;
-                            set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, 'Value', app.mainApp.General.Report.unit)
+                            context = 'ExternalRequest';
+
+                            if isempty(app.projectData.modules.(context).ui.system) && ~isequal(app.projectData.modules.(context).ui.system, app.mainApp.General.Report.system)
+                                app.projectData.modules.(context).ui.system = app.mainApp.General.Report.system;
+                            end
                             
-                            app.reportIssue.Value     = app.projectData.modules.ExternalRequest.ui.issue;
-                            app.reportModelName.Items = app.projectData.modules.ExternalRequest.ui.templates;
+                            if isempty(app.projectData.modules.(context).ui.unit)   && ~isequal(app.projectData.modules.(context).ui.unit,   app.mainApp.General.Report.unit)
+                                app.projectData.modules.(context).ui.unit   = app.mainApp.General.Report.unit;
+                            end
+
+                            app.reportSystem.Value    = app.projectData.modules.(context).ui.system;
+                            set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, ...
+                                                'Value', app.projectData.modules.(context).ui.unit)                            
+                            app.reportIssue.Value     = app.projectData.modules.(context).ui.issue;
+                            app.reportModelName.Items = app.projectData.modules.(context).ui.templates;
                     end
             end
         end
@@ -298,12 +310,14 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function startup_GUIComponents(app)
+            context = 'ExternalRequest';
+
             if ~strcmp(app.mainApp.executionMode, 'webApp')
                 app.dockModule_Undock.Enable = 1;
             end
 
-            if app.mainApp.General.ExternalRequest.FieldValue ~= 14
-                app.UITable.ColumnName{5} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.ExternalRequest.FieldValue);
+            if app.mainApp.General.(context).FieldValue ~= 14
+                app.UITable.ColumnName{4} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.(context).FieldValue);
             end
 
             [app.UIAxes, app.restoreView] = plot.axesCreationController(app.plotPanel, app.mainApp.General);
@@ -318,7 +332,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % Especificidades do auxApp.winExternalRequest em relação ao
             % auxApp.winMonitoringPlan:
             TreePointsBuilding(app)
-            app.NewPointType.Items = [{''}; app.mainApp.General.ExternalRequest.TypeOfLocation];
+            app.NewPointType.Items = [{''}; app.mainApp.General.(context).TypeOfLocation];
             layout_newPointPanel(app, 'off')
         end
     end
@@ -481,8 +495,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                     addStyle(app.UITable, s2, "cell", [idxRiskMeasures, repmat(columnIndex2, numel(idxRiskMeasures), 1)])
                 end
             end
-
-            app.tool_ExportFiles.Enable = tableDataNonEmpty;
         end
 
         %-----------------------------------------------------------------%
@@ -674,46 +686,26 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         end
 
-        % Image clicked function: tool_GenerateReport
-        function Toolbar_GenerateReportImageClicked(app, event)
+        % Image clicked function: tool_ExportFiles
+        function Toolbar_ExportTableAsExcelSheet(app, event)
             
-            % <VALIDAÇÕES>
-            msg = {};
-            if ~report_checkEFiscalizaIssueId(app.mainApp, app.reportIssue.Value)
-                msg{end+1} = sprintf('O número da inspeção "%.0f" é inválido.', app.reportIssue.Value);
-            end
-            
-            if ~isempty(layout_searchUnexpectedTableValues(app))
-                msg{end+1} = ['Há registro de estações instaladas na(s) localidade(s) sob análise para as quais '     ...
-                              'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
-                              'o campo "Justificativa" e anotar os registros, caso aplicável.'];
-            end
-
-            if ~isempty(msg)
-                msg = strjoin(msg, '<br><br>');
-    
-                if strcmp(app.reportVersion.Value, 'Definitiva')
-                    msg = [msg, '<br><br>Isso impossibilita a geração da versão DEFINITIVA do relatório.'];
-                    appUtil.modalWindow(app.UIFigure, "warning", msg);
-                    return
-                end
-    
-                msg = [msg, '<br><br>Deseja ignorar esse alerta, gerando a versão PRÉVIA do relatório?'];
-                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msg, {'Sim', 'Não'}, 2, 2);
-                if userSelection == "Não"
-                    return
-                end
-            end
-            % </VALIDAÇÕES>
-
-            % <PROCESSO>
+            context = 'ExternaRequest';
             indexes = FileIndex(app);
-            if ~isempty(indexes)
-                if numel(indexes) < numel(app.measData)
-                    msgQuestion   = 'Deseja gerar relatório que apresente informações de TODAS as localidades de agrupamento, ou apenas da SELECIONADA?';
-                    userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Todas', 'Selecionada', 'Cancelar'}, 1, 3);
 
-                    switch userSelection
+            pointsTable = app.projectData.modules.(context).pointsTable;
+            if isempty(pointsTable)
+                warningMessages = 'Funcionalidade aplicável apenas quando há ao menos um ponto crítico';
+                appUtil.modalWindow(app.UIFigure, 'warning', warningMessages);
+                return
+            end
+
+            if ~isempty(indexes)
+                % <VALIDAÇÕES>
+                if numel(indexes) < numel(app.measData)
+                    initialQuestion  = 'Deseja exportar arquivos de análise preliminar (.xlsx / .kml) que contemplem informações de TODAS as localidades de agrupamento, ou apenas da SELECIONADA?';
+                    initialSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', initialQuestion, {'Todas', 'Selecionada', 'Cancelar'}, 1, 3);
+
+                    switch initialSelection
                         case 'Cancelar'
                             return
                         case 'Todas'
@@ -721,6 +713,155 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                     end
                 end
 
+                if ~isempty(layout_searchUnexpectedTableValues(app))
+                    warningMessages = ['Há registro de pontos críticos localizados na(s) localidade(s) sob análise para os quais '     ...
+                                       'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
+                                       'o campo "Justificativa" e anotar os registros, caso aplicável.<br><br>Deseja ignorar ' ...
+                                       'esse alerta, exportando PRÉVIA da análise?'];
+                    userSelection   = appUtil.modalWindow(app.UIFigure, 'uiconfirm', warningMessages, {'Sim', 'Não'}, 2, 2);
+                    if userSelection == "Não"
+                        return
+                    end
+                end
+                % </VALIDAÇÕES>
+    
+                % <PROCESSO>
+                % (a) Solicita ao usuário nome do arquivo de saída...
+                appName       = class.Constants.appName;
+                nameFormatMap = {'*.zip', [appName, ' (*.zip)']};                
+                defaultName   = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, [appName '_Preview']);
+                fileZIP       = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', nameFormatMap, defaultName);
+                if isempty(fileZIP)
+                    return
+                end
+    
+                d = appUtil.modalWindow(app.UIFigure, 'progressdlg', 'Em andamento a criação do arquivo de medidas no formato ".xlsx".');
+    
+                savedFiles   = {};
+                errorFiles   = {};
+    
+                % (b) Gera a tabela global de medidas (englobando todas as localidades 
+                %     de agrupamento).
+                measTableGlobal    = createMeasTable(app.measData(indexes));
+
+                % (c) Arquivo no formato .XLSX
+                fileName_XLSX = fullfile(app.mainApp.General.fileFolder.tempPath, 'Demanda externa (Preview).xlsx');
+                [status, msgError] = fileWriter.ExternalRequest(fileName_XLSX, pointsTable, timetable2table(measTableGlobal), app.mainApp.General.(context).FieldValue, app.mainApp.General.(context).Export.XLSX);
+                if status
+                    savedFiles{end+1} = fileName_XLSX;
+                else
+                    errorFiles{end+1} = msgError;
+                end
+        
+                % (d) Arquivos no formato .KML: "Measures" e "Route" 
+                if app.mainApp.General.(context).Export.KML
+                    d.Message = 'Em andamento a criação dos arquivos de medidas e rotas no formato ".kml".';
+
+                    groupLocations = unique({app.measData(indexes).Location});
+
+                    for ii = 1:numel(groupLocations)
+                        groupLocation = groupLocations{ii};
+                        [~, groupLocationIndex] = ismember(groupLocation, {app.TreeFileLocations.Children.Text});
+
+                        if ~isequal(app.TreeFileLocations.SelectedNodes, app.TreeFileLocations.Children(groupLocationIndex))
+                            app.TreeFileLocations.SelectedNodes = app.TreeFileLocations.Children(groupLocationIndex);
+                            TreeFileLocationsSelectionChanged(app, struct('SelectedNodes', app.TreeFileLocations.Children(groupLocationIndex)))
+                        end
+
+                        groupLocationText    = replace(app.TreeFileLocations.SelectedNodes.Text, '/', '-');
+                        groupLocationIndexes = FileIndex(app);
+                        groupLocationMeasTable = createMeasTable(app.measData(groupLocationIndexes));
+
+                        % MEDIDAS
+                        hMeasPlot = findobj(app.UIAxes.Children, 'Tag', 'Measures');                        
+                        KML1File  = fullfile(app.mainApp.General.fileFolder.tempPath, sprintf('%s (Measures).kml', groupLocationText));
+                        [status1, msgError1] = fileWriter.KML(KML1File, 'Measures', timetable2table(groupLocationMeasTable), hMeasPlot);
+                        if status1
+                            savedFiles{end+1} = KML1File;
+                        else
+                            errorFiles{end+1} = msgError1;
+                        end
+
+                        % ROTA
+                        KML2File = fullfile(app.mainApp.General.fileFolder.tempPath, sprintf('%s (Route).kml', groupLocationText));
+                        [status2, msgError2] = fileWriter.KML(KML2File, 'Route', timetable2table(groupLocationMeasTable));
+                        if status2
+                            savedFiles{end+1} = KML2File;
+                        else
+                            errorFiles{end+1} = msgError2;
+                        end
+                    end
+                end
+
+                % (e) Arquivo no formato .ZIP
+                if ~isempty(savedFiles)
+                    zip(fileZIP, savedFiles)
+    
+                    [~, fileName, fileExt] = fileparts(savedFiles);
+                    savedFiles = strcat('•&thinsp;', fileName, fileExt);
+                    appUtil.modalWindow(app.UIFigure, 'none', sprintf('Lista de arquivos criados:\n%s', strjoin(savedFiles, '\n')));
+                end
+    
+                if ~isempty(errorFiles)
+                    appUtil.modalWindow(app.UIFigure, 'error', strjoin(errorFiles, '\n'));
+                end
+
+                delete(d)
+            end
+
+        end
+
+        % Image clicked function: tool_GenerateReport
+        function Toolbar_GenerateReportImageClicked(app, event)
+            
+            context = 'ExternalRequest';
+            indexes = FileIndex(app);
+
+            if ~isempty(indexes)
+                % <VALIDAÇÕES>
+                if numel(indexes) < numel(app.measData)
+                    initialQuestion  = 'Deseja gerar relatório que contemple informações de TODAS as localidades de agrupamento, ou apenas da SELECIONADA?';
+                    initialSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', initialQuestion, {'Todas', 'Selecionada', 'Cancelar'}, 1, 3);
+
+                    switch initialSelection
+                        case 'Cancelar'
+                            return
+                        case 'Todas'
+                            indexes = 1:numel(app.measData);
+                    end
+                end
+
+                warningMessages = {};
+                if ~report_checkEFiscalizaIssueId(app.mainApp, app.projectData.modules.(context).ui.issue)
+                    warningMessages{end+1} = sprintf('O número da inspeção "%.0f" é inválido.', app.projectData.modules.(context).ui.issue);
+                end
+                
+                if ~isempty(layout_searchUnexpectedTableValues(app))
+                    warningMessages{end+1} = ['Há registro de pontos críticos localizados na(s) localidade(s) sob análise para os quais '     ...
+                                              'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
+                                              'o campo "Justificativa" e anotar os registros, caso aplicável.'];
+                end
+
+                if ~isempty(warningMessages)
+                    warningMessages = strjoin(warningMessages, '<br><br>');
+
+                    switch app.reportVersion.Value
+                        case 'Definitiva'
+                            warningMessages = [warningMessages, '<br><br>Isso impossibilita a geração da versão DEFINITIVA do relatório.'];
+                            appUtil.modalWindow(app.UIFigure, "warning", warningMessages);
+                            return
+
+                        otherwise % 'Preliminar'
+                            warningMessages = [warningMessages, '<br><br>Deseja ignorar esse alerta, gerando a versão PRÉVIA do relatório?'];
+                            userSelection   = appUtil.modalWindow(app.UIFigure, 'uiconfirm', warningMessages, {'Sim', 'Não'}, 2, 2);
+                            if userSelection == "Não"
+                                return
+                            end
+                    end
+                end
+                % </VALIDAÇÕES>
+
+                % <PROCESSO>
                 app.progressDialog.Visible = 'visible';
 
                 try
@@ -734,109 +875,52 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                     appUtil.modalWindow(app.UIFigure, 'error', getReport(ME));
                 end
 
+                app.tool_UploadFinalFile.Enable = ~isempty(app.projectData.modules.(context).generatedFiles.lastHTMLDocFullPath);
+
                 app.progressDialog.Visible = 'hidden';
+                % </PROCESSO>
             end
-            % </PROCESSO>
-
-        end
-
-        % Image clicked function: tool_ExportFiles
-        function Toolbar_ExportTableAsExcelSheet(app, event)
-            
-            % VALIDAÇÕES
-            % (a) Inicialmente, verifica se o campo "Justificativa" foi devidamente 
-            %     preenchido...
-            if ~isempty(layout_searchUnexpectedTableValues(app))
-                msgQuestion   = ['Há registro de pontos críticos sob análise para os quais '                             ...
-                                 'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
-                                 'o campo "Justificativa".'                                                              ...
-                                 '<br><br>Deseja ignorar esse alerta, exportando o resultado?'];
-                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
-                if userSelection == "Não"
-                    return
-                end
-            end
-
-            % (b) Solicita ao usuário nome do arquivo de saída...
-            appName       = class.Constants.appName;
-            nameFormatMap = {'*.zip', [appName, ' (*.zip)']};
-            defaultName   = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, appName, '-1');
-            fileZIP       = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', nameFormatMap, defaultName);
-            if isempty(fileZIP)
-                return
-            end
-
-            % ARQUIVOS DE SAÍDA
-            d = appUtil.modalWindow(app.UIFigure, 'progressdlg', 'Em andamento a criação do arquivo de medidas no formato "xlsx".');
-
-            savedFiles   = {};
-            errorFiles   = {};
-
-            baseName     = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, appName, '-1');
-
-
-            % (a) Arquivo no formato .XLSX
-            %     (um único arquivo de saída)
-            fileName_XLSX = [baseName '.xlsx'];
-            [status, msgError] = fileWriter.ExternalRequest(fileName_XLSX, app.projectData.modules.ExternalRequest.pointsTable, timetable2table(app.measTable), app.mainApp.General.ExternalRequest.FieldValue, app.mainApp.General.ExternalRequest.Export.XLSX);
-            if status
-                savedFiles{end+1} = fileName_XLSX;
-            else
-                errorFiles{end+1} = msgError;
-            end
-
-            % (b) Arquivos no formato .KML: "Measures" e "Route"
-            %     (um único arquivo de medições, além de um arquivo de rota 
-            %      por arquivo de medição)
-            if app.mainApp.General.ExternalRequest.Export.KML
-                hMeasPlot = findobj(app.UIAxes.Children, 'Tag', 'Measures');
-
-                % (b.1) KML:Measures
-                d.Message = 'Em andamento a criação do arquivo de medidas no formato "kml".';
-
-                fileName_KML1 = sprintf('%s_Measures.kml', baseName);
-                [status, msgError] = fileWriter.KML(fileName_KML1, 'Measures', timetable2table(app.measTable), hMeasPlot);
-                if status
-                    savedFiles{end+1} = fileName_KML1;
-                else
-                    errorFiles{end+1} = msgError;
-                end
-
-                % (b.2) KML:Route
-                d.Message = 'Em andamento a criação do arquivo de rotas no formato "kml".';
-
-                idxFile = FileIndex(app);
-                for ii = 1:numel(idxFile)
-                    fileName_KML2 = sprintf('%s_Route (%d).kml', baseName, ii);
-                    [status, msgError] = fileWriter.KML(fileName_KML2, 'Route', timetable2table(app.measData(idxFile(ii)).Data));
-                    if status
-                        savedFiles{end+1} = fileName_KML2;
-                    else
-                        errorFiles{end+1} = msgError;
-                    end
-                end
-            end
-
-            % (c) Arquivo no formato .ZIP
-            if ~isempty(savedFiles)
-                zip(fileZIP, savedFiles)
-
-                fileFolder = fileparts(baseName);
-                savedFiles = replace(savedFiles, fileFolder, '.');
-                appUtil.modalWindow(app.UIFigure, 'info', sprintf('Lista de arquivos criados:\n%s', strjoin(savedFiles, '\n')));
-            end
-
-            if ~isempty(errorFiles)
-                appUtil.modalWindow(app.UIFigure, 'error', strjoin(errorFiles, '\n'));
-            end
-
-            delete(d)
 
         end
 
         % Image clicked function: tool_UploadFinalFile
         function Toolbar_UploadFinalFileImageClicked(app, event)
             
+            % <VALIDAÇÕES>
+            context = 'ExternalRequest';
+            lastHTMLDocFullPath = getGeneratedDocumentFileName(app.projectData, '.html', context);
+
+            msg = '';
+            if isempty(lastHTMLDocFullPath)
+                msg = 'A versão definitiva do relatório ainda não foi gerada.';
+            elseif ~isfile(lastHTMLDocFullPath)
+                msg = sprintf('O arquivo "%s" não foi encontrado.', lastHTMLDocFullPath);
+            elseif ~isfolder(app.mainApp.General.fileFolder.DataHub_POST)
+                msg = 'Pendente mapear pasta do Sharepoint';
+            elseif ~report_checkEFiscalizaIssueId(app.mainApp, app.projectData.modules.(context).ui.issue)
+                msg = sprintf('O número da inspeção "%.0f" é inválido.', app.projectData.modules.(context).ui.issue);
+            elseif isempty(app.projectData.modules.(context).ui.system)
+                msg = 'Ambiente do eFiscaliza precisa ser selecionado.';
+            elseif isempty(app.projectData.modules.(context).ui.unit)
+                msg = 'Unidade geradora do documento precisa ser selecionada.';
+            end
+
+            if ~isempty(msg)
+                appUtil.modalWindow(app.UIFigure, 'warning', msg);
+                return
+            end
+            % </VALIDAÇÕES>
+
+            % <PROCESSO>
+            if isempty(app.mainApp.eFiscalizaObj)
+                dialogBox    = struct('id', 'login',    'label', 'Usuário: ', 'type', 'text');
+                dialogBox(2) = struct('id', 'password', 'label', 'Senha: ',   'type', 'password');
+                sendEventToHTMLSource(app.jsBackDoor, 'customForm', struct('UUID', 'eFiscalizaSignInPage', 'Fields', dialogBox, 'Context', context))
+            else
+                report_uploadInfoController(app.mainApp, [], 'uploadDocument', context)
+            end
+            % </PROCESSO>
+
         end
 
         % Selection change function: TabGroup
@@ -1063,13 +1147,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         end
 
-        % Value changed function: reportIssue
-        function reportIssueValueChanged(app, event)
-            
-            updateUiInfo(app.projectData, 'ExternalRequest', 'issue', app.reportIssue.Value)
-
-        end
-
         % Value changed function: reportModelName
         function reportModelNameValueChanged(app, event)
             
@@ -1077,6 +1154,22 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 app.tool_GenerateReport.Enable = 0;
             else
                 app.tool_GenerateReport.Enable = ~isempty(app.measData);
+            end
+
+        end
+
+        % Value changed function: reportIssue, reportSystem, reportUnit
+        function reportInfoValueChanged(app, event)
+            
+            context = 'ExternalRequest';
+
+            switch event.Source
+                case app.reportSystem
+                    updateUiInfo(app.projectData, context, 'system', app.reportSystem.Value)
+                case app.reportUnit
+                    updateUiInfo(app.projectData, context, 'unit',   app.reportUnit.Value)
+                case app.reportIssue
+                    updateUiInfo(app.projectData, context, 'issue',  app.reportIssue.Value)
             end
 
         end
@@ -1529,6 +1622,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % Create reportSystem
             app.reportSystem = uidropdown(app.eFiscalizaGrid);
             app.reportSystem.Items = {'eFiscaliza', 'eFiscaliza DS', 'eFiscaliza HM'};
+            app.reportSystem.ValueChangedFcn = createCallbackFcn(app, @reportInfoValueChanged, true);
             app.reportSystem.FontSize = 11;
             app.reportSystem.BackgroundColor = [1 1 1];
             app.reportSystem.Layout.Row = 1;
@@ -1545,6 +1639,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % Create reportUnit
             app.reportUnit = uidropdown(app.eFiscalizaGrid);
             app.reportUnit.Items = {};
+            app.reportUnit.ValueChangedFcn = createCallbackFcn(app, @reportInfoValueChanged, true);
             app.reportUnit.FontSize = 11;
             app.reportUnit.BackgroundColor = [1 1 1];
             app.reportUnit.Layout.Row = 2;
@@ -1563,7 +1658,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.reportIssue.Limits = [-1 Inf];
             app.reportIssue.RoundFractionalValues = 'on';
             app.reportIssue.ValueDisplayFormat = '%d';
-            app.reportIssue.ValueChangedFcn = createCallbackFcn(app, @reportIssueValueChanged, true);
+            app.reportIssue.ValueChangedFcn = createCallbackFcn(app, @reportInfoValueChanged, true);
             app.reportIssue.FontSize = 11;
             app.reportIssue.FontColor = [0.149 0.149 0.149];
             app.reportIssue.Layout.Row = 3;
