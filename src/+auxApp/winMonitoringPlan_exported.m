@@ -841,7 +841,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     warningMessages = ['Há registro de estações instaladas na(s) localidade(s) sob análise para as quais '     ...
                                        'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
                                        'o campo "Justificativa" e anotar os registros, caso aplicável.<br><br>Deseja ignorar ' ...
-                                       'esse alerta, gerando a versão PRÉVIA do relatório?'];
+                                       'esse alerta, exportando PRÉVIA da análise?'];
                     userSelection   = appUtil.modalWindow(app.UIFigure, 'uiconfirm', warningMessages, {'Sim', 'Não'}, 2, 2);
                     if userSelection == "Não"
                         return
@@ -853,7 +853,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 % (a) Solicita ao usuário nome do arquivo de saída...
                 appName       = class.Constants.appName;
                 nameFormatMap = {'*.zip', [appName, ' (*.zip)']};                
-                defaultName   = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, [appName '_Analysis']);
+                defaultName   = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, [appName '_Preview']);
                 fileZIP       = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', nameFormatMap, defaultName);
                 if isempty(fileZIP)
                     return
@@ -1007,6 +1007,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     appUtil.modalWindow(app.UIFigure, 'error', getReport(ME));
                 end
 
+                app.tool_UploadFinalFile.Enable = ~isempty(app.projectData.modules.(context).generatedFiles.lastHTMLDocFullPath);
+
                 app.progressDialog.Visible = 'hidden';
                 % </PROCESSO>
             end
@@ -1018,7 +1020,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             
             % <VALIDAÇÕES>
             context = 'MonitoringPlan';
-            lastHTMLDocFullPath = getGeneratedDocumentFileName(app.projectData, '.html');
+            lastHTMLDocFullPath = getGeneratedDocumentFileName(app.projectData, '.html', context);
 
             msg = '';
             if isempty(lastHTMLDocFullPath)
