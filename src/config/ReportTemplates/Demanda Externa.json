@@ -80,7 +80,7 @@
                     "Type": "ItemN2",
                     "Data": {
                         "Editable": "false",
-                        "Text": "Os dados coletados por sondas móveis (Monitem, NARDA, entre outros) são processados para identificar as medições correspondentes a cada ponto de interesse sob análise, gerando representações gráficas.",
+                        "Text": "Os dados coletados por sondas móveis (MonitEM, Narda, entre outros) são processados para identificar as medições correspondentes a cada ponto de interesse sob análise, gerando representações gráficas.",
                         "Variable": []
                     }
                 },
