@@ -106,6 +106,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                         switch event.HTMLEventData.uuid
                             case 'eFiscalizaSignInPage'
                                 report_uploadInfoController(app.mainApp, event.HTMLEventData, 'uploadDocument')
+
                             otherwise
                                 error('UnexpectedEvent')
                         end
@@ -165,20 +166,19 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
                     case {'auxApp.dockStationInfo',    'auxApp.dockStationInfo_exported', ...
                           'auxApp.dockListOfLocation', 'auxApp.dockListOfLocation_exported'}
-
                         % Chamadas implementadas:
                         % (a) 'StationTableValueChanged: ReasonOrNote'
                         %     Atualizam-se as colunas "Justificativa" e "Observações" de app.projectData.modules.MonitoringPlan.stationTable, 
                         %     além da coluna "Justificativa" da uitable (já que a coluna "Observações" não é renderizada na uitable).
                         %
-                        % (b) 'StationTableValueChanged: Location'
+                        % (b) 'MonitoringPlan:StationCoordinatesEdited'
                         %     Atualizam-se as colunas "Latitude" e "Longitude" de app.projectData.modules.MonitoringPlan.stationTable, 
                         %     executando-se novamente a análise.
                         %
                         % (c) 'UITableSelectionChanged'
                         %     Troca-se a seleção da uitable.
                         %
-                        % (d) 'ListOfLocationChanged'
+                        % (d) 'MonitoringPlan:ManualLocationListChanged'
 
                         updateFlag = varargin{1};
                         returnFlag = varargin{2};
@@ -299,19 +299,21 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                             end
 
                         case 2
-                            if isempty(app.projectData.modules.MonitoringPlan.ui.system) && ~isequal(app.projectData.modules.MonitoringPlan.ui.system, app.mainApp.General.Report.system)
-                                app.projectData.modules.MonitoringPlan.ui.system = app.mainApp.General.Report.system;
+                            context = 'MonitoringPlan';
+
+                            if isempty(app.projectData.modules.(context).ui.system) && ~isequal(app.projectData.modules.(context).ui.system, app.mainApp.General.Report.system)
+                                app.projectData.modules.(context).ui.system = app.mainApp.General.Report.system;
                             end
                             
-                            if isempty(app.projectData.modules.MonitoringPlan.ui.unit)   && ~isequal(app.projectData.modules.MonitoringPlan.ui.unit,   app.mainApp.General.Report.unit)
-                                app.projectData.modules.MonitoringPlan.ui.unit   = app.mainApp.General.Report.unit;
+                            if isempty(app.projectData.modules.(context).ui.unit)   && ~isequal(app.projectData.modules.(context).ui.unit,   app.mainApp.General.Report.unit)
+                                app.projectData.modules.(context).ui.unit   = app.mainApp.General.Report.unit;
                             end
 
-                            app.reportSystem.Value    = app.projectData.modules.MonitoringPlan.ui.system;
+                            app.reportSystem.Value    = app.projectData.modules.(context).ui.system;
                             set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, ...
-                                                'Value', app.projectData.modules.MonitoringPlan.ui.unit)                            
-                            app.reportIssue.Value     = app.projectData.modules.MonitoringPlan.ui.issue;
-                            app.reportModelName.Items = app.projectData.modules.MonitoringPlan.ui.templates;
+                                                'Value', app.projectData.modules.(context).ui.unit)                            
+                            app.reportIssue.Value     = app.projectData.modules.(context).ui.issue;
+                            app.reportModelName.Items = app.projectData.modules.(context).ui.templates;
                     end
             end
         end
@@ -361,12 +363,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function startup_GUIComponents(app)
+            context = 'MonitoringPlan';
+
             if ~strcmp(app.mainApp.executionMode, 'webApp')
                 app.dockModule_Undock.Enable = 1;
             end
 
-            if app.mainApp.General.MonitoringPlan.FieldValue ~= 14
-                app.UITable.ColumnName{5} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.MonitoringPlan.FieldValue);
+            if app.mainApp.General.(context).FieldValue ~= 14
+                app.UITable.ColumnName{5} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.(context).FieldValue);
             end
 
             [app.UIAxes, app.restoreView] = plot.axesCreationController(app.plotPanel, app.mainApp.General);
@@ -818,11 +822,11 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Image clicked function: tool_ExportFiles
         function Toolbar_ExportTableAsExcelSheet(app, event)
             
-            % <VALIDAÇÕES>
             context = 'MonitoringPlan';
             indexes = FileIndex(app);
 
             if ~isempty(indexes)
+                % <VALIDAÇÕES>
                 if numel(indexes) < numel(app.measData)
                     initialQuestion  = 'Deseja exportar arquivos de análise preliminar (.xlsx / .kml) que contemplem informações de TODAS as localidades de agrupamento, ou apenas da SELECIONADA?';
                     initialSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', initialQuestion, {'Todas', 'Selecionada', 'Cancelar'}, 1, 3);
@@ -935,20 +939,20 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 if ~isempty(errorFiles)
                     appUtil.modalWindow(app.UIFigure, 'error', strjoin(errorFiles, '\n'));
                 end
-            end
 
-            delete(d)
+                delete(d)
+            end
 
         end
 
         % Image clicked function: tool_GenerateReport
         function Toolbar_GenerateReportImageClicked(app, event)
 
-            % <VALIDAÇÕES>
             context = 'MonitoringPlan';
             indexes = FileIndex(app);
 
             if ~isempty(indexes)
+                % <VALIDAÇÕES>
                 if numel(indexes) < numel(app.measData)
                     initialQuestion  = 'Deseja gerar relatório que contemple informações de TODAS as localidades de agrupamento, ou apenas da SELECIONADA?';
                     initialSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', initialQuestion, {'Todas', 'Selecionada', 'Cancelar'}, 1, 3);
@@ -1146,15 +1150,17 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         % Value changed function: reportIssue, reportSystem, reportUnit
-        function reportIssueValueChanged(app, event)
+        function reportInfoValueChanged(app, event)
             
+            context = 'MonitoringPlan';
+
             switch event.Source
                 case app.reportSystem
-                    updateUiInfo(app.projectData, 'MonitoringPlan', 'system', app.reportSystem.Value)
+                    updateUiInfo(app.projectData, context, 'system', app.reportSystem.Value)
                 case app.reportUnit
-                    updateUiInfo(app.projectData, 'MonitoringPlan', 'unit',   app.reportUnit.Value)
+                    updateUiInfo(app.projectData, context, 'unit',   app.reportUnit.Value)
                 case app.reportIssue
-                    updateUiInfo(app.projectData, 'MonitoringPlan', 'issue',  app.reportIssue.Value)
+                    updateUiInfo(app.projectData, context, 'issue',  app.reportIssue.Value)
             end
             
         end
@@ -1542,7 +1548,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Create reportSystem
             app.reportSystem = uidropdown(app.eFiscalizaGrid);
             app.reportSystem.Items = {'eFiscaliza', 'eFiscaliza DS', 'eFiscaliza HM'};
-            app.reportSystem.ValueChangedFcn = createCallbackFcn(app, @reportIssueValueChanged, true);
+            app.reportSystem.ValueChangedFcn = createCallbackFcn(app, @reportInfoValueChanged, true);
             app.reportSystem.FontSize = 11;
             app.reportSystem.BackgroundColor = [1 1 1];
             app.reportSystem.Layout.Row = 1;
@@ -1559,7 +1565,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Create reportUnit
             app.reportUnit = uidropdown(app.eFiscalizaGrid);
             app.reportUnit.Items = {};
-            app.reportUnit.ValueChangedFcn = createCallbackFcn(app, @reportIssueValueChanged, true);
+            app.reportUnit.ValueChangedFcn = createCallbackFcn(app, @reportInfoValueChanged, true);
             app.reportUnit.FontSize = 11;
             app.reportUnit.BackgroundColor = [1 1 1];
             app.reportUnit.Layout.Row = 2;
@@ -1578,7 +1584,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.reportIssue.Limits = [-1 Inf];
             app.reportIssue.RoundFractionalValues = 'on';
             app.reportIssue.ValueDisplayFormat = '%d';
-            app.reportIssue.ValueChangedFcn = createCallbackFcn(app, @reportIssueValueChanged, true);
+            app.reportIssue.ValueChangedFcn = createCallbackFcn(app, @reportInfoValueChanged, true);
             app.reportIssue.FontSize = 11;
             app.reportIssue.FontColor = [0.149 0.149 0.149];
             app.reportIssue.Layout.Row = 3;
