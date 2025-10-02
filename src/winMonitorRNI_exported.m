@@ -718,7 +718,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function report_uploadInfoController(app, credentials, operation, context)
             communicationStatus = report_sendHTMLDocToSEIviaEFiscaliza(app, credentials, operation, context);
-            if communicationStatus && strcmp(eFiscalizaVersion, 'eFiscaliza')
+            if communicationStatus && strcmp(app.projectData.modules.(context).ui.system, 'eFiscaliza')
                 report_sendFilesToSharepoint(app, context)
             end
         end
@@ -775,44 +775,42 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         %------------------------------------------------------------------------%
         function report_sendFilesToSharepoint(app, context)
-            % Fucionalidade aplicável apenas ao módulo "PM-RNI"...
-            if ~strcmp(context, 'MonitoringPlan')
-                return
-            end
-
             % Evita subir por engano, quando no ambiente de desenvolvimento,
-            % de arquivos na pasta "POST"
+            % de arquivos na pasta "POST".
             try
                 if ~isdeployed()
                     error('ForceDebugMode')
                 end
-                outputFolder = app.General.fileFolder.DataHub_POST;
+                sharepointFolder = app.General.fileFolder.DataHub_POST;
             catch
-                outputFolder = app.General.fileFolder.userPath;
+                sharepointFolder = app.General.fileFolder.userPath;
             end
 
-            xlsxFilename = getGeneratedDocumentFileName(app.projectData, '.xlsx',    context);
-            rawFileList  = getGeneratedDocumentFileName(app.projectData, 'rawFiles', context);
-            fileList     = {app.measData.Filename};
+            sharepointFileList = getGeneratedDocumentFileName(app.projectData, 'rawFiles', context);
+            if strcmp(context, 'MonitoringPlan')
+                sharepointFileList = [sharepointFileList, {getGeneratedDocumentFileName(app.projectData, '.xlsx', context)}];
+            end
             
-            try
-                fileWriter.MonitoringPlan(xlsxFilename, relatedStationTable, [], app.mainApp.General.(context).FieldValue);
+            for ii = 1:numel(sharepointFileList)
+                tempFilename = sharepointFileList{ii};
 
-                for ii = 1:numel(rawFileList)
-                    rawFilename = rawFileList{ii};
-                    [~, rawFilenameIndex] = ismember(rawFilename, fileList);
-                    
-                    if isfile(rawFilename) && rawFilenameIndex > 0
-                        [~, baseFilename] = fileparts(rawFilename);
-                        jsonFilename = [baseFilename '.json'];
-        
-                        copyfile(rawFilename, outputFolder, 'f');                
-                        fileWriter.RawFileMetaData(fullfile(outputFolder, jsonFilename), app.measData(rawFilenameIndex));
+                try
+                    if isfile(tempFilename)
+                        copyfile(tempFilename, sharepointFolder, 'f');
+    
+                        if ~endsWith(tempFilename, '.xlsx')
+                            [~, basename]  = fileparts(tempFilename);
+                            jsonFilename   = [basename '.json'];
+                            [~, fileIndex] = ismember(tempFilename, {app.measData.Filename});
+    
+                            if fileIndex
+                                fileWriter.RawFileMetaData(fullfile(sharepointFolder, jsonFilename), app.measData(fileIndex));
+                            end
+                        end
                     end
+                catch ME
+                    appUtil.modalWindow(app.UIFigure, 'error', getReport(ME))
                 end
-
-            catch ME
-                appUtil.modalWindow(app.UIFigure, 'error', getReport(ME))
             end
         end
     end
@@ -1004,7 +1002,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             filesError   = struct('File', {}, 'Error', {});
 
             for ii = 1:numel(fileFullName)
-                d.Message = sprintf('Em andamento a leitura do arquivo %d de %d:<br>• <b>%s</b>', ii, numel(fileFullName), fileName{ii});
+                d.Message = textFormatGUI.HTMLParagraph(sprintf('Em andamento a leitura do arquivo %d de %d:<br>• <b>%s</b>', ii, numel(fileFullName), fileName{ii}));
 
                 % Verifica se arquivo já foi lido, comparando o seu nome com 
                 % a variável app.cacheData.

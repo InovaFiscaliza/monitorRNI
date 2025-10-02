@@ -243,7 +243,7 @@ classdef projectLib < handle
         function filename = getGeneratedDocumentFileName(obj, fileExt, context)
             arguments
                 obj
-                fileExt (1,:) char {mustBeMember(fileExt, {'rawFiles', '.html', '.json', '.xlsx', '.csv'})}
+                fileExt (1,:) char {mustBeMember(fileExt, {'rawFiles', '.html', '.xlsx', '.zip'})}
                 context (1,:) char {mustBeMember(context, {'MonitoringPlan', 'ExternalRequest'})}
             end
 
@@ -252,8 +252,10 @@ classdef projectLib < handle
                     filename = obj.modules.(context).generatedFiles.rawFiles;
                 case '.html'
                     filename = obj.modules.(context).generatedFiles.lastHTMLDocFullPath;
-                otherwise
+                case '.xlsx'
                     filename = obj.modules.(context).generatedFiles.lastTableFullPath;
+                case '.zip'
+                    filename = obj.modules.(context).generatedFiles.lastZIPFullPath;
             end
         end
 

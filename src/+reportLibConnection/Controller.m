@@ -291,10 +291,10 @@ classdef (Abstract) Controller
                         case 'MonitoringPlan'
                             stationTableArray  = arrayfun(@(x) x.InfoSet.stationTable, dataOverview, "UniformOutput", false);
                             stationTableMerged = vertcat(stationTableArray{:});
+                            [~, msgError]      = fileWriter.MonitoringPlan(XLSXFile, stationTableMerged, measTableGlobal, projectData.modules.(context).threshold);
 
-                            [~, msgError] = fileWriter.MonitoringPlan(XLSXFile, stationTableMerged, measTableGlobal, projectData.modules.(context).threshold);
                         case 'ExternalRequest'
-                            [~, msgError] = fileWriter.ExternalRequest(XLSXFile, pointsTableGlobal, measTableGlobal, projectData.modules.(context).threshold);
+                            [~, msgError]      = fileWriter.ExternalRequest(XLSXFile, pointsTableGlobal, measTableGlobal, projectData.modules.(context).threshold);
                     end
 
                     if ~isempty(msgError)

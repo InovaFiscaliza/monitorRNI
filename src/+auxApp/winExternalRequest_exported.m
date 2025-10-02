@@ -770,7 +770,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         
                 % (d) Arquivos no formato .KML: "Measures" e "Route" 
                 if app.mainApp.General.(context).Export.KML
-                    d.Message = 'Em andamento a criação dos arquivos de medidas e rotas no formato ".kml".';
+                    d.Message = textFormatGUI.HTMLParagraph('Em andamento a criação dos arquivos de medidas e rotas no formato ".kml".');
 
                     groupLocations = unique({app.measData(indexes).Location});
 
