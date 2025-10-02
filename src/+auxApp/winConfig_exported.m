@@ -105,7 +105,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         eFiscalizaGrid                matlab.ui.container.GridLayout
         reportUnit                    matlab.ui.control.DropDown
         reportUnitLabel               matlab.ui.control.Label
-        reportVersion                 matlab.ui.control.DropDown
+        reportSystem                  matlab.ui.control.DropDown
         reportSystemLabel             matlab.ui.control.Label
         eFiscalizaRefresh             matlab.ui.control.Image
         eFiscalizaLabel               matlab.ui.control.Label
@@ -236,6 +236,9 @@ classdef winConfig_exported < matlab.apps.AppBase
                             updatePanel_Plot(app)
 
                         case 4
+                            if ~isdeployed()
+                                app.reportSystem.Items = {'eFiscaliza', 'eFiscaliza TS', 'eFiscaliza HM', 'eFiscaliza DS'};
+                            end
                             updatePanel_Report(app)
 
                         case 5
@@ -401,7 +404,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function updatePanel_Report(app)
-            app.reportVersion.Value       = app.mainApp.General.Report.system;
+            app.reportSystem.Value        = app.mainApp.General.Report.system;
             set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, 'Value', app.mainApp.General.Report.unit)
             
             app.reportDocType.Value       = app.mainApp.General.Report.Document;
@@ -849,7 +852,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         function Config_ProjectParameterValueChanged(app, event)
 
             switch event.Source
-                case app.reportVersion
+                case app.reportSystem
                     app.mainApp.General.Report.system           = event.Value;
 
                 case app.reportUnit
@@ -1689,15 +1692,15 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportSystemLabel.Layout.Column = 1;
             app.reportSystemLabel.Text = 'Ambiente do sistema de gestão à fiscalização:';
 
-            % Create reportVersion
-            app.reportVersion = uidropdown(app.eFiscalizaGrid);
-            app.reportVersion.Items = {'eFiscaliza', 'eFiscaliza DS', 'eFiscaliza HM'};
-            app.reportVersion.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
-            app.reportVersion.FontSize = 11;
-            app.reportVersion.BackgroundColor = [1 1 1];
-            app.reportVersion.Layout.Row = 1;
-            app.reportVersion.Layout.Column = [2 3];
-            app.reportVersion.Value = 'eFiscaliza';
+            % Create reportSystem
+            app.reportSystem = uidropdown(app.eFiscalizaGrid);
+            app.reportSystem.Items = {'eFiscaliza', 'eFiscaliza TS'};
+            app.reportSystem.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
+            app.reportSystem.FontSize = 11;
+            app.reportSystem.BackgroundColor = [1 1 1];
+            app.reportSystem.Layout.Row = 1;
+            app.reportSystem.Layout.Column = [2 3];
+            app.reportSystem.Value = 'eFiscaliza';
 
             % Create reportUnitLabel
             app.reportUnitLabel = uilabel(app.eFiscalizaGrid);

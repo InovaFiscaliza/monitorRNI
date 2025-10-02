@@ -562,8 +562,8 @@
                                 "Width": "auto"
                             }
                         ],
-                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"A seguir, apresenta-se a relação de pontos de interesse que não foram efetivamente avaliados.\"}",
-                        "Error": [],
+                        "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"Ao comparar as medições com a tabela de pontos de interesse, observa-se que foram realizadas medições no entorno dos seguintes pontos.\"}",
+                        "Error": "{\"Type\":\"Paragraph\",\"Text\":\"Ao comparar as medições com a tabela de pontos de interesse, observa-se que não foram realizadas medições no entorno de NENHUM dos pontos sob análise.\"}",
                         "LineBreak": 0
                     }
                 }

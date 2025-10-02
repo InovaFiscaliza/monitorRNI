@@ -86,7 +86,22 @@ classdef (Abstract) Plot
                 %plot.axes.StackingOrder.execute(hAxes, tempBandObj.Context)
                 switch axesType{ii}
                     case 'Geographic'
-                        % ...
+                        % Força renderização do basemap usando função waitfor
+                        % customizada, evitando, assim, o risco de parar a
+                        % execução (no caso de uso da MATLAB built-in waitfor).
+
+                        % Protegido por bloco try/catch porque o basemap não 
+                        % é informação essencial do plot e esse approach de usar 
+                        % o objeto "TileReader" é algo não documentado, sujeito 
+                        % a alterações pela Mathworks.
+                        try
+                            tilesController = struct(hAxes).BasemapManager.TileReader;
+                            if ~tilesController.MapTileAcquired && tilesController.NumMapTilesInCache == 0
+                                % waitfor(tilesController, 'NumMapTilesInCache')
+                                matlab.waitfor(tilesController, 'NumMapTilesInCache', @(x) x~=0, .100, 10)
+                            end
+                        catch
+                        end
 
                     case 'Cartesian'
                         % xAxes

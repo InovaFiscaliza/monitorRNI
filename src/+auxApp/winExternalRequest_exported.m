@@ -256,9 +256,13 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                                 app.projectData.modules.(context).ui.unit   = app.mainApp.General.Report.unit;
                             end
 
-                            app.reportSystem.Value    = app.projectData.modules.(context).ui.system;
+                            if ~isdeployed()
+                                app.reportSystem.Items = {'eFiscaliza', 'eFiscaliza TS', 'eFiscaliza HM', 'eFiscaliza DS'};
+                            end
+                            app.reportSystem.Value     = app.projectData.modules.(context).ui.system;
+
                             set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, ...
-                                                'Value', app.projectData.modules.(context).ui.unit)                            
+                                                'Value', app.projectData.modules.(context).ui.unit)
                             app.reportIssue.Value     = app.projectData.modules.(context).ui.issue;
                             app.reportModelName.Items = app.projectData.modules.(context).ui.templates;
                     end
@@ -1628,7 +1632,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Create reportSystem
             app.reportSystem = uidropdown(app.eFiscalizaGrid);
-            app.reportSystem.Items = {'eFiscaliza', 'eFiscaliza DS', 'eFiscaliza HM'};
+            app.reportSystem.Items = {'eFiscaliza', 'eFiscaliza TS'};
             app.reportSystem.ValueChangedFcn = createCallbackFcn(app, @reportInfoValueChanged, true);
             app.reportSystem.FontSize = 11;
             app.reportSystem.BackgroundColor = [1 1 1];

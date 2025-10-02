@@ -386,7 +386,8 @@
                             "meanFieldValue",
                             "maxFieldValue",
                             "maxFieldLatitude",
-                            "maxFieldLongitude"
+                            "maxFieldLongitude",
+                            "Observações"
                         ],
                         "Caption": "Pontos de interesse sob análise com medições no entorno.",
                         "Settings": [
@@ -461,6 +462,12 @@
                                 "ColumnName": "Ponto máximo<br>(Longitude)",
                                 "Precision": "%.6f",
                                 "Width": "90px"
+                            },
+                            {
+                                "Editable": "false",
+                                "ColumnName": "Observações",
+                                "Precision": "%s",
+                                "Width": "auto"
                             }
                         ],
                         "Intro": "{\"Type\":\"Paragraph\",\"Text\":\"Ao comparar as medições com a tabela de referência do PM-RNI, observa-se que foram realizadas medições no entorno dos seguintes pontos de interesse.\"}",
@@ -545,7 +552,7 @@
             "Component": {
                 "Type": "ItemN2",
                 "Data": {
-                    "Editable": "true",
+                    "Editable": "false",
                     "Text": "Ante o exposto, conclui-se este relatório de atividades.",
                     "Variable": []
                 }

@@ -49,6 +49,22 @@ classdef (Abstract) Variable
         end
 
         %-----------------------------------------------------------------%
+        function fieldValue = ProjectPropertyGlobal(dataOverview, fieldName)
+            switch fieldName
+                case 'MeasurementsGlobal'
+                    fieldValue = sum(arrayfun(@(x) x.InfoSet.numMeasurements, dataOverview));
+                
+                case 'NumAboveTHRGlobal'
+                    numAboveTHRGlobal = sum(arrayfun(@(x) x.InfoSet.numAboveTHR, dataOverview));
+                    if numAboveTHRGlobal == 0
+                        fieldValue = 'NENHUMA';
+                    else
+                        fieldValue = num2str(numAboveTHRGlobal);
+                    end
+            end
+        end
+
+        %-----------------------------------------------------------------%
         function fieldValue = ProjectProperty(reportInfo, analyzedData, fieldName)
             generalSettings = reportInfo.Settings;
             projectData  = reportInfo.Project;
@@ -80,13 +96,6 @@ classdef (Abstract) Variable
                     hash = strjoin(unique({measData.UUID}));
                     hashIndex = find(strcmp({projectData.modules.(context).referenceData.locations.Hash}, hash), 1);
                     fieldValue = jsonencode(projectData.modules.(context).referenceData.locations(hashIndex)); 
-
-                case 'NumAboveTHRGlobal'
-                    if projectData.modules.(context).numAboveTHR == 0
-                        fieldValue = 'NENHUMA';
-                    else
-                        fieldValue = num2str(projectData.modules.(context).numAboveTHR);
-                    end
 
                 otherwise
                     error('UnexpectedFieldName')
