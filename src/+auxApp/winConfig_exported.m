@@ -563,6 +563,8 @@ classdef winConfig_exported < matlab.apps.AppBase
                 app.mainApp.General.AppVersion.database.name = 'RFDataHub';
                 app.stableVersion.rfDataHub = RFDataHub_info;
                 app.tool_RFDataHubButton.Enable = 0;
+
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'RFDataHubUpdated')
                 
             catch ME
                 appUtil.modalWindow(app.UIFigure, 'error', ME.message);

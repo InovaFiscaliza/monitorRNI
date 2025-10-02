@@ -203,6 +203,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                     menu_mainButtonPushed(app, struct('Source', app.menu_Button1, 'PreviousValue', false))
                                 end
 
+                            case 'RFDataHubUpdated'
+                                if ~isempty(app.AppInfo.Tag)
+                                    app.AppInfo.Tag = '';
+                                end
+
                             case 'fileSortMethodChanged'
                                 if ~strcmp(app.file_FileSortMethod.Value, app.General.File.sortMethod)
                                     app.file_FileSortMethod.Value = app.General.File.sortMethod;
