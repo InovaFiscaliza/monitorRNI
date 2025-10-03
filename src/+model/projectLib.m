@@ -83,7 +83,6 @@ classdef projectLib < handle
         %-----------------------------------------------------------------%
         function Restart(obj)
             obj.modules.MonitoringPlan.stationTable      = obj.modules.MonitoringPlan.stationTable_I;
-            obj.modules.MonitoringPlan.generatedFiles    = struct('rawFiles', {{}}, 'lastHTMLDocFullPath', '', 'lastTableFullPath', '', 'lastZIPFullPath', '');
             obj.modules.MonitoringPlan.numMeasurements   = [];
             obj.modules.MonitoringPlan.threshold         = [];
             obj.modules.MonitoringPlan.numAboveTHR       = [];
@@ -91,12 +90,14 @@ classdef projectLib < handle
             obj.modules.MonitoringPlan.ui.selectedGroup  = '';
 
             obj.modules.ExternalRequest.pointsTable      = obj.modules.ExternalRequest.pointsTable_I;
-            obj.modules.ExternalRequest.generatedFiles   = struct('rawFiles', {{}}, 'lastHTMLDocFullPath', '', 'lastTableFullPath', '', 'lastZIPFullPath', '');
             obj.modules.ExternalRequest.numMeasurements  = [];
             obj.modules.ExternalRequest.threshold        = [];
             obj.modules.ExternalRequest.numAboveTHR      = [];
             obj.modules.ExternalRequest.distance_km      = [];
             obj.modules.ExternalRequest.ui.selectedGroup = '';
+
+            updateGeneratedFiles(obj, 'MonitoringPlan')
+            updateGeneratedFiles(obj, 'ExternalRequest')
         end
 
         %-----------------------------------------------------------------%
@@ -136,17 +137,20 @@ classdef projectLib < handle
         end
 
         %-----------------------------------------------------------------%
-        function updateGeneratedFiles(obj, context, htmlFile, tableFile)
+        function updateGeneratedFiles(obj, context, rawFiles, htmlFile, tableFile, zipFile)
             arguments
                 obj
                 context   (1,:) char {mustBeMember(context, {'MonitoringPlan', 'ExternalRequest'})}
+                rawFiles  cell = {}
                 htmlFile  char = ''
                 tableFile char = ''
+                zipFile   char = ''
             end
 
+            obj.modules.(context).generatedFiles.rawFiles            = rawFiles;
             obj.modules.(context).generatedFiles.lastHTMLDocFullPath = htmlFile;
             obj.modules.(context).generatedFiles.lastTableFullPath   = tableFile;
-
+            obj.modules.(context).generatedFiles.lastZIPFullPath     = zipFile;
         end
 
         %-----------------------------------------------------------------%

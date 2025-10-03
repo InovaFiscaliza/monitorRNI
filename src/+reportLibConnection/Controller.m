@@ -301,17 +301,14 @@ classdef (Abstract) Controller
                         error(msgError)
                     end
                     
-                    ZIPFile  = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', {'*.zip', 'monitorRNI (*.zip)'}, fullfile(app.General.fileFolder.userPath, [baseFileName '.zip']));
+                    ZIPFile  = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', {'*.zip', 'monitorRNI (*.zip)'}, fullfile(generalSettings.fileFolder.userPath, [baseFileName '.zip']));
                     if isempty(ZIPFile)
                         return
                     end                    
 
                     zip(ZIPFile, [{HTMLFile}, {XLSXFile}, RAWFiles])
-                
-                    app.projectData.modules.(context).generatedFiles.rawFiles            = RAWFiles;
-                    app.projectData.modules.(context).generatedFiles.lastHTMLDocFullPath = HTMLFile;
-                    app.projectData.modules.(context).generatedFiles.lastTableFullPath   = XLSXFile;
-                    app.projectData.modules.(context).generatedFiles.lastZIPFullPath     = ZIPFile;
+
+                    updateGeneratedFiles(projectData, context, RAWFiles, HTMLFile, XLSXFile, ZIPFile)
             end
         end
     end
