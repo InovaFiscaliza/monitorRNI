@@ -490,18 +490,12 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             app.rfDataHub        = RFDataHub;
             app.rfDataHubLOG     = RFDataHubLog;
-            app.rfDataHubSummary = summary(RFDataHub);
+            app.rfDataHubSummary = summary(RFDataHub(:, {'Source', 'State'}));
 
             % A coluna "Source" possui agrupamentos da fonte dos dados,
             % decorrente da mesclagem de estações.
             tempSourceList = cellfun(@(x) strsplit(x, ' | '), app.rfDataHubSummary.Source.Categories, 'UniformOutput', false);
             app.rfDataHubSummary.Source.RawCategories = unique(horzcat(tempSourceList{:}))';
-
-            % A coluna "Location" não está sendo corretamente ordenada por
-            % conta dos caracteres especiais.
-            tempLocationList = textAnalysis.preProcessedData(app.rfDataHubSummary.Location.Categories);
-            [app.rfDataHubSummary.Location.CacheCategories, idxSort] = sort(tempLocationList);
-            app.rfDataHubSummary.Location.Categories = app.rfDataHubSummary.Location.Categories(idxSort);
 
             % app.projectData
             app.projectData = model.projectLib(app, app.rootFolder, app.General);
