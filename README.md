@@ -1,4 +1,5 @@
-# monitorRNI  
+# monitorRNI  [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/InovaFiscaliza/monitorRNI)
+
 
 O monitorRNI é uma ferramenta de pós-processamento de dados gerados em campanhas de medição da exposição humana a campos elétricos, no âmbito do Plano de Monitoração de Radiação Não Ionizante (PM-RNI).  
 - Leitura de arquivos brutos de medidas gerados pelas sondas WaveControl MonitEM e Narda 8059.  
