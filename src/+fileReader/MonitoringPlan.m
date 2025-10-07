@@ -3,13 +3,13 @@ function [stationTable, referenceData] = MonitoringPlan(appName, rootFolder, gen
     [projectFolder, ...
      programDataFolder] = appUtil.Path(appName, rootFolder);
 
-    projectFilePath     = fullfile(projectFolder,     generalSettings.MonitoringPlan.ReferenceFile);
-    programDataFilePath = fullfile(programDataFolder, generalSettings.MonitoringPlan.ReferenceFile);
+    projectFilePath     = fullfile(projectFolder,     'DataBase', [generalSettings.MonitoringPlan.ReferenceFile '.mat']);
+    programDataFilePath = fullfile(programDataFolder, 'DataBase', [generalSettings.MonitoringPlan.ReferenceFile '.mat']);
 
     if isfile(programDataFilePath)
-        stationTable = readtable(programDataFilePath, 'VariableNamingRule', 'preserve');
+        load(programDataFilePath, 'stationTable');
     else
-        stationTable = readtable(projectFilePath,     'VariableNamingRule', 'preserve');
+        load(projectFilePath,     'stationTable')
     end
 
     % Dados inválidos (Coordenada geográficas):

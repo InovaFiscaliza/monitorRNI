@@ -319,7 +319,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function updatePanel_General(app)
             % Versão
-            ui.TextView.update(app.versionInfo, util.HtmlTextGenerator.AppInfo(app.mainApp.General, app.mainApp.rootFolder, app.mainApp.executionMode));
+            ui.TextView.update(app.versionInfo, util.HtmlTextGenerator.AppInfo(app.mainApp.General, app.mainApp.rootFolder, app.mainApp.executionMode, app.mainApp.renderCount, "textview"));
 
             % Modo de operação
             app.openAuxiliarAppAsDocked.Value = app.mainApp.General.operationMode.Dock;
@@ -335,7 +335,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % PM-RNI
             app.MonitoringPlanDistance.Value    = app.mainApp.General.MonitoringPlan.Distance_km * 1000;
             app.MonitoringPlanLevel.Value       = app.mainApp.General.MonitoringPlan.FieldValue;
-            app.MonitoringPlanFileName.Value    = app.mainApp.General.MonitoringPlan.ReferenceFile;
+            app.MonitoringPlanFileName.Value    = [app.mainApp.General.MonitoringPlan.ReferenceFile '.xlsx'];
             
             MonitoringPlanYearsOptions          = app.mainApp.projectData.modules.MonitoringPlan.referenceData.years;
             MonitoringPlanYearsValue            = app.mainApp.General.MonitoringPlan.Period;
@@ -710,7 +710,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         % Image clicked function: MonitoringPlanOpenFile
         function Config_AnalysisOpenReferenceFile(app, event)
             
-            fileName = fullfile(ccTools.fcn.OperationSystem('programData'), 'ANATEL', class.Constants.appName, app.MonitoringPlanFileName.Value);
+            fileName = fullfile(ccTools.fcn.OperationSystem('programData'), 'ANATEL', class.Constants.appName, 'DataBase', app.MonitoringPlanFileName.Value);
             
             switch app.mainApp.executionMode
                 case 'webApp'

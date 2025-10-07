@@ -55,7 +55,9 @@ classdef (Abstract) Variable
                     fieldValue = sum(arrayfun(@(x) x.InfoSet.numMeasurements, dataOverview));
                 
                 case 'NumAboveTHRGlobal'
-                    numAboveTHRGlobal = sum(arrayfun(@(x) x.InfoSet.numAboveTHR, dataOverview));
+                    numAboveTHRGlobal = arrayfun(@(x) x.InfoSet.numAboveTHR, dataOverview, 'UniformOutput', false);
+                    numAboveTHRGlobal = sum(horzcat(numAboveTHRGlobal{:}));
+                    
                     if numAboveTHRGlobal == 0
                         fieldValue = 'NENHUMA';
                     else

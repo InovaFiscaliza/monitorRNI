@@ -66,9 +66,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         % Controla a seleção da TabGroup a partir do menu.
         tabGroupController
-
-        % Garante que startup_controller será executada uma única vez.
-        rendererFlag = false
+        renderCount = 0
 
         % Janela de progresso já criada no DOM. Dessa forma, controla-se 
         % apenas a sua visibilidade - e tornando desnecessário criá-la a
@@ -118,10 +116,42 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 switch event.HTMLEventName
                     % JSBACKDOOR (compCustomization.js)
                     case 'renderer'
-                        if ~app.rendererFlag
-                            app.rendererFlag = true;
+                        if ~app.renderCount
                             startup_Controller(app)
+                        else
+                            % Esse fluxo será executado especificamente na
+                            % versão webapp, quando o navegador atualiza a
+                            % página (decorrente de F5 ou CTRL+F5).
+
+                            selectedNodes = app.file_Tree.SelectedNodes;
+                            if ~isempty(app.file_Tree.SelectedNodes)
+                                app.file_Tree.SelectedNodes = [];
+                                file_TreeSelectionChanged(app)
+                            end
+
+                            if ~app.menu_Button1.Value
+                                app.menu_Button1.Value = true;                    
+                                menu_mainButtonPushed(app, struct('Source', app.menu_Button1, 'PreviousValue', false))
+                                drawnow
+                            end
+
+                            closeModule(app.tabGroupController, ["MONITORINGPLAN", "EXTERNALREQUEST", "RFDATAHUB", "CONFIG"], app.General)
+    
+                            if ~isempty(app.AppInfo.Tag)
+                                app.AppInfo.Tag = '';
+                            end
+
+                            startup_Controller(app)
+
+                            if ~isempty(selectedNodes)
+                                app.file_Tree.SelectedNodes = selectedNodes;
+                                file_TreeSelectionChanged(app)
+                            end
+
+                            app.progressDialog.Visible = 'hidden';
                         end
+                        
+                        app.renderCount = app.renderCount+1;
 
                     case 'unload'
                         closeFcn(app)
@@ -199,7 +229,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                     file_OpenFileButtonImageClicked(app)
 
                                     % Muda programaticamente o modo p/ ARQUIVOS.
-                                    set(app.menu_Button1, 'Enable', 1, 'Value', 1)                    
+                                    app.menu_Button1.Value = true;                    
                                     menu_mainButtonPushed(app, struct('Source', app.menu_Button1, 'PreviousValue', false))
                                 end
 
@@ -321,7 +351,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             switch tabIndex
                 case 0 % STARTUP
                     sendEventToHTMLSource(app.jsBackDoor, 'startup', app.executionMode);
-                    app.progressDialog  = ccTools.ProgressDialog(app.jsBackDoor);
                     customizationStatus = [false, false, false, false];
 
                 otherwise
@@ -332,20 +361,27 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     customizationStatus(tabIndex) = true;
                     switch tabIndex
                         case 1 % FILE
-                            elToModify = {app.popupContainerGrid,  ...
-                                          app.file_Tree,           ...                                          
-                                          app.file_Metadata};                % ui.TextView
-                            elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
+                            elToModify = {app.popupContainerGrid, app.file_Tree, app.file_Metadata};                            
+                            ui.CustomizationBase.getElementsDataTag(elToModify);
 
-                            if ~isempty(elDataTag)
-                                appName = class(app);
-                                
-                                sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
-                                    struct('appName', appName, 'dataTag', elDataTag{1}, 'style', struct('backgroundColor', 'rgba(255,255,255,0.65)')), ...
-                                    struct('appName', appName, 'dataTag', elDataTag{2}, 'listener', struct('componentName', 'mainApp.file_Tree', 'keyEvents', {{'Delete', 'Backspace'}})), ...
-                                });
+                            appName = class(app);
+                            if isvalid(app.popupContainerGrid)
+                                try
+                                    sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', {struct('appName', appName, 'dataTag', elToModify{1}.UserData.id, 'style', struct('backgroundColor', 'rgba(255,255,255,0.65)'))});
+                                catch
+                                end
+                            end
 
+                            try
+                                sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', {struct('appName', appName, 'dataTag', elToModify{2}.UserData.id, 'listener', struct('componentName', 'mainApp.file_Tree', 'keyEvents', {{'Delete', 'Backspace'}}))});
+                            catch ME
+                                appUtil.modalWindow(app.UIFigure, 'error', getReport(ME));
+                            end
+
+                            try
                                 ui.TextView.startup(app.jsBackDoor, elToModify{3}, appName);
+                            catch ME
+                                appUtil.modalWindow(app.UIFigure, 'error', getReport(ME));
                             end
 
                         otherwise
@@ -384,37 +420,46 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         function startup_Controller(app)
             drawnow
 
-            % Essa propriedade registra o tipo de execução da aplicação, podendo
-            % ser: 'built-in', 'desktopApp' ou 'webApp'.
-            app.executionMode = appUtil.ExecutionMode(app.UIFigure);
-            if ~strcmp(app.executionMode, 'webApp')
-                app.FigurePosition.Visible = 1;
-                appUtil.winMinSize(app.UIFigure, class.Constants.windowMinSize)
-            end
+            if ~app.renderCount
+                % Essa propriedade registra o tipo de execução da aplicação, podendo
+                % ser: 'built-in', 'desktopApp' ou 'webApp'.
+                app.executionMode  = appUtil.ExecutionMode(app.UIFigure);
+                if ~strcmp(app.executionMode, 'webApp')
+                    app.FigurePosition.Visible = 1;
+                    appUtil.winMinSize(app.UIFigure, class.Constants.windowMinSize)
+                end
+    
+                % Identifica o local deste arquivo .MLAPP, caso se trate das versões 
+                % "built-in" ou "webapp", ou do .EXE relacionado, caso se trate da
+                % versão executável (neste caso, o ctfroot indicará o local do .MLAPP).
+                appName = class.Constants.appName;
+                MFilePath = fileparts(mfilename('fullpath'));
+                app.rootFolder = appUtil.RootFolder(appName, MFilePath);
 
-            % Identifica o local deste arquivo .MLAPP, caso se trate das versões 
-            % "built-in" ou "webapp", ou do .EXE relacionado, caso se trate da
-            % versão executável (neste caso, o ctfroot indicará o local do .MLAPP).
-            appName = class.Constants.appName;
-            MFilePath = fileparts(mfilename('fullpath'));
-            app.rootFolder = appUtil.RootFolder(appName, MFilePath);
+                % Customizações...
+                jsBackDoor_AppCustomizations(app, 0)
+                jsBackDoor_AppCustomizations(app, 1)
+                pause(.100)
 
-            % Customizações...
-            jsBackDoor_AppCustomizations(app, 0)
-            jsBackDoor_AppCustomizations(app, 1)
-            pause(.100)
-
-            startup_ConfigFileRead(app, appName, MFilePath)
-            startup_AppProperties(app)
-            startup_GUIComponents(app)
-
-            sendEventToHTMLSource(app.jsBackDoor, 'turningBackgroundColorInvisible', struct('componentName', 'SplashScreen', 'componentDataTag', struct(app.SplashScreen).Controller.ViewModel.Id));
-            drawnow
-
-            % Por fim, exclui-se o splashscreen.
-            if isvalid(app.popupContainerGrid)
+                % Cria tela de progresso...
+                app.progressDialog = ccTools.ProgressDialog(app.jsBackDoor);
+    
+                startup_ConfigFileRead(app, appName, MFilePath)
+                startup_AppProperties(app)
+                startup_GUIComponents(app)
+    
+                % Por fim, exclui-se o splashscreen, um segundo após envio do comando 
+                % para que diminua a transparência do background.
+                sendEventToHTMLSource(app.jsBackDoor, 'turningBackgroundColorInvisible', struct('componentName', 'SplashScreen', 'componentDataTag', struct(app.SplashScreen).Controller.ViewModel.Id));
+                drawnow
+            
                 pause(1)
                 delete(app.popupContainerGrid)
+
+            else
+                jsBackDoor_AppCustomizations(app, 0)
+                jsBackDoor_AppCustomizations(app, 1)
+                pause(.100)
             end
         end
 
@@ -483,7 +528,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function startup_AppProperties(app)            
+        function startup_AppProperties(app)
             % RFDataHub
             global RFDataHub
             global RFDataHubLog
@@ -887,7 +932,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 case app.AppInfo
                     if isempty(app.AppInfo.Tag)
                         app.progressDialog.Visible = 'visible';
-                        app.AppInfo.Tag = util.HtmlTextGenerator.AppInfo(app.General, app.rootFolder, app.executionMode, "popup");
+                        app.AppInfo.Tag = util.HtmlTextGenerator.AppInfo(app.General, app.rootFolder, app.executionMode, app.renderCount, "popup");
                         app.progressDialog.Visible = 'hidden';
                     end
 

@@ -1,5 +1,5 @@
 {
-    "version": 0.77,
+    "version": 0.78,
     "operationMode": {
         "Debug": false,
         "Dock": true,
@@ -27,7 +27,7 @@
         "sortMethod": "LOCALIDADE"
     },
     "MonitoringPlan": {
-        "ReferenceFile": "PM-RNI - Lista de estações.xlsx",
+        "ReferenceFile": "PM-RNI - Lista de estações",
         "Period": [
             2024,
             2025
