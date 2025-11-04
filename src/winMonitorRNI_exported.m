@@ -1482,7 +1482,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             % Create file_TreeNodeDelete
             app.file_TreeNodeDelete = uimenu(app.file_ContextMenu);
             app.file_TreeNodeDelete.MenuSelectedFcn = createCallbackFcn(app, @file_ContextMenu_delTreeNodeSelected, true);
-            app.file_TreeNodeDelete.Text = 'Excluir';
+            app.file_TreeNodeDelete.Text = '❌ Excluir';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
