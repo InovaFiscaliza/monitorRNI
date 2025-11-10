@@ -3319,13 +3319,13 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.filter_delButton = uimenu(app.filter_ContextMenu);
             app.filter_delButton.MenuSelectedFcn = createCallbackFcn(app, @filter_delFilter, true);
             app.filter_delButton.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.filter_delButton.Text = 'Excluir';
+            app.filter_delButton.Text = '❌ Excluir';
 
             % Create filter_delAllButton
             app.filter_delAllButton = uimenu(app.filter_ContextMenu);
             app.filter_delAllButton.MenuSelectedFcn = createCallbackFcn(app, @filter_delFilter, true);
             app.filter_delAllButton.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.filter_delAllButton.Text = 'Excluir todos';
+            app.filter_delAllButton.Text = '⛔ Excluir todos';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

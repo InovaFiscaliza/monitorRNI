@@ -1661,7 +1661,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Create EditSelectedUITableRow
             app.EditSelectedUITableRow = uimenu(app.ContextMenu);
             app.EditSelectedUITableRow.MenuSelectedFcn = createCallbackFcn(app, @Toolbar_OpenPopUpEditionMode, true);
-            app.EditSelectedUITableRow.Text = 'Editar';
+            app.EditSelectedUITableRow.Text = '✏️ Editar';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

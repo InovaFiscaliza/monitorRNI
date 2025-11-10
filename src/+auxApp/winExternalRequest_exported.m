@@ -1738,8 +1738,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % Create DeletePoint
             app.DeletePoint = uimenu(app.ContextMenu);
             app.DeletePoint.MenuSelectedFcn = createCallbackFcn(app, @DeleteSelectedPoint, true);
-            app.DeletePoint.ForegroundColor = [1 0 0];
-            app.DeletePoint.Text = 'Excluir';
+            app.DeletePoint.Text = '❌ Excluir';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

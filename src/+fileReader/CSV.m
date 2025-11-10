@@ -96,7 +96,7 @@ classdef (Abstract) CSV
 
                 case 'Narda'
                     regExpression1  = 'IDN=(?<IDN>\w+);Nsts,(?<Model>[^;]+);[^;]+;(?<Serial>\w+);';
-                    regExpression2  = 'MES=(?<FieldValue>[0-9.]+);.*?\$G(N|P)RMC,[0-9.]+,A,(?<LatValue>[0-9.]+),(?<LatOrientation>[NS]),(?<LongValue>[0-9.]+),(?<LongOrientation>[EW]).*?-->(?<Timestamp>\d{2}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})';
+                    regExpression2  = 'MES=(?<FieldValue>[0-9.]+);[^$]*\$G(N|P)RMC,[0-9.]+,A,(?<LatValue>[0-9.]+),(?<LatOrientation>[NS]),(?<LongValue>[0-9.]+),(?<LongOrientation>[EW])[^>]*-->(?<Timestamp>\d{2}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})';
                     dateFormat      = 'dd/MM/yy HH:mm:ss';
 
                 otherwise
