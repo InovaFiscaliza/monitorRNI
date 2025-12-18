@@ -197,7 +197,7 @@ classdef winConfig_exported < matlab.apps.AppBase
                         app.progressDialog = app.mainApp.progressDialog;
                     else
                         sendEventToHTMLSource(app.jsBackDoor, 'startup', app.mainApp.executionMode);
-                        app.progressDialog = ccTools.ProgressDialog(app.jsBackDoor);
+                        app.progressDialog = ui.ProgressDialog(app.jsBackDoor);
                     end
                     customizationStatus = [false, false, false, false, false];
 
@@ -261,7 +261,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function startup_timerFcn(app)
-            if ccTools.fcn.UIFigureRenderStatus(app.UIFigure)
+            if ui.FigureRenderStatus(app.UIFigure)
                 stop(app.timerObj)
                 delete(app.timerObj)
 
@@ -710,13 +710,13 @@ classdef winConfig_exported < matlab.apps.AppBase
         % Image clicked function: MonitoringPlanOpenFile
         function Config_AnalysisOpenReferenceFile(app, event)
             
-            fileName = fullfile(ccTools.fcn.OperationSystem('programData'), 'ANATEL', class.Constants.appName, 'DataBase', app.MonitoringPlanFileName.Value);
+            fileName = fullfile(appUtil.OperationSystem('programData'), 'ANATEL', class.Constants.appName, 'DataBase', app.MonitoringPlanFileName.Value);
             
             switch app.mainApp.executionMode
                 case 'webApp'
                     web(fileName, '-new')
                 otherwise
-                    ccTools.fcn.OperationSystem('openFile', fileName)
+                    appUtil.OperationSystem('openFile', fileName)
             end
 
         end
