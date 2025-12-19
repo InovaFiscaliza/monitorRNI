@@ -136,6 +136,10 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                             end
 
                             closeModule(app.tabGroupController, ["MONITORINGPLAN", "EXTERNALREQUEST", "RFDATAHUB", "CONFIG"], app.General)
+
+                            if ~isempty(app.popupContainer)
+                                delete(app.popupContainer)
+                            end
     
                             if ~isempty(app.AppInfo.Tag)
                                 app.AppInfo.Tag = '';
