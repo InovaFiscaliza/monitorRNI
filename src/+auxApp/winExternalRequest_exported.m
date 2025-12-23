@@ -44,7 +44,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         reportSystem                 matlab.ui.control.DropDown
         reportSystemLabel            matlab.ui.control.Label
         eFiscalizaLabel              matlab.ui.control.Label
-        dockModuleGrid               matlab.ui.container.GridLayout
+        DockModule                   matlab.ui.container.GridLayout
         dockModule_Undock            matlab.ui.control.Image
         dockModule_Close             matlab.ui.control.Image
         Document                     matlab.ui.container.GridLayout
@@ -53,7 +53,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         axesTool_RestoreView         matlab.ui.control.Image
         plotPanel                    matlab.ui.container.Panel
         UITable                      matlab.ui.control.Table
-        toolGrid                     matlab.ui.container.GridLayout
+        Toolbar                      matlab.ui.container.GridLayout
         tool_UploadFinalFile         matlab.ui.control.Image
         tool_ExportFiles             matlab.ui.control.Image
         tool_GenerateReport          matlab.ui.control.Image
@@ -100,7 +100,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         % IPC: COMUNICAÇÃO ENTRE PROCESSOS
         %-----------------------------------------------------------------%
-        function ipcSecundaryJSEventsHandler(app, event)
+        function ipcSecondaryJSEventsHandler(app, event)
             try
                 switch event.HTMLEventName
                     case 'renderer'
@@ -128,7 +128,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function ipcSecundaryMatlabCallsHandler(app, callingApp, operationType, varargin)
+        function ipcSecondaryMatlabCallsHandler(app, callingApp, operationType, varargin)
             try
                 switch class(callingApp)
                     case {'winMonitorRNI', 'winMonitorRNI_exported'}
@@ -209,7 +209,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
                             % Grid botões "dock":
                             if app.isDocked
-                                elToModify = {app.dockModuleGrid};
+                                elToModify = {app.DockModule};
                                 elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
                                 if ~isempty(elDataTag)                                    
                                     sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
@@ -1174,26 +1174,26 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.GridLayout.Padding = [0 0 0 0];
             app.GridLayout.BackgroundColor = [1 1 1];
 
-            % Create toolGrid
-            app.toolGrid = uigridlayout(app.GridLayout);
-            app.toolGrid.ColumnWidth = {22, 22, 22, 5, 22, '1x', 22, 22};
-            app.toolGrid.RowHeight = {4, 17, '1x'};
-            app.toolGrid.ColumnSpacing = 5;
-            app.toolGrid.RowSpacing = 0;
-            app.toolGrid.Padding = [10 5 10 5];
-            app.toolGrid.Layout.Row = 6;
-            app.toolGrid.Layout.Column = [1 7];
-            app.toolGrid.BackgroundColor = [0.9412 0.9412 0.9412];
+            % Create Toolbar
+            app.Toolbar = uigridlayout(app.GridLayout);
+            app.Toolbar.ColumnWidth = {22, 22, 22, 5, 22, '1x', 22, 22};
+            app.Toolbar.RowHeight = {4, 17, '1x'};
+            app.Toolbar.ColumnSpacing = 5;
+            app.Toolbar.RowSpacing = 0;
+            app.Toolbar.Padding = [10 5 10 5];
+            app.Toolbar.Layout.Row = 6;
+            app.Toolbar.Layout.Column = [1 7];
+            app.Toolbar.BackgroundColor = [0.9412 0.9412 0.9412];
 
             % Create tool_ControlPanelVisibility
-            app.tool_ControlPanelVisibility = uiimage(app.toolGrid);
+            app.tool_ControlPanelVisibility = uiimage(app.Toolbar);
             app.tool_ControlPanelVisibility.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
             app.tool_ControlPanelVisibility.Layout.Row = 2;
             app.tool_ControlPanelVisibility.Layout.Column = 1;
             app.tool_ControlPanelVisibility.ImageSource = 'ArrowLeft_32.png';
 
             % Create tool_TableVisibility
-            app.tool_TableVisibility = uiimage(app.toolGrid);
+            app.tool_TableVisibility = uiimage(app.Toolbar);
             app.tool_TableVisibility.ScaleMethod = 'none';
             app.tool_TableVisibility.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
             app.tool_TableVisibility.Tooltip = {'Visibilidade da tabela'};
@@ -1202,7 +1202,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.tool_TableVisibility.ImageSource = 'View_16.png';
 
             % Create tool_Separator
-            app.tool_Separator = uiimage(app.toolGrid);
+            app.tool_Separator = uiimage(app.Toolbar);
             app.tool_Separator.ScaleMethod = 'none';
             app.tool_Separator.Enable = 'off';
             app.tool_Separator.Layout.Row = [1 3];
@@ -1210,7 +1210,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.tool_Separator.ImageSource = 'LineV.svg';
 
             % Create tool_peakLabel
-            app.tool_peakLabel = uilabel(app.toolGrid);
+            app.tool_peakLabel = uilabel(app.Toolbar);
             app.tool_peakLabel.FontSize = 10;
             app.tool_peakLabel.Visible = 'off';
             app.tool_peakLabel.Layout.Row = [1 3];
@@ -1218,7 +1218,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.tool_peakLabel.Text = {'5.3 V/m'; '(-12.354321, -38.123456)'};
 
             % Create tool_peakIcon
-            app.tool_peakIcon = uiimage(app.toolGrid);
+            app.tool_peakIcon = uiimage(app.Toolbar);
             app.tool_peakIcon.ScaleMethod = 'none';
             app.tool_peakIcon.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
             app.tool_peakIcon.Enable = 'off';
@@ -1228,7 +1228,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.tool_peakIcon.ImageSource = 'Detection_18.png';
 
             % Create tool_GenerateReport
-            app.tool_GenerateReport = uiimage(app.toolGrid);
+            app.tool_GenerateReport = uiimage(app.Toolbar);
             app.tool_GenerateReport.ScaleMethod = 'none';
             app.tool_GenerateReport.ImageClickedFcn = createCallbackFcn(app, @Toolbar_GenerateReportImageClicked, true);
             app.tool_GenerateReport.Enable = 'off';
@@ -1238,7 +1238,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.tool_GenerateReport.ImageSource = 'Publish_HTML_16.png';
 
             % Create tool_ExportFiles
-            app.tool_ExportFiles = uiimage(app.toolGrid);
+            app.tool_ExportFiles = uiimage(app.Toolbar);
             app.tool_ExportFiles.ScaleMethod = 'none';
             app.tool_ExportFiles.ImageClickedFcn = createCallbackFcn(app, @Toolbar_ExportTableAsExcelSheet, true);
             app.tool_ExportFiles.Enable = 'off';
@@ -1248,7 +1248,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.tool_ExportFiles.ImageSource = 'Export_16.png';
 
             % Create tool_UploadFinalFile
-            app.tool_UploadFinalFile = uiimage(app.toolGrid);
+            app.tool_UploadFinalFile = uiimage(app.Toolbar);
             app.tool_UploadFinalFile.ImageClickedFcn = createCallbackFcn(app, @Toolbar_UploadFinalFileImageClicked, true);
             app.tool_UploadFinalFile.Enable = 'off';
             app.tool_UploadFinalFile.Tooltip = {'Upload relatório'};
@@ -1319,18 +1319,18 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.axesTool_RegionZoom.Layout.Column = 2;
             app.axesTool_RegionZoom.ImageSource = 'ZoomRegion_20.png';
 
-            % Create dockModuleGrid
-            app.dockModuleGrid = uigridlayout(app.GridLayout);
-            app.dockModuleGrid.RowHeight = {'1x'};
-            app.dockModuleGrid.ColumnSpacing = 2;
-            app.dockModuleGrid.Padding = [5 2 5 2];
-            app.dockModuleGrid.Visible = 'off';
-            app.dockModuleGrid.Layout.Row = [2 3];
-            app.dockModuleGrid.Layout.Column = [5 6];
-            app.dockModuleGrid.BackgroundColor = [0.2 0.2 0.2];
+            % Create DockModule
+            app.DockModule = uigridlayout(app.GridLayout);
+            app.DockModule.RowHeight = {'1x'};
+            app.DockModule.ColumnSpacing = 2;
+            app.DockModule.Padding = [5 2 5 2];
+            app.DockModule.Visible = 'off';
+            app.DockModule.Layout.Row = [2 3];
+            app.DockModule.Layout.Column = [5 6];
+            app.DockModule.BackgroundColor = [0.2 0.2 0.2];
 
             % Create dockModule_Close
-            app.dockModule_Close = uiimage(app.dockModuleGrid);
+            app.dockModule_Close = uiimage(app.DockModule);
             app.dockModule_Close.ScaleMethod = 'none';
             app.dockModule_Close.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
             app.dockModule_Close.Tag = 'DRIVETEST';
@@ -1340,7 +1340,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.dockModule_Close.ImageSource = 'Delete_12SVG_white.svg';
 
             % Create dockModule_Undock
-            app.dockModule_Undock = uiimage(app.dockModuleGrid);
+            app.dockModule_Undock = uiimage(app.DockModule);
             app.dockModule_Undock.ScaleMethod = 'none';
             app.dockModule_Undock.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
             app.dockModule_Undock.Tag = 'DRIVETEST';

@@ -150,7 +150,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         % IPC: COMUNICAÇÃO ENTRE PROCESSOS
         %-----------------------------------------------------------------%
-        function ipcSecundaryJSEventsHandler(app, event)
+        function ipcSecondaryJSEventsHandler(app, event)
             try
                 switch event.HTMLEventName
                     case 'renderer'

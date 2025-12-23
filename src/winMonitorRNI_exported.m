@@ -30,14 +30,15 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         file_FileSortMethod      matlab.ui.control.DropDown
         file_ModuleIntro         matlab.ui.control.Label
         file_toolGrid            matlab.ui.container.GridLayout
-        file_Separator1          matlab.ui.control.Image
-        file_MergeFiles          matlab.ui.control.Image
-        file_OpenFileButton      matlab.ui.control.Image
+        tool_Separator           matlab.ui.control.Image
+        tool_MergeFiles          matlab.ui.control.Image
+        tool_ReadFiles           matlab.ui.control.Image
         Tab2_MonitoringPlan      matlab.ui.container.Tab
         Tab3_ExternalRequest     matlab.ui.container.Tab
         Tab4_RFDataHub           matlab.ui.container.Tab
         Tab5_Config              matlab.ui.container.Tab
         ContextMenu              matlab.ui.container.ContextMenu
+        contextmenu_merge        matlab.ui.container.Menu
         contextmenu_del          matlab.ui.container.Menu
     end
 
@@ -181,7 +182,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                             case 'simulationModeChanged'
                                 if app.General.operationMode.Simulation
-                                    file_OpenFileButtonImageClicked(app)
+                                    tool_ReadFilesImageClicked(app)
 
                                     % Muda programaticamente o modo p/ ARQUIVOS.
                                     app.Tab1Button.Value = true;                    
@@ -277,10 +278,10 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 switch communicationType
                     case 'MATLAB'
                         operationType = varargin{1};
-                        ipcSecundaryMatlabCallsHandler(hAuxApp, app, operationType, varargin{2:end});
+                        ipcSecondaryMatlabCallsHandler(hAuxApp, app, operationType, varargin{2:end});
                     case 'JS'
                         event = varargin{1};
-                        ipcSecundaryJSEventsHandler(hAuxApp, event)
+                        ipcSecondaryJSEventsHandler(hAuxApp, event)
                 end
             end
         end
@@ -356,25 +357,18 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     customizationStatus(tabIndex) = true;
                     switch tabIndex
                         case 1 % FILE
-                            elToModify = {app.popupContainerGrid, app.file_Tree, app.file_Metadata};                            
+                            elToModify = {app.file_Tree, app.file_Metadata};                            
                             ui.CustomizationBase.getElementsDataTag(elToModify);
 
                             appName = class(app);
-                            if isvalid(app.popupContainerGrid)
-                                try
-                                    sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', {struct('appName', appName, 'dataTag', elToModify{1}.UserData.id, 'style', struct('backgroundColor', 'rgba(255,255,255,0.65)'))});
-                                catch
-                                end
-                            end
-
                             try
-                                sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', {struct('appName', appName, 'dataTag', elToModify{2}.UserData.id, 'listener', struct('componentName', 'mainApp.file_Tree', 'keyEvents', {{'Delete', 'Backspace'}}))});
+                                sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', {struct('appName', appName, 'dataTag', elToModify{1}.UserData.id, 'listener', struct('componentName', 'mainApp.file_Tree', 'keyEvents', {{'Delete', 'Backspace'}}))});
                             catch ME
                                 ui.Dialog(app.UIFigure, 'error', getReport(ME));
                             end
 
                             try
-                                ui.TextView.startup(app.jsBackDoor, elToModify{3}, appName);
+                                ui.TextView.startup(app.jsBackDoor, elToModify{2}, appName);
                             catch ME
                                 ui.Dialog(app.UIFigure, 'error', getReport(ME));
                             end
@@ -629,6 +623,23 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
+        function updateToolbar(app)
+            indexes = file_findSelectedNodeData(app);
+
+            nonEmptySelection = ~isempty(indexes);
+            nonScalarSelection = ~isscalar(indexes);
+
+            locationMergedStatus = false;
+            if ~isempty(indexes)
+                locationMergedStatus = any(arrayfun(@(x) ~strcmp(x.Location, x.Location_I), app.measData(indexes)));
+            end
+
+            app.tool_MergeFiles.Enable   = nonEmptySelection && (nonScalarSelection || locationMergedStatus);
+            app.contextmenu_merge.Enable = app.tool_MergeFiles.Enable;
+            app.contextmenu_del.Enable   = nonEmptySelection;
+        end
+
+        %-----------------------------------------------------------------%
         function updateLastVisitedFolder(app, filePath)
             app.General_I.fileFolder.lastVisited = filePath;
             app.General.fileFolder.lastVisited   = filePath;
@@ -818,7 +829,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             end
 
             % Aspectos gerais (comum em todos os apps):
-            appEngine.util.beforeDeleteApp(app.progressDialog, app.General_I.fileFolder.tempPath, app.tabGroupController, app.executionMode)
+            appEngine.beforeDeleteApp(app.progressDialog, app.General_I.fileFolder.tempPath, app.tabGroupController, app.executionMode)
             delete(app)
             
         end
@@ -854,7 +865,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         function file_TreeSelectionChanged(app, event)
 
             indexes = file_findSelectedNodeData(app);
-            app.file_MergeFiles.Enable = 0;
 
             if isempty(indexes)
                 app.file_Metadata.Text     = '';
@@ -867,12 +877,9 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                 app.file_Metadata.Text     = util.HtmlTextGenerator.SelectedFile(app.measData(indexes));
                 app.file_Metadata.UserData = indexes;
-
-                locationMergedStatus = any(arrayfun(@(x) ~strcmp(x.Location, x.Location_I), app.measData(indexes)));
-                if ~isscalar(indexes) || locationMergedStatus
-                    app.file_MergeFiles.Enable = 1;
-                end
             end
+
+            updateToolbar(app)
             
         end
 
@@ -887,8 +894,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         end
 
-        % Image clicked function: file_OpenFileButton
-        function file_OpenFileButtonImageClicked(app, event)
+        % Image clicked function: tool_ReadFiles
+        function tool_ReadFilesImageClicked(app, event)
 
             d = [];
             fileFullName = {};
@@ -1008,7 +1015,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         end
 
-        % Image clicked function: file_MergeFiles
+        % Callback function: contextmenu_merge, tool_MergeFiles
         function file_MergeFilesImageClicked(app, event)
             
             % O processo de "mesclagem" é apenas o controle da localidade
@@ -1116,31 +1123,32 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.file_toolGrid.Layout.Column = [1 7];
             app.file_toolGrid.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
 
-            % Create file_OpenFileButton
-            app.file_OpenFileButton = uiimage(app.file_toolGrid);
-            app.file_OpenFileButton.ScaleMethod = 'none';
-            app.file_OpenFileButton.ImageClickedFcn = createCallbackFcn(app, @file_OpenFileButtonImageClicked, true);
-            app.file_OpenFileButton.Tooltip = {'Seleciona arquivos'};
-            app.file_OpenFileButton.Layout.Row = 2;
-            app.file_OpenFileButton.Layout.Column = 1;
-            app.file_OpenFileButton.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'Import_16.png');
+            % Create tool_ReadFiles
+            app.tool_ReadFiles = uiimage(app.file_toolGrid);
+            app.tool_ReadFiles.ScaleMethod = 'none';
+            app.tool_ReadFiles.ImageClickedFcn = createCallbackFcn(app, @tool_ReadFilesImageClicked, true);
+            app.tool_ReadFiles.Tooltip = {'Seleciona arquivos'};
+            app.tool_ReadFiles.Layout.Row = 2;
+            app.tool_ReadFiles.Layout.Column = 1;
+            app.tool_ReadFiles.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'Import_16.png');
 
-            % Create file_MergeFiles
-            app.file_MergeFiles = uiimage(app.file_toolGrid);
-            app.file_MergeFiles.ImageClickedFcn = createCallbackFcn(app, @file_MergeFilesImageClicked, true);
-            app.file_MergeFiles.Enable = 'off';
-            app.file_MergeFiles.Tooltip = {'Mescla informações'};
-            app.file_MergeFiles.Layout.Row = [1 3];
-            app.file_MergeFiles.Layout.Column = 3;
-            app.file_MergeFiles.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'Merge_32.png');
+            % Create tool_MergeFiles
+            app.tool_MergeFiles = uiimage(app.file_toolGrid);
+            app.tool_MergeFiles.ScaleMethod = 'none';
+            app.tool_MergeFiles.ImageClickedFcn = createCallbackFcn(app, @file_MergeFilesImageClicked, true);
+            app.tool_MergeFiles.Enable = 'off';
+            app.tool_MergeFiles.Tooltip = {'Mescla informações'};
+            app.tool_MergeFiles.Layout.Row = [1 3];
+            app.tool_MergeFiles.Layout.Column = 3;
+            app.tool_MergeFiles.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'Merge_18.png');
 
-            % Create file_Separator1
-            app.file_Separator1 = uiimage(app.file_toolGrid);
-            app.file_Separator1.ScaleMethod = 'none';
-            app.file_Separator1.Enable = 'off';
-            app.file_Separator1.Layout.Row = [1 3];
-            app.file_Separator1.Layout.Column = 2;
-            app.file_Separator1.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV.svg');
+            % Create tool_Separator
+            app.tool_Separator = uiimage(app.file_toolGrid);
+            app.tool_Separator.ScaleMethod = 'none';
+            app.tool_Separator.Enable = 'off';
+            app.tool_Separator.Layout.Row = [1 3];
+            app.tool_Separator.Layout.Column = 2;
+            app.tool_Separator.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV.svg');
 
             % Create TabGroup2
             app.TabGroup2 = uitabgroup(app.file_Grid);
@@ -1373,9 +1381,16 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.ContextMenu = uicontextmenu(app.UIFigure);
             app.ContextMenu.Tag = 'winMonitorRNI';
 
+            % Create contextmenu_merge
+            app.contextmenu_merge = uimenu(app.ContextMenu);
+            app.contextmenu_merge.MenuSelectedFcn = createCallbackFcn(app, @file_MergeFilesImageClicked, true);
+            app.contextmenu_merge.Enable = 'off';
+            app.contextmenu_merge.Text = '🔀 Mesclar';
+
             % Create contextmenu_del
             app.contextmenu_del = uimenu(app.ContextMenu);
             app.contextmenu_del.MenuSelectedFcn = createCallbackFcn(app, @file_ContextMenu_delTreeNodeSelected, true);
+            app.contextmenu_del.Enable = 'off';
             app.contextmenu_del.Text = '❌ Excluir';
 
             % Show the figure after all components are created

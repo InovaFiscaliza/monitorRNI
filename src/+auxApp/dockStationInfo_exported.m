@@ -34,7 +34,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
     end
 
 
-    properties (Access = private)
+    properties (Access = public)
         %-----------------------------------------------------------------%
         Container
         isDocked = true
@@ -46,6 +46,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
     properties (Access = private)
         %-----------------------------------------------------------------%
+        inputArgs
         projectData
     end
     
@@ -141,7 +142,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function CallingMainApp(app, callType, updateFlag, returnFlag, varargin)
-            ipcSecundaryMatlabCallsHandler(app.callingApp, app, callType, updateFlag, returnFlag, varargin{:})
+            ipcSecondaryMatlabCallsHandler(app.callingApp, app, callType, updateFlag, returnFlag, varargin{:})
         end
     end
     
@@ -150,13 +151,13 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
     methods (Access = private)
 
         % Code that executes after component creation
-        function startupFcn(app, callingApp)
+        function startupFcn(app, mainApp, callingApp, context)
                         
             try
-                appEngine.boot(app, app.Role, callingApp.mainApp, callingApp)
+                appEngine.boot(app, app.Role, mainApp, callingApp)
 
-                app.inputArgs   = struct('context', context, 'index', index);
-                app.projectData = callingApp.mainApp.projectData;
+                app.inputArgs   = struct('context', context);
+                app.projectData = mainApp.projectData;
     
                 jsBackDoor_Customizations(app)
                 initialValues(app)

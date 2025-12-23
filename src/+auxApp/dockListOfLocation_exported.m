@@ -36,16 +36,17 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
 
     properties (Access = private)
         %-----------------------------------------------------------------%
+        inputArgs
         projectData
         measData
-        selectedFileIndexes
     end
     
     
     methods (Access = private)
         %-----------------------------------------------------------------%
         function updateForm(app)
-            currentListOfLocations = getFullListOfLocation(app.projectData, app.measData(app.selectedFileIndexes), app.mainApp.General.MonitoringPlan.Distance_km);
+            index = app.inputArgs.index;
+            currentListOfLocations = getFullListOfLocation(app.projectData, app.measData(index), app.mainApp.General.MonitoringPlan.Distance_km);
 
             refListOfLocations     = setdiff(app.projectData.modules.MonitoringPlan.referenceData.locations, currentListOfLocations, 'stable');
             if ~isempty(app.Filter.Value)
@@ -79,7 +80,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function CallingMainApp(app, callType, updateFlag, returnFlag, varargin)
-            ipcSecundaryMatlabCallsHandler(app.callingApp, app, callType, updateFlag, returnFlag, varargin{:})
+            ipcSecondaryMatlabCallsHandler(app.callingApp, app, callType, updateFlag, returnFlag, varargin{:})
         end
     end
     
@@ -88,16 +89,14 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
     methods (Access = private)
 
         % Code that executes after component creation
-        function startupFcn(app, callingApp, selectedFileIndexes)
+        function startupFcn(app, mainApp, callingApp, context, index)
 
             try
-                appEngine.boot(app, app.Role, callingApp.mainApp, callingApp)
+                appEngine.boot(app, app.Role, mainApp, callingApp)
 
-                app.projectData = callingApp.mainApp.projectData;
-                app.measData = callingApp.measData;
-                app.selectedFileIndexes = selectedFileIndexes;
-    
-                jsBackDoor_Customizations(app)
+                app.inputArgs    = struct('context', context, 'index', index);
+                app.projectData  = mainApp.projectData;
+                app.measData     = callingApp.measData;
 
                 app.Filter.Items = [{''}; app.projectData.modules.MonitoringPlan.referenceData.states];
                 updateForm(app)
@@ -128,8 +127,9 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
 
                 case app.Add
                     if ~isempty(app.RefLocation.Value)
-                        manualLocations = union(getCurrentManualLocations(app.projectData, app.measData(app.selectedFileIndexes)), app.RefLocation.Value);
-                        addManualLocations(app.projectData, app.measData(app.selectedFileIndexes), manualLocations);
+                        index = app.inputArgs.index;
+                        manualLocations = union(getCurrentManualLocations(app.projectData, app.measData(index)), app.RefLocation.Value);
+                        addManualLocations(app.projectData, app.measData(index), manualLocations);
                         
                         updateForm(app)
                         updateLayout(app, 'AddedLocation')
@@ -139,8 +139,9 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
 
                 case app.Delete
                     if ~isempty(app.Location.Value)
-                        manualLocations = setdiff(getCurrentManualLocations(app.projectData, app.measData(app.selectedFileIndexes)), app.Location.Value);
-                        addManualLocations(app.projectData, app.measData(app.selectedFileIndexes), manualLocations);
+                        index = app.inputArgs.index;
+                        manualLocations = setdiff(getCurrentManualLocations(app.projectData, app.measData(indexs)), app.Location.Value);
+                        addManualLocations(app.projectData, app.measData(index), manualLocations);
                         
                         updateForm(app)
                         updateLayout(app, 'DeletedLocation')

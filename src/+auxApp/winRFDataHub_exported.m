@@ -189,7 +189,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
     methods (Access = public)
         %-----------------------------------------------------------------%
-        function ipcSecundaryJSEventsHandler(app, event)
+        function ipcSecondaryJSEventsHandler(app, event)
             try
                 switch event.HTMLEventName
                     case 'renderer'
