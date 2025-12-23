@@ -4,7 +4,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
     properties (Access = public)
         UIFigure                 matlab.ui.Figure
         GridLayout               matlab.ui.container.GridLayout
-        MenuGrid                 matlab.ui.container.GridLayout
+        NavBar                   matlab.ui.container.GridLayout
         AppInfo                  matlab.ui.control.Image
         FigurePosition           matlab.ui.control.Image
         DataHubLamp              matlab.ui.control.Image
@@ -466,7 +466,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function initializeUIComponents(app)
-            app.tabGroupController = ui.TabNavigator(app.MenuGrid, app.TabGroup, app.progressDialog, @app.applyJSCustomizations, []);
+            app.tabGroupController = ui.TabNavigator(app.NavBar, app.TabGroup, app.progressDialog, @app.applyJSCustomizations, []);
             addComponent(app.tabGroupController, "Built-in", "",                          app.Tab1Button, "AlwaysOn", struct('On', 'OpenFile_32Yellow.png',      'Off', 'OpenFile_32White.png'),      matlab.graphics.GraphicsPlaceholder, 1)
             addComponent(app.tabGroupController, "External", "auxApp.winMonitoringPlan",  app.Tab2Button, "AlwaysOn", struct('On', 'Detection_32Yellow.png',     'Off', 'Detection_32White.png'),     app.Tab1Button,                    2)
             addComponent(app.tabGroupController, "External", "auxApp.winExternalRequest", app.Tab3Button, "AlwaysOn", struct('On', 'exceptionList_32Yellow.png', 'Off', 'exceptionList_32White.png'), app.Tab1Button,                    3)
@@ -1237,26 +1237,26 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab5_Config.AutoResizeChildren = 'off';
             app.Tab5_Config.Title = 'CONFIG';
 
-            % Create MenuGrid
-            app.MenuGrid = uigridlayout(app.GridLayout);
-            app.MenuGrid.ColumnWidth = {22, 74, '1x', 34, 5, 34, 34, 5, 34, 34, '1x', 20, 20, 1, 20, 20};
-            app.MenuGrid.RowHeight = {5, 7, 20, 7, 5};
-            app.MenuGrid.ColumnSpacing = 5;
-            app.MenuGrid.RowSpacing = 0;
-            app.MenuGrid.Padding = [10 5 5 5];
-            app.MenuGrid.Tag = 'COLORLOCKED';
-            app.MenuGrid.Layout.Row = 1;
-            app.MenuGrid.Layout.Column = 1;
-            app.MenuGrid.BackgroundColor = [0.2 0.2 0.2];
+            % Create NavBar
+            app.NavBar = uigridlayout(app.GridLayout);
+            app.NavBar.ColumnWidth = {22, 74, '1x', 34, 5, 34, 34, 5, 34, 34, '1x', 20, 20, 1, 20, 20};
+            app.NavBar.RowHeight = {5, 7, 20, 7, 5};
+            app.NavBar.ColumnSpacing = 5;
+            app.NavBar.RowSpacing = 0;
+            app.NavBar.Padding = [10 5 5 5];
+            app.NavBar.Tag = 'COLORLOCKED';
+            app.NavBar.Layout.Row = 1;
+            app.NavBar.Layout.Column = 1;
+            app.NavBar.BackgroundColor = [0.2 0.2 0.2];
 
             % Create AppIcon
-            app.AppIcon = uiimage(app.MenuGrid);
+            app.AppIcon = uiimage(app.NavBar);
             app.AppIcon.Layout.Row = [1 5];
             app.AppIcon.Layout.Column = 1;
             app.AppIcon.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'icon_48.png');
 
             % Create AppName
-            app.AppName = uilabel(app.MenuGrid);
+            app.AppName = uilabel(app.NavBar);
             app.AppName.WordWrap = 'on';
             app.AppName.FontSize = 11;
             app.AppName.FontColor = [1 1 1];
@@ -1266,7 +1266,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.AppName.Text = {'monitorRNI v. 1.0.0'; '<font style="font-size: 9px;">R2024a</font>'};
 
             % Create Tab1Button
-            app.Tab1Button = uibutton(app.MenuGrid, 'state');
+            app.Tab1Button = uibutton(app.NavBar, 'state');
             app.Tab1Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
             app.Tab1Button.Tag = 'FILE';
             app.Tab1Button.Tooltip = {'Leitura de arquivos'};
@@ -1280,7 +1280,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab1Button.Value = true;
 
             % Create ButtonsSeparator1
-            app.ButtonsSeparator1 = uiimage(app.MenuGrid);
+            app.ButtonsSeparator1 = uiimage(app.NavBar);
             app.ButtonsSeparator1.ScaleMethod = 'none';
             app.ButtonsSeparator1.Enable = 'off';
             app.ButtonsSeparator1.Layout.Row = [2 4];
@@ -1289,7 +1289,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.ButtonsSeparator1.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV_White.svg');
 
             % Create Tab2Button
-            app.Tab2Button = uibutton(app.MenuGrid, 'state');
+            app.Tab2Button = uibutton(app.NavBar, 'state');
             app.Tab2Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
             app.Tab2Button.Tag = 'MONITORINGPLAN';
             app.Tab2Button.Tooltip = {'PM-RNI'};
@@ -1302,7 +1302,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab2Button.Layout.Column = 6;
 
             % Create Tab3Button
-            app.Tab3Button = uibutton(app.MenuGrid, 'state');
+            app.Tab3Button = uibutton(app.NavBar, 'state');
             app.Tab3Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
             app.Tab3Button.Tag = 'EXTERNALREQUEST';
             app.Tab3Button.Tooltip = {'Demanda externa'};
@@ -1315,7 +1315,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab3Button.Layout.Column = 7;
 
             % Create ButtonsSeparator2
-            app.ButtonsSeparator2 = uiimage(app.MenuGrid);
+            app.ButtonsSeparator2 = uiimage(app.NavBar);
             app.ButtonsSeparator2.ScaleMethod = 'none';
             app.ButtonsSeparator2.Enable = 'off';
             app.ButtonsSeparator2.Layout.Row = [2 4];
@@ -1324,7 +1324,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.ButtonsSeparator2.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV_White.svg');
 
             % Create Tab4Button
-            app.Tab4Button = uibutton(app.MenuGrid, 'state');
+            app.Tab4Button = uibutton(app.NavBar, 'state');
             app.Tab4Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
             app.Tab4Button.Tag = 'RFDATAHUB';
             app.Tab4Button.Tooltip = {'RFDataHub'};
@@ -1337,7 +1337,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab4Button.Layout.Column = 9;
 
             % Create Tab5Button
-            app.Tab5Button = uibutton(app.MenuGrid, 'state');
+            app.Tab5Button = uibutton(app.NavBar, 'state');
             app.Tab5Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
             app.Tab5Button.Tag = 'CONFIG';
             app.Tab5Button.Tooltip = {'Configurações gerais'};
@@ -1350,12 +1350,12 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab5Button.Layout.Column = 10;
 
             % Create jsBackDoor
-            app.jsBackDoor = uihtml(app.MenuGrid);
+            app.jsBackDoor = uihtml(app.NavBar);
             app.jsBackDoor.Layout.Row = 3;
             app.jsBackDoor.Layout.Column = 12;
 
             % Create DataHubLamp
-            app.DataHubLamp = uiimage(app.MenuGrid);
+            app.DataHubLamp = uiimage(app.NavBar);
             app.DataHubLamp.Visible = 'off';
             app.DataHubLamp.Tooltip = {'Pendente mapear o Sharepoint'};
             app.DataHubLamp.Layout.Row = 3;
@@ -1363,7 +1363,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.DataHubLamp.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'red-circle-blink.gif');
 
             % Create FigurePosition
-            app.FigurePosition = uiimage(app.MenuGrid);
+            app.FigurePosition = uiimage(app.NavBar);
             app.FigurePosition.ImageClickedFcn = createCallbackFcn(app, @menuImageClicked, true);
             app.FigurePosition.Visible = 'off';
             app.FigurePosition.Layout.Row = 3;
@@ -1371,7 +1371,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.FigurePosition.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'layout1_32White.png');
 
             % Create AppInfo
-            app.AppInfo = uiimage(app.MenuGrid);
+            app.AppInfo = uiimage(app.NavBar);
             app.AppInfo.ImageClickedFcn = createCallbackFcn(app, @menuImageClicked, true);
             app.AppInfo.Layout.Row = 3;
             app.AppInfo.Layout.Column = 16;
