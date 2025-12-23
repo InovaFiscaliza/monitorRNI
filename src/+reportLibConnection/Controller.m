@@ -52,7 +52,7 @@ classdef (Abstract) Controller
             end
 
             [projectFolder, ...
-             programDataFolder] = appUtil.Path(class.Constants.appName, app.rootFolder);
+             programDataFolder] = appEngine.util.Path(class.Constants.appName, app.rootFolder);
 
             issueId    = num2str(reportSettings.issue);
             docName    = reportSettings.model;
@@ -267,7 +267,7 @@ classdef (Abstract) Controller
             % navegador. Por outro lado, em sendo a versão "Definitiva",
             % salva-se o arquivo ZIP em pasta local.
             %-------------------------------------------------------------%
-            [baseFullFileName, baseFileName] = appUtil.DefaultFileName(generalSettings.fileFolder.tempPath, 'monitorRNI_FinalReport', issueId);
+            [baseFullFileName, baseFileName] = appEngine.util.DefaultFileName(generalSettings.fileFolder.tempPath, 'monitorRNI_FinalReport', issueId);
             HTMLFile = [baseFullFileName '.html'];
             
             writematrix(HTMLDocContent, HTMLFile, 'QuoteStrings', 'none', 'FileType', 'text', 'Encoding', docVersion.encoding)
@@ -301,7 +301,7 @@ classdef (Abstract) Controller
                         error(msgError)
                     end
                     
-                    ZIPFile  = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', {'*.zip', 'monitorRNI (*.zip)'}, fullfile(generalSettings.fileFolder.userPath, [baseFileName '.zip']));
+                    ZIPFile  = ui.Dialog(app.UIFigure, 'uiputfile', '', {'*.zip', 'monitorRNI (*.zip)'}, fullfile(generalSettings.fileFolder.userPath, [baseFileName '.zip']));
                     if isempty(ZIPFile)
                         return
                     end                    

@@ -59,7 +59,7 @@ function varargout = compile(compilationType, rootCompiledFolder, matlabRuntimeF
 
     % Atualiza base de dados, caso necessário.
     RFDataHubOriginalFile = fullfile(fileparts(initFolder), 'src', 'config', 'DataBase', 'RFDataHub.mat');
-    RFDataHubEditedFile   = fullfile(fullfile(ccTools.fcn.OperationSystem('programData'), 'ANATEL', appName), 'DataBase', 'RFDataHub.mat');
+    RFDataHubEditedFile   = fullfile(fullfile(appEngine.util.OperationSystem('programData'), 'ANATEL', appName), 'DataBase', 'RFDataHub.mat');
     
     load(RFDataHubOriginalFile, 'RFDataHub_info')
     originalReleaseDate   = datetime(RFDataHub_info.ReleaseDate, 'InputFormat', 'dd/MM/yyyy HH:mm:ss');

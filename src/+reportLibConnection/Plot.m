@@ -128,7 +128,7 @@ classdef (Abstract) Plot
             drawnow
 
             % Espera renderizar e salva a imagem...
-            defaultFilename = appUtil.DefaultFileName(generalSettings.fileFolder.tempPath, class.Constants.appName, reportInfo.Function.var_Issue);
+            defaultFilename = appEngine.util.DefaultFileName(generalSettings.fileFolder.tempPath, class.Constants.appName, reportInfo.Function.var_Issue);
             imgFileName     = sprintf('%s.%s', defaultFilename, generalSettings.Report.Image.Format);
             if ~ismember(reportInfo.Model.Version, {'final', 'Definitiva'})
                 imgFileName = replace(imgFileName, 'Image', '~Image');

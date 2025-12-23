@@ -1,7 +1,7 @@
 function [stationTable, referenceData] = MonitoringPlan(appName, rootFolder, generalSettings)
     
     [projectFolder, ...
-     programDataFolder] = appUtil.Path(appName, rootFolder);
+     programDataFolder] = appEngine.util.Path(appName, rootFolder);
 
     projectFilePath     = fullfile(projectFolder,     'DataBase', [generalSettings.MonitoringPlan.ReferenceFile '.mat']);
     programDataFilePath = fullfile(programDataFolder, 'DataBase', [generalSettings.MonitoringPlan.ReferenceFile '.mat']);

@@ -34,7 +34,7 @@ classdef (Abstract) HtmlTextGenerator
                 case {'MATLABEnvironment', 'desktopStandaloneApp'}
                     appMode = 'desktopApp';        
                 case 'webApp'
-                    computerName = appUtil.OperationSystem('computerName');
+                    computerName = appEngine.util.OperationSystem('computerName');
                     if strcmpi(computerName, appGeneral.computerName.webServer)
                         appMode = 'webServer';
                     else
@@ -160,7 +160,7 @@ classdef (Abstract) HtmlTextGenerator
                 serviceIDs     = int16(str2double(extractBefore(serviceOptions, '-')));
                 id2nameTable   = table(serviceIDs, serviceOptions, 'VariableNames', {'ID', 'Serviço'});
             end
-            stationService = fiscalizaGUI.serviceMapping(stationInfo.Service);
+            stationService = ws.eFiscaliza.serviceMapping(stationInfo.Service);
         
             [~, idxService] = ismember(stationInfo.Service, id2nameTable.ID);
             if idxService

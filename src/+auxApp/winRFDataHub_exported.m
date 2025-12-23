@@ -1541,7 +1541,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                             URL = char(app.rfDataHub.URL(idxRFDataHub));
                             web(URL, '-new')
                         otherwise
-                            appEngine.utilOperationSystem('openFile', app.chReportHTML.HTMLSource)
+                            appEngine.util.OperationSystem('openFile', app.chReportHTML.HTMLSource)
                     end                    
                     Toolbar_InteractionImageClicked(app, struct('Source', app.tool_PDFButton))
             end
