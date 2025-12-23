@@ -4,22 +4,20 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
     properties (Access = public)
         UIFigure                 matlab.ui.Figure
         GridLayout               matlab.ui.container.GridLayout
-        popupContainerGrid       matlab.ui.container.GridLayout
-        SplashScreen             matlab.ui.control.Image
-        menu_Grid                matlab.ui.container.GridLayout
-        jsBackDoor               matlab.ui.control.HTML
-        DataHubLamp              matlab.ui.control.Image
-        FigurePosition           matlab.ui.control.Image
+        MenuGrid                 matlab.ui.container.GridLayout
         AppInfo                  matlab.ui.control.Image
-        menu_AppName             matlab.ui.control.Label
-        menu_AppIcon             matlab.ui.control.Image
-        menu_Button5             matlab.ui.control.StateButton
-        menu_Button4             matlab.ui.control.StateButton
-        menu_Separator2          matlab.ui.control.Image
-        menu_Button3             matlab.ui.control.StateButton
-        menu_Button2             matlab.ui.control.StateButton
-        menu_Separator1          matlab.ui.control.Image
-        menu_Button1             matlab.ui.control.StateButton
+        FigurePosition           matlab.ui.control.Image
+        DataHubLamp              matlab.ui.control.Image
+        jsBackDoor               matlab.ui.control.HTML
+        Tab5Button               matlab.ui.control.StateButton
+        Tab4Button               matlab.ui.control.StateButton
+        ButtonsSeparator2        matlab.ui.control.Image
+        Tab3Button               matlab.ui.control.StateButton
+        Tab2Button               matlab.ui.control.StateButton
+        ButtonsSeparator1        matlab.ui.control.Image
+        Tab1Button               matlab.ui.control.StateButton
+        AppName                  matlab.ui.control.Label
+        AppIcon                  matlab.ui.control.Image
         TabGroup                 matlab.ui.container.TabGroup
         Tab1_File                matlab.ui.container.Tab
         file_Grid                matlab.ui.container.GridLayout
@@ -39,57 +37,36 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         Tab3_ExternalRequest     matlab.ui.container.Tab
         Tab4_RFDataHub           matlab.ui.container.Tab
         Tab5_Config              matlab.ui.container.Tab
-        file_ContextMenu         matlab.ui.container.ContextMenu
-        file_TreeNodeDelete      matlab.ui.container.Menu
+        ContextMenu              matlab.ui.container.ContextMenu
+        contextmenu_del          matlab.ui.container.Menu
     end
 
     
-    properties (Access = public)
+    properties (Access = private)
         %-----------------------------------------------------------------%
-        % PROPRIEDADES COMUNS A TODOS OS APPS
+        Role = 'mainApp'
+    end
+
+
+    properties (Access = public)
         %-----------------------------------------------------------------%
         General
         General_I
 
         rootFolder
-
-        % Essa propriedade registra o tipo de execução da aplicação, podendo
-        % ser: 'built-in', 'desktopApp' ou 'webApp'.
-        executionMode
-        
-        % A função do timer é executada uma única vez após a renderização
-        % da figura, lendo arquivos de configuração, iniciando modo de operação
-        % paralelo etc. A ideia é deixar o MATLAB focar apenas na criação dos 
-        % componentes essenciais da GUI (especificados em "createComponents"), 
-        % mostrando a GUI para o usuário o mais rápido possível.
-        timerObj
-
-        % Controla a seleção da TabGroup a partir do menu.
         tabGroupController
         renderCount = 0
 
-        % Janela de progresso já criada no DOM. Dessa forma, controla-se 
-        % apenas a sua visibilidade - e tornando desnecessário criá-la a
-        % cada chamada (usando uiprogressdlg, por exemplo).
+        executionMode
         progressDialog
         popupContainer
 
-        % Objeto que possibilita integração com o eFiscaliza.
         eFiscalizaObj
 
-        %-----------------------------------------------------------------%
-        % PROPRIEDADES ESPECÍFICAS
-        %-----------------------------------------------------------------%
         projectData
-
         rfDataHub
         rfDataHubLOG
         rfDataHubSummary
-
-        % Instância da classe model.measData contendo a organização da
-        % informação lida dos arquivos de medida. O cacheData armazena tudo
-        % o que foi lido, e o measData apenas aquilo que consta na lista de
-        % arquivos.
         cacheData = model.measData.empty
         measData  = model.measData.empty
     end
@@ -110,66 +87,40 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         %   comunicação entre apps secundários e, também, redirecionando os 
         %   eventos JS quando o app secundário é executado em modo DOCK (e, 
         %   por essa razão, usa o "jsBackDoor" do app principal).
+        %
+        % • ipcMainMatlabOpenPopupApp
+        %   Abre um app secundário como popup, no mainApp.
         %-----------------------------------------------------------------%
         function ipcMainJSEventsHandler(app, event)
             try
                 switch event.HTMLEventName
-                    % JSBACKDOOR (compCustomization.js)
+                    % MATLAB-JS BRIDGE (matlabJSBridge.js)
                     case 'renderer'
-                        if ~app.renderCount
-                            startup_Controller(app)
-                        else
-                            % Esse fluxo será executado especificamente na
-                            % versão webapp, quando o navegador atualiza a
-                            % página (decorrente de F5 ou CTRL+F5).
+                        MFilePath   = fileparts(mfilename('fullpath'));
+                        parpoolFlag = false;
 
+                        if ~app.renderCount
+                            appEngine.activate(app, app.Role, MFilePath, parpoolFlag)
+                        else
                             selectedNodes = app.file_Tree.SelectedNodes;
                             if ~isempty(app.file_Tree.SelectedNodes)
                                 app.file_Tree.SelectedNodes = [];
                                 file_TreeSelectionChanged(app)
                             end
 
-                            if ~app.menu_Button1.Value
-                                app.menu_Button1.Value = true;                    
-                                menu_mainButtonPushed(app, struct('Source', app.menu_Button1, 'PreviousValue', false))
-                                drawnow
-                            end
-
-                            closeModule(app.tabGroupController, ["MONITORINGPLAN", "EXTERNALREQUEST", "RFDATAHUB", "CONFIG"], app.General)
-
-                            if ~isempty(app.popupContainer)
-                                delete(app.popupContainer)
-                            end
-    
-                            if ~isempty(app.AppInfo.Tag)
-                                app.AppInfo.Tag = '';
-                            end
-
-                            startup_Controller(app)
+                            appEngine.beforeReload(app, app.Role)
+                            appEngine.activate(app, app.Role, MFilePath, parpoolFlag)
 
                             if ~isempty(selectedNodes)
                                 app.file_Tree.SelectedNodes = selectedNodes;
                                 file_TreeSelectionChanged(app)
                             end
-
-                            app.progressDialog.Visible = 'hidden';
                         end
                         
                         app.renderCount = app.renderCount+1;
 
                     case 'unload'
                         closeFcn(app)
-
-                    case 'BackgroundColorTurnedInvisible'
-                        switch event.HTMLEventData
-                            case 'SplashScreen'
-                                if isvalid(app.popupContainerGrid)
-                                    delete(app.popupContainerGrid)
-                                end
-
-                            otherwise
-                                error('UnexpectedEvent')
-                        end
                     
                     case 'customForm'
                         switch event.HTMLEventData.uuid
@@ -200,7 +151,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 drawnow
 
             catch ME
-                appUtil.modalWindow(app.UIFigure, 'error', getReport(ME));
+                ui.Dialog(app.UIFigure, 'error', getReport(ME));
             end
         end
 
@@ -233,8 +184,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                     file_OpenFileButtonImageClicked(app)
 
                                     % Muda programaticamente o modo p/ ARQUIVOS.
-                                    app.menu_Button1.Value = true;                    
-                                    menu_mainButtonPushed(app, struct('Source', app.menu_Button1, 'PreviousValue', false))
+                                    app.Tab1Button.Value = true;                    
+                                    tabNavigatorButtonPushed(app, struct('Source', app.Tab1Button, 'PreviousValue', false))
                                 end
 
                             case 'RFDataHubUpdated'
@@ -309,7 +260,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 end
 
             catch ME
-                appUtil.modalWindow(app.UIFigure, 'error', ME.message);            
+                ui.Dialog(app.UIFigure, 'error', ME.message);            
             end
 
             % Caso um app auxiliar esteja em modo DOCK, o progressDialog do
@@ -333,20 +284,60 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 end
             end
         end
+
+        %-----------------------------------------------------------------%
+        function ipcMainMatlabOpenPopupApp(app, callingApp, auxAppName, varargin)
+            arguments
+                app
+                callingApp
+                auxAppName char {mustBeMember(auxAppName, {'ReportLib', 'ListOfLocation', 'StationInfo'})}
+            end
+
+            arguments (Repeating)
+                varargin 
+            end
+
+            switch auxAppName
+                case 'ReportLib'
+                    screenWidth  = 460;
+                    screenHeight = 308;
+                case 'ListOfLocation'
+                    screenWidth  = 540;
+                    screenHeight = 440;
+                case 'StationInfo'
+                    screenWidth  = 540;
+                    screenHeight = 440;
+            end
+
+            requestVisibilityChange(callingApp.progressDialog, 'visible', 'unlocked')
+            ui.PopUpContainer(callingApp, class.Constants.appName, screenWidth, screenHeight)
+
+            % Executa o app auxiliar.
+            inputArguments = [{app, callingApp}, varargin];
+            auxDockAppName = sprintf('auxApp.dock%s', auxAppName);
+            
+            if app.General.operationMode.Debug
+                eval(sprintf('auxApp.dock%s(inputArguments{:})', auxAppName))
+            else
+                eval([auxDockAppName '_exported(callingApp.popupContainer, inputArguments{:})'])
+                
+                callingApp.popupContainer.UserData.auxDockAppName = auxDockAppName;
+                callingApp.popupContainer.Parent.Visible = 1;
+            end
+
+            requestVisibilityChange(callingApp.progressDialog, 'hidden', 'unlocked')
+        end
     end
 
     
-    methods (Access = private)
+    methods (Access = public)
         %-----------------------------------------------------------------%
-        % JSBACKDOOR
-        %-----------------------------------------------------------------%
-        function jsBackDoor_Initialization(app)
-            app.jsBackDoor.HTMLSource           = appUtil.jsBackDoorHTMLSource();
-            app.jsBackDoor.HTMLEventReceivedFcn = @(~, evt)ipcMainJSEventsHandler(app, evt);
+        function navigateToTab(app, clickedButton)
+            tabNavigatorButtonPushed(app, struct('Source', clickedButton, 'PreviousValue', false))
         end
 
         %-----------------------------------------------------------------%
-        function jsBackDoor_AppCustomizations(app, tabIndex)
+        function applyJSCustomizations(app, tabIndex)
             persistent customizationStatus
             if isempty(customizationStatus)
                 customizationStatus = [false, false, false, false];
@@ -379,13 +370,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                             try
                                 sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', {struct('appName', appName, 'dataTag', elToModify{2}.UserData.id, 'listener', struct('componentName', 'mainApp.file_Tree', 'keyEvents', {{'Delete', 'Backspace'}}))});
                             catch ME
-                                appUtil.modalWindow(app.UIFigure, 'error', getReport(ME));
+                                ui.Dialog(app.UIFigure, 'error', getReport(ME));
                             end
 
                             try
                                 ui.TextView.startup(app.jsBackDoor, elToModify{3}, appName);
                             catch ME
-                                appUtil.modalWindow(app.UIFigure, 'error', getReport(ME));
+                                ui.Dialog(app.UIFigure, 'error', getReport(ME));
                             end
 
                         otherwise
@@ -395,84 +386,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     end
             end
         end
-    end
-
-
-    methods (Access = private)
-        %-----------------------------------------------------------------%
-        % INICIALIZAÇÃO DO APP
-        %-----------------------------------------------------------------%
-        function startup_timerCreation(app)
-            app.timerObj = timer("ExecutionMode", "fixedSpacing", ...
-                                 "StartDelay",    1.5,            ...
-                                 "Period",        .1,             ...
-                                 "TimerFcn",      @(~,~)app.startup_timerFcn);
-            start(app.timerObj)
-        end
 
         %-----------------------------------------------------------------%
-        function startup_timerFcn(app)
-            if ui.FigureRenderStatus(app.UIFigure)
-                stop(app.timerObj)
-                delete(app.timerObj)
-
-                jsBackDoor_Initialization(app)
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function startup_Controller(app)
-            drawnow
-
-            if ~app.renderCount
-                % Essa propriedade registra o tipo de execução da aplicação, podendo
-                % ser: 'built-in', 'desktopApp' ou 'webApp'.
-                app.executionMode  = appUtil.ExecutionMode(app.UIFigure);
-                if ~strcmp(app.executionMode, 'webApp')
-                    app.FigurePosition.Visible = 1;
-                    appUtil.winMinSize(app.UIFigure, class.Constants.windowMinSize)
-                end
-    
-                % Identifica o local deste arquivo .MLAPP, caso se trate das versões 
-                % "built-in" ou "webapp", ou do .EXE relacionado, caso se trate da
-                % versão executável (neste caso, o ctfroot indicará o local do .MLAPP).
-                appName = class.Constants.appName;
-                MFilePath = fileparts(mfilename('fullpath'));
-                app.rootFolder = appUtil.RootFolder(appName, MFilePath);
-
-                % Customizações...
-                jsBackDoor_AppCustomizations(app, 0)
-                jsBackDoor_AppCustomizations(app, 1)
-                pause(.100)
-
-                % Cria tela de progresso...
-                app.progressDialog = ui.ProgressDialog(app.jsBackDoor);
-    
-                startup_ConfigFileRead(app, appName, MFilePath)
-                startup_AppProperties(app)
-                startup_GUIComponents(app)
-    
-                % Por fim, exclui-se o splashscreen, um segundo após envio do comando 
-                % para que diminua a transparência do background.
-                sendEventToHTMLSource(app.jsBackDoor, 'turningBackgroundColorInvisible', struct('componentName', 'SplashScreen', 'componentDataTag', struct(app.SplashScreen).Controller.ViewModel.Id));
-                drawnow
-            
-                pause(1)
-                delete(app.popupContainerGrid)
-
-            else
-                jsBackDoor_AppCustomizations(app, 0)
-                jsBackDoor_AppCustomizations(app, 1)
-                pause(.100)
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function startup_ConfigFileRead(app, appName, MFilePath)
+        function loadConfigurationFile(app, appName, MFilePath)
             % "GeneralSettings.json"
-            [app.General_I, msgWarning] = appUtil.generalSettingsLoad(appName, app.rootFolder);
+            [app.General_I, msgWarning] = appEngine.util.generalSettingsLoad(appName, app.rootFolder);
             if ~isempty(msgWarning)
-                appUtil.modalWindow(app.UIFigure, 'error', msgWarning);
+                ui.Dialog(app.UIFigure, 'error', msgWarning);
             end
 
             % Para criação de arquivos temporários, cria-se uma pasta da 
@@ -507,7 +427,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                 otherwise    
                     % Resgata a pasta de trabalho do usuário (configurável).
-                    userPaths = appUtil.UserPaths(app.General_I.fileFolder.userPath);
+                    userPaths = appEngine.util.UserPaths(app.General_I.fileFolder.userPath);
                     app.General_I.fileFolder.userPath = userPaths{end};
 
                     switch app.executionMode
@@ -532,7 +452,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function startup_AppProperties(app)
+        function initializeAppProperties(app)
             % RFDataHub
             global RFDataHub
             global RFDataHubLog
@@ -551,19 +471,22 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function startup_GUIComponents(app)
-            % Cria o objeto que conecta o TabGroup com o GraphicMenu.
-            app.tabGroupController = tabGroupGraphicMenu(app.menu_Grid, app.TabGroup, app.progressDialog, @app.jsBackDoor_AppCustomizations, '');
+        function initializeUIComponents(app)
+            app.tabGroupController = ui.TabNavigator(app.MenuGrid, app.TabGroup, app.progressDialog, @app.applyJSCustomizations, []);
+            addComponent(app.tabGroupController, "Built-in", "",                          app.Tab1Button, "AlwaysOn", struct('On', 'OpenFile_32Yellow.png',      'Off', 'OpenFile_32White.png'),      matlab.graphics.GraphicsPlaceholder, 1)
+            addComponent(app.tabGroupController, "External", "auxApp.winMonitoringPlan",  app.Tab2Button, "AlwaysOn", struct('On', 'Detection_32Yellow.png',     'Off', 'Detection_32White.png'),     app.Tab1Button,                    2)
+            addComponent(app.tabGroupController, "External", "auxApp.winExternalRequest", app.Tab3Button, "AlwaysOn", struct('On', 'exceptionList_32Yellow.png', 'Off', 'exceptionList_32White.png'), app.Tab1Button,                    3)
+            addComponent(app.tabGroupController, "External", "auxApp.winRFDataHub",       app.Tab4Button, "AlwaysOn", struct('On', 'mosaic_32Yellow.png',        'Off', 'mosaic_32White.png'),        app.Tab1Button,                    4)
+            addComponent(app.tabGroupController, "External", "auxApp.winConfig",          app.Tab5Button, "AlwaysOn", struct('On', 'Settings_36Yellow.png',      'Off', 'Settings_36White.png'),      app.Tab1Button,                    5)
 
-            addComponent(app.tabGroupController, "Built-in", "",                          app.menu_Button1, "AlwaysOn", struct('On', 'OpenFile_32Yellow.png',      'Off', 'OpenFile_32White.png'),      matlab.graphics.GraphicsPlaceholder, 1)
-            addComponent(app.tabGroupController, "External", "auxApp.winMonitoringPlan",  app.menu_Button2, "AlwaysOn", struct('On', 'Detection_32Yellow.png',     'Off', 'Detection_32White.png'),     app.menu_Button1,                    2)
-            addComponent(app.tabGroupController, "External", "auxApp.winExternalRequest", app.menu_Button3, "AlwaysOn", struct('On', 'exceptionList_32Yellow.png', 'Off', 'exceptionList_32White.png'), app.menu_Button1,                    3)
-            addComponent(app.tabGroupController, "External", "auxApp.winRFDataHub",       app.menu_Button4, "AlwaysOn", struct('On', 'mosaic_32Yellow.png',        'Off', 'mosaic_32White.png'),        app.menu_Button1,                    4)
-            addComponent(app.tabGroupController, "External", "auxApp.winConfig",          app.menu_Button5, "AlwaysOn", struct('On', 'Settings_36Yellow.png',      'Off', 'Settings_36White.png'),      app.menu_Button1,                    5)
+            addStyle(app.file_Tree, uistyle('Interpreter', 'html'))
+        end
 
+
+        %-----------------------------------------------------------------%
+        function applyInitialLayout(app)
             DataHubWarningLamp(app)
             app.file_FileSortMethod.Value = app.General.File.sortMethod;
-            addStyle(app.file_Tree, uistyle('Interpreter', 'html'))
         end
 
         %-----------------------------------------------------------------%
@@ -637,7 +560,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                         locationTreeNode = uitreenode(app.file_Tree, 'Text', location, ...
                                                                      'NodeData', locationIndexes, ...
-                                                                     'ContextMenu', app.file_ContextMenu);
+                                                                     'ContextMenu', app.ContextMenu);
 
                         for jj = locationIndexes
                             treeNode = file_createTreeElements(app, jj, locationTreeNode, 'LOCATION');
@@ -694,7 +617,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             treeText = sprintf('%s  - ⌛%s  -  📐%s%s', treeNodePreffix, string(taskEnd-taskBegin), sprintf('[%.1f - %.1f] V/m', currentMeasData.FieldValueLimits(:)), mergeStatusIcon);
             treeNode = uitreenode(treeNodeParent, 'Text', treeText, ...
                                                   'NodeData', index, ...
-                                                  'ContextMenu', app.file_ContextMenu);
+                                                  'ContextMenu', app.ContextMenu);
         end
 
         %-----------------------------------------------------------------%
@@ -710,7 +633,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.General_I.fileFolder.lastVisited = filePath;
             app.General.fileFolder.lastVisited   = filePath;
 
-            appUtil.generalSettingsSave(class.Constants.appName, app.rootFolder, app.General_I, app.executionMode)
+            appEngine.util.generalSettingsSave(class.Constants.appName, app.rootFolder, app.General_I, app.executionMode)
         end
     end
 
@@ -817,7 +740,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 modalWindowMessage  = ME.message;
             end
 
-            appUtil.modalWindow(app.UIFigure, modalWindowIcon, modalWindowMessage);
+            ui.Dialog(app.UIFigure, modalWindowIcon, modalWindowMessage);
             app.progressDialog.Visible = 'hidden';
         end
 
@@ -857,7 +780,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                         end
                     end
                 catch ME
-                    appUtil.modalWindow(app.UIFigure, 'error', getReport(ME))
+                    ui.Dialog(app.UIFigure, 'error', getReport(ME))
                 end
             end
         end
@@ -871,22 +794,9 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         function startupFcn(app, mainapp)
             
             try
-                % WARNING MESSAGES
-                appUtil.disablingWarningMessages()
-
-                % <GUI>
-                app.popupContainerGrid.Layout.Row = [1,2];
-                app.GridLayout.RowHeight(end) = [];
-
-                app.menu_AppName.Text = sprintf('%s v. %s\n<font style="font-size: 9px;">%s</font>', ...
-                    class.Constants.appName, class.Constants.appVersion, class.Constants.appRelease);
-                % </GUI>
-
-                appUtil.winPosition(app.UIFigure)
-                startup_timerCreation(app)
-
+                appEngine.boot(app, app.Role)
             catch ME
-                appUtil.modalWindow(app.UIFigure, 'error', getReport(ME), 'CloseFcn', @(~,~)closeFcn(app));
+                ui.Dialog(app.UIFigure, 'error', getReport(ME), 'CloseFcn', @(~,~)closeFcn(app));
             end
 
         end
@@ -901,21 +811,21 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             if ~strcmp(app.executionMode, 'webApp') && ~isempty(app.measData)
                 msgQuestion   = 'Deseja fechar o aplicativo?';
-                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 1, 2);
+                userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 1, 2);
                 if userSelection == "Não"
                     return
                 end
             end
 
             % Aspectos gerais (comum em todos os apps):
-            appUtil.beforeDeleteApp(app.progressDialog, app.General_I.fileFolder.tempPath, app.tabGroupController, app.executionMode)
+            appEngine.util.beforeDeleteApp(app.progressDialog, app.General_I.fileFolder.tempPath, app.tabGroupController, app.executionMode)
             delete(app)
             
         end
 
-        % Value changed function: menu_Button1, menu_Button2, 
-        % ...and 3 other components
-        function menu_mainButtonPushed(app, event)
+        % Value changed function: Tab1Button, Tab2Button, Tab3Button, 
+        % ...and 2 other components
+        function tabNavigatorButtonPushed(app, event)
 
             clickedButton  = event.Source;
             auxAppTag      = clickedButton.Tag;
@@ -926,22 +836,16 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         % Image clicked function: AppInfo, FigurePosition
-        function menu_ToolbarImageCliced(app, event)
+        function menuImageClicked(app, event)
             
             switch event.Source
                 case app.FigurePosition
                     app.UIFigure.Position(3:4) = class.Constants.windowSize;
-                    appUtil.winPosition(app.UIFigure)
+                    appEngine.util.setWindowPosition(app.UIFigure)
 
                 case app.AppInfo
-                    if isempty(app.AppInfo.Tag)
-                        app.progressDialog.Visible = 'visible';
-                        app.AppInfo.Tag = util.HtmlTextGenerator.AppInfo(app.General, app.rootFolder, app.executionMode, app.renderCount, "popup");
-                        app.progressDialog.Visible = 'hidden';
-                    end
-
-                    msgInfo = app.AppInfo.Tag;
-                    appUtil.modalWindow(app.UIFigure, 'info', msgInfo);
+                    appInfo = util.HtmlTextGenerator.AppInfo(app.General, app.rootFolder, app.executionMode, app.renderCount, "popup");
+                    ui.Dialog(app.UIFigure, 'info', appInfo);
             end
 
         end
@@ -972,7 +876,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             
         end
 
-        % Menu selected function: file_TreeNodeDelete
+        % Menu selected function: contextmenu_del
         function file_ContextMenu_delTreeNodeSelected(app, event)
             
             if ~isempty(app.file_Tree.SelectedNodes)
@@ -993,7 +897,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 app.General.operationMode.Simulation = false;
                 
                 [projectFolder, ...
-                 programDataFolder] = appUtil.Path(class.Constants.appName, app.rootFolder);
+                 programDataFolder] = appEngine.util.Path(class.Constants.appName, app.rootFolder);
                 simulationFolders   = {programDataFolder, projectFolder};
 
                 for ii = 1:numel(simulationFolders)
@@ -1010,7 +914,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                 if isempty(fileFullName)
                     msgWarning = 'Nenhum arquivo de simulação foi identificado.';
-                    appUtil.modalWindow(app.UIFigure, "warning", msgWarning);
+                    ui.Dialog(app.UIFigure, "warning", msgWarning);
                     return
                 end
 
@@ -1036,14 +940,14 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                             return
                         end
     
-                        d = appUtil.modalWindow(app.UIFigure, "progressdlg", "Em andamento...");
+                        d = ui.Dialog(app.UIFigure, "progressdlg", "Em andamento...");
                         [fileFullName, fileName] = util.getFilesFromFolder(filePath);
                 end
                 updateLastVisitedFolder(app, filePath)
             end
 
             if isempty(d)
-                d = appUtil.modalWindow(app.UIFigure, "progressdlg", "Em andamento...");
+                d = ui.Dialog(app.UIFigure, "progressdlg", "Em andamento...");
             end
 
             filesInCache = {};
@@ -1086,7 +990,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             end
 
             if ~isempty(msgWarning)
-                appUtil.modalWindow(app.UIFigure, "warning", msgWarning);
+                ui.Dialog(app.UIFigure, "warning", msgWarning);
             end
             
             indexes = file_findSelectedNodeData(app);
@@ -1116,7 +1020,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             locationMergedStatus = any(arrayfun(@(x) ~strcmp(x.Location, x.Location_I), app.measData(indexes)));
             if locationMergedStatus
                 msgQuestion   = util.HtmlTextGenerator.MergedFiles(app.measData(indexes), 'MergedStatusOn');
-                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
+                userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
 
                 if userSelection == "Sim"
                     delLocationCache(app.projectData, app.measData, indexes)
@@ -1132,15 +1036,15 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             if numel(indexes) >= 2
                 locationList = unique({app.measData(indexes).Location});
                 if isscalar(locationList)
-                    appUtil.modalWindow(app.UIFigure, 'info', util.HtmlTextGenerator.MergedFiles(app.measData(indexes), 'ScalarLocation'));
+                    ui.Dialog(app.UIFigure, 'info', util.HtmlTextGenerator.MergedFiles(app.measData(indexes), 'ScalarLocation'));
                     return
                 elseif numel(locationList) > 3
-                    appUtil.modalWindow(app.UIFigure, 'info', util.HtmlTextGenerator.MergedFiles(app.measData(indexes), 'MoreThanThreeLocations'));
+                    ui.Dialog(app.UIFigure, 'info', util.HtmlTextGenerator.MergedFiles(app.measData(indexes), 'MoreThanThreeLocations'));
                     return
                 end
 
                 msgQuestion   = util.HtmlTextGenerator.MergedFiles(app.measData(indexes), 'FinalConfirmationBeforeEdition');
-                userSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', msgQuestion, [locationList, {'Cancelar'}], numel(locationList)+1, numel(locationList)+1);
+                userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, [locationList, {'Cancelar'}], numel(locationList)+1, numel(locationList)+1);
 
                 if userSelection == "Cancelar"
                     return
@@ -1176,7 +1080,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             % Create GridLayout
             app.GridLayout = uigridlayout(app.UIFigure);
             app.GridLayout.ColumnWidth = {'1x'};
-            app.GridLayout.RowHeight = {54, '1x', 44};
+            app.GridLayout.RowHeight = {54, '1x'};
             app.GridLayout.RowSpacing = 0;
             app.GridLayout.Padding = [0 0 0 0];
             app.GridLayout.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
@@ -1325,168 +1229,154 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab5_Config.AutoResizeChildren = 'off';
             app.Tab5_Config.Title = 'CONFIG';
 
-            % Create menu_Grid
-            app.menu_Grid = uigridlayout(app.GridLayout);
-            app.menu_Grid.ColumnWidth = {22, 74, '1x', 34, 5, 34, 34, 5, 34, 34, '1x', 20, 20, 1, 20, 20};
-            app.menu_Grid.RowHeight = {5, 7, 20, 7, 5};
-            app.menu_Grid.ColumnSpacing = 5;
-            app.menu_Grid.RowSpacing = 0;
-            app.menu_Grid.Padding = [10 5 5 5];
-            app.menu_Grid.Tag = 'COLORLOCKED';
-            app.menu_Grid.Layout.Row = 1;
-            app.menu_Grid.Layout.Column = 1;
-            app.menu_Grid.BackgroundColor = [0.2 0.2 0.2];
+            % Create MenuGrid
+            app.MenuGrid = uigridlayout(app.GridLayout);
+            app.MenuGrid.ColumnWidth = {22, 74, '1x', 34, 5, 34, 34, 5, 34, 34, '1x', 20, 20, 1, 20, 20};
+            app.MenuGrid.RowHeight = {5, 7, 20, 7, 5};
+            app.MenuGrid.ColumnSpacing = 5;
+            app.MenuGrid.RowSpacing = 0;
+            app.MenuGrid.Padding = [10 5 5 5];
+            app.MenuGrid.Tag = 'COLORLOCKED';
+            app.MenuGrid.Layout.Row = 1;
+            app.MenuGrid.Layout.Column = 1;
+            app.MenuGrid.BackgroundColor = [0.2 0.2 0.2];
 
-            % Create menu_Button1
-            app.menu_Button1 = uibutton(app.menu_Grid, 'state');
-            app.menu_Button1.ValueChangedFcn = createCallbackFcn(app, @menu_mainButtonPushed, true);
-            app.menu_Button1.Tag = 'FILE';
-            app.menu_Button1.Tooltip = {'Leitura de arquivos'};
-            app.menu_Button1.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'OpenFile_32Yellow.png');
-            app.menu_Button1.IconAlignment = 'top';
-            app.menu_Button1.Text = '';
-            app.menu_Button1.BackgroundColor = [0.2 0.2 0.2];
-            app.menu_Button1.FontSize = 11;
-            app.menu_Button1.Layout.Row = [2 4];
-            app.menu_Button1.Layout.Column = 4;
-            app.menu_Button1.Value = true;
+            % Create AppIcon
+            app.AppIcon = uiimage(app.MenuGrid);
+            app.AppIcon.Layout.Row = [1 5];
+            app.AppIcon.Layout.Column = 1;
+            app.AppIcon.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'icon_48.png');
 
-            % Create menu_Separator1
-            app.menu_Separator1 = uiimage(app.menu_Grid);
-            app.menu_Separator1.ScaleMethod = 'none';
-            app.menu_Separator1.Enable = 'off';
-            app.menu_Separator1.Layout.Row = [2 4];
-            app.menu_Separator1.Layout.Column = 5;
-            app.menu_Separator1.VerticalAlignment = 'bottom';
-            app.menu_Separator1.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV_White.svg');
+            % Create AppName
+            app.AppName = uilabel(app.MenuGrid);
+            app.AppName.WordWrap = 'on';
+            app.AppName.FontSize = 11;
+            app.AppName.FontColor = [1 1 1];
+            app.AppName.Layout.Row = [1 5];
+            app.AppName.Layout.Column = [2 3];
+            app.AppName.Interpreter = 'html';
+            app.AppName.Text = {'monitorRNI v. 1.0.0'; '<font style="font-size: 9px;">R2024a</font>'};
 
-            % Create menu_Button2
-            app.menu_Button2 = uibutton(app.menu_Grid, 'state');
-            app.menu_Button2.ValueChangedFcn = createCallbackFcn(app, @menu_mainButtonPushed, true);
-            app.menu_Button2.Tag = 'MONITORINGPLAN';
-            app.menu_Button2.Tooltip = {'PM-RNI'};
-            app.menu_Button2.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'Detection_32White.png');
-            app.menu_Button2.IconAlignment = 'right';
-            app.menu_Button2.Text = '';
-            app.menu_Button2.BackgroundColor = [0.2 0.2 0.2];
-            app.menu_Button2.FontSize = 11;
-            app.menu_Button2.Layout.Row = [2 4];
-            app.menu_Button2.Layout.Column = 6;
+            % Create Tab1Button
+            app.Tab1Button = uibutton(app.MenuGrid, 'state');
+            app.Tab1Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
+            app.Tab1Button.Tag = 'FILE';
+            app.Tab1Button.Tooltip = {'Leitura de arquivos'};
+            app.Tab1Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'OpenFile_32Yellow.png');
+            app.Tab1Button.IconAlignment = 'top';
+            app.Tab1Button.Text = '';
+            app.Tab1Button.BackgroundColor = [0.2 0.2 0.2];
+            app.Tab1Button.FontSize = 11;
+            app.Tab1Button.Layout.Row = [2 4];
+            app.Tab1Button.Layout.Column = 4;
+            app.Tab1Button.Value = true;
 
-            % Create menu_Button3
-            app.menu_Button3 = uibutton(app.menu_Grid, 'state');
-            app.menu_Button3.ValueChangedFcn = createCallbackFcn(app, @menu_mainButtonPushed, true);
-            app.menu_Button3.Tag = 'EXTERNALREQUEST';
-            app.menu_Button3.Tooltip = {'Demanda externa'};
-            app.menu_Button3.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'exceptionList_32White.png');
-            app.menu_Button3.IconAlignment = 'right';
-            app.menu_Button3.Text = '';
-            app.menu_Button3.BackgroundColor = [0.2 0.2 0.2];
-            app.menu_Button3.FontSize = 11;
-            app.menu_Button3.Layout.Row = [2 4];
-            app.menu_Button3.Layout.Column = 7;
+            % Create ButtonsSeparator1
+            app.ButtonsSeparator1 = uiimage(app.MenuGrid);
+            app.ButtonsSeparator1.ScaleMethod = 'none';
+            app.ButtonsSeparator1.Enable = 'off';
+            app.ButtonsSeparator1.Layout.Row = [2 4];
+            app.ButtonsSeparator1.Layout.Column = 5;
+            app.ButtonsSeparator1.VerticalAlignment = 'bottom';
+            app.ButtonsSeparator1.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV_White.svg');
 
-            % Create menu_Separator2
-            app.menu_Separator2 = uiimage(app.menu_Grid);
-            app.menu_Separator2.ScaleMethod = 'none';
-            app.menu_Separator2.Enable = 'off';
-            app.menu_Separator2.Layout.Row = [2 4];
-            app.menu_Separator2.Layout.Column = 8;
-            app.menu_Separator2.VerticalAlignment = 'bottom';
-            app.menu_Separator2.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV_White.svg');
+            % Create Tab2Button
+            app.Tab2Button = uibutton(app.MenuGrid, 'state');
+            app.Tab2Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
+            app.Tab2Button.Tag = 'MONITORINGPLAN';
+            app.Tab2Button.Tooltip = {'PM-RNI'};
+            app.Tab2Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'Detection_32White.png');
+            app.Tab2Button.IconAlignment = 'right';
+            app.Tab2Button.Text = '';
+            app.Tab2Button.BackgroundColor = [0.2 0.2 0.2];
+            app.Tab2Button.FontSize = 11;
+            app.Tab2Button.Layout.Row = [2 4];
+            app.Tab2Button.Layout.Column = 6;
 
-            % Create menu_Button4
-            app.menu_Button4 = uibutton(app.menu_Grid, 'state');
-            app.menu_Button4.ValueChangedFcn = createCallbackFcn(app, @menu_mainButtonPushed, true);
-            app.menu_Button4.Tag = 'RFDATAHUB';
-            app.menu_Button4.Tooltip = {'RFDataHub'};
-            app.menu_Button4.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'mosaic_32White.png');
-            app.menu_Button4.IconAlignment = 'right';
-            app.menu_Button4.Text = '';
-            app.menu_Button4.BackgroundColor = [0.2 0.2 0.2];
-            app.menu_Button4.FontSize = 11;
-            app.menu_Button4.Layout.Row = [2 4];
-            app.menu_Button4.Layout.Column = 9;
+            % Create Tab3Button
+            app.Tab3Button = uibutton(app.MenuGrid, 'state');
+            app.Tab3Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
+            app.Tab3Button.Tag = 'EXTERNALREQUEST';
+            app.Tab3Button.Tooltip = {'Demanda externa'};
+            app.Tab3Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'exceptionList_32White.png');
+            app.Tab3Button.IconAlignment = 'right';
+            app.Tab3Button.Text = '';
+            app.Tab3Button.BackgroundColor = [0.2 0.2 0.2];
+            app.Tab3Button.FontSize = 11;
+            app.Tab3Button.Layout.Row = [2 4];
+            app.Tab3Button.Layout.Column = 7;
 
-            % Create menu_Button5
-            app.menu_Button5 = uibutton(app.menu_Grid, 'state');
-            app.menu_Button5.ValueChangedFcn = createCallbackFcn(app, @menu_mainButtonPushed, true);
-            app.menu_Button5.Tag = 'CONFIG';
-            app.menu_Button5.Tooltip = {'Configurações gerais'};
-            app.menu_Button5.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'Settings_36White.png');
-            app.menu_Button5.IconAlignment = 'right';
-            app.menu_Button5.Text = '';
-            app.menu_Button5.BackgroundColor = [0.2 0.2 0.2];
-            app.menu_Button5.FontSize = 11;
-            app.menu_Button5.Layout.Row = [2 4];
-            app.menu_Button5.Layout.Column = 10;
+            % Create ButtonsSeparator2
+            app.ButtonsSeparator2 = uiimage(app.MenuGrid);
+            app.ButtonsSeparator2.ScaleMethod = 'none';
+            app.ButtonsSeparator2.Enable = 'off';
+            app.ButtonsSeparator2.Layout.Row = [2 4];
+            app.ButtonsSeparator2.Layout.Column = 8;
+            app.ButtonsSeparator2.VerticalAlignment = 'bottom';
+            app.ButtonsSeparator2.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV_White.svg');
 
-            % Create menu_AppIcon
-            app.menu_AppIcon = uiimage(app.menu_Grid);
-            app.menu_AppIcon.Layout.Row = [1 5];
-            app.menu_AppIcon.Layout.Column = 1;
-            app.menu_AppIcon.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'icon_48.png');
+            % Create Tab4Button
+            app.Tab4Button = uibutton(app.MenuGrid, 'state');
+            app.Tab4Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
+            app.Tab4Button.Tag = 'RFDATAHUB';
+            app.Tab4Button.Tooltip = {'RFDataHub'};
+            app.Tab4Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'mosaic_32White.png');
+            app.Tab4Button.IconAlignment = 'right';
+            app.Tab4Button.Text = '';
+            app.Tab4Button.BackgroundColor = [0.2 0.2 0.2];
+            app.Tab4Button.FontSize = 11;
+            app.Tab4Button.Layout.Row = [2 4];
+            app.Tab4Button.Layout.Column = 9;
 
-            % Create menu_AppName
-            app.menu_AppName = uilabel(app.menu_Grid);
-            app.menu_AppName.WordWrap = 'on';
-            app.menu_AppName.FontSize = 11;
-            app.menu_AppName.FontColor = [1 1 1];
-            app.menu_AppName.Layout.Row = [1 5];
-            app.menu_AppName.Layout.Column = [2 3];
-            app.menu_AppName.Interpreter = 'html';
-            app.menu_AppName.Text = {'monitorRNI v. 1.0.0'; '<font style="font-size: 9px;">R2024a</font>'};
+            % Create Tab5Button
+            app.Tab5Button = uibutton(app.MenuGrid, 'state');
+            app.Tab5Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
+            app.Tab5Button.Tag = 'CONFIG';
+            app.Tab5Button.Tooltip = {'Configurações gerais'};
+            app.Tab5Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'Settings_36White.png');
+            app.Tab5Button.IconAlignment = 'right';
+            app.Tab5Button.Text = '';
+            app.Tab5Button.BackgroundColor = [0.2 0.2 0.2];
+            app.Tab5Button.FontSize = 11;
+            app.Tab5Button.Layout.Row = [2 4];
+            app.Tab5Button.Layout.Column = 10;
 
-            % Create AppInfo
-            app.AppInfo = uiimage(app.menu_Grid);
-            app.AppInfo.ImageClickedFcn = createCallbackFcn(app, @menu_ToolbarImageCliced, true);
-            app.AppInfo.Layout.Row = 3;
-            app.AppInfo.Layout.Column = 16;
-            app.AppInfo.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'Dots_32White.png');
-
-            % Create FigurePosition
-            app.FigurePosition = uiimage(app.menu_Grid);
-            app.FigurePosition.ImageClickedFcn = createCallbackFcn(app, @menu_ToolbarImageCliced, true);
-            app.FigurePosition.Visible = 'off';
-            app.FigurePosition.Layout.Row = 3;
-            app.FigurePosition.Layout.Column = 15;
-            app.FigurePosition.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'layout1_32White.png');
+            % Create jsBackDoor
+            app.jsBackDoor = uihtml(app.MenuGrid);
+            app.jsBackDoor.Layout.Row = 3;
+            app.jsBackDoor.Layout.Column = 12;
 
             % Create DataHubLamp
-            app.DataHubLamp = uiimage(app.menu_Grid);
+            app.DataHubLamp = uiimage(app.MenuGrid);
             app.DataHubLamp.Visible = 'off';
             app.DataHubLamp.Tooltip = {'Pendente mapear o Sharepoint'};
             app.DataHubLamp.Layout.Row = 3;
             app.DataHubLamp.Layout.Column = [13 14];
             app.DataHubLamp.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'red-circle-blink.gif');
 
-            % Create jsBackDoor
-            app.jsBackDoor = uihtml(app.menu_Grid);
-            app.jsBackDoor.Layout.Row = 3;
-            app.jsBackDoor.Layout.Column = 12;
+            % Create FigurePosition
+            app.FigurePosition = uiimage(app.MenuGrid);
+            app.FigurePosition.ImageClickedFcn = createCallbackFcn(app, @menuImageClicked, true);
+            app.FigurePosition.Visible = 'off';
+            app.FigurePosition.Layout.Row = 3;
+            app.FigurePosition.Layout.Column = 15;
+            app.FigurePosition.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'layout1_32White.png');
 
-            % Create popupContainerGrid
-            app.popupContainerGrid = uigridlayout(app.GridLayout);
-            app.popupContainerGrid.ColumnWidth = {'1x', 880, '1x'};
-            app.popupContainerGrid.RowHeight = {'1x', 300, '1x'};
-            app.popupContainerGrid.Layout.Row = 3;
-            app.popupContainerGrid.Layout.Column = 1;
-            app.popupContainerGrid.BackgroundColor = [1 1 1];
+            % Create AppInfo
+            app.AppInfo = uiimage(app.MenuGrid);
+            app.AppInfo.ImageClickedFcn = createCallbackFcn(app, @menuImageClicked, true);
+            app.AppInfo.Layout.Row = 3;
+            app.AppInfo.Layout.Column = 16;
+            app.AppInfo.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'Dots_32White.png');
 
-            % Create SplashScreen
-            app.SplashScreen = uiimage(app.popupContainerGrid);
-            app.SplashScreen.Layout.Row = 2;
-            app.SplashScreen.Layout.Column = 2;
-            app.SplashScreen.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'SplashScreen.gif');
+            % Create ContextMenu
+            app.ContextMenu = uicontextmenu(app.UIFigure);
+            app.ContextMenu.Tag = 'winMonitorRNI';
 
-            % Create file_ContextMenu
-            app.file_ContextMenu = uicontextmenu(app.UIFigure);
-            app.file_ContextMenu.Tag = 'winMonitorRNI';
-
-            % Create file_TreeNodeDelete
-            app.file_TreeNodeDelete = uimenu(app.file_ContextMenu);
-            app.file_TreeNodeDelete.MenuSelectedFcn = createCallbackFcn(app, @file_ContextMenu_delTreeNodeSelected, true);
-            app.file_TreeNodeDelete.Text = '❌ Excluir';
+            % Create contextmenu_del
+            app.contextmenu_del = uimenu(app.ContextMenu);
+            app.contextmenu_del.MenuSelectedFcn = createCallbackFcn(app, @file_ContextMenu_delTreeNodeSelected, true);
+            app.contextmenu_del.Text = '❌ Excluir';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

@@ -30,13 +30,22 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
     
     properties (Access = private)
         %-----------------------------------------------------------------%
+        Role = 'secondaryDockApp'
+    end
+
+
+    properties (Access = private)
+        %-----------------------------------------------------------------%
         Container
         isDocked = true
-
-        mainApp     % winRNI
-        callingApp  % winMonitoringPlan | winMonitoringPlan_exported
+        mainApp
+        callingApp
         jsBackDoor
+    end
 
+
+    properties (Access = private)
+        %-----------------------------------------------------------------%
         projectData
     end
     
@@ -142,15 +151,19 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app, callingApp)
-            
-            app.mainApp     = callingApp.mainApp;
-            app.callingApp  = callingApp;
-            app.projectData = app.mainApp.projectData;
+                        
+            try
+                appEngine.boot(app, app.Role, callingApp.mainApp, callingApp)
 
-            app.jsBackDoor  = app.callingApp.jsBackDoor;
-            jsBackDoor_Customizations(app)
-            
-            initialValues(app)
+                app.inputArgs   = struct('context', context, 'index', index);
+                app.projectData = callingApp.mainApp.projectData;
+    
+                jsBackDoor_Customizations(app)
+                initialValues(app)
+                
+            catch ME
+                ui.Dialog(app.UIFigure, 'error', getReport(ME), 'CloseFcn', @(~,~)closeFcn(app));
+            end
             
         end
 

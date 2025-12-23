@@ -21,12 +21,21 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
     
     properties (Access = private)
         %-----------------------------------------------------------------%
+        Role = 'secondaryDockApp'
+    end
+
+
+    properties (Access = public)
+        %-----------------------------------------------------------------%
         Container
         isDocked = true
+        mainApp
+        callingApp
+    end
 
-        mainApp     % winRNI
-        callingApp  % winMonitoringPlan | winMonitoringPlan_exported
 
+    properties (Access = private)
+        %-----------------------------------------------------------------%
         projectData
         measData
         selectedFileIndexes
@@ -80,16 +89,22 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app, callingApp, selectedFileIndexes)
-            
-            app.mainApp     = callingApp.mainApp;
-            app.callingApp  = callingApp;
-            
-            app.projectData = callingApp.projectData;
-            app.measData    = callingApp.measData;
-            app.selectedFileIndexes = selectedFileIndexes;
 
-            app.Filter.Items = [{''}; app.projectData.modules.MonitoringPlan.referenceData.states];
-            updateForm(app)
+            try
+                appEngine.boot(app, app.Role, callingApp.mainApp, callingApp)
+
+                app.projectData = callingApp.mainApp.projectData;
+                app.measData = callingApp.measData;
+                app.selectedFileIndexes = selectedFileIndexes;
+    
+                jsBackDoor_Customizations(app)
+
+                app.Filter.Items = [{''}; app.projectData.modules.MonitoringPlan.referenceData.states];
+                updateForm(app)
+                
+            catch ME
+                ui.Dialog(app.UIFigure, 'error', getReport(ME), 'CloseFcn', @(~,~)closeFcn(app));
+            end
             
         end
 

@@ -58,37 +58,32 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
     end
 
     
+    properties (Access = private)
+        %-----------------------------------------------------------------%
+        Role = 'secondaryApp'
+    end
+
+
     properties (Access = public)
         %-----------------------------------------------------------------%
         Container
         isDocked = false
-
         mainApp
-        
-        % A função do timer é executada uma única vez após a renderização
-        % da figura, lendo arquivos de configuração, iniciando modo de operação
-        % paralelo etc. A ideia é deixar o MATLAB focar apenas na criação dos 
-        % componentes essenciais da GUI (especificados em "createComponents"), 
-        % mostrando a GUI para o usuário o mais rápido possível.
-        timerObj
         jsBackDoor
-
-        % Janela de progresso já criada no DOM. Dessa forma, controla-se 
-        % apenas a sua visibilidade - e tornando desnecessário criá-la a
-        % cada chamada (usando uiprogressdlg, por exemplo).
         progressDialog
         popupContainer
-        
-        %-----------------------------------------------------------------%
-        % ESPECIFICIDADES AUXAPP.WINMONITORINGPLAN
-        %-----------------------------------------------------------------%
+
         projectData
         measData
         measTable
 
-        % Handle do eixo e propriedade que armazena os limites automáticos
         UIAxes
-        restoreView = struct('ID', {}, 'xLim', {}, 'yLim', {}, 'cLim', {})
+        restoreView = struct( ...
+            'ID', {}, ...
+            'xLim', {}, ...
+            'yLim', {}, ...
+            'cLim', {} ...
+        )
     end
 
 
@@ -100,7 +95,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             try
                 switch event.HTMLEventName
                     case 'renderer'
-                        startup_Controller(app)
+                        appEngine.activate(app, app.Role)
 
                     case 'customForm'
                         switch event.HTMLEventData.uuid
@@ -116,7 +111,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 end
 
             catch ME
-                appUtil.modalWindow(app.UIFigure, 'error', ME.message);
+                ui.Dialog(app.UIFigure, 'error', ME.message);
             end
         end
 
@@ -235,24 +230,12 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 end
 
             catch ME
-                appUtil.modalWindow(app.UIFigure, 'error', ME.message);
+                ui.Dialog(app.UIFigure, 'error', ME.message);
             end
         end
-    end
-
-    
-    methods (Access = private)
-        %-----------------------------------------------------------------%
-        % INICIALIZAÇÃO
-        %-----------------------------------------------------------------%
-        function jsBackDoor_Initialization(app)
-            app.jsBackDoor = uihtml(app.UIFigure, "HTMLSource",           appUtil.jsBackDoorHTMLSource(),                 ...
-                                                  "HTMLEventReceivedFcn", @(~, evt)ipcSecundaryJSEventsHandler(app, evt), ...
-                                                  "Visible",              "off");
-        end
 
         %-----------------------------------------------------------------%
-        function jsBackDoor_Customizations(app, tabIndex)
+        function applyJSCustomizations(app, tabIndex)
             persistent customizationStatus
             if isempty(customizationStatus)
                 customizationStatus = [false, false];
@@ -321,52 +304,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     end
             end
         end
-    end
 
-
-    methods (Access = private)
         %-----------------------------------------------------------------%
-        % INICIALIZAÇÃO
-        %-----------------------------------------------------------------%
-        function startup_timerCreation(app)
-            app.timerObj = timer("ExecutionMode", "fixedSpacing", ...
-                                 "StartDelay",    1.5,            ...
-                                 "Period",        .1,             ...
-                                 "TimerFcn",      @(~,~)app.startup_timerFcn);
-            start(app.timerObj)
+        function initializeAppProperties(app)
+            % ...
         end
 
         %-----------------------------------------------------------------%
-        function startup_timerFcn(app)
-            if ui.FigureRenderStatus(app.UIFigure)
-                stop(app.timerObj)
-                delete(app.timerObj)
-
-                jsBackDoor_Initialization(app)
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function startup_Controller(app)
-            drawnow
-
-            jsBackDoor_Customizations(app, 0)
-            jsBackDoor_Customizations(app, 1)
-
-            % Define tamanho mínimo do app (não aplicável à versão webapp).
-            if ~strcmp(app.mainApp.executionMode, 'webApp') && ~app.isDocked
-                appUtil.winMinSize(app.UIFigure, class.Constants.windowMinSize)
-            end
-
-            app.progressDialog.Visible = 'visible';
-
-            startup_GUIComponents(app)
-
-            app.progressDialog.Visible = 'hidden';
-        end
-
-        %-----------------------------------------------------------------%
-        function startup_GUIComponents(app)
+        function initializeUIComponents(app)
             context = 'MonitoringPlan';
 
             if ~strcmp(app.mainApp.executionMode, 'webApp')
@@ -388,37 +333,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function menu_LayoutPopupApp(app, auxiliarApp, varargin)
-            arguments
-                app
-                auxiliarApp char {mustBeMember(auxiliarApp, {'ListOfLocation', 'StationInfo'})}
-            end
-
-            arguments (Repeating)
-                varargin 
-            end
-
-            % Inicialmente ajusta as dimensões do container.
-            switch auxiliarApp
-                case 'ListOfLocation'
-                    screenWidth  = 540;
-                    screenHeight = 440;
-                case 'StationInfo'
-                    screenWidth  = 540;
-                    screenHeight = 440;
-            end
-
-            ui.PopUpContainer(app, class.Constants.appName, screenWidth, screenHeight)
-
-            % Executa o app auxiliar.
-            inputArguments = [{app}, varargin];
-            
-            if app.mainApp.General.operationMode.Debug
-                eval(sprintf('auxApp.dock%s(inputArguments{:})', auxiliarApp))
-            else
-                eval(sprintf('auxApp.dock%s_exported(app.popupContainer, inputArguments{:})', auxiliarApp))
-                app.popupContainer.Parent.Visible = 1;
-            end            
+        function applyInitialLayout(app)
+            % ...
         end
     end
 
@@ -734,18 +650,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app, mainApp)
 
-            app.mainApp     = mainApp;
-            app.projectData = mainApp.projectData;
-            app.measData    = mainApp.measData;
+            try
+                app.projectData = mainApp.projectData;
+                app.measData    = mainApp.measData;
 
-            if app.isDocked
-                app.GridLayout.Padding(4)  = 30;
-                app.dockModuleGrid.Visible = 1;
-                app.jsBackDoor = mainApp.jsBackDoor;
-                startup_Controller(app)
-            else
-                appUtil.winPosition(app.UIFigure)
-                startup_timerCreation(app)
+                appEngine.boot(app, app.Role, mainApp)
+            catch ME
+                ui.Dialog(app.UIFigure, 'error', getReport(ME), 'CloseFcn', @(~,~)closeFcn(app));
             end
 
         end
@@ -827,7 +738,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function Toolbar_OpenPopUpEditionMode(app, event)
             
             if ~isempty(app.UITable.Selection)
-                menu_LayoutPopupApp(app, 'StationInfo')
+                context = 'MonitoringPlan';
+                ipcMainMatlabOpenPopupApp(app.mainApp, app, 'StationInfo', context)
             end
 
         end
@@ -842,7 +754,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 % <VALIDAÇÕES>
                 if numel(indexes) < numel(app.measData)
                     initialQuestion  = 'Deseja exportar arquivos de análise preliminar (.xlsx / .kml) que contemplem informações de TODAS as localidades de agrupamento, ou apenas da SELECIONADA?';
-                    initialSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', initialQuestion, {'Todas', 'Selecionada', 'Cancelar'}, 1, 3);
+                    initialSelection = ui.Dialog(app.UIFigure, 'uiconfirm', initialQuestion, {'Todas', 'Selecionada', 'Cancelar'}, 1, 3);
 
                     switch initialSelection
                         case 'Cancelar'
@@ -859,7 +771,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                        'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
                                        'o campo "Justificativa" e anotar os registros, caso aplicável.<br><br>Deseja ignorar ' ...
                                        'esse alerta, exportando PRÉVIA da análise?'];
-                    userSelection   = appUtil.modalWindow(app.UIFigure, 'uiconfirm', warningMessages, {'Sim', 'Não'}, 2, 2);
+                    userSelection   = ui.Dialog(app.UIFigure, 'uiconfirm', warningMessages, {'Sim', 'Não'}, 2, 2);
                     if userSelection == "Não"
                         return
                     end
@@ -870,13 +782,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 % (a) Solicita ao usuário nome do arquivo de saída...
                 appName       = class.Constants.appName;
                 nameFormatMap = {'*.zip', [appName, ' (*.zip)']};                
-                defaultName   = appUtil.DefaultFileName(app.mainApp.General.fileFolder.userPath, [appName '_Preview']);
-                fileZIP       = appUtil.modalWindow(app.UIFigure, 'uiputfile', '', nameFormatMap, defaultName);
+                defaultName   = appEngine.util.DefaultFileName(app.mainApp.General.fileFolder.userPath, [appName '_Preview']);
+                fileZIP       = ui.Dialog(app.UIFigure, 'uiputfile', '', nameFormatMap, defaultName);
                 if isempty(fileZIP)
                     return
                 end
     
-                d = appUtil.modalWindow(app.UIFigure, 'progressdlg', 'Em andamento a criação do arquivo de medidas no formato ".xlsx".');
+                d = ui.Dialog(app.UIFigure, 'progressdlg', 'Em andamento a criação do arquivo de medidas no formato ".xlsx".');
     
                 savedFiles   = {};
                 errorFiles   = {};
@@ -946,11 +858,11 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
     
                     [~, fileName, fileExt] = fileparts(savedFiles);
                     savedFiles = strcat('•&thinsp;', fileName, fileExt);
-                    appUtil.modalWindow(app.UIFigure, 'none', sprintf('Lista de arquivos criados:\n%s', strjoin(savedFiles, '\n')));
+                    ui.Dialog(app.UIFigure, 'none', sprintf('Lista de arquivos criados:\n%s', strjoin(savedFiles, '\n')));
                 end
     
                 if ~isempty(errorFiles)
-                    appUtil.modalWindow(app.UIFigure, 'error', strjoin(errorFiles, '\n'));
+                    ui.Dialog(app.UIFigure, 'error', strjoin(errorFiles, '\n'));
                 end
 
                 delete(d)
@@ -968,7 +880,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 % <VALIDAÇÕES>
                 if numel(indexes) < numel(app.measData)
                     initialQuestion  = 'Deseja gerar relatório que contemple informações de TODAS as localidades de agrupamento, ou apenas da SELECIONADA?';
-                    initialSelection = appUtil.modalWindow(app.UIFigure, 'uiconfirm', initialQuestion, {'Todas', 'Selecionada', 'Cancelar'}, 1, 3);
+                    initialSelection = ui.Dialog(app.UIFigure, 'uiconfirm', initialQuestion, {'Todas', 'Selecionada', 'Cancelar'}, 1, 3);
 
                     switch initialSelection
                         case 'Cancelar'
@@ -997,12 +909,12 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     switch app.reportVersion.Value
                         case 'Definitiva'
                             warningMessages = [warningMessages, '<br><br>Isso impossibilita a geração da versão DEFINITIVA do relatório.'];
-                            appUtil.modalWindow(app.UIFigure, "warning", warningMessages);
+                            ui.Dialog(app.UIFigure, "warning", warningMessages);
                             return
 
                         otherwise % 'Preliminar'
                             warningMessages = [warningMessages, '<br><br>Deseja ignorar esse alerta, gerando a versão PRÉVIA do relatório?'];
-                            userSelection   = appUtil.modalWindow(app.UIFigure, 'uiconfirm', warningMessages, {'Sim', 'Não'}, 2, 2);
+                            userSelection   = ui.Dialog(app.UIFigure, 'uiconfirm', warningMessages, {'Sim', 'Não'}, 2, 2);
                             if userSelection == "Não"
                                 return
                             end
@@ -1021,7 +933,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                             'reportVersion', app.reportVersion.Value);
                     reportLibConnection.Controller.Run(app, app.projectData, app.measData(indexes), reportSettings, app.mainApp.General)
                 catch ME
-                    appUtil.modalWindow(app.UIFigure, 'error', getReport(ME));
+                    ui.Dialog(app.UIFigure, 'error', getReport(ME));
                 end
 
                 updateToolbar(app)
@@ -1055,7 +967,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             end
 
             if ~isempty(msg)
-                appUtil.modalWindow(app.UIFigure, 'warning', msg);
+                ui.Dialog(app.UIFigure, 'warning', msg);
                 return
             end
             % </VALIDAÇÕES>
@@ -1076,7 +988,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function TabGroupSelectionChanged(app, event)
             
             [~, tabIndex] = ismember(app.TabGroup.SelectedTab, app.TabGroup.Children);
-            jsBackDoor_Customizations(app, tabIndex)
+            applyJSCustomizations(app, tabIndex)
 
         end
 
@@ -1146,7 +1058,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Image clicked function: LocationListEdit
         function LocationListEditClicked(app, event)
             
-            menu_LayoutPopupApp(app, 'ListOfLocation', FileIndex(app))
+            context = 'MonitoringPlan';
+            ipcMainMatlabOpenPopupApp(app.mainApp, app, 'ListOfLocation', context, FileIndex(app))
 
         end
 
