@@ -140,7 +140,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
                 case app.Delete
                     if ~isempty(app.Location.Value)
                         index = app.inputArgs.index;
-                        manualLocations = setdiff(getCurrentManualLocations(app.projectData, app.measData(indexs)), app.Location.Value);
+                        manualLocations = setdiff(getCurrentManualLocations(app.projectData, app.measData(index)), app.Location.Value);
                         addManualLocations(app.projectData, app.measData(index), manualLocations);
                         
                         updateForm(app)

@@ -148,13 +148,11 @@ classdef winConfig_exported < matlab.apps.AppBase
 
     methods (Access = public)
         %-----------------------------------------------------------------%
-        % IPC: COMUNICAÇÃO ENTRE PROCESSOS
-        %-----------------------------------------------------------------%
         function ipcSecondaryJSEventsHandler(app, event)
             try
                 switch event.HTMLEventName
                     case 'renderer'
-                        startup_Controller(app)
+                        appEngine.activate(app, app.Role)
 
                     otherwise
                         error('UnexpectedEvent')

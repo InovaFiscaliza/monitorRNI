@@ -83,7 +83,6 @@ classdef (Abstract) Plot
                 end
                 
                 % POST-PLOT
-                %plot.axes.StackingOrder.execute(hAxes, tempBandObj.Context)
                 switch axesType{ii}
                     case 'Geographic'
                         % Força renderização do basemap usando função waitfor
@@ -104,24 +103,7 @@ classdef (Abstract) Plot
                         end
 
                     case 'Cartesian'
-                        % xAxes
-                        hAxes.XLim = tempBandObj.xLim;
-
-                        if xLabelFlag
-                            xlabel(hAxes, axesXLabel{ii})
-                        else
-                            hAxes.XTickLabel = {};
-                            xlabel(hAxes, '')
-                        end
-
-                        % yAxes
-                        if ~isempty(axesYScale{ii})
-                            hAxes.YScale = axesYScale{ii};
-                        end
-
-                        if ~isempty(axesYLabel{ii})
-                            ylabel(hAxes, axesYLabel{ii})
-                        end
+                        % ...
                 end
                 tiledPos = tiledPos+tiledSpan(ii);
             end

@@ -20,13 +20,6 @@ classdef (Abstract) Variable
                     fieldValue = strjoin(unique(arrayfun(@(x) jsonencode(x.MetaData), measData, 'UniformOutput', false)), '<br>');
                 case 'Measures'
                     fieldValue = sum([measData.(fieldName)]);
-                case 'MeasuresRisk'
-                    numMeasuresRisk = sum(measTable.FieldValue > fieldThreshold);
-                    if numMeasuresRisk == 0
-                        fieldValue = 'nenhuma';
-                    else
-                        fieldValue = num2str(numMeasuresRisk);
-                    end
                 case 'FieldValueLimits'
                     [minFieldValue, maxFieldValue] = bounds(measTable.FieldValue);
                     fieldValue = sprintf('%.1f - %.1f V/m', minFieldValue, maxFieldValue);
