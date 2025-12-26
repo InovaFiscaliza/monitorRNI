@@ -73,7 +73,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
     end
 
 
-    methods
+    methods (Access = public)
         %-----------------------------------------------------------------%
         % COMUNICAÇÃO ENTRE PROCESSOS:
         % • ipcMainJSEventsHandler
@@ -189,10 +189,9 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                     tabNavigatorButtonPushed(app, struct('Source', app.Tab1Button, 'PreviousValue', false))
                                 end
 
-                            case 'RFDataHubUpdated'
-                                if ~isempty(app.AppInfo.Tag)
-                                    app.AppInfo.Tag = '';
-                                end
+                            case 'onRFDataHubUpdate'
+                                initializeRFDataHub(app)
+                                ipcMainMatlabCallAuxiliarApp(app, 'RFDATAHUB', 'MATLAB', operationType)
 
                             case 'fileSortMethodChanged'
                                 if ~strcmp(app.file_FileSortMethod.Value, app.General.File.sortMethod)
@@ -272,7 +271,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function ipcMainMatlabCallAuxiliarApp(app, auxAppName, communicationType, varargin)
-            hAuxApp = auxAppHandle(app, auxAppName);
+            hAuxApp = getAppHandle(app.tabGroupController, auxAppName);
 
             if ~isempty(hAuxApp)
                 switch communicationType
@@ -447,20 +446,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function initializeAppProperties(app)
-            % RFDataHub
-            global RFDataHub
-            global RFDataHubLog
-
-            app.rfDataHub        = RFDataHub;
-            app.rfDataHubLOG     = RFDataHubLog;
-            app.rfDataHubSummary = summary(RFDataHub(:, {'Source', 'State'}));
-
-            % A coluna "Source" possui agrupamentos da fonte dos dados,
-            % decorrente da mesclagem de estações.
-            tempSourceList = cellfun(@(x) strsplit(x, ' | '), app.rfDataHubSummary.Source.Categories, 'UniformOutput', false);
-            app.rfDataHubSummary.Source.RawCategories = unique(horzcat(tempSourceList{:}))';
-
-            % app.projectData
+            initializeRFDataHub(app)
             app.projectData = model.projectLib(app, app.rootFolder, app.General);
         end
 
@@ -481,6 +467,24 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         function applyInitialLayout(app)
             DataHubWarningLamp(app)
             app.file_FileSortMethod.Value = app.General.File.sortMethod;
+        end
+    end
+
+
+    methods (Access = private)
+        %-----------------------------------------------------------------%
+        function initializeRFDataHub(app)
+            global RFDataHub
+            global RFDataHubLog
+
+            app.rfDataHub        = RFDataHub;
+            app.rfDataHubLOG     = RFDataHubLog;
+            app.rfDataHubSummary = summary(RFDataHub(:, {'Source', 'State'}));
+
+            % A coluna "Source" possui agrupamentos da fonte dos dados,
+            % decorrente da mesclagem de estações.
+            tempSourceList = cellfun(@(x) strsplit(x, ' | '), app.rfDataHubSummary.Source.Categories, 'UniformOutput', false);
+            app.rfDataHubSummary.Source.RawCategories = unique(horzcat(tempSourceList{:}))';
         end
 
         %-----------------------------------------------------------------%
@@ -646,21 +650,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             appEngine.util.generalSettingsSave(class.Constants.appName, app.rootFolder, app.General_I, app.executionMode)
         end
-    end
-
-
-    methods (Access = private)
-        %-----------------------------------------------------------------%
-        % TABGROUPCONTROLLER
-        %-----------------------------------------------------------------%
-        function hAuxApp = auxAppHandle(app, auxAppName)
-            arguments
-                app
-                auxAppName string {mustBeMember(auxAppName, ["MONITORINGPLAN", "EXTERNALREQUEST", "RFDATAHUB", "CONFIG"])}
-            end
-
-            hAuxApp = app.tabGroupController.Components.appHandle{app.tabGroupController.Components.Tag == auxAppName};
-        end
 
         %-----------------------------------------------------------------%
         function inputArguments = auxAppInputArguments(app, auxAppName)
@@ -689,7 +678,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
     end
 
 
-    methods
+    methods (Access = public)
         %-----------------------------------------------------------------%
         % SISTEMA DE GESTÃO DA FISCALIZAÇÃO (eFiscaliza/SEI)
         %-----------------------------------------------------------------%                

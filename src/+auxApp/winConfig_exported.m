@@ -86,6 +86,8 @@ classdef winConfig_exported < matlab.apps.AppBase
         Tab4Grid                      matlab.ui.container.GridLayout
         reportPanel                   matlab.ui.container.Panel
         reportGrid                    matlab.ui.container.GridLayout
+        prjFileCompressionMode        matlab.ui.control.DropDown
+        prjFileCompressionModeLabel   matlab.ui.control.Label
         reportBinningPanel            matlab.ui.container.Panel
         reportBinningGrid             matlab.ui.container.GridLayout
         reportBinningFcn              matlab.ui.control.DropDown
@@ -362,11 +364,11 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportBinningLength.Value = app.mainApp.General.Report.DataBinning.length_m;
             app.reportBinningFcn.Value    = app.mainApp.General.Report.DataBinning.function;
 
-            if checkEdition(app, 'REPORT')
-                app.eFiscalizaRefresh.Visible = 1;
-            else
-                app.eFiscalizaRefresh.Visible = 0;
+            if ismember(app.mainApp.General.Report.outputCompressionMode, app.prjFileCompressionMode.Items)
+                app.prjFileCompressionMode.Value = app.mainApp.General.Report.outputCompressionMode;
             end
+
+            app.eFiscalizaRefresh.Visible = checkEdition(app, 'REPORT');
         end
 
         %-----------------------------------------------------------------%
@@ -505,8 +507,8 @@ classdef winConfig_exported < matlab.apps.AppBase
                 app.mainApp.General.AppVersion.database.name = 'RFDataHub';
                 app.stableVersion.rfDataHub = RFDataHub_info;
                 app.tool_RFDataHubButton.Enable = 0;
-
-                ipcMainMatlabCallsHandler(app.mainApp, app, 'RFDataHubUpdated')
+                
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'onRFDataHubUpdate')
                 
             catch ME
                 ui.Dialog(app.UIFigure, 'error', ME.message);
@@ -797,19 +799,19 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             switch event.Source
                 case app.reportSystem
-                    app.mainApp.General.Report.system           = event.Value;
+                    app.mainApp.General.Report.system = event.Value;
 
                 case app.reportUnit
-                    app.mainApp.General.Report.unit             = event.Value;
+                    app.mainApp.General.Report.unit = event.Value;
 
                 case app.reportDocType
-                    app.mainApp.General.Report.Document         = event.Value;
+                    app.mainApp.General.Report.Document = event.Value;
 
                 case app.reportBasemap
-                    app.mainApp.General.Report.Basemap          = event.Value;
+                    app.mainApp.General.Report.Basemap = event.Value;
 
                 case app.reportImgFormat
-                    app.mainApp.General.Report.Image.Format     = event.Value;
+                    app.mainApp.General.Report.Image.Format = event.Value;
 
                 case app.reportImgDpi
                     app.mainApp.General.Report.Image.Resolution = str2double(event.Value);
@@ -819,6 +821,9 @@ classdef winConfig_exported < matlab.apps.AppBase
 
                 case app.reportBinningFcn
                     app.mainApp.General.Report.DataBinning.function = event.Value;
+
+                case app.prjFileCompressionMode
+                    app.mainApp.General.Report.outputCompressionMode = event.Value;
             end
 
             app.mainApp.General_I.Report = app.mainApp.General.Report;
@@ -1681,7 +1686,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create reportGrid
             app.reportGrid = uigridlayout(app.reportPanel);
             app.reportGrid.ColumnWidth = {350, 110, 110};
-            app.reportGrid.RowHeight = {22, 22, 22, 22, 48, '1x'};
+            app.reportGrid.RowHeight = {22, 22, 22, 22, 48, 22, '1x'};
             app.reportGrid.RowSpacing = 5;
             app.reportGrid.BackgroundColor = [1 1 1];
 
@@ -1815,6 +1820,23 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportBinningFcn.Layout.Row = 2;
             app.reportBinningFcn.Layout.Column = 2;
             app.reportBinningFcn.Value = 'mean-linear';
+
+            % Create prjFileCompressionModeLabel
+            app.prjFileCompressionModeLabel = uilabel(app.reportGrid);
+            app.prjFileCompressionModeLabel.WordWrap = 'on';
+            app.prjFileCompressionModeLabel.FontSize = 11;
+            app.prjFileCompressionModeLabel.Layout.Row = 6;
+            app.prjFileCompressionModeLabel.Layout.Column = 1;
+            app.prjFileCompressionModeLabel.Text = 'Compressão aplicada ao arquivo de saída do projeto?';
+
+            % Create prjFileCompressionMode
+            app.prjFileCompressionMode = uidropdown(app.reportGrid);
+            app.prjFileCompressionMode.Items = {'Não', 'Sim'};
+            app.prjFileCompressionMode.FontSize = 11;
+            app.prjFileCompressionMode.BackgroundColor = [1 1 1];
+            app.prjFileCompressionMode.Layout.Row = 6;
+            app.prjFileCompressionMode.Layout.Column = 2;
+            app.prjFileCompressionMode.Value = 'Não';
 
             % Create Tab5
             app.Tab5 = uitab(app.TabGroup);

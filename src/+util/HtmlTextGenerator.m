@@ -200,10 +200,10 @@ classdef (Abstract) HtmlTextGenerator
             end
         
             % dataStruct2HTMLContent
-            dataStruct(1) = struct('group', 'Service',                  'value', stationService);
-            dataStruct(2) = struct('group', 'Station',                  'value', stationNumber);
-            dataStruct(3) = struct('group', 'Localização',              'value', stationLocation);
-            dataStruct(4) = struct('group', 'Altura',                   'value', stationHeight);
+            dataStruct(1) = struct('group', 'Service',     'value', stationService);
+            dataStruct(2) = struct('group', 'Station',     'value', stationNumber);
+            dataStruct(3) = struct('group', 'Localização', 'value', stationLocation);
+            dataStruct(4) = struct('group', 'Altura',      'value', stationHeight);
 
             editedStationInfo = rmfield(stationInfo, { ...
                 'AntennaPattern', 'BW', 'Description', 'Distance', 'Fistel', 'Frequency',     ...

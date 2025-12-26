@@ -1,5 +1,5 @@
 {
-    "version": 0.78,
+    "version": 0.79,
     "operationMode": {
         "Debug": false,
         "Dock": true,
@@ -143,7 +143,8 @@
         "DataBinning": {
             "length_m": 100,
             "function": "mean-linear"
-        }
+        },
+        "outputCompressionMode": "Sim"
     },
     "eFiscaliza": {
         "internal": {
