@@ -1490,7 +1490,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
         function Toolbar_exportButtonPushed(app, event)
 
                 nameFormatMap = {'*.xlsx', 'Excel (*.xlsx)'};
-                defaultName   = class.Constants.DefaultFileName(app.mainApp.General.fileFolder.userPath, 'RFDataHub', -1); 
+                defaultName   = appEngine.util.DefaultFileName(app.mainApp.General.fileFolder.userPath, 'RFDataHub', -1); 
                 fileFullPath  = ui.Dialog(app.UIFigure, 'uiputfile', '', nameFormatMap, defaultName);
                 if isempty(fileFullPath)
                     return
