@@ -237,66 +237,54 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
         function applyJSCustomizations(app, tabIndex)
             persistent customizationStatus
             if isempty(customizationStatus)
-                customizationStatus = [false, false, false];
+                customizationStatus = zeros(1, numel(app.SubTabGroup.Children), 'logical');
             end
 
+            if customizationStatus(tabIndex)
+                return
+            end
+
+            appName = class(app);
+
+            customizationStatus(tabIndex) = true;
             switch tabIndex
-                case 0 % STARTUP
-                    if app.isDocked
-                        app.progressDialog = app.mainApp.progressDialog;
-                    else
-                        sendEventToHTMLSource(app.jsBackDoor, 'startup', app.mainApp.executionMode);
-                        app.progressDialog = ui.ProgressDialog(app.jsBackDoor);                        
+                case 1 % RFDATAHUB
+                    elToModify = {app.SubTabGroup, app.AxesToolbar, app.stationInfo, app.stationInfoImage};
+                    elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
+                    if ~isempty(elDataTag)
+                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                            struct('appName', appName, 'dataTag', elDataTag{1}, 'style', struct('border', 'none', 'backgroundColor', 'transparent')), ...
+                            struct('appName', appName, 'dataTag', elDataTag{2}, 'styleImportant', struct('borderTopLeftRadius', '0', 'borderTopRightRadius', '0')), ...
+                        });
+
+                        ui.TextView.startup(app.jsBackDoor, elToModify{3}, appName);
+                        ui.TextView.startup(app.jsBackDoor, elToModify{4}, appName, 'NÃO HÁ REGISTRO QUE ATENDA<br>AOS CRITÉRIOS DE FILTRAGEM');
                     end
-                    customizationStatus = [false, false, false];
 
-                otherwise
-                    if customizationStatus(tabIndex)
-                        return
+                case 2 % FILTRAGEM
+                    elToModify = {app.filter_Tree};
+                    elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
+                    if ~isempty(elDataTag)
+                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', {                                                                          ...
+                            struct('appName', appName, 'dataTag', elDataTag{1}, 'listener', struct('componentName', 'auxApp.winRFDataHub.filter_Tree', 'keyEvents', {{'Delete', 'Backspace'}})) ...
+                        });
                     end
 
-                    appName = class(app);
-
-                    customizationStatus(tabIndex) = true;
-                    switch tabIndex
-                        case 1 % RFDATAHUB
-                            elToModify = {app.SubTabGroup, app.AxesToolbar, app.stationInfo, app.stationInfoImage};
-                            elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
-                            if ~isempty(elDataTag)
-                                sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
-                                    struct('appName', appName, 'dataTag', elDataTag{1}, 'style', struct('border', 'none', 'backgroundColor', 'transparent')), ...
-                                    struct('appName', appName, 'dataTag', elDataTag{2}, 'styleImportant', struct('borderTopLeftRadius', '0', 'borderTopRightRadius', '0')), ...
-                                });
-
-                                ui.TextView.startup(app.jsBackDoor, elToModify{3}, appName);
-                                ui.TextView.startup(app.jsBackDoor, elToModify{4}, appName, 'NÃO HÁ REGISTRO QUE ATENDA<br>AOS CRITÉRIOS DE FILTRAGEM');
-                            end
-
-                        case 2 % FILTRAGEM
-                            elToModify = {app.filter_Tree};
-                            elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
-                            if ~isempty(elDataTag)
-                                sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', {                                                                          ...
-                                    struct('appName', appName, 'dataTag', elDataTag{1}, 'listener', struct('componentName', 'auxApp.winRFDataHub.filter_Tree', 'keyEvents', {{'Delete', 'Backspace'}})) ...
-                                });
-                            end
-
-                            filter_TreeBuilding(app)
-                            
-                        case 3 % CONFIGURAÇÕES GERAIS
-                            elToModify = {app.config_ElevationForceSearch};
-                            elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
-                            if ~isempty(elDataTag)
-                                sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
-                                    struct('appName', appName, 'dataTag', elDataTag{1}, 'generation', 1, 'style', struct('textAlign', 'justify')) ...
-                                });
-                            end
-
-                            % Elevação:
-                            app.config_ElevationAPISource.Value    = app.mainApp.General.Elevation.Server;
-                            app.config_ElevationNPoints.Value      = num2str(app.mainApp.General.Elevation.Points);
-                            app.config_ElevationForceSearch.Value  = app.mainApp.General.Elevation.ForceSearch;
+                    filter_TreeBuilding(app)
+                    
+                case 3 % CONFIGURAÇÕES GERAIS
+                    elToModify = {app.config_ElevationForceSearch};
+                    elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
+                    if ~isempty(elDataTag)
+                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                            struct('appName', appName, 'dataTag', elDataTag{1}, 'generation', 1, 'style', struct('textAlign', 'justify')) ...
+                        });
                     end
+
+                    % Elevação:
+                    app.config_ElevationAPISource.Value    = app.mainApp.General.Elevation.Server;
+                    app.config_ElevationNPoints.Value      = num2str(app.mainApp.General.Elevation.Points);
+                    app.config_ElevationForceSearch.Value  = app.mainApp.General.Elevation.ForceSearch;
             end
         end
 

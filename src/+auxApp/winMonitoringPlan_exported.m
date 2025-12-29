@@ -238,7 +238,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function applyJSCustomizations(app, tabIndex)
             persistent customizationStatus
             if isempty(customizationStatus)
-                customizationStatus = [false, false];
+                customizationStatus = zeros(1, numel(app.SubTabGroup.Children), 'logical');
             end
 
             if customizationStatus(tabIndex)
