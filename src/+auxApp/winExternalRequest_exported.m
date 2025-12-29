@@ -4,9 +4,9 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
     properties (Access = public)
         UIFigure                     matlab.ui.Figure
         GridLayout                   matlab.ui.container.GridLayout
-        TabGroup                     matlab.ui.container.TabGroup
-        PMRNITab                     matlab.ui.container.Tab
-        Control                      matlab.ui.container.GridLayout
+        SubTabGroup                  matlab.ui.container.TabGroup
+        SubTab1                      matlab.ui.container.Tab
+        SubGrid1                     matlab.ui.container.GridLayout
         TreePoints                   matlab.ui.container.Tree
         AddNewPointPanel             matlab.ui.container.Panel
         AddNewPointGrid              matlab.ui.container.GridLayout
@@ -26,8 +26,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         TreePointsLabel              matlab.ui.control.Label
         TreeFileLocations            matlab.ui.container.Tree
         config_geoAxesLabel          matlab.ui.control.Label
-        PROJETOTab                   matlab.ui.container.Tab
-        Tab4Grid                     matlab.ui.container.GridLayout
+        SubTab2                      matlab.ui.container.Tab
+        SubGrid2                     matlab.ui.container.GridLayout
         reportPanel                  matlab.ui.container.Panel
         reportGrid                   matlab.ui.container.GridLayout
         reportVersion                matlab.ui.control.DropDown
@@ -187,68 +187,43 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 customizationStatus = [false, false];
             end
 
+            if customizationStatus(tabIndex)
+                return
+            end
+
+            customizationStatus(tabIndex) = true;
             switch tabIndex
-                case 0 % STARTUP
-                    if app.isDocked
-                        app.progressDialog = app.mainApp.progressDialog;
-                    else
-                        sendEventToHTMLSource(app.jsBackDoor, 'startup', app.mainApp.executionMode);
-                        app.progressDialog = ui.ProgressDialog(app.jsBackDoor);                        
-                    end
-                    customizationStatus = [false, false];
-
-                otherwise
-                    if customizationStatus(tabIndex)
-                        return
+                case 1
+                    elDataTag = ui.CustomizationBase.getElementsDataTag({app.AxesToolbar, app.TreePoints});
+                    if ~isempty(elDataTag)
+                        appName = class(app);
+                        
+                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                            struct('appName', appName, 'dataTag', elDataTag{1}, 'styleImportant', struct('borderTopLeftRadius', '0', 'borderTopRightRadius', '0')), ...
+                            struct('appName', appName, 'dataTag', elDataTag{2}, 'listener', struct('componentName', 'auxApp.winExternalRequest.TreePoints', 'keyEvents', {{'Delete', 'Backspace'}})) ...
+                        });
                     end
 
-                    customizationStatus(tabIndex) = true;
-                    switch tabIndex
-                        case 1
-                            appName = class(app);
+                case 2
+                    context = 'ExternalRequest';
 
-                            % Grid botões "dock":
-                            if app.isDocked
-                                elToModify = {app.DockModule};
-                                elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
-                                if ~isempty(elDataTag)                                    
-                                    sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
-                                        struct('appName', appName, 'dataTag', elDataTag{1}, 'style', struct('transition', 'opacity 2s ease', 'opacity', '0.5')) ...
-                                    });
-                                end
-                            end
-
-                            % Outros elementos:
-                            elToModify = {app.AxesToolbar, app.TreePoints};
-                            elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
-                            if ~isempty(elDataTag)
-                                sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
-                                    struct('appName', appName, 'dataTag', elDataTag{1}, 'styleImportant', struct('borderTopLeftRadius', '0', 'borderTopRightRadius', '0')), ...
-                                    struct('appName', appName, 'dataTag', elDataTag{2}, 'listener', struct('componentName', 'auxApp.winExternalRequest.TreePoints', 'keyEvents', {{'Delete', 'Backspace'}})) ...
-                                });
-                            end
-
-                        case 2
-                            context = 'ExternalRequest';
-
-                            if isempty(app.projectData.modules.(context).ui.system) && ~isequal(app.projectData.modules.(context).ui.system, app.mainApp.General.Report.system)
-                                app.projectData.modules.(context).ui.system = app.mainApp.General.Report.system;
-                            end
-                            
-                            if isempty(app.projectData.modules.(context).ui.unit)   && ~isequal(app.projectData.modules.(context).ui.unit,   app.mainApp.General.Report.unit)
-                                app.projectData.modules.(context).ui.unit   = app.mainApp.General.Report.unit;
-                            end
-
-                            if ~isdeployed()
-                                app.reportSystem.Items = {'eFiscaliza', 'eFiscaliza TS', 'eFiscaliza HM', 'eFiscaliza DS'};
-                            end
-                            app.reportSystem.Value     = app.projectData.modules.(context).ui.system;
-
-                            set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, ...
-                                                'Value', app.projectData.modules.(context).ui.unit)
-                            app.reportIssue.Value     = app.projectData.modules.(context).ui.issue;
-                            app.reportModelName.Items = app.projectData.modules.(context).ui.templates;
+                    if isempty(app.projectData.modules.(context).ui.system) && ~isequal(app.projectData.modules.(context).ui.system, app.mainApp.General.Report.system)
+                        app.projectData.modules.(context).ui.system = app.mainApp.General.Report.system;
                     end
+                    
+                    if isempty(app.projectData.modules.(context).ui.unit)   && ~isequal(app.projectData.modules.(context).ui.unit,   app.mainApp.General.Report.unit)
+                        app.projectData.modules.(context).ui.unit   = app.mainApp.General.Report.unit;
+                    end
+
+                    if ~isdeployed()
+                        app.reportSystem.Items = {'eFiscaliza', 'eFiscaliza TS', 'eFiscaliza HM', 'eFiscaliza DS'};
+                    end
+                    app.reportSystem.Value     = app.projectData.modules.(context).ui.system;
+
+                    set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, ...
+                                        'Value', app.projectData.modules.(context).ui.unit)
+                    app.reportIssue.Value     = app.projectData.modules.(context).ui.issue;
+                    app.reportModelName.Items = app.projectData.modules.(context).ui.templates;
             end
         end
 
@@ -539,16 +514,16 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 case 'on'
                     set(app.AddNewPointMode, 'ImageSource', 'addFiles_32Filled.png', 'Tooltip', 'Desabilita painel de inclusão de ponto', 'UserData', true)
                     
-                    app.Control.RowHeight{4} = 170;
-                    app.Control.ColumnWidth(end-1:end) = {18, 18};
+                    app.SubGrid1.RowHeight{4} = 170;
+                    app.SubGrid1.ColumnWidth(end-1:end) = {18, 18};
                     app.AddNewPointConfirm.Enable = 1;
                     app.AddNewPointCancel.Enable  = 1;
 
                 case 'off'
                     set(app.AddNewPointMode, 'ImageSource', 'addFiles_32.png',       'Tooltip', 'Habilita painel de inclusão de ponto',   'UserData', false)
 
-                    app.Control.RowHeight{4} = 0;
-                    app.Control.ColumnWidth(end-1:end) = {0,0};
+                    app.SubGrid1.RowHeight{4} = 0;
+                    app.SubGrid1.ColumnWidth(end-1:end) = {0,0};
                     app.AddNewPointConfirm.Enable = 0;
                     app.AddNewPointCancel.Enable  = 0;
             end
@@ -611,13 +586,13 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             
             switch event.Source
                 case app.tool_ControlPanelVisibility
-                    if app.TabGroup.Visible
+                    if app.SubTabGroup.Visible
                         app.tool_ControlPanelVisibility.ImageSource = 'ArrowRight_32.png';
-                        app.TabGroup.Visible = 0;
+                        app.SubTabGroup.Visible = 0;
                         app.Document.Layout.Column = [2 5];
                     else
                         app.tool_ControlPanelVisibility.ImageSource = 'ArrowLeft_32.png';
-                        app.TabGroup.Visible = 1;
+                        app.SubTabGroup.Visible = 1;
                         app.Document.Layout.Column = [4 5];
                     end
 
@@ -883,10 +858,10 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         end
 
-        % Selection change function: TabGroup
-        function TabGroupSelectionChanged(app, event)
+        % Selection change function: SubTabGroup
+        function SubTabGroupSelectionChanged(app, event)
 
-            [~, tabIndex] = ismember(app.TabGroup.SelectedTab, app.TabGroup.Children);
+            [~, tabIndex] = ismember(app.SubTabGroup.SelectedTab, app.SubTabGroup.Children);
             applyJSCustomizations(app, tabIndex)
 
         end
@@ -1350,28 +1325,28 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.dockModule_Undock.Layout.Column = 1;
             app.dockModule_Undock.ImageSource = 'Undock_18White.png';
 
-            % Create TabGroup
-            app.TabGroup = uitabgroup(app.GridLayout);
-            app.TabGroup.AutoResizeChildren = 'off';
-            app.TabGroup.SelectionChangedFcn = createCallbackFcn(app, @TabGroupSelectionChanged, true);
-            app.TabGroup.Layout.Row = [3 4];
-            app.TabGroup.Layout.Column = 2;
+            % Create SubTabGroup
+            app.SubTabGroup = uitabgroup(app.GridLayout);
+            app.SubTabGroup.AutoResizeChildren = 'off';
+            app.SubTabGroup.SelectionChangedFcn = createCallbackFcn(app, @SubTabGroupSelectionChanged, true);
+            app.SubTabGroup.Layout.Row = [3 4];
+            app.SubTabGroup.Layout.Column = 2;
 
-            % Create PMRNITab
-            app.PMRNITab = uitab(app.TabGroup);
-            app.PMRNITab.AutoResizeChildren = 'off';
-            app.PMRNITab.Title = 'PM-RNI';
+            % Create SubTab1
+            app.SubTab1 = uitab(app.SubTabGroup);
+            app.SubTab1.AutoResizeChildren = 'off';
+            app.SubTab1.Title = 'PM-RNI';
 
-            % Create Control
-            app.Control = uigridlayout(app.PMRNITab);
-            app.Control.ColumnWidth = {'1x', 18, 0, 0};
-            app.Control.RowHeight = {30, '1x', 37, 0, 174};
-            app.Control.ColumnSpacing = 5;
-            app.Control.RowSpacing = 5;
-            app.Control.BackgroundColor = [1 1 1];
+            % Create SubGrid1
+            app.SubGrid1 = uigridlayout(app.SubTab1);
+            app.SubGrid1.ColumnWidth = {'1x', 18, 0, 0};
+            app.SubGrid1.RowHeight = {30, '1x', 37, 0, 174};
+            app.SubGrid1.ColumnSpacing = 5;
+            app.SubGrid1.RowSpacing = 5;
+            app.SubGrid1.BackgroundColor = [1 1 1];
 
             % Create config_geoAxesLabel
-            app.config_geoAxesLabel = uilabel(app.Control);
+            app.config_geoAxesLabel = uilabel(app.SubGrid1);
             app.config_geoAxesLabel.VerticalAlignment = 'bottom';
             app.config_geoAxesLabel.WordWrap = 'on';
             app.config_geoAxesLabel.FontSize = 10;
@@ -1381,14 +1356,14 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.config_geoAxesLabel.Text = {'LOCALIDADES DE AGRUPAMENTO:'; '<font style="color: gray; font-size: 9px;">(relacionadas aos arquivos de medição)</font>'};
 
             % Create TreeFileLocations
-            app.TreeFileLocations = uitree(app.Control);
+            app.TreeFileLocations = uitree(app.SubGrid1);
             app.TreeFileLocations.SelectionChangedFcn = createCallbackFcn(app, @TreeFileLocationsSelectionChanged, true);
             app.TreeFileLocations.FontSize = 11;
             app.TreeFileLocations.Layout.Row = 2;
             app.TreeFileLocations.Layout.Column = [1 4];
 
             % Create TreePointsLabel
-            app.TreePointsLabel = uilabel(app.Control);
+            app.TreePointsLabel = uilabel(app.SubGrid1);
             app.TreePointsLabel.VerticalAlignment = 'bottom';
             app.TreePointsLabel.FontSize = 10;
             app.TreePointsLabel.Layout.Row = 3;
@@ -1397,7 +1372,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.TreePointsLabel.Text = {'PONTOS CRÍTICOS SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionado àquilo que fora pedido pelo demandante)</font>'};
 
             % Create AddNewPointMode
-            app.AddNewPointMode = uiimage(app.Control);
+            app.AddNewPointMode = uiimage(app.SubGrid1);
             app.AddNewPointMode.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
             app.AddNewPointMode.Tooltip = {'Habilita painel de inclusão de ponto'};
             app.AddNewPointMode.Layout.Row = 3;
@@ -1406,7 +1381,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.AddNewPointMode.ImageSource = 'addFiles_32.png';
 
             % Create AddNewPointConfirm
-            app.AddNewPointConfirm = uiimage(app.Control);
+            app.AddNewPointConfirm = uiimage(app.SubGrid1);
             app.AddNewPointConfirm.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
             app.AddNewPointConfirm.Enable = 'off';
             app.AddNewPointConfirm.Tooltip = {'Confirma edição'};
@@ -1416,7 +1391,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.AddNewPointConfirm.ImageSource = 'Ok_32Green.png';
 
             % Create AddNewPointCancel
-            app.AddNewPointCancel = uiimage(app.Control);
+            app.AddNewPointCancel = uiimage(app.SubGrid1);
             app.AddNewPointCancel.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
             app.AddNewPointCancel.Enable = 'off';
             app.AddNewPointCancel.Tooltip = {'Cancela edição'};
@@ -1426,7 +1401,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.AddNewPointCancel.ImageSource = 'Delete_32Red.png';
 
             % Create AddNewPointPanel
-            app.AddNewPointPanel = uipanel(app.Control);
+            app.AddNewPointPanel = uipanel(app.SubGrid1);
             app.AddNewPointPanel.AutoResizeChildren = 'off';
             app.AddNewPointPanel.Layout.Row = 4;
             app.AddNewPointPanel.Layout.Column = [1 4];
@@ -1530,26 +1505,26 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.NewPointDescription.Layout.Column = [1 3];
 
             % Create TreePoints
-            app.TreePoints = uitree(app.Control);
+            app.TreePoints = uitree(app.SubGrid1);
             app.TreePoints.SelectionChangedFcn = createCallbackFcn(app, @TreePointsSelectionChanged, true);
             app.TreePoints.FontSize = 11;
             app.TreePoints.Layout.Row = 5;
             app.TreePoints.Layout.Column = [1 4];
 
-            % Create PROJETOTab
-            app.PROJETOTab = uitab(app.TabGroup);
-            app.PROJETOTab.AutoResizeChildren = 'off';
-            app.PROJETOTab.Title = 'PROJETO';
+            % Create SubTab2
+            app.SubTab2 = uitab(app.SubTabGroup);
+            app.SubTab2.AutoResizeChildren = 'off';
+            app.SubTab2.Title = 'PROJETO';
 
-            % Create Tab4Grid
-            app.Tab4Grid = uigridlayout(app.PROJETOTab);
-            app.Tab4Grid.ColumnWidth = {'1x', 22};
-            app.Tab4Grid.RowHeight = {17, 100, 22, '1x'};
-            app.Tab4Grid.RowSpacing = 5;
-            app.Tab4Grid.BackgroundColor = [1 1 1];
+            % Create SubGrid2
+            app.SubGrid2 = uigridlayout(app.SubTab2);
+            app.SubGrid2.ColumnWidth = {'1x', 22};
+            app.SubGrid2.RowHeight = {17, 100, 22, '1x'};
+            app.SubGrid2.RowSpacing = 5;
+            app.SubGrid2.BackgroundColor = [1 1 1];
 
             % Create eFiscalizaLabel
-            app.eFiscalizaLabel = uilabel(app.Tab4Grid);
+            app.eFiscalizaLabel = uilabel(app.SubGrid2);
             app.eFiscalizaLabel.VerticalAlignment = 'bottom';
             app.eFiscalizaLabel.FontSize = 10;
             app.eFiscalizaLabel.Layout.Row = 1;
@@ -1557,7 +1532,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.eFiscalizaLabel.Text = 'eFISCALIZA';
 
             % Create eFiscalizaPanel
-            app.eFiscalizaPanel = uipanel(app.Tab4Grid);
+            app.eFiscalizaPanel = uipanel(app.SubGrid2);
             app.eFiscalizaPanel.Layout.Row = 2;
             app.eFiscalizaPanel.Layout.Column = [1 2];
 
@@ -1622,7 +1597,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.reportIssue.Value = -1;
 
             % Create reportLabel
-            app.reportLabel = uilabel(app.Tab4Grid);
+            app.reportLabel = uilabel(app.SubGrid2);
             app.reportLabel.VerticalAlignment = 'bottom';
             app.reportLabel.FontSize = 10;
             app.reportLabel.Layout.Row = 3;
@@ -1630,7 +1605,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.reportLabel.Text = 'RELATÓRIO';
 
             % Create reportPanel
-            app.reportPanel = uipanel(app.Tab4Grid);
+            app.reportPanel = uipanel(app.SubGrid2);
             app.reportPanel.BackgroundColor = [1 1 1];
             app.reportPanel.Layout.Row = 4;
             app.reportPanel.Layout.Column = [1 2];

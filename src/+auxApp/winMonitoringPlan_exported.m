@@ -4,9 +4,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
     properties (Access = public)
         UIFigure                     matlab.ui.Figure
         GridLayout                   matlab.ui.container.GridLayout
-        TabGroup                     matlab.ui.container.TabGroup
-        PMRNITab                     matlab.ui.container.Tab
-        Control                      matlab.ui.container.GridLayout
+        SubTabGroup                  matlab.ui.container.TabGroup
+        SubTab1                      matlab.ui.container.Tab
+        SubGrid1                     matlab.ui.container.GridLayout
         Card4_stationsOutRoute       matlab.ui.control.Label
         Card3_stationsOnRoute        matlab.ui.control.Label
         Card2_numberOfRiskStations   matlab.ui.control.Label
@@ -16,8 +16,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         LocationListLabel            matlab.ui.control.Label
         TreeFileLocations            matlab.ui.container.Tree
         config_geoAxesLabel_2        matlab.ui.control.Label
-        PROJETOTab                   matlab.ui.container.Tab
-        Tab4Grid                     matlab.ui.container.GridLayout
+        SubTab2                      matlab.ui.container.Tab
+        SubGrid2                     matlab.ui.container.GridLayout
         reportPanel                  matlab.ui.container.Panel
         reportGrid                   matlab.ui.container.GridLayout
         reportVersion                matlab.ui.control.DropDown
@@ -241,67 +241,40 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 customizationStatus = [false, false];
             end
 
+            if customizationStatus(tabIndex)
+                return
+            end
+
+            customizationStatus(tabIndex) = true;
             switch tabIndex
-                case 0 % STARTUP
-                    if app.isDocked
-                        app.progressDialog = app.mainApp.progressDialog;
-                    else
-                        sendEventToHTMLSource(app.jsBackDoor, 'startup', app.mainApp.executionMode);
-                        app.progressDialog = ui.ProgressDialog(app.jsBackDoor);                        
-                    end
-                    customizationStatus = [false, false];
-
-                otherwise
-                    if customizationStatus(tabIndex)
-                        return
+                case 1
+                    elDataTag = ui.CustomizationBase.getElementsDataTag({app.AxesToolbar});
+                    if ~isempty(elDataTag)
+                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                            struct('appName', class(app), 'dataTag', elDataTag{1}, 'styleImportant', struct('borderTopLeftRadius', '0', 'borderTopRightRadius', '0')), ...
+                        });
                     end
 
-                    customizationStatus(tabIndex) = true;
-                    switch tabIndex
-                        case 1
-                            appName = class(app);
+                case 2
+                    context = 'MonitoringPlan';
 
-                            % Grid botões "dock":
-                            if app.isDocked
-                                elToModify = {app.DockModule};
-                                elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
-                                if ~isempty(elDataTag)                                    
-                                    sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
-                                        struct('appName', appName, 'dataTag', elDataTag{1}, 'style', struct('transition', 'opacity 2s ease', 'opacity', '0.5')) ...
-                                    });
-                                end
-                            end
-
-                            % Outros elementos:
-                            elToModify = {app.AxesToolbar};
-                            elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
-                            if ~isempty(elDataTag)
-                                sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
-                                    struct('appName', appName, 'dataTag', elDataTag{1}, 'styleImportant', struct('borderTopLeftRadius', '0', 'borderTopRightRadius', '0')), ...
-                                });
-                            end
-
-                        case 2
-                            context = 'MonitoringPlan';
-
-                            if isempty(app.projectData.modules.(context).ui.system) && ~isequal(app.projectData.modules.(context).ui.system, app.mainApp.General.Report.system)
-                                app.projectData.modules.(context).ui.system = app.mainApp.General.Report.system;
-                            end
-                            
-                            if isempty(app.projectData.modules.(context).ui.unit)   && ~isequal(app.projectData.modules.(context).ui.unit,   app.mainApp.General.Report.unit)
-                                app.projectData.modules.(context).ui.unit   = app.mainApp.General.Report.unit;
-                            end
-
-                            if ~isdeployed()
-                                app.reportSystem.Items = {'eFiscaliza', 'eFiscaliza TS', 'eFiscaliza HM', 'eFiscaliza DS'};
-                            end
-                            app.reportSystem.Value     = app.projectData.modules.(context).ui.system;
-
-                            set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, ...
-                                                'Value', app.projectData.modules.(context).ui.unit)
-                            app.reportIssue.Value      = app.projectData.modules.(context).ui.issue;
-                            app.reportModelName.Items  = app.projectData.modules.(context).ui.templates;
+                    if isempty(app.projectData.modules.(context).ui.system) && ~isequal(app.projectData.modules.(context).ui.system, app.mainApp.General.Report.system)
+                        app.projectData.modules.(context).ui.system = app.mainApp.General.Report.system;
                     end
+                    
+                    if isempty(app.projectData.modules.(context).ui.unit)   && ~isequal(app.projectData.modules.(context).ui.unit,   app.mainApp.General.Report.unit)
+                        app.projectData.modules.(context).ui.unit   = app.mainApp.General.Report.unit;
+                    end
+
+                    if ~isdeployed()
+                        app.reportSystem.Items = {'eFiscaliza', 'eFiscaliza TS', 'eFiscaliza HM', 'eFiscaliza DS'};
+                    end
+                    app.reportSystem.Value     = app.projectData.modules.(context).ui.system;
+
+                    set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, ...
+                                        'Value', app.projectData.modules.(context).ui.unit)
+                    app.reportIssue.Value      = app.projectData.modules.(context).ui.issue;
+                    app.reportModelName.Items  = app.projectData.modules.(context).ui.templates;
             end
         end
 
@@ -699,13 +672,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             
             switch event.Source
                 case app.tool_ControlPanelVisibility
-                    if app.TabGroup.Visible
+                    if app.SubTabGroup.Visible
                         app.tool_ControlPanelVisibility.ImageSource = 'ArrowRight_32.png';
-                        app.TabGroup.Visible = 0;
+                        app.SubTabGroup.Visible = 0;
                         app.Document.Layout.Column = [2 5];
                     else
                         app.tool_ControlPanelVisibility.ImageSource = 'ArrowLeft_32.png';
-                        app.TabGroup.Visible = 1;
+                        app.SubTabGroup.Visible = 1;
                         app.Document.Layout.Column = [4 5];
                     end
 
@@ -984,10 +957,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
         end
 
-        % Selection change function: TabGroup
-        function TabGroupSelectionChanged(app, event)
+        % Selection change function: SubTabGroup
+        function SubTabGroupSelectionChanged(app, event)
             
-            [~, tabIndex] = ismember(app.TabGroup.SelectedTab, app.TabGroup.Children);
+            [~, tabIndex] = ismember(app.SubTabGroup.SelectedTab, app.SubTabGroup.Children);
             applyJSCustomizations(app, tabIndex)
 
         end
@@ -1317,27 +1290,27 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.dockModule_Undock.Layout.Column = 1;
             app.dockModule_Undock.ImageSource = 'Undock_18White.png';
 
-            % Create TabGroup
-            app.TabGroup = uitabgroup(app.GridLayout);
-            app.TabGroup.AutoResizeChildren = 'off';
-            app.TabGroup.SelectionChangedFcn = createCallbackFcn(app, @TabGroupSelectionChanged, true);
-            app.TabGroup.Layout.Row = [3 4];
-            app.TabGroup.Layout.Column = 2;
+            % Create SubTabGroup
+            app.SubTabGroup = uitabgroup(app.GridLayout);
+            app.SubTabGroup.AutoResizeChildren = 'off';
+            app.SubTabGroup.SelectionChangedFcn = createCallbackFcn(app, @SubTabGroupSelectionChanged, true);
+            app.SubTabGroup.Layout.Row = [3 4];
+            app.SubTabGroup.Layout.Column = 2;
 
-            % Create PMRNITab
-            app.PMRNITab = uitab(app.TabGroup);
-            app.PMRNITab.AutoResizeChildren = 'off';
-            app.PMRNITab.Title = 'PM-RNI';
+            % Create SubTab1
+            app.SubTab1 = uitab(app.SubTabGroup);
+            app.SubTab1.AutoResizeChildren = 'off';
+            app.SubTab1.Title = 'PM-RNI';
 
-            % Create Control
-            app.Control = uigridlayout(app.PMRNITab);
-            app.Control.ColumnWidth = {144, 116, 18};
-            app.Control.RowHeight = {30, 5, '1x', 42, 5, '0.5x', 10, 83, 10, 83};
-            app.Control.RowSpacing = 0;
-            app.Control.BackgroundColor = [1 1 1];
+            % Create SubGrid1
+            app.SubGrid1 = uigridlayout(app.SubTab1);
+            app.SubGrid1.ColumnWidth = {144, 116, 18};
+            app.SubGrid1.RowHeight = {30, 5, '1x', 42, 5, '0.5x', 10, 83, 10, 83};
+            app.SubGrid1.RowSpacing = 0;
+            app.SubGrid1.BackgroundColor = [1 1 1];
 
             % Create config_geoAxesLabel_2
-            app.config_geoAxesLabel_2 = uilabel(app.Control);
+            app.config_geoAxesLabel_2 = uilabel(app.SubGrid1);
             app.config_geoAxesLabel_2.VerticalAlignment = 'bottom';
             app.config_geoAxesLabel_2.WordWrap = 'on';
             app.config_geoAxesLabel_2.FontSize = 10;
@@ -1347,14 +1320,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.config_geoAxesLabel_2.Text = {'LOCALIDADES DE AGRUPAMENTO:'; '<font style="color: gray; font-size: 9px;">(relacionadas aos arquivos de medição)</font>'};
 
             % Create TreeFileLocations
-            app.TreeFileLocations = uitree(app.Control);
+            app.TreeFileLocations = uitree(app.SubGrid1);
             app.TreeFileLocations.SelectionChangedFcn = createCallbackFcn(app, @TreeFileLocationsSelectionChanged, true);
             app.TreeFileLocations.FontSize = 11;
             app.TreeFileLocations.Layout.Row = 3;
             app.TreeFileLocations.Layout.Column = [1 3];
 
             % Create LocationListLabel
-            app.LocationListLabel = uilabel(app.Control);
+            app.LocationListLabel = uilabel(app.SubGrid1);
             app.LocationListLabel.VerticalAlignment = 'bottom';
             app.LocationListLabel.FontSize = 10;
             app.LocationListLabel.Layout.Row = 4;
@@ -1363,7 +1336,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.LocationListLabel.Text = {'LOCALIDADES SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
 
             % Create LocationListEdit
-            app.LocationListEdit = uiimage(app.Control);
+            app.LocationListEdit = uiimage(app.SubGrid1);
             app.LocationListEdit.ImageClickedFcn = createCallbackFcn(app, @LocationListEditClicked, true);
             app.LocationListEdit.Enable = 'off';
             app.LocationListEdit.Tooltip = {'Edita lista de localidades'};
@@ -1373,14 +1346,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.LocationListEdit.ImageSource = 'Edit_32.png';
 
             % Create LocationList
-            app.LocationList = uitextarea(app.Control);
+            app.LocationList = uitextarea(app.SubGrid1);
             app.LocationList.Editable = 'off';
             app.LocationList.FontSize = 11;
             app.LocationList.Layout.Row = 6;
             app.LocationList.Layout.Column = [1 3];
 
             % Create Card1_numberOfStations
-            app.Card1_numberOfStations = uilabel(app.Control);
+            app.Card1_numberOfStations = uilabel(app.SubGrid1);
             app.Card1_numberOfStations.BackgroundColor = [0.9412 0.9412 0.9412];
             app.Card1_numberOfStations.VerticalAlignment = 'top';
             app.Card1_numberOfStations.WordWrap = 'on';
@@ -1392,7 +1365,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card1_numberOfStations.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: BLACK; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS NAS LOCALIDADES SOB ANÁLISE</p>'};
 
             % Create Card2_numberOfRiskStations
-            app.Card2_numberOfRiskStations = uilabel(app.Control);
+            app.Card2_numberOfRiskStations = uilabel(app.SubGrid1);
             app.Card2_numberOfRiskStations.BackgroundColor = [0.9412 0.9412 0.9412];
             app.Card2_numberOfRiskStations.VerticalAlignment = 'top';
             app.Card2_numberOfRiskStations.WordWrap = 'on';
@@ -1404,7 +1377,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card2_numberOfRiskStations.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">0</font>'; 'ESTAÇÕES NO ENTORNO DE REGISTROS DE NÍVEIS ACIMA DE 14 V/m</p>'};
 
             % Create Card3_stationsOnRoute
-            app.Card3_stationsOnRoute = uilabel(app.Control);
+            app.Card3_stationsOnRoute = uilabel(app.SubGrid1);
             app.Card3_stationsOnRoute.BackgroundColor = [0.9412 0.9412 0.9412];
             app.Card3_stationsOnRoute.VerticalAlignment = 'top';
             app.Card3_stationsOnRoute.WordWrap = 'on';
@@ -1416,7 +1389,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card3_stationsOnRoute.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: black; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS NO ENTORNO DA ROTA</p>'};
 
             % Create Card4_stationsOutRoute
-            app.Card4_stationsOutRoute = uilabel(app.Control);
+            app.Card4_stationsOutRoute = uilabel(app.SubGrid1);
             app.Card4_stationsOutRoute.BackgroundColor = [0.9412 0.9412 0.9412];
             app.Card4_stationsOutRoute.VerticalAlignment = 'top';
             app.Card4_stationsOutRoute.WordWrap = 'on';
@@ -1427,20 +1400,20 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card4_stationsOutRoute.Interpreter = 'html';
             app.Card4_stationsOutRoute.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS FORA DA ROTA</p>'};
 
-            % Create PROJETOTab
-            app.PROJETOTab = uitab(app.TabGroup);
-            app.PROJETOTab.AutoResizeChildren = 'off';
-            app.PROJETOTab.Title = 'PROJETO';
+            % Create SubTab2
+            app.SubTab2 = uitab(app.SubTabGroup);
+            app.SubTab2.AutoResizeChildren = 'off';
+            app.SubTab2.Title = 'PROJETO';
 
-            % Create Tab4Grid
-            app.Tab4Grid = uigridlayout(app.PROJETOTab);
-            app.Tab4Grid.ColumnWidth = {'1x', 22};
-            app.Tab4Grid.RowHeight = {17, 100, 22, '1x'};
-            app.Tab4Grid.RowSpacing = 5;
-            app.Tab4Grid.BackgroundColor = [1 1 1];
+            % Create SubGrid2
+            app.SubGrid2 = uigridlayout(app.SubTab2);
+            app.SubGrid2.ColumnWidth = {'1x', 22};
+            app.SubGrid2.RowHeight = {17, 100, 22, '1x'};
+            app.SubGrid2.RowSpacing = 5;
+            app.SubGrid2.BackgroundColor = [1 1 1];
 
             % Create eFiscalizaLabel
-            app.eFiscalizaLabel = uilabel(app.Tab4Grid);
+            app.eFiscalizaLabel = uilabel(app.SubGrid2);
             app.eFiscalizaLabel.VerticalAlignment = 'bottom';
             app.eFiscalizaLabel.FontSize = 10;
             app.eFiscalizaLabel.Layout.Row = 1;
@@ -1448,7 +1421,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.eFiscalizaLabel.Text = 'eFISCALIZA';
 
             % Create eFiscalizaPanel
-            app.eFiscalizaPanel = uipanel(app.Tab4Grid);
+            app.eFiscalizaPanel = uipanel(app.SubGrid2);
             app.eFiscalizaPanel.Layout.Row = 2;
             app.eFiscalizaPanel.Layout.Column = [1 2];
 
@@ -1513,7 +1486,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.reportIssue.Value = -1;
 
             % Create reportLabel
-            app.reportLabel = uilabel(app.Tab4Grid);
+            app.reportLabel = uilabel(app.SubGrid2);
             app.reportLabel.VerticalAlignment = 'bottom';
             app.reportLabel.FontSize = 10;
             app.reportLabel.Layout.Row = 3;
@@ -1521,7 +1494,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.reportLabel.Text = 'RELATÓRIO';
 
             % Create reportPanel
-            app.reportPanel = uipanel(app.Tab4Grid);
+            app.reportPanel = uipanel(app.SubGrid2);
             app.reportPanel.BackgroundColor = [1 1 1];
             app.reportPanel.Layout.Row = 4;
             app.reportPanel.Layout.Column = [1 2];
