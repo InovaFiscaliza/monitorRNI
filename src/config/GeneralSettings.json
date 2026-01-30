@@ -1,5 +1,5 @@
 {
-    "version": 0.79,
+    "version": 0.86,
     "operationMode": {
         "Debug": false,
         "Dock": true,
@@ -10,7 +10,7 @@
         }
     },
     "computerName": {
-        "deskopApp": "",
+        "desktopApp": "",
         "webServer": "WIMATLABPDIN01"
     },
     "fileFolder": {
@@ -22,134 +22,138 @@
         "DataHub_POST": "",
         "lastVisited": ""
     },
-    "File": {
-        "input": "file",
-        "sortMethod": "LOCALIDADE"
-    },
-    "MonitoringPlan": {
-        "ReferenceFile": "PM-RNI - Lista de estações",
-        "Period": [
-            2024,
-            2025
-        ],
-        "Distance_km": 0.2,
-        "FieldValue": 14,
-        "NoMeasureReasons": [
-            "-1",
-            "Estação inoperante",
-            "Estação não medida - acesso restrito",            
-            "Estação não medida - local perigoso",
-            "Estação não medida - difícil acesso",
-            "Estação operando em local desconhecido",
-            "Estação operando em local diferente (especificar)",
-            "Outra (especificar)"
-        ],
-        "ReasonsThatRequireObservation": [
-            "Outra (especificar)"
-        ],
-        "ReasonsThatRequireEditionOfLocation": [
-            "Estação operando em local diferente (especificar)"
-        ],
-        "Export": {
-            "XLSX": false,
-            "KML": false
+    "context": {
+        "FILE": {
+            "input": "file",
+            "sortMethod": "LOCALIDADE"
+        },
+        "MONITORINGPLAN": {
+            "referenceFile": "PM-RNI - Lista de estações",
+            "periodYears": [
+                2026
+            ],
+            "maxMeasurementDistanceKm": 0.2,
+            "electricFieldStrengthThreshold": 14,
+            "noMeasurementReasons": [
+                "-",
+                "Estação inoperante",
+                "Estação não medida - acesso restrito",            
+                "Estação não medida - local perigoso",
+                "Estação não medida - difícil acesso",
+                "Estação operando em local desconhecido",
+                "Estação operando em local diferente (especificar)",
+                "Outra (especificar)"
+            ],
+            "reasonsRequiringComment": [
+                "Outra (especificar)"
+            ],
+            "reasonsRequiringLocationUpdate": [
+                "Estação operando em local diferente (especificar)"
+            ],
+            "exportOptions": {
+                "xlsx": false,
+                "kml": false
+            }
+        },
+        "EXTERNALREQUEST": {
+            "maxMeasurementDistanceKm": 1,
+            "electricFieldStrengthThreshold": 14,
+            "noMeasurementReasons": [
+                "-",
+                "Acesso restrito",            
+                "Local perigoso",
+                "Difícil acesso",
+                "Outra"
+            ],
+            "locationType": [
+                "Apartamento",
+                "Casa", 
+                "Creche",
+                "Escola",
+                "Estação",            
+                "Hospital",
+                "Outro"
+            ],
+            "exportOptions": {
+                "xlsx": false,
+                "kml": false
+            }
+        },
+        "RFDATAHUB": {
+            "defaultTx": {
+                "height": 10
+            },
+            "defaultRx": {
+                "latitude": -15.805479,
+                "longitude": -47.882499,
+                "height": 2
+            },
+            "defaultFilter": {
+                "columnLabel": "Distância",
+                "operation": "≤",
+                "value": 30
+            },
+            "lastColumnFilters": []
         }
     },
-    "ExternalRequest": {
-        "Distance_km": 1,
-        "FieldValue": 14,
-        "NoMeasureReasons": [
-            "-1",
-            "Acesso restrito",            
-            "Local perigoso",
-            "Difícil acesso",
-            "Outra"
-        ],
-        "TypeOfLocation": [
-            "Apartamento",
-            "Casa", 
-            "Creche",
-            "Escola",
-            "Estação",            
-            "Hospital",
-            "Outro"
-        ],
-        "Export": {
-            "XLSX": false,
-            "KML": false
+    "plot": {
+        "cartesianAxes": [],
+        "geographicAxes": {
+            "basemap": "satellite",
+            "colormap": "turbo",
+            "colorbar": "on",
+            "zoomOrientation": "measures"
+        },
+        "riskMeasures": {
+            "color": [1, 0, 0],
+            "size": 32
+        },
+        "stations": {
+            "color": [0, 1, 1],
+            "size": 12
+        },
+        "selectedStation": {
+            "color": [0, 1, 1],
+            "size": 32,
+            "automaticZoom": false,
+            "automaticZoomFactor": 4
+        },
+        "circleRegion": {
+            "color": "cyan",
+            "faceAlpha": 0.25,
+            "edgeAlpha": 0.40
+        },
+        "fieldPeak": {
+            "color": [1, 1, 0],
+            "size": 32
         }
     },
-    "Plot": {
-        "GeographicAxes": {
-            "Basemap": "satellite",
-            "Colormap": "turbo",
-            "Colorbar": "on",
-            "ZoomOrientation": "measures"
-        },
-        "RiskMeasures": {
-            "Color": [1, 0, 0],
-            "Size": 32
-        },
-        "Stations": {
-            "Color": [0, 1, 1],
-            "Size": 12
-        },
-        "SelectedStation": {
-            "Color": [0, 1, 1],
-            "Size": 32,
-            "AutomaticZoom": false,
-            "AutomaticZoomFactor": 4
-        },
-        "CircleRegion": {
-            "Color": "cyan",
-            "FaceAlpha": 0.25,
-            "EdgeAlpha": 0.40
-        },
-        "FieldPeak": {
-            "Color": [1, 1, 0],
-            "Size": 32
-        }
+    "elevation": {
+        "pointCount": 256,
+        "forceRefresh": false,
+        "provider": "Open-Elevation"
     },
-    "RFDataHub": {
-        "DefaultTX": {
-            "Height": 10
-        },
-        "DefaultRX": {
-            "Latitude": -15.805479,
-            "Longitude": -47.882499,
-            "Height": 2
-        },
-        "DefaultFilter": {
-            "ColumnLabel": "Distância",
-            "Operation": "≤",
-            "Value": 30
-        },
-        "lastSearch": []
-    },
-    "Elevation": {
-        "Points": 256,
-        "ForceSearch": false,
-        "Server": "Open-Elevation"
-    },
-    "Report": {
+    "reportLib": {
         "system": "eFiscaliza",
         "unit": "",
-        "Document": "Relatório de Atividades",
-        "Basemap": "streets-dark",
-        "Image": {
-            "Format": "jpeg",
-            "Resolution": 120
+        "outputCompressionMode": "Sim",
+        "basemap": "streets-dark",
+        "image": {
+            "format": "jpeg",
+            "resolutionDpi": 120
         },
-        "DataBinning": {
-            "length_m": 100,
-            "function": "mean-linear"
-        },
-        "outputCompressionMode": "Sim"
+        "dataBinning": {
+            "binLengthMeters": 100,
+            "aggregationFunction": "mean-linear"
+        }
     },
     "eFiscaliza": {
         "internal": {
             "originId": "G",
-            "typeId": "306"
+            "typeIdMapping": [
+                {"type": "Relatório de Fiscalização", "id": "19"},
+                {"type": "Relatório de Atividades", "id": "306"}
+            ]
         },
         "external": {
             "originId": "R",
@@ -189,6 +193,35 @@
                 "UO111",
                 "UO112",
                 "UO113"
+            ],
+            "unitCityMapping": [
+              {"unit": "GR01", "city": "São Paulo/SP"},
+              {"unit": "GR02", "city": "Rio de Janeiro/RJ"},
+              {"unit": "GR03", "city": "Curitiba/PR"},
+              {"unit": "GR04", "city": "Belo Horizonte/MG"},
+              {"unit": "GR05", "city": "Porto Alegre/RS"},
+              {"unit": "GR06", "city": "Recife/PE"},
+              {"unit": "GR07", "city": "Goiânia/GO"},
+              {"unit": "GR08", "city": "Salvador/BA"},
+              {"unit": "GR09", "city": "Fortaleza/CE"},
+              {"unit": "GR10", "city": "Belém/PA"},
+              {"unit": "GR11", "city": "Manaus/AM"},            
+              {"unit": "UO001", "city": "Brasília/DF"},
+              {"unit": "UO021", "city": "Vitória/ES"},
+              {"unit": "UO031", "city": "Florianópolis/SC"},
+              {"unit": "UO061", "city": "Maceió/AL"},
+              {"unit": "UO062", "city": "João Pessoa/PB"},
+              {"unit": "UO071", "city": "Cuiabá/MT"},
+              {"unit": "UO072", "city": "Campo Grande/MS"},
+              {"unit": "UO073", "city": "Palmas/TO"},
+              {"unit": "UO081", "city": "Aracaju/SE"},
+              {"unit": "UO091", "city": "Natal/RN"},
+              {"unit": "UO092", "city": "Teresina/PI"},
+              {"unit": "UO101", "city": "São Luís/MA"},
+              {"unit": "UO102", "city": "Macapá/AP"},
+              {"unit": "UO111", "city": "Porto Velho/RO"},
+              {"unit": "UO112", "city": "Rio Branco/AC"},
+              {"unit": "UO113", "city": "Boa Vista/RR"}
             ],
             "servicos_da_inspecao": {
                 "value": [

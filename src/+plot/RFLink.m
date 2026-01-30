@@ -111,12 +111,12 @@ function RFLink(hAxes, txSite, rxSite, wayPoints3D, plotMode, rotateViewFlag, fo
             footNoteAlign    = 'right';
         end
 
-        Footnote = sprintf(['\n\\bfTX\nID: %s\nFrequência: %.3f MHz\nLocalização: (%.6fº, %.6fº, %.1fm)\nAltura: %.1fm\n\n'                         ...
+        footnote = sprintf(['\n\\bfTX\nID: %s\nFrequência: %.3f MHz\nLocalização: (%.6fº, %.6fº, %.1fm)\nAltura: %.1fm\n\n'                         ...
                             '\\bfRX\nLocalização: (%.6fº, %.6fº, %.1fm)\nAltura: %.1fm\n\n'                                                         ...
                             '\\bfTX-RX\nDistância: %.1f km\nAzimute: %.1fº\nAtenuação espaço livre: %.1f dB'],                                      ...
                             txSite.ID, txSite.TransmitterFrequency/1e+6, txSite.Latitude, txSite.Longitude, wayPoints3D(1,3), txSite.AntennaHeight, ...
                             rxSite.Latitude, rxSite.Longitude, wayPoints3D(end,3), rxSite.AntennaHeight, distM/1000, Azimuth, PL(end));
-        text(hAxes, footNotePosition, 1, Footnote, Units='normalized', FontSize=10, Interpreter='tex', HorizontalAlignment=footNoteAlign, VerticalAlignment='top', PickableParts='none', Tag='Footnote');
+        text(hAxes, footNotePosition, 1, footnote, Units='normalized', FontSize=10, Interpreter='tex', HorizontalAlignment=footNoteAlign, VerticalAlignment='top', PickableParts='none', Tag='Footnote');
     end
 
     % ## post-Plot
@@ -130,35 +130,35 @@ function varargout = Color(plotMode, plotTag)
         case 'light'
             switch plotTag
                 case 'Terrain'
-                    FaceColor = [0.94,.94,.94];
-                    EdgeColor = [0.80,0.80,0.80];
-                    varargout = {FaceColor, EdgeColor};
+                    faceColor = [0.94,.94,.94];
+                    edgeColor = [0.80,0.80,0.80];
+                    varargout = {faceColor, edgeColor};
                 case 'FirstObstruction'
-                    Color     = [0,0,0];
-                    varargout = {Color};
+                    color     = [0,0,0];
+                    varargout = {color};
                 case {'Station', 'Link'}
-                    Color     = '#c94756';
-                    varargout = {Color};
+                    color     = '#c94756';
+                    varargout = {color};
                 case 'Fresnel'
-                    Color     = 'red';
-                    varargout = {Color};
+                    color     = 'red';
+                    varargout = {color};
             end
 
         case 'dark'
             switch plotTag
                 case 'Terrain'
-                    FaceColor = '#333333';
-                    EdgeColor = '#777777';
-                    varargout = {FaceColor, EdgeColor};
+                    faceColor = '#333333';
+                    edgeColor = '#777777';
+                    varargout = {faceColor, edgeColor};
                 case 'FirstObstruction'
-                    Color     = [.94,.94,.94];
-                    varargout = {Color};
+                    color     = [.94,.94,.94];
+                    varargout = {color};
                 case 'Station'
-                    Color     = 'cyan';
-                    varargout = {Color};
+                    color     = 'cyan';
+                    varargout = {color};
                 case {'Link', 'Fresnel'}
-                    Color     = 'cyan';
-                    varargout = {Color};
+                    color     = 'cyan';
+                    varargout = {color};
             end
     end
 end

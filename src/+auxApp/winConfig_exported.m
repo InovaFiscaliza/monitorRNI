@@ -32,6 +32,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         MonitoringPlanExportKML       matlab.ui.control.CheckBox
         MonitoringPlanExportXLSX      matlab.ui.control.CheckBox
         MonitoringPlanPeriod          matlab.ui.container.CheckBoxTree
+        MonitoringPlanFileSubLabel    matlab.ui.control.Label
         MonitoringPlanOpenFile        matlab.ui.control.Image
         MonitoringPlanFileName        matlab.ui.control.EditField
         MonitoringPlanFileLabel       matlab.ui.control.Label
@@ -100,8 +101,6 @@ classdef winConfig_exported < matlab.apps.AppBase
         reportImageLabel              matlab.ui.control.Label
         reportBasemap                 matlab.ui.control.DropDown
         reportBasemapLabel            matlab.ui.control.Label
-        reportDocType                 matlab.ui.control.DropDown
-        reportDocTypeLabel            matlab.ui.control.Label
         reportLabel                   matlab.ui.control.Label
         eFiscalizaPanel               matlab.ui.container.Panel
         eFiscalizaGrid                matlab.ui.container.GridLayout
@@ -128,6 +127,7 @@ classdef winConfig_exported < matlab.apps.AppBase
     properties (Access = private)
         %-----------------------------------------------------------------%
         Role = 'secondaryApp'
+        Context = 'CONFIG'
     end
 
 
@@ -167,16 +167,11 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function applyJSCustomizations(app, tabIndex)
-            persistent customizationStatus
-            if isempty(customizationStatus)
-                customizationStatus = zeros(1, numel(app.SubTabGroup.Children), 'logical');
-            end
-
-            if customizationStatus(tabIndex)
+            if app.SubTabGroup.UserData.isTabInitialized(tabIndex)
                 return
             end
-
-            customizationStatus(tabIndex) = true;
+            app.SubTabGroup.UserData.isTabInitialized(tabIndex) = true;
+            
             switch tabIndex
                 case 1
                     elDataTag = ui.CustomizationBase.getElementsDataTag({app.versionInfo});
@@ -209,15 +204,20 @@ classdef winConfig_exported < matlab.apps.AppBase
             projectFilePath   = fullfile(projectFolder, 'GeneralSettings.json');
             projectGeneral    = jsondecode(fileread(projectFilePath));
 
-            app.defaultValues = struct('File',            projectGeneral.File, ...
-                                       'MonitoringPlan',  struct('Distance_km', projectGeneral.MonitoringPlan.Distance_km, ...
-                                                                 'FieldValue',  projectGeneral.MonitoringPlan.FieldValue, ...
-                                                                 'Export',      projectGeneral.MonitoringPlan.Export), ...
-                                       'ExternalRequest', struct('Distance_km', projectGeneral.ExternalRequest.Distance_km, ...
-                                                                 'FieldValue',  projectGeneral.ExternalRequest.FieldValue, ...
-                                                                 'Export',      projectGeneral.ExternalRequest.Export), ...
-                                       'Plot',            projectGeneral.Plot, ...
-                                       'Report',          projectGeneral.Report);
+            app.defaultValues = struct( ...
+                'FILE', projectGeneral.context.FILE, ...
+                'MONITORINGPLAN', struct( ...
+                    'maxMeasurementDistanceKm', projectGeneral.context.MONITORINGPLAN.maxMeasurementDistanceKm, ...
+                    'electricFieldStrengthThreshold',  projectGeneral.context.MONITORINGPLAN.electricFieldStrengthThreshold, ...
+                    'exportOptions',      projectGeneral.context.MONITORINGPLAN.exportOptions ...
+                ), ...
+               'EXTERNALREQUEST', struct( ...
+                    'maxMeasurementDistanceKm', projectGeneral.context.EXTERNALREQUEST.maxMeasurementDistanceKm, ...
+                    'electricFieldStrengthThreshold',  projectGeneral.context.EXTERNALREQUEST.electricFieldStrengthThreshold, ...
+                    'exportOptions',      projectGeneral.context.EXTERNALREQUEST.exportOptions), ...
+               'plot', projectGeneral.plot, ...
+               'reportLib', projectGeneral.reportLib ...
+           );
         end
 
         %-----------------------------------------------------------------%
@@ -237,7 +237,16 @@ classdef winConfig_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function applyInitialLayout(app)
             % Versão
-            ui.TextView.update(app.versionInfo, util.HtmlTextGenerator.AppInfo(app.mainApp.General, app.mainApp.rootFolder, app.mainApp.executionMode, app.mainApp.renderCount, "textview"));
+            ui.TextView.update(app.versionInfo, ...
+                util.HtmlTextGenerator.AppInfo( ...
+                    app.mainApp.General, ...
+                    app.mainApp.rootFolder, ...
+                    app.mainApp.executionMode, ...
+                    app.mainApp.renderCount, ...
+                    app.mainApp.projectData, ...
+                    "textview" ...
+                ) ...
+            );
 
             % Modo de operação
             app.openAuxiliarAppAsDocked.Value = app.mainApp.General.operationMode.Dock;
@@ -250,36 +259,39 @@ classdef winConfig_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function updatePanel_Analysis(app)
             % FILE
-            app.InputType.Value                 = app.mainApp.General.File.input;
-            app.SortMethod.Value                = app.mainApp.General.File.sortMethod;
+            app.InputType.Value                 = app.mainApp.General.context.FILE.input;
+            app.SortMethod.Value                = app.mainApp.General.context.FILE.sortMethod;
 
             % PM-RNI
-            app.MonitoringPlanDistance.Value    = app.mainApp.General.MonitoringPlan.Distance_km * 1000;
-            app.MonitoringPlanLevel.Value       = app.mainApp.General.MonitoringPlan.FieldValue;
-            app.MonitoringPlanFileName.Value    = [app.mainApp.General.MonitoringPlan.ReferenceFile '.xlsx'];
+            app.MonitoringPlanDistance.Value    = app.mainApp.General.context.MONITORINGPLAN.maxMeasurementDistanceKm * 1000;
+            app.MonitoringPlanLevel.Value       = app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold;
+            app.MonitoringPlanFileName.Value    = [app.mainApp.General.context.MONITORINGPLAN.referenceFile '.xlsx'];
             
-            MonitoringPlanYearsOptions          = app.mainApp.projectData.modules.MonitoringPlan.referenceData.years;
-            MonitoringPlanYearsValue            = app.mainApp.General.MonitoringPlan.Period;
+            databaseYears = app.mainApp.projectData.modules.MONITORINGPLAN.referenceData.years;
+            initialSelectedYears = "[ " + strjoin(string(app.mainApp.projectData.modules.MONITORINGPLAN.referenceData.selectedYears), ', ') + " ]";
+            currentSelectedYears = app.mainApp.General.context.MONITORINGPLAN.periodYears;
+
+            app.MonitoringPlanFileSubLabel.Text = sprintf('Sessão corrente: %s\n(eventuais alterações nos anos de referência só terão efeito após a reinicialização do aplicativo)', initialSelectedYears);
 
             if ~isempty(app.MonitoringPlanPeriod.Children)
                 delete(app.MonitoringPlanPeriod.Children)
             end
 
-            for ii = 1:numel(MonitoringPlanYearsOptions)                
-                treeNode = uitreenode(app.MonitoringPlanPeriod, 'Text', string(MonitoringPlanYearsOptions(ii)));
-                if ismember(MonitoringPlanYearsOptions(ii), MonitoringPlanYearsValue)
+            for ii = 1:numel(databaseYears)                
+                treeNode = uitreenode(app.MonitoringPlanPeriod, 'Text', string(databaseYears(ii)));
+                if ismember(databaseYears(ii), currentSelectedYears)
                     app.MonitoringPlanPeriod.CheckedNodes = [app.MonitoringPlanPeriod.CheckedNodes; treeNode];
                 end
             end
 
-            app.MonitoringPlanExportXLSX.Value  = app.mainApp.General.MonitoringPlan.Export.XLSX;
-            app.MonitoringPlanExportKML.Value   = app.mainApp.General.MonitoringPlan.Export.KML;
+            app.MonitoringPlanExportXLSX.Value  = app.mainApp.General.context.MONITORINGPLAN.exportOptions.xlsx;
+            app.MonitoringPlanExportKML.Value   = app.mainApp.General.context.MONITORINGPLAN.exportOptions.kml;
 
             % External Request
-            app.ExternalRequestDistance.Value   = app.mainApp.General.ExternalRequest.Distance_km * 1000;
-            app.ExternalRequestLevel.Value      = app.mainApp.General.ExternalRequest.FieldValue;
-            app.ExternalRequestExportXLSX.Value = app.mainApp.General.ExternalRequest.Export.XLSX;
-            app.ExternalRequestExportKML.Value  = app.mainApp.General.ExternalRequest.Export.KML;
+            app.ExternalRequestDistance.Value   = app.mainApp.General.context.EXTERNALREQUEST.maxMeasurementDistanceKm * 1000;
+            app.ExternalRequestLevel.Value      = app.mainApp.General.context.EXTERNALREQUEST.electricFieldStrengthThreshold;
+            app.ExternalRequestExportXLSX.Value = app.mainApp.General.context.EXTERNALREQUEST.exportOptions.xlsx;
+            app.ExternalRequestExportKML.Value  = app.mainApp.General.context.EXTERNALREQUEST.exportOptions.kml;
 
             if checkEdition(app, 'ANALYSIS')
                 app.configAnalysisRefresh.Visible = 1;
@@ -290,31 +302,31 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function updatePanel_Plot(app)
-            app.Basemap.Value              = app.mainApp.General.Plot.GeographicAxes.Basemap;
-            app.Colormap.Value             = app.mainApp.General.Plot.GeographicAxes.Colormap;
-            app.Colorbar.Value             = app.mainApp.General.Plot.GeographicAxes.Colorbar;
-            app.ZoomOrientation.Value      = app.mainApp.General.Plot.GeographicAxes.ZoomOrientation;
+            app.Basemap.Value              = app.mainApp.General.plot.geographicAxes.basemap;
+            app.Colormap.Value             = app.mainApp.General.plot.geographicAxes.colormap;
+            app.Colorbar.Value             = app.mainApp.General.plot.geographicAxes.colorbar;
+            app.ZoomOrientation.Value      = app.mainApp.General.plot.geographicAxes.zoomOrientation;
 
-            app.StationsColor.Value        = app.mainApp.General.Plot.Stations.Color;
-            app.StationsSize.Value         = app.mainApp.General.Plot.Stations.Size;
+            app.StationsColor.Value        = app.mainApp.General.plot.stations.color;
+            app.StationsSize.Value         = app.mainApp.General.plot.stations.size;
 
-            app.SelectedStationColor.Value = app.mainApp.General.Plot.SelectedStation.Color;
-            app.SelectedStationSize.Value  = app.mainApp.General.Plot.SelectedStation.Size;
+            app.SelectedStationColor.Value = app.mainApp.General.plot.selectedStation.color;
+            app.SelectedStationSize.Value  = app.mainApp.General.plot.selectedStation.size;
 
-            app.CircleColor.Value          = app.mainApp.General.Plot.CircleRegion.Color;
-            app.CircleFaceAlpha.Value      = app.mainApp.General.Plot.CircleRegion.FaceAlpha;
-            app.CircleEdgeAlpha.Value      = app.mainApp.General.Plot.CircleRegion.EdgeAlpha;
+            app.CircleColor.Value          = app.mainApp.General.plot.circleRegion.color;
+            app.CircleFaceAlpha.Value      = app.mainApp.General.plot.circleRegion.faceAlpha;
+            app.CircleEdgeAlpha.Value      = app.mainApp.General.plot.circleRegion.edgeAlpha;
 
-            app.AutomaticZoomMode.Value    = app.mainApp.General.Plot.SelectedStation.AutomaticZoom;
-            app.AutomaticZoomFactor.Value  = app.mainApp.General.Plot.SelectedStation.AutomaticZoomFactor;
+            app.AutomaticZoomMode.Value    = app.mainApp.General.plot.selectedStation.automaticZoom;
+            app.AutomaticZoomFactor.Value  = app.mainApp.General.plot.selectedStation.automaticZoomFactor;
             if app.AutomaticZoomMode.Value
                 app.AutomaticZoomFactor.Enable = 1;
             else
                 app.AutomaticZoomFactor.Enable = 0;
             end
 
-            app.PeakColor.Value            = app.mainApp.General.Plot.FieldPeak.Color;
-            app.PeakSize.Value             = app.mainApp.General.Plot.FieldPeak.Size;
+            app.PeakColor.Value            = app.mainApp.General.plot.fieldPeak.color;
+            app.PeakSize.Value             = app.mainApp.General.plot.fieldPeak.size;
 
             if checkEdition(app, 'PLOT')
                 app.configPlotRefresh.Visible = 1;
@@ -325,18 +337,17 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function updatePanel_Report(app)
-            app.reportSystem.Value        = app.mainApp.General.Report.system;
-            set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, 'Value', app.mainApp.General.Report.unit)
-            
-            app.reportDocType.Value       = app.mainApp.General.Report.Document;
-            app.reportBasemap.Value       = app.mainApp.General.Report.Basemap;
-            app.reportImgFormat.Value     = app.mainApp.General.Report.Image.Format;
-            app.reportImgDpi.Value        = num2str(app.mainApp.General.Report.Image.Resolution);
-            app.reportBinningLength.Value = app.mainApp.General.Report.DataBinning.length_m;
-            app.reportBinningFcn.Value    = app.mainApp.General.Report.DataBinning.function;
+            app.reportSystem.Value        = app.mainApp.General.reportLib.system;
+            set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, 'Value', app.mainApp.General.reportLib.unit)
 
-            if ismember(app.mainApp.General.Report.outputCompressionMode, app.prjFileCompressionMode.Items)
-                app.prjFileCompressionMode.Value = app.mainApp.General.Report.outputCompressionMode;
+            app.reportBasemap.Value       = app.mainApp.General.reportLib.basemap;
+            app.reportImgFormat.Value     = app.mainApp.General.reportLib.image.format;
+            app.reportImgDpi.Value        = num2str(app.mainApp.General.reportLib.image.resolutionDpi);
+            app.reportBinningLength.Value = app.mainApp.General.reportLib.dataBinning.binLengthMeters;
+            app.reportBinningFcn.Value    = app.mainApp.General.reportLib.dataBinning.aggregationFunction;
+
+            if ismember(app.mainApp.General.reportLib.outputCompressionMode, app.prjFileCompressionMode.Items)
+                app.prjFileCompressionMode.Value = app.mainApp.General.reportLib.outputCompressionMode;
             end
 
             app.eFiscalizaRefresh.Visible = checkEdition(app, 'REPORT');
@@ -355,27 +366,33 @@ classdef winConfig_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function editionFlag = checkEdition(app, tabName)
             editionFlag   = false;
-            currentValues = struct('File',            app.mainApp.General.File, ...
-                                   'MonitoringPlan',  struct('Distance_km', app.mainApp.General.MonitoringPlan.Distance_km, ...
-                                                             'FieldValue',  app.mainApp.General.MonitoringPlan.FieldValue, ...
-                                                             'Export',      app.mainApp.General.MonitoringPlan.Export), ...
-                                   'ExternalRequest', struct('Distance_km', app.mainApp.General.ExternalRequest.Distance_km, ...
-                                                             'FieldValue',  app.mainApp.General.ExternalRequest.FieldValue, ...
-                                                             'Export',      app.mainApp.General.ExternalRequest.Export), ...
-                                   'Plot',            app.mainApp.General.Plot, ...
-                                   'Report',          app.mainApp.General.Report);
+            currentValues = struct( ...
+                'FILE', app.mainApp.General.context.FILE, ...
+                'MONITORINGPLAN', struct( ...
+                    'maxMeasurementDistanceKm', app.mainApp.General.context.MONITORINGPLAN.maxMeasurementDistanceKm, ...
+                    'electricFieldStrengthThreshold',  app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold, ...
+                    'exportOptions',      app.mainApp.General.context.MONITORINGPLAN.exportOptions ...
+                ), ...
+                'EXTERNALREQUEST', struct( ...
+                    'maxMeasurementDistanceKm', app.mainApp.General.context.EXTERNALREQUEST.maxMeasurementDistanceKm, ...
+                    'electricFieldStrengthThreshold',  app.mainApp.General.context.EXTERNALREQUEST.electricFieldStrengthThreshold, ...
+                    'exportOptions',      app.mainApp.General.context.EXTERNALREQUEST.exportOptions ...
+                ), ...
+               'plot', app.mainApp.General.plot, ...
+               'reportLib', app.mainApp.General.reportLib ...
+           );
 
             switch tabName
                 case 'ANALYSIS'
-                    if ~isequal(rmfield(currentValues, {'Plot', 'Report'}), rmfield(app.defaultValues, {'Plot', 'Report'}))
+                    if ~isequal(rmfield(currentValues, {'plot', 'reportLib'}), rmfield(app.defaultValues, {'plot', 'reportLib'}))
                         editionFlag = true;
                     end
                 case 'PLOT'
-                    if ~isequal(currentValues.Plot, app.defaultValues.Plot)
+                    if ~isequal(currentValues.plot, app.defaultValues.plot)
                         editionFlag = true;
                     end
                 case 'REPORT'
-                    if ~isequal(currentValues.Report, app.defaultValues.Report)
+                    if ~isequal(currentValues.reportLib, app.defaultValues.reportLib)
                         editionFlag = true;
                     end
             end
@@ -405,7 +422,7 @@ classdef winConfig_exported < matlab.apps.AppBase
         % Close request function: UIFigure
         function closeFcn(app, event)
             
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'closeFcn')
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'closeFcn', app.Context)
             delete(app)
             
         end
@@ -420,9 +437,9 @@ classdef winConfig_exported < matlab.apps.AppBase
                     appGeneral = app.mainApp.General;
                     appGeneral.operationMode.Dock = false;
 
-                    inputArguments = ipcMainMatlabCallsHandler(app.mainApp, app, 'dockButtonPushed', auxAppTag);
                     app.mainApp.tabGroupController.Components.appHandle{idx} = [];
-                    
+
+                    inputArguments = ipcMainMatlabCallsHandler(app.mainApp, app, 'dockButtonPushed', auxAppTag);
                     openModule(app.mainApp.tabGroupController, relatedButton, false, appGeneral, inputArguments{:})
                     closeModule(app.mainApp.tabGroupController, auxAppTag, app.mainApp.General, 'undock')
                     
@@ -501,7 +518,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             end
 
             app.mainApp.General.operationMode.Simulation = true;
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'simulationModeChanged')
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'onSimulationMode')
 
         end
 
@@ -537,23 +554,25 @@ classdef winConfig_exported < matlab.apps.AppBase
                 return
 
             else
-                app.mainApp.General.File                        = app.defaultValues.File;
-                app.mainApp.General.MonitoringPlan.Distance_km  = app.defaultValues.MonitoringPlan.Distance_km;
-                app.mainApp.General.MonitoringPlan.FieldValue   = app.defaultValues.MonitoringPlan.FieldValue;
-                app.mainApp.General.MonitoringPlan.Export       = app.defaultValues.MonitoringPlan.Export;
-                app.mainApp.General.ExternalRequest.Distance_km = app.defaultValues.ExternalRequest.Distance_km;
-                app.mainApp.General.ExternalRequest.FieldValue  = app.defaultValues.ExternalRequest.FieldValue;
-                app.mainApp.General.ExternalRequest.Export      = app.defaultValues.ExternalRequest.Export;
+                app.mainApp.General.context.FILE = app.defaultValues.FILE;
 
-                app.mainApp.General_I.File            = app.mainApp.General.File;
-                app.mainApp.General_I.MonitoringPlan  = app.mainApp.General.MonitoringPlan;
-                app.mainApp.General_I.ExternalRequest = app.mainApp.General.ExternalRequest;
+                app.mainApp.General.context.MONITORINGPLAN.maxMeasurementDistanceKm = app.defaultValues.MONITORINGPLAN.maxMeasurementDistanceKm;
+                app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold = app.defaultValues.MONITORINGPLAN.electricFieldStrengthThreshold;
+                app.mainApp.General.context.MONITORINGPLAN.exportOptions = app.defaultValues.MONITORINGPLAN.exportOptions;
+                
+                app.mainApp.General.context.EXTERNALREQUEST.maxMeasurementDistanceKm = app.defaultValues.EXTERNALREQUEST.maxMeasurementDistanceKm;
+                app.mainApp.General.context.EXTERNALREQUEST.electricFieldStrengthThreshold = app.defaultValues.EXTERNALREQUEST.electricFieldStrengthThreshold;
+                app.mainApp.General.context.EXTERNALREQUEST.exportOptions = app.defaultValues.EXTERNALREQUEST.exportOptions;
+
+                app.mainApp.General_I.context.FILE = app.mainApp.General.context.FILE;
+                app.mainApp.General_I.context.MONITORINGPLAN = app.mainApp.General.context.MONITORINGPLAN;
+                app.mainApp.General_I.context.EXTERNALREQUEST = app.mainApp.General.context.EXTERNALREQUEST;
 
                 updatePanel_Analysis(app)
                 saveGeneralSettings(app)
                 
-                ipcMainMatlabCallsHandler(app.mainApp, app, 'MonitoringPlan:AnalysisParameterChanged')
-                ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest:AnalysisParameterChanged')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'onAnalysisParameterChanged', 'MONITORINGPLAN')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'onAnalysisParameterChanged', 'EXTERNALREQUEST')
             end
 
         end
@@ -562,62 +581,66 @@ classdef winConfig_exported < matlab.apps.AppBase
         % ...and 10 other components
         function Config_AnalysisParameterValueChanged(app, event)
             
-            updateAnalysisName = '';
-
+            context = '';
+            eventName = '';
+            
             switch event.Source
                 case app.InputType
-                    app.mainApp.General.File.input = app.InputType.Value;
+                    app.mainApp.General.context.FILE.input = app.InputType.Value;
 
                 case app.SortMethod
-                    app.mainApp.General.File.sortMethod = app.SortMethod.Value;
-                    ipcMainMatlabCallsHandler(app.mainApp, app, 'fileSortMethodChanged')
+                    app.mainApp.General.context.FILE.sortMethod = app.SortMethod.Value;
+                    ipcMainMatlabCallsHandler(app.mainApp, app, 'onFileSortMethodChanged')
 
                 case app.MonitoringPlanDistance
-                    app.mainApp.General.MonitoringPlan.Distance_km  = app.MonitoringPlanDistance.Value / 1000;
-                    updateAnalysisName = 'MonitoringPlan:AnalysisParameterChanged';
+                    context = 'MONITORINGPLAN';
+                    eventName = 'onAnalysisParameterChanged';
+                    app.mainApp.General.context.MONITORINGPLAN.maxMeasurementDistanceKm = app.MonitoringPlanDistance.Value / 1000;
 
                 case app.MonitoringPlanLevel
-                    app.mainApp.General.MonitoringPlan.FieldValue   = app.MonitoringPlanLevel.Value;
-                    updateAnalysisName = 'MonitoringPlan:AnalysisParameterChanged';
+                    context = 'MONITORINGPLAN';
+                    eventName = 'onAnalysisParameterChanged';
+                    app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold = app.MonitoringPlanLevel.Value;
 
                 case app.MonitoringPlanPeriod
                     if isempty(app.MonitoringPlanPeriod.CheckedNodes)
                         app.MonitoringPlanPeriod.CheckedNodes = event.PreviousCheckedNodes;
                         return
                     end
-                    app.mainApp.General.MonitoringPlan.Period       = str2double({app.MonitoringPlanPeriod.CheckedNodes.Text});
-                    updateAnalysisName = 'MonitoringPlan:AnalysisParameterChanged';
+                    app.mainApp.General.context.MONITORINGPLAN.periodYears = str2double({app.MonitoringPlanPeriod.CheckedNodes.Text});
 
                 case app.MonitoringPlanExportXLSX
-                    app.mainApp.General.MonitoringPlan.Export.XLSX  = app.MonitoringPlanExportXLSX.Value;
+                    app.mainApp.General.context.MONITORINGPLAN.exportOptions.xlsx = app.MonitoringPlanExportXLSX.Value;
 
                 case app.MonitoringPlanExportKML
-                    app.mainApp.General.MonitoringPlan.Export.KML   = app.MonitoringPlanExportKML.Value;
+                    app.mainApp.General.context.MONITORINGPLAN.exportOptions.kml = app.MonitoringPlanExportKML.Value;
 
                 case app.ExternalRequestDistance
-                    app.mainApp.General.ExternalRequest.Distance_km = app.ExternalRequestDistance.Value / 1000;
-                    updateAnalysisName = 'ExternalRequest:AnalysisParameterChanged';
+                    context = 'EXTERNALREQUEST';
+                    eventName = 'onAnalysisParameterChanged';
+                    app.mainApp.General.context.EXTERNALREQUEST.maxMeasurementDistanceKm = app.ExternalRequestDistance.Value / 1000;
 
                 case app.ExternalRequestLevel
-                    app.mainApp.General.ExternalRequest.FieldValue  = app.ExternalRequestLevel.Value;
-                    updateAnalysisName = 'ExternalRequest:AnalysisParameterChanged';
+                    context = 'EXTERNALREQUEST';
+                    eventName = 'onAnalysisParameterChanged';
+                    app.mainApp.General.context.EXTERNALREQUEST.electricFieldStrengthThreshold = app.ExternalRequestLevel.Value;
 
                 case app.ExternalRequestExportXLSX
-                    app.mainApp.General.ExternalRequest.Export.XLSX  = app.ExternalRequestExportXLSX.Value;
+                    app.mainApp.General.context.EXTERNALREQUEST.exportOptions.xlsx = app.ExternalRequestExportXLSX.Value;
 
                 case app.ExternalRequestExportKML
-                    app.mainApp.General.ExternalRequest.Export.KML   = app.ExternalRequestExportKML.Value;
+                    app.mainApp.General.context.EXTERNALREQUEST.exportOptions.kml = app.ExternalRequestExportKML.Value;
             end
 
-            app.mainApp.General_I.File            = app.mainApp.General.File;
-            app.mainApp.General_I.MonitoringPlan  = app.mainApp.General.MonitoringPlan;
-            app.mainApp.General_I.ExternalRequest = app.mainApp.General.ExternalRequest;
+            app.mainApp.General_I.context.FILE = app.mainApp.General.context.FILE;
+            app.mainApp.General_I.context.MONITORINGPLAN = app.mainApp.General.context.MONITORINGPLAN;
+            app.mainApp.General_I.context.EXTERNALREQUEST = app.mainApp.General.context.EXTERNALREQUEST;
 
             updatePanel_Analysis(app)
             saveGeneralSettings(app)
 
-            if ~isempty(updateAnalysisName)
-                ipcMainMatlabCallsHandler(app.mainApp, app, updateAnalysisName)
+            if ~isempty(eventName)
+                ipcMainMatlabCallsHandler(app.mainApp, app, eventName, context)
             end
             
         end
@@ -644,16 +667,16 @@ classdef winConfig_exported < matlab.apps.AppBase
                 return
             
             else
-                app.mainApp.General.Plot   = app.defaultValues.Plot;
-                app.mainApp.General_I.Plot = app.mainApp.General.Plot;
+                app.mainApp.General.plot = app.defaultValues.plot;
+                app.mainApp.General_I.plot = app.mainApp.General.plot;
                 
                 updatePanel_Plot(app)
                 saveGeneralSettings(app)
     
-                ipcMainMatlabCallsHandler(app.mainApp, app, 'MonitoringPlan:AxesParameterChanged')
-                ipcMainMatlabCallsHandler(app.mainApp, app, 'MonitoringPlan:PlotParameterChanged')
-                ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest:AxesParameterChanged')
-                ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest:PlotParameterChanged')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'onAxesParameterChanged', 'MONITORINGPLAN')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'onPlotParameterChanged', 'MONITORINGPLAN')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'onAxesParameterChanged', 'EXTERNALREQUEST')
+                ipcMainMatlabCallsHandler(app.mainApp, app, 'onPlotParameterChanged', 'EXTERNALREQUEST')
             end
 
         end
@@ -663,22 +686,22 @@ classdef winConfig_exported < matlab.apps.AppBase
             
             switch event.Source
                 case app.Basemap
-                    app.mainApp.General.Plot.GeographicAxes.Basemap  = app.Basemap.Value;
+                    app.mainApp.General.plot.geographicAxes.basemap  = app.Basemap.Value;
 
                 case app.Colormap
-                    app.mainApp.General.Plot.GeographicAxes.Colormap = app.Colormap.Value;
+                    app.mainApp.General.plot.geographicAxes.colormap = app.Colormap.Value;
 
                 case app.Colorbar
-                    app.mainApp.General.Plot.GeographicAxes.Colorbar = app.Colorbar.Value;
+                    app.mainApp.General.plot.geographicAxes.colorbar = app.Colorbar.Value;
             end
 
-            app.mainApp.General_I.Plot = app.mainApp.General.Plot;
+            app.mainApp.General_I.plot = app.mainApp.General.plot;
 
             updatePanel_Plot(app)
             saveGeneralSettings(app)
             
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'MonitoringPlan:AxesParameterChanged')
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest:AxesParameterChanged')
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'onAxesParameterChanged', 'MONITORINGPLAN')
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'onAxesParameterChanged', 'EXTERNALREQUEST')
 
         end
 
@@ -688,28 +711,28 @@ classdef winConfig_exported < matlab.apps.AppBase
             
             switch event.Source
                 case app.StationsSize
-                    app.mainApp.General.Plot.Stations.Size          = round(app.StationsSize.Value);
+                    app.mainApp.General.plot.stations.size          = round(app.StationsSize.Value);
 
                 case app.SelectedStationSize
-                    app.mainApp.General.Plot.SelectedStation.Size   = round(app.SelectedStationSize.Value);
+                    app.mainApp.General.plot.selectedStation.size   = round(app.SelectedStationSize.Value);
 
                 case app.PeakSize
-                    app.mainApp.General.Plot.FieldPeak.Size         = round(app.PeakSize.Value);
+                    app.mainApp.General.plot.fieldPeak.size         = round(app.PeakSize.Value);
 
                 case app.CircleColor
-                    app.mainApp.General.Plot.CircleRegion.Color     = app.CircleColor.Value;
+                    app.mainApp.General.plot.circleRegion.color     = app.CircleColor.Value;
 
                 case app.CircleFaceAlpha
-                    app.mainApp.General.Plot.CircleRegion.FaceAlpha = app.CircleFaceAlpha.Value;
+                    app.mainApp.General.plot.circleRegion.faceAlpha = app.CircleFaceAlpha.Value;
 
                 case app.CircleEdgeAlpha
-                    app.mainApp.General.Plot.CircleRegion.EdgeAlpha = app.CircleEdgeAlpha.Value;
+                    app.mainApp.General.plot.circleRegion.edgeAlpha = app.CircleEdgeAlpha.Value;
 
                 case app.ZoomOrientation
-                    app.mainApp.General.Plot.GeographicAxes.ZoomOrientation = app.ZoomOrientation.Value;
+                    app.mainApp.General.plot.geographicAxes.zoomOrientation = app.ZoomOrientation.Value;
 
                 case app.AutomaticZoomMode
-                    app.mainApp.General.Plot.SelectedStation.AutomaticZoom  = app.AutomaticZoomMode.Value;
+                    app.mainApp.General.plot.selectedStation.automaticZoom  = app.AutomaticZoomMode.Value;
                     if app.AutomaticZoomMode.Value
                         app.AutomaticZoomFactor.Enable = 1;
                     else
@@ -717,7 +740,7 @@ classdef winConfig_exported < matlab.apps.AppBase
                     end
 
                 case app.AutomaticZoomFactor
-                    app.mainApp.General.Plot.SelectedStation.AutomaticZoomFactor = app.AutomaticZoomFactor.Value;
+                    app.mainApp.General.plot.selectedStation.automaticZoomFactor = app.AutomaticZoomFactor.Value;
 
                 case {app.PeakColor, app.SelectedStationColor, app.StationsColor}
                     initialColor  = event.PreviousValue;
@@ -728,22 +751,22 @@ classdef winConfig_exported < matlab.apps.AppBase
             
                         switch event.Source
                             case app.StationsColor
-                                app.mainApp.General.Plot.Stations.Color        = selectedColor;
+                                app.mainApp.General.plot.stations.color = selectedColor;
                             case app.SelectedStationColor
-                                app.mainApp.General.Plot.SelectedStation.Color = selectedColor;
+                                app.mainApp.General.plot.selectedStation.color = selectedColor;
                             case app.PeakColor
-                                app.mainApp.General.Plot.FieldPeak.Color       = selectedColor;
+                                app.mainApp.General.plot.fieldPeak.color = selectedColor;
                         end
                     end
             end
 
-            app.mainApp.General_I.Plot = app.mainApp.General.Plot;
+            app.mainApp.General_I.plot = app.mainApp.General.plot;
 
             updatePanel_Plot(app)
             saveGeneralSettings(app)
-            
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'MonitoringPlan:PlotParameterChanged')
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'ExternalRequest:PlotParameterChanged')
+
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'onPlotParameterChanged', 'MONITORINGPLAN')
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'onPlotParameterChanged', 'EXTERNALREQUEST')
             
         end
 
@@ -755,8 +778,8 @@ classdef winConfig_exported < matlab.apps.AppBase
                 return
             
             else
-                app.mainApp.General.Report   = app.defaultValues.Report;
-                app.mainApp.General_I.Report = app.mainApp.General.Report;
+                app.mainApp.General.reportLib = app.defaultValues.reportLib;
+                app.mainApp.General_I.reportLib = app.mainApp.General.reportLib;
                 
                 updatePanel_Report(app)
                 saveGeneralSettings(app)
@@ -765,39 +788,36 @@ classdef winConfig_exported < matlab.apps.AppBase
         end
 
         % Value changed function: reportBasemap, reportBinningFcn, 
-        % ...and 6 other components
+        % ...and 5 other components
         function Config_ProjectParameterValueChanged(app, event)
 
             switch event.Source
                 case app.reportSystem
-                    app.mainApp.General.Report.system = event.Value;
+                    app.mainApp.General.reportLib.system = event.Value;
 
                 case app.reportUnit
-                    app.mainApp.General.Report.unit = event.Value;
-
-                case app.reportDocType
-                    app.mainApp.General.Report.Document = event.Value;
-
-                case app.reportBasemap
-                    app.mainApp.General.Report.Basemap = event.Value;
-
-                case app.reportImgFormat
-                    app.mainApp.General.Report.Image.Format = event.Value;
-
-                case app.reportImgDpi
-                    app.mainApp.General.Report.Image.Resolution = str2double(event.Value);
-
-                case app.reportBinningLength
-                    app.mainApp.General.Report.DataBinning.length_m = event.Value;
-
-                case app.reportBinningFcn
-                    app.mainApp.General.Report.DataBinning.function = event.Value;
+                    app.mainApp.General.reportLib.unit = event.Value;
 
                 case app.prjFileCompressionMode
-                    app.mainApp.General.Report.outputCompressionMode = event.Value;
+                    app.mainApp.General.reportLib.outputCompressionMode = event.Value;
+
+                case app.reportBasemap
+                    app.mainApp.General.reportLib.basemap = event.Value;
+
+                case app.reportImgFormat
+                    app.mainApp.General.reportLib.image.format = event.Value;
+
+                case app.reportImgDpi
+                    app.mainApp.General.reportLib.image.resolutionDpi = str2double(event.Value);
+
+                case app.reportBinningLength
+                    app.mainApp.General.reportLib.dataBinning.binLengthMeters = event.Value;
+
+                case app.reportBinningFcn
+                    app.mainApp.General.reportLib.dataBinning.aggregationFunction = event.Value;
             end
 
-            app.mainApp.General_I.Report = app.mainApp.General.Report;
+            app.mainApp.General_I.reportLib = app.mainApp.General.reportLib;
 
             updatePanel_Report(app)
             saveGeneralSettings(app)
@@ -917,7 +937,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.tool_simulationMode.ScaleMethod = 'none';
             app.tool_simulationMode.ImageClickedFcn = createCallbackFcn(app, @Toolbar_SimulationModeButtonPushed, true);
             app.tool_simulationMode.Tooltip = {'Leitura arquivos de simulação'};
-            app.tool_simulationMode.Layout.Row = 2;
+            app.tool_simulationMode.Layout.Row = [1 3];
             app.tool_simulationMode.Layout.Column = 1;
             app.tool_simulationMode.ImageSource = 'Import_16.png';
 
@@ -927,7 +947,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.tool_openDevTools.ImageClickedFcn = createCallbackFcn(app, @Toolbar_OpenDevToolsClicked, true);
             app.tool_openDevTools.Enable = 'off';
             app.tool_openDevTools.Tooltip = {'Abre DevTools'};
-            app.tool_openDevTools.Layout.Row = 2;
+            app.tool_openDevTools.Layout.Row = [1 3];
             app.tool_openDevTools.Layout.Column = 4;
             app.tool_openDevTools.ImageSource = 'Debug_18.png';
 
@@ -1020,7 +1040,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create SubGrid2
             app.SubGrid2 = uigridlayout(app.SubTab2);
             app.SubGrid2.ColumnWidth = {'1x', 22};
-            app.SubGrid2.RowHeight = {17, 69, 22, 200, 22, '1x'};
+            app.SubGrid2.RowHeight = {17, 69, 22, 224, 22, '1x'};
             app.SubGrid2.RowSpacing = 5;
             app.SubGrid2.BackgroundColor = [1 1 1];
 
@@ -1120,7 +1140,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.MonitoringPlanDistanceLabel.WordWrap = 'on';
             app.MonitoringPlanDistanceLabel.FontSize = 11;
             app.MonitoringPlanDistanceLabel.Layout.Row = 1;
-            app.MonitoringPlanDistanceLabel.Layout.Column = [1 2];
+            app.MonitoringPlanDistanceLabel.Layout.Column = 1;
             app.MonitoringPlanDistanceLabel.Text = 'Distância limite entre ponto de medição e a estação sob análise (m):';
 
             % Create MonitoringPlanDistance
@@ -1153,7 +1173,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.MonitoringPlanFileLabel.FontSize = 11;
             app.MonitoringPlanFileLabel.Layout.Row = 3;
             app.MonitoringPlanFileLabel.Layout.Column = 1;
-            app.MonitoringPlanFileLabel.Text = 'Arquivo de referência:';
+            app.MonitoringPlanFileLabel.Text = 'Base de referência das estações sob análise:';
 
             % Create MonitoringPlanFileName
             app.MonitoringPlanFileName = uieditfield(app.configAnalysisGrid2, 'text');
@@ -1170,6 +1190,16 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.MonitoringPlanOpenFile.Layout.Row = 3;
             app.MonitoringPlanOpenFile.Layout.Column = 4;
             app.MonitoringPlanOpenFile.ImageSource = 'Import_16.png';
+
+            % Create MonitoringPlanFileSubLabel
+            app.MonitoringPlanFileSubLabel = uilabel(app.configAnalysisGrid2);
+            app.MonitoringPlanFileSubLabel.VerticalAlignment = 'top';
+            app.MonitoringPlanFileSubLabel.WordWrap = 'on';
+            app.MonitoringPlanFileSubLabel.FontSize = 11;
+            app.MonitoringPlanFileSubLabel.FontColor = [0.502 0.502 0.502];
+            app.MonitoringPlanFileSubLabel.Layout.Row = 4;
+            app.MonitoringPlanFileSubLabel.Layout.Column = 1;
+            app.MonitoringPlanFileSubLabel.Text = {'Sessão corrente: [ 2026 ]'; '(eventuais alterações nos anos de referência só terão efeito após a reinicialização do aplicativo)'};
 
             % Create MonitoringPlanPeriod
             app.MonitoringPlanPeriod = uitree(app.configAnalysisGrid2, 'checkbox');
@@ -1657,32 +1687,14 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create reportGrid
             app.reportGrid = uigridlayout(app.reportPanel);
             app.reportGrid.ColumnWidth = {350, 110, 110};
-            app.reportGrid.RowHeight = {22, 22, 22, 22, 48, 22, '1x'};
+            app.reportGrid.RowHeight = {22, 22, 22, 48, 22, '1x'};
             app.reportGrid.RowSpacing = 5;
             app.reportGrid.BackgroundColor = [1 1 1];
-
-            % Create reportDocTypeLabel
-            app.reportDocTypeLabel = uilabel(app.reportGrid);
-            app.reportDocTypeLabel.WordWrap = 'on';
-            app.reportDocTypeLabel.FontSize = 11;
-            app.reportDocTypeLabel.Layout.Row = 1;
-            app.reportDocTypeLabel.Layout.Column = 1;
-            app.reportDocTypeLabel.Text = 'Tipo de documento a gerar:';
-
-            % Create reportDocType
-            app.reportDocType = uidropdown(app.reportGrid);
-            app.reportDocType.Items = {'Relatório de Atividades'};
-            app.reportDocType.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
-            app.reportDocType.FontSize = 11;
-            app.reportDocType.BackgroundColor = [1 1 1];
-            app.reportDocType.Layout.Row = 1;
-            app.reportDocType.Layout.Column = [2 3];
-            app.reportDocType.Value = 'Relatório de Atividades';
 
             % Create reportBasemapLabel
             app.reportBasemapLabel = uilabel(app.reportGrid);
             app.reportBasemapLabel.FontSize = 11;
-            app.reportBasemapLabel.Layout.Row = 2;
+            app.reportBasemapLabel.Layout.Row = 1;
             app.reportBasemapLabel.Layout.Column = 1;
             app.reportBasemapLabel.Text = 'Basemap do eixo geográfico dos plots:';
 
@@ -1692,14 +1704,14 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportBasemap.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
             app.reportBasemap.FontSize = 11;
             app.reportBasemap.BackgroundColor = [1 1 1];
-            app.reportBasemap.Layout.Row = 2;
+            app.reportBasemap.Layout.Row = 1;
             app.reportBasemap.Layout.Column = [2 3];
             app.reportBasemap.Value = 'streets-dark';
 
             % Create reportImageLabel
             app.reportImageLabel = uilabel(app.reportGrid);
             app.reportImageLabel.FontSize = 11;
-            app.reportImageLabel.Layout.Row = 3;
+            app.reportImageLabel.Layout.Row = 2;
             app.reportImageLabel.Layout.Column = 1;
             app.reportImageLabel.Text = 'Formato e resolução (dpi) das imagens:';
 
@@ -1710,7 +1722,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportImgFormat.FontSize = 11;
             app.reportImgFormat.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.reportImgFormat.BackgroundColor = [1 1 1];
-            app.reportImgFormat.Layout.Row = 3;
+            app.reportImgFormat.Layout.Row = 2;
             app.reportImgFormat.Layout.Column = 2;
             app.reportImgFormat.Value = 'jpeg';
 
@@ -1721,7 +1733,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportImgDpi.FontSize = 11;
             app.reportImgDpi.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.reportImgDpi.BackgroundColor = [1 1 1];
-            app.reportImgDpi.Layout.Row = 3;
+            app.reportImgDpi.Layout.Row = 2;
             app.reportImgDpi.Layout.Column = 3;
             app.reportImgDpi.Value = '100';
 
@@ -1729,7 +1741,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportBinningLabel = uilabel(app.reportGrid);
             app.reportBinningLabel.VerticalAlignment = 'top';
             app.reportBinningLabel.FontSize = 11;
-            app.reportBinningLabel.Layout.Row = [4 5];
+            app.reportBinningLabel.Layout.Row = [3 4];
             app.reportBinningLabel.Layout.Column = 1;
             app.reportBinningLabel.Text = {'Sumarização de pontos com níveis superiores ao limiar:'; '(Data-Binning)'};
 
@@ -1738,7 +1750,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportBinningPanel.AutoResizeChildren = 'off';
             app.reportBinningPanel.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.reportBinningPanel.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.reportBinningPanel.Layout.Row = [4 5];
+            app.reportBinningPanel.Layout.Row = [3 4];
             app.reportBinningPanel.Layout.Column = [2 3];
 
             % Create reportBinningGrid
@@ -1796,7 +1808,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.prjFileCompressionModeLabel = uilabel(app.reportGrid);
             app.prjFileCompressionModeLabel.WordWrap = 'on';
             app.prjFileCompressionModeLabel.FontSize = 11;
-            app.prjFileCompressionModeLabel.Layout.Row = 6;
+            app.prjFileCompressionModeLabel.Layout.Row = 5;
             app.prjFileCompressionModeLabel.Layout.Column = 1;
             app.prjFileCompressionModeLabel.Text = 'Compressão aplicada ao arquivo de saída do projeto?';
 
@@ -1805,7 +1817,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.prjFileCompressionMode.Items = {'Não', 'Sim'};
             app.prjFileCompressionMode.FontSize = 11;
             app.prjFileCompressionMode.BackgroundColor = [1 1 1];
-            app.prjFileCompressionMode.Layout.Row = 6;
+            app.prjFileCompressionMode.Layout.Row = 5;
             app.prjFileCompressionMode.Layout.Column = 2;
             app.prjFileCompressionMode.Value = 'Não';
 
@@ -1841,12 +1853,13 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create DataHubPOSTButton
             app.DataHubPOSTButton = uiimage(app.SubGrid5);
+            app.DataHubPOSTButton.ScaleMethod = 'none';
             app.DataHubPOSTButton.ImageClickedFcn = createCallbackFcn(app, @Config_FolderButtonPushed, true);
             app.DataHubPOSTButton.Tag = 'DataHub_POST';
             app.DataHubPOSTButton.Enable = 'off';
             app.DataHubPOSTButton.Layout.Row = 2;
             app.DataHubPOSTButton.Layout.Column = 2;
-            app.DataHubPOSTButton.ImageSource = 'OpenFile_36x36.png';
+            app.DataHubPOSTButton.ImageSource = 'folder-opened-16px.svg';
 
             % Create userPathLabel
             app.userPathLabel = uilabel(app.SubGrid5);
@@ -1866,12 +1879,13 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create userPathButton
             app.userPathButton = uiimage(app.SubGrid5);
+            app.userPathButton.ScaleMethod = 'none';
             app.userPathButton.ImageClickedFcn = createCallbackFcn(app, @Config_FolderButtonPushed, true);
             app.userPathButton.Tag = 'userPath';
             app.userPathButton.Enable = 'off';
             app.userPathButton.Layout.Row = 4;
             app.userPathButton.Layout.Column = 2;
-            app.userPathButton.ImageSource = 'OpenFile_36x36.png';
+            app.userPathButton.ImageSource = 'folder-opened-16px.svg';
 
             % Create DockModule
             app.DockModule = uigridlayout(app.GridLayout);

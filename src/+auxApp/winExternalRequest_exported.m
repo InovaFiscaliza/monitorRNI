@@ -55,12 +55,13 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         UITable                      matlab.ui.control.Table
         Toolbar                      matlab.ui.container.GridLayout
         tool_UploadFinalFile         matlab.ui.control.Image
-        tool_ExportFiles             matlab.ui.control.Image
         tool_GenerateReport          matlab.ui.control.Image
-        tool_peakIcon                matlab.ui.control.Image
         tool_peakLabel               matlab.ui.control.Label
-        tool_Separator               matlab.ui.control.Image
+        tool_peakIcon                matlab.ui.control.Image
+        tool_Separator2              matlab.ui.control.Image
+        tool_ExportFiles             matlab.ui.control.Image
         tool_TableVisibility         matlab.ui.control.Image
+        tool_Separator1              matlab.ui.control.Image
         tool_ControlPanelVisibility  matlab.ui.control.Image
         ContextMenu                  matlab.ui.container.ContextMenu
         DeletePoint                  matlab.ui.container.Menu
@@ -70,6 +71,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
     properties (Access = private)
         %-----------------------------------------------------------------%
         Role = 'secondaryApp'
+        Context = 'EXTERNALREQUEST'
     end
 
 
@@ -128,15 +130,12 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function ipcSecondaryMatlabCallsHandler(app, callingApp, operationType, varargin)
+        function ipcSecondaryMatlabCallsHandler(app, callingApp, eventName, varargin)
             try
                 switch class(callingApp)
                     case {'winMonitorRNI', 'winMonitorRNI_exported'}
-                        switch operationType
-                            case {'FileListChanged:Add', ...
-                                  'FileListChanged:Del', ...
-                                  'FileListChanged:Unmerge', ...
-                                  'FileListChanged:Merge'}
+                        switch eventName
+                            case {'onFileListAdded', 'onFileListRemoved', 'onFileListUnmerged', 'onFileListMerged'}
                                 app.measData = app.mainApp.measData;
                                 TreeFileLocationBuilding(app)
 
@@ -144,16 +143,16 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                                     Analysis(app)
                                 end
 
-                            case 'ExternalRequest:AnalysisParameterChanged'
-                                app.UITable.ColumnName{4} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.ExternalRequest.FieldValue);
-                                updateAnalysis(app.projectData, app.measData, app.mainApp.General, operationType);
+                            case 'onAnalysisParameterChanged'
+                                app.UITable.ColumnName{4} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.context.EXTERNALREQUEST.electricFieldStrengthThreshold);
+                                updateAnalysis(app.projectData, app.measData, app.mainApp.General, eventName);
                                 Analysis(app)
 
-                            case 'ExternalRequest:AxesParameterChanged'
-                                if ~isequal(app.UIAxes.Basemap, app.mainApp.General.Plot.GeographicAxes.Basemap)
-                                    app.UIAxes.Basemap = app.mainApp.General.Plot.GeographicAxes.Basemap;
+                            case 'onAxesParameterChanged'
+                                if ~isequal(app.UIAxes.Basemap, app.mainApp.General.plot.geographicAxes.basemap)
+                                    app.UIAxes.Basemap = app.mainApp.General.plot.geographicAxes.basemap;
 
-                                    switch app.mainApp.General.Plot.GeographicAxes.Basemap
+                                    switch app.mainApp.General.plot.geographicAxes.basemap
                                         case {'darkwater', 'none'}
                                             app.UIAxes.Grid = 'on';
                                         otherwise
@@ -161,18 +160,18 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                                     end
                                 end
 
-                                plot.axes.Colormap(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colormap)
-                                plot.axes.Colorbar(app.UIAxes, app.mainApp.General.Plot.GeographicAxes.Colorbar)
+                                plot.axes.Colormap(app.UIAxes, app.mainApp.General.plot.geographicAxes.colormap)
+                                plot.axes.Colorbar(app.UIAxes, app.mainApp.General.plot.geographicAxes.colorbar)
 
-                            case 'ExternalRequest:PlotParameterChanged'
+                            case 'onPlotParameterChanged'
                                 Analysis(app)
 
                             otherwise
-                                error('UnexpectedCall')
+                                error('model:winExternalRequest:UnexpectedCall', 'Unexpected call "%s"', eventName)
                         end
     
                     otherwise
-                        error('UnexpectedCall')
+                        error('model:winExternalRequest:UnexpectedCaller', 'Unexpected caller "%s"', class(callingApp))
                 end
 
             catch ME
@@ -182,16 +181,11 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function applyJSCustomizations(app, tabIndex)
-            persistent customizationStatus
-            if isempty(customizationStatus)
-                customizationStatus = zeros(1, numel(app.SubTabGroup.Children), 'logical');
-            end
-
-            if customizationStatus(tabIndex)
+            if app.SubTabGroup.UserData.isTabInitialized(tabIndex)
                 return
             end
+            app.SubTabGroup.UserData.isTabInitialized(tabIndex) = true;
 
-            customizationStatus(tabIndex) = true;
             switch tabIndex
                 case 1
                     elDataTag = ui.CustomizationBase.getElementsDataTag({app.AxesToolbar, app.TreePoints});
@@ -205,14 +199,14 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                     end
 
                 case 2
-                    context = 'ExternalRequest';
+                    context = app.Context;
 
-                    if isempty(app.projectData.modules.(context).ui.system) && ~isequal(app.projectData.modules.(context).ui.system, app.mainApp.General.Report.system)
-                        app.projectData.modules.(context).ui.system = app.mainApp.General.Report.system;
+                    if isempty(app.projectData.modules.(context).ui.system) && ~isequal(app.projectData.modules.(context).ui.system, app.mainApp.General.reportLib.system)
+                        app.projectData.modules.(context).ui.system = app.mainApp.General.reportLib.system;
                     end
                     
-                    if isempty(app.projectData.modules.(context).ui.unit)   && ~isequal(app.projectData.modules.(context).ui.unit,   app.mainApp.General.Report.unit)
-                        app.projectData.modules.(context).ui.unit   = app.mainApp.General.Report.unit;
+                    if isempty(app.projectData.modules.(context).ui.unit)   && ~isequal(app.projectData.modules.(context).ui.unit,   app.mainApp.General.reportLib.unit)
+                        app.projectData.modules.(context).ui.unit   = app.mainApp.General.reportLib.unit;
                     end
 
                     if ~isdeployed()
@@ -234,14 +228,12 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function initializeUIComponents(app)
-            context = 'ExternalRequest';
-
             if ~strcmp(app.mainApp.executionMode, 'webApp')
                 app.dockModule_Undock.Enable = 1;
             end
 
-            if app.mainApp.General.(context).FieldValue ~= 14
-                app.UITable.ColumnName{4} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.(context).FieldValue);
+            if app.mainApp.General.context.EXTERNALREQUEST.electricFieldStrengthThreshold ~= 14
+                app.UITable.ColumnName{4} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.context.EXTERNALREQUEST.electricFieldStrengthThreshold);
             end
 
             [app.UIAxes, app.restoreView] = plot.axesCreationController(app.plotPanel, app.mainApp.General);
@@ -256,7 +248,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % Especificidades do auxApp.winExternalRequest em relação ao
             % auxApp.winMonitoringPlan:
             TreePointsBuilding(app)
-            app.NewPointType.Items = [{''}; app.mainApp.General.(context).TypeOfLocation];
+            app.NewPointType.Items = [{''}; app.mainApp.General.context.EXTERNALREQUEST.locationType];
             layout_newPointPanel(app, 'off')
         end
 
@@ -278,11 +270,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             [idxFile, selectedFileLocations] = FileIndex(app);
             app.measTable = createMeasTable(app.measData(idxFile));
 
-            updateSelectedListOfLocations(...
-                app.projectData, ...
-                selectedFileLocations, ...
-                'ExternalRequest' ...
-            )
+            updateSelectedListOfLocations(app.projectData, selectedFileLocations, app.Context)
 
             initialSelection = updateTable(app);
             layout_TableStyle(app)
@@ -323,7 +311,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 initialSelection = app.UITable.Data.ID{app.UITable.Selection};
             end
 
-            table2Render = app.projectData.modules.ExternalRequest.pointsTable(:, {'ID',                    ...
+            table2Render = app.projectData.modules.EXTERNALREQUEST.pointsTable(:, {'ID',                    ...
                                                                                    'Description',           ...                                                                                    
                                                                                    'numberOfMeasures',      ...
                                                                                    'numberOfRiskMeasures',  ...
@@ -337,7 +325,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function updateToolbar(app)
-            context = 'ExternalRequest';
+            context = app.Context;
 
             measDataNonEmpty                = ~isempty(app.measData);
             measTableNonEmpty               = ~isempty(app.measTable);
@@ -378,7 +366,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Measures
             if ~isempty(app.measTable)
-                plot.draw.Measures(app.UIAxes, app.measTable, app.mainApp.General.ExternalRequest.FieldValue, app.mainApp.General);
+                plot.draw.Measures(app.UIAxes, app.measTable, app.mainApp.General.context.EXTERNALREQUEST.electricFieldStrengthThreshold, app.mainApp.General);
 
                 % Abaixo estabelece como limites do eixo os limites atuais,
                 % configurados automaticamente pelo MATLAB. Ao fazer isso,
@@ -389,7 +377,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Stations/Points
             if ~isempty(app.UITable.Data)
-                refPointsTable = app.projectData.modules.ExternalRequest.pointsTable;
+                refPointsTable = app.projectData.modules.EXTERNALREQUEST.pointsTable;
 
                 plot.draw.Points(app.UIAxes, refPointsTable, 'Pontos críticos', app.mainApp.General)
             end
@@ -402,7 +390,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             if ~isempty(app.UITable.Selection)
                 idxSelectedPoint   = app.UITable.Selection;
-                selectedPointTable = app.projectData.modules.ExternalRequest.pointsTable(idxSelectedPoint, :);
+                selectedPointTable = app.projectData.modules.EXTERNALREQUEST.pointsTable(idxSelectedPoint, :);
 
                 plot.draw.SelectedPoint(app.UIAxes, selectedPointTable, app.mainApp.General, class(app))
             end
@@ -415,7 +403,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 zoomOrientation {mustBeMember(zoomOrientation, {'stations/points', 'measures'})}
             end
 
-            if strcmp(app.mainApp.General.Plot.GeographicAxes.ZoomOrientation, zoomOrientation) || (isempty(app.measTable) && strcmp(app.mainApp.General.Plot.GeographicAxes.ZoomOrientation, 'measures'))
+            if strcmp(app.mainApp.General.plot.geographicAxes.zoomOrientation, zoomOrientation) || (isempty(app.measTable) && strcmp(app.mainApp.General.plot.geographicAxes.zoomOrientation, 'measures'))
                 geolimits(app.UIAxes, app.UIAxes.LatitudeLimits, app.UIAxes.LongitudeLimits)
                 app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
             end
@@ -427,8 +415,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             idxRiskMeasures  = [];
 
             if ~isempty(app.UITable.Data)
-                idxMissingInfo  = find(((app.projectData.modules.ExternalRequest.pointsTable.numberOfMeasures == 0) & (app.projectData.modules.ExternalRequest.pointsTable.("Justificativa") == "-1")));
-                idxRiskMeasures = find(app.projectData.modules.ExternalRequest.pointsTable.numberOfRiskMeasures > 0);
+                idxMissingInfo  = find(((app.projectData.modules.EXTERNALREQUEST.pointsTable.numberOfMeasures == 0) & (app.projectData.modules.EXTERNALREQUEST.pointsTable.("Justificativa") == "-")));
+                idxRiskMeasures = find(app.projectData.modules.EXTERNALREQUEST.pointsTable.numberOfRiskMeasures > 0);
             end
         end
 
@@ -468,7 +456,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             for ii = 1:numel(locationGroups)
                 treeNode = uitreenode(app.TreeFileLocations, 'Text', locationGroups{ii});
 
-                if strcmp(locationGroups{ii}, app.projectData.modules.ExternalRequest.ui.selectedGroup)
+                if strcmp(locationGroups{ii}, app.projectData.modules.EXTERNALREQUEST.ui.selectedGroup)
                     selectedNodes = [selectedNodes; treeNode];
                 end
             end
@@ -498,8 +486,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 delete(app.TreePoints.Children)
             end
 
-            for ii = 1:height(app.projectData.modules.ExternalRequest.pointsTable)
-                uitreenode(app.TreePoints, 'Text', app.projectData.modules.ExternalRequest.pointsTable.ID{ii}, 'NodeData', ii, 'ContextMenu', app.ContextMenu);
+            for ii = 1:height(app.projectData.modules.EXTERNALREQUEST.pointsTable)
+                uitreenode(app.TreePoints, 'Text', app.projectData.modules.EXTERNALREQUEST.pointsTable.ID{ii}, 'NodeData', ii, 'ContextMenu', app.ContextMenu);
             end
         end
 
@@ -551,7 +539,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         % Close request function: UIFigure
         function closeFcn(app, event)
 
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'closeFcn')
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'closeFcn', app.Context)
             delete(app)
             
         end
@@ -566,9 +554,9 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                     appGeneral = app.mainApp.General;
                     appGeneral.operationMode.Dock = false;
                     
-                    inputArguments = ipcMainMatlabCallsHandler(app.mainApp, app, 'dockButtonPushed', auxAppTag);
                     app.mainApp.tabGroupController.Components.appHandle{idx} = [];
-                    
+
+                    inputArguments = ipcMainMatlabCallsHandler(app.mainApp, app, 'dockButtonPushed', auxAppTag);
                     openModule(app.mainApp.tabGroupController, relatedButton, false, appGeneral, inputArguments{:})
                     closeModule(app.mainApp.tabGroupController, auxAppTag, app.mainApp.General, 'undock')
                     
@@ -587,11 +575,11 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             switch event.Source
                 case app.tool_ControlPanelVisibility
                     if app.SubTabGroup.Visible
-                        app.tool_ControlPanelVisibility.ImageSource = 'ArrowRight_32.png';
+                        app.tool_ControlPanelVisibility.ImageSource = 'layout-sidebar-left-off.svg';
                         app.SubTabGroup.Visible = 0;
                         app.Document.Layout.Column = [2 5];
                     else
-                        app.tool_ControlPanelVisibility.ImageSource = 'ArrowLeft_32.png';
+                        app.tool_ControlPanelVisibility.ImageSource = 'layout-sidebar-left.svg';
                         app.SubTabGroup.Visible = 1;
                         app.Document.Layout.Column = [4 5];
                     end
@@ -624,7 +612,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         % Image clicked function: tool_ExportFiles
         function Toolbar_ExportTableAsExcelSheet(app, event)
             
-            context = 'ExternalRequest';
+            context = app.Context;
             indexes = FileIndex(app);
 
             pointsTable = app.projectData.modules.(context).pointsTable;
@@ -681,7 +669,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
                 % (c) Arquivo no formato .XLSX
                 fileName_XLSX = fullfile(app.mainApp.General.fileFolder.tempPath, 'Demanda externa (Preview).xlsx');
-                [status, msgError] = fileWriter.ExternalRequest(fileName_XLSX, pointsTable, timetable2table(measTableGlobal), app.mainApp.General.(context).FieldValue, app.mainApp.General.(context).Export.XLSX);
+                [status, msgError] = fileWriter.ExternalRequest(fileName_XLSX, pointsTable, timetable2table(measTableGlobal), app.mainApp.General.context.EXTERNALREQUEST.electricFieldStrengthThreshold, app.mainApp.General.context.EXTERNALREQUEST.exportOptions.xlsx);
                 if status
                     savedFiles{end+1} = fileName_XLSX;
                 else
@@ -689,7 +677,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 end
         
                 % (d) Arquivos no formato .KML: "Measures" e "Route" 
-                if app.mainApp.General.(context).Export.KML
+                if app.mainApp.General.context.EXTERNALREQUEST.exportOptions.kml
                     d.Message = textFormatGUI.HTMLParagraph('Em andamento a criação dos arquivos de medidas e rotas no formato ".kml".');
 
                     groupLocations = unique({app.measData(indexes).Location});
@@ -749,7 +737,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         % Image clicked function: tool_GenerateReport
         function Toolbar_GenerateReportImageClicked(app, event)
             
-            context = 'ExternalRequest';
+            context = app.Context;
             indexes = FileIndex(app);
 
             if ~isempty(indexes)
@@ -822,7 +810,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         function Toolbar_UploadFinalFileImageClicked(app, event)
             
             % <VALIDAÇÕES>
-            context = 'ExternalRequest';
+            context = app.Context;
             lastHTMLDocFullPath = getGeneratedDocumentFileName(app.projectData, '.html', context);
 
             msg = '';
@@ -912,13 +900,13 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         % Cell edit callback: UITable
         function UITableCellEdit(app, event)
             
-            if ~ismember(event.EditData, app.mainApp.General.ExternalRequest.NoMeasureReasons)
-                app.UITable.Data.("Justificativa") = app.projectData.modules.ExternalRequest.pointsTable.("Justificativa");
+            if ~ismember(event.EditData, app.mainApp.General.context.EXTERNALREQUEST.noMeasurementReasons)
+                app.UITable.Data.("Justificativa") = app.projectData.modules.EXTERNALREQUEST.pointsTable.("Justificativa");
                 return
             end
 
             idxPoint = event.Indices(1);
-            app.projectData.modules.ExternalRequest.pointsTable.("Justificativa")(idxPoint) = event.NewData;
+            app.projectData.modules.EXTERNALREQUEST.pointsTable.("Justificativa")(idxPoint) = event.NewData;
             
             layout_TableStyle(app)
 
@@ -1022,22 +1010,22 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                     ID = sprintf('%s @ (%.6f, %.6f)', ID, app.NewPointLatitude.Value, app.NewPointLongitude.Value);
         
                     % VERIFICA SE ESSE ID JÁ TINHA SIDO INCLUÍDO
-                    if any(strcmp(app.projectData.modules.ExternalRequest.pointsTable_I.ID, ID))
+                    if any(strcmp(app.projectData.modules.EXTERNALREQUEST.pointsTable_I.ID, ID))
                         ui.Dialog(app.UIFigure, 'warning', 'Registro já consta na lista de pontos sob análise.');
                         return
                     end
 
                     columsn2Fill = {'ID', 'Type', 'Station', 'Latitude', 'Longitude', 'Description', 'Justificativa', 'AnalysisFlag'};        
-                    app.projectData.modules.ExternalRequest.pointsTable_I(end+1, columsn2Fill) = {ID,                            ...
+                    app.projectData.modules.EXTERNALREQUEST.pointsTable_I(end+1, columsn2Fill) = {ID,                            ...
                                                                                                 app.NewPointType.Value,        ...
                                                                                                 app.NewPointStation.Value,     ...
                                                                                                 app.NewPointLatitude.Value,    ...
                                                                                                 app.NewPointLongitude.Value,   ...
                                                                                                 app.NewPointDescription.Value, ...
-                                                                                                categorical("-1"),             ...
+                                                                                                categorical("-"),             ...
                                                                                                 false};
-                    app.projectData.modules.ExternalRequest.pointsTable_I = model.projectLib.generateHash(app.projectData.modules.ExternalRequest.pointsTable_I, 'pointsTable');
-                    app.projectData.modules.ExternalRequest.pointsTable(end+1, :) = app.projectData.modules.ExternalRequest.pointsTable_I(end, :);
+                    app.projectData.modules.EXTERNALREQUEST.pointsTable_I = model.projectLib.generateHash(app.projectData.modules.EXTERNALREQUEST.pointsTable_I, 'pointsTable');
+                    app.projectData.modules.EXTERNALREQUEST.pointsTable(end+1, :) = app.projectData.modules.EXTERNALREQUEST.pointsTable_I(end, :);
                     updateAnalysis(app.projectData, app.measData, app.mainApp.General, 'ExternalRequest:PointsTableChanged');
         
                     % ATUALIZA ÁRVORE DE PONTOS CRÍTICOS
@@ -1069,8 +1057,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             end
 
             if ~isempty(idxPoint)
-                app.projectData.modules.ExternalRequest.pointsTable_I(idxPoint, :) = [];
-                app.projectData.modules.ExternalRequest.pointsTable(idxPoint, :)   = [];
+                app.projectData.modules.EXTERNALREQUEST.pointsTable_I(idxPoint, :) = [];
+                app.projectData.modules.EXTERNALREQUEST.pointsTable(idxPoint, :)   = [];
                 updateAnalysis(app.projectData, app.measData, app.mainApp.General, 'ExternalRequest:PointsTableChanged');
 
                 % ATUALIZA ÁRVORE DE PONTOS CRÍTICOS
@@ -1092,7 +1080,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         % Value changed function: reportIssue, reportSystem, reportUnit
         function reportInfoValueChanged(app, event)
             
-            context = 'ExternalRequest';
+            context = app.Context;
 
             switch event.Source
                 case app.reportSystem
@@ -1151,7 +1139,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Create Toolbar
             app.Toolbar = uigridlayout(app.GridLayout);
-            app.Toolbar.ColumnWidth = {22, 22, 22, 5, 22, '1x', 22, 22};
+            app.Toolbar.ColumnWidth = {22, 5, 22, 22, 5, 22, '1x', 22, 22};
             app.Toolbar.RowHeight = {4, 17, '1x'};
             app.Toolbar.ColumnSpacing = 5;
             app.Toolbar.RowSpacing = 0;
@@ -1162,35 +1150,46 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Create tool_ControlPanelVisibility
             app.tool_ControlPanelVisibility = uiimage(app.Toolbar);
+            app.tool_ControlPanelVisibility.ScaleMethod = 'none';
             app.tool_ControlPanelVisibility.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
-            app.tool_ControlPanelVisibility.Layout.Row = 2;
+            app.tool_ControlPanelVisibility.Layout.Row = [1 3];
             app.tool_ControlPanelVisibility.Layout.Column = 1;
-            app.tool_ControlPanelVisibility.ImageSource = 'ArrowLeft_32.png';
+            app.tool_ControlPanelVisibility.ImageSource = 'layout-sidebar-left.svg';
+
+            % Create tool_Separator1
+            app.tool_Separator1 = uiimage(app.Toolbar);
+            app.tool_Separator1.ScaleMethod = 'none';
+            app.tool_Separator1.Enable = 'off';
+            app.tool_Separator1.Layout.Row = [1 3];
+            app.tool_Separator1.Layout.Column = 2;
+            app.tool_Separator1.ImageSource = 'LineV.svg';
 
             % Create tool_TableVisibility
             app.tool_TableVisibility = uiimage(app.Toolbar);
             app.tool_TableVisibility.ScaleMethod = 'none';
             app.tool_TableVisibility.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
             app.tool_TableVisibility.Tooltip = {'Visibilidade da tabela'};
-            app.tool_TableVisibility.Layout.Row = 2;
-            app.tool_TableVisibility.Layout.Column = 2;
+            app.tool_TableVisibility.Layout.Row = [1 3];
+            app.tool_TableVisibility.Layout.Column = 3;
             app.tool_TableVisibility.ImageSource = 'View_16.png';
 
-            % Create tool_Separator
-            app.tool_Separator = uiimage(app.Toolbar);
-            app.tool_Separator.ScaleMethod = 'none';
-            app.tool_Separator.Enable = 'off';
-            app.tool_Separator.Layout.Row = [1 3];
-            app.tool_Separator.Layout.Column = 4;
-            app.tool_Separator.ImageSource = 'LineV.svg';
+            % Create tool_ExportFiles
+            app.tool_ExportFiles = uiimage(app.Toolbar);
+            app.tool_ExportFiles.ScaleMethod = 'none';
+            app.tool_ExportFiles.ImageClickedFcn = createCallbackFcn(app, @Toolbar_ExportTableAsExcelSheet, true);
+            app.tool_ExportFiles.Enable = 'off';
+            app.tool_ExportFiles.Tooltip = {'Exporta análise (.xlsx, .kml)'};
+            app.tool_ExportFiles.Layout.Row = [1 3];
+            app.tool_ExportFiles.Layout.Column = 4;
+            app.tool_ExportFiles.ImageSource = 'Export_16.png';
 
-            % Create tool_peakLabel
-            app.tool_peakLabel = uilabel(app.Toolbar);
-            app.tool_peakLabel.FontSize = 10;
-            app.tool_peakLabel.Visible = 'off';
-            app.tool_peakLabel.Layout.Row = [1 3];
-            app.tool_peakLabel.Layout.Column = 6;
-            app.tool_peakLabel.Text = {'5.3 V/m'; '(-12.354321, -38.123456)'};
+            % Create tool_Separator2
+            app.tool_Separator2 = uiimage(app.Toolbar);
+            app.tool_Separator2.ScaleMethod = 'none';
+            app.tool_Separator2.Enable = 'off';
+            app.tool_Separator2.Layout.Row = [1 3];
+            app.tool_Separator2.Layout.Column = 5;
+            app.tool_Separator2.ImageSource = 'LineV.svg';
 
             % Create tool_peakIcon
             app.tool_peakIcon = uiimage(app.Toolbar);
@@ -1199,8 +1198,16 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.tool_peakIcon.Enable = 'off';
             app.tool_peakIcon.Tooltip = {'Zoom em torno do local de máximo'};
             app.tool_peakIcon.Layout.Row = [1 3];
-            app.tool_peakIcon.Layout.Column = 5;
+            app.tool_peakIcon.Layout.Column = 6;
             app.tool_peakIcon.ImageSource = 'Detection_18.png';
+
+            % Create tool_peakLabel
+            app.tool_peakLabel = uilabel(app.Toolbar);
+            app.tool_peakLabel.FontSize = 10;
+            app.tool_peakLabel.Visible = 'off';
+            app.tool_peakLabel.Layout.Row = [1 3];
+            app.tool_peakLabel.Layout.Column = 7;
+            app.tool_peakLabel.Text = {'5.3 V/m'; '(-12.354321, -38.123456)'};
 
             % Create tool_GenerateReport
             app.tool_GenerateReport = uiimage(app.Toolbar);
@@ -1208,28 +1215,19 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.tool_GenerateReport.ImageClickedFcn = createCallbackFcn(app, @Toolbar_GenerateReportImageClicked, true);
             app.tool_GenerateReport.Enable = 'off';
             app.tool_GenerateReport.Tooltip = {'Gera relatório (.html)'};
-            app.tool_GenerateReport.Layout.Row = 2;
-            app.tool_GenerateReport.Layout.Column = 7;
+            app.tool_GenerateReport.Layout.Row = [1 3];
+            app.tool_GenerateReport.Layout.Column = 8;
             app.tool_GenerateReport.ImageSource = 'Publish_HTML_16.png';
-
-            % Create tool_ExportFiles
-            app.tool_ExportFiles = uiimage(app.Toolbar);
-            app.tool_ExportFiles.ScaleMethod = 'none';
-            app.tool_ExportFiles.ImageClickedFcn = createCallbackFcn(app, @Toolbar_ExportTableAsExcelSheet, true);
-            app.tool_ExportFiles.Enable = 'off';
-            app.tool_ExportFiles.Tooltip = {'Exporta análise (.xlsx, .kml)'};
-            app.tool_ExportFiles.Layout.Row = 2;
-            app.tool_ExportFiles.Layout.Column = 3;
-            app.tool_ExportFiles.ImageSource = 'Export_16.png';
 
             % Create tool_UploadFinalFile
             app.tool_UploadFinalFile = uiimage(app.Toolbar);
+            app.tool_UploadFinalFile.ScaleMethod = 'none';
             app.tool_UploadFinalFile.ImageClickedFcn = createCallbackFcn(app, @Toolbar_UploadFinalFileImageClicked, true);
             app.tool_UploadFinalFile.Enable = 'off';
             app.tool_UploadFinalFile.Tooltip = {'Upload relatório'};
-            app.tool_UploadFinalFile.Layout.Row = 2;
-            app.tool_UploadFinalFile.Layout.Column = 8;
-            app.tool_UploadFinalFile.ImageSource = 'Up_24.png';
+            app.tool_UploadFinalFile.Layout.Row = [1 3];
+            app.tool_UploadFinalFile.Layout.Column = 9;
+            app.tool_UploadFinalFile.ImageSource = 'up-20px.png';
 
             % Create Document
             app.Document = uigridlayout(app.GridLayout);
@@ -1335,7 +1333,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % Create SubTab1
             app.SubTab1 = uitab(app.SubTabGroup);
             app.SubTab1.AutoResizeChildren = 'off';
-            app.SubTab1.Title = 'PM-RNI';
+            app.SubTab1.Title = 'DEMANDA EXTERNA';
 
             % Create SubGrid1
             app.SubGrid1 = uigridlayout(app.SubTab1);

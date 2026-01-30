@@ -17,17 +17,18 @@ classdef (Abstract) HtmlTextGenerator
         %-----------------------------------------------------------------%
         % WINMONITORRNI - INFO
         %-----------------------------------------------------------------%
-        function htmlContent = AppInfo(appGeneral, rootFolder, executionMode, renderCount, outputFormat)
+        function htmlContent = AppInfo(generalSettings, rootFolder, executionMode, renderCount, projectData, outputFormat)
             arguments
-                appGeneral 
+                generalSettings 
                 rootFolder 
                 executionMode 
                 renderCount
+                projectData
                 outputFormat char {mustBeMember(outputFormat, {'popup', 'textview'})} = 'textview'
             end
         
             appName    = class.Constants.appName;
-            appVersion = appGeneral.AppVersion;
+            appVersion = generalSettings.AppVersion;
             appURL     = util.publicLink(appName, rootFolder, appName);
         
             switch executionMode
@@ -35,7 +36,7 @@ classdef (Abstract) HtmlTextGenerator
                     appMode = 'desktopApp';        
                 case 'webApp'
                     computerName = appEngine.util.OperationSystem('computerName');
-                    if strcmpi(computerName, appGeneral.computerName.webServer)
+                    if strcmpi(computerName, generalSettings.computerName.webServer)
                         appMode = 'webServer';
                     else
                         appMode = 'deployServer';                    
@@ -49,6 +50,8 @@ classdef (Abstract) HtmlTextGenerator
             end
             dataStruct(end+1) = struct('group', 'RENDERIZAÇÕES','value', renderCount);
             dataStruct(end+1) = struct('group', 'APLICATIVO', 'value', appVersion.application);
+
+            dataStruct(end+1) = struct('group', 'PM-RNI DATABASE', 'value', struct('selectedYears', projectData.modules.MONITORINGPLAN.referenceData.selectedYears, 'numberOfRows', height(projectData.modules.MONITORINGPLAN.stationTable)));
 
             global RFDataHub
             global RFDataHub_info
@@ -144,7 +147,7 @@ classdef (Abstract) HtmlTextGenerator
         %-----------------------------------------------------------------%
         % AUXAPP.RFDATAHUB
         %-----------------------------------------------------------------%
-        function htmlContent = Station(rfDataHub, idxRFDataHub, rfDataHubLOG, appGeneral)
+        function htmlContent = Station(rfDataHub, idxRFDataHub, rfDataHubLOG, generalSettings)
             % stationTag
             stationInfo    = table2struct(rfDataHub(idxRFDataHub,:));
             if stationInfo.BW <= 0
@@ -156,7 +159,7 @@ classdef (Abstract) HtmlTextGenerator
             % stationService
             global id2nameTable
             if isempty(id2nameTable)
-                serviceOptions = appGeneral.eFiscaliza.defaultValues.servicos_da_inspecao.options;
+                serviceOptions = generalSettings.eFiscaliza.defaultValues.servicos_da_inspecao.options;
                 serviceIDs     = int16(str2double(extractBefore(serviceOptions, '-')));
                 id2nameTable   = table(serviceIDs, serviceOptions, 'VariableNames', {'ID', 'Serviço'});
             end
@@ -239,15 +242,15 @@ classdef (Abstract) HtmlTextGenerator
         %-----------------------------------------------------------------%
         % AUXAPP.WINCONFIG
         %-----------------------------------------------------------------%
-        function [htmlContent, stableVersion, updatedModule] = checkAvailableUpdate(appGeneral, rootFolder)
+        function [htmlContent, stableVersion, updatedModule] = checkAvailableUpdate(generalSettings, rootFolder)
             stableVersion = [];
             updatedModule = {};
             
             try
                 % Versão instalada no computador:
                 appName          = class.Constants.appName;
-                presentVersion   = struct(appName,     appGeneral.AppVersion.application.version, ...
-                                          'rfDataHub', rmfield(appGeneral.AppVersion.database, 'name'));
+                presentVersion   = struct(appName,     generalSettings.AppVersion.application.version, ...
+                                          'rfDataHub', rmfield(generalSettings.AppVersion.database, 'name'));
                 
                 % Versão estável, indicada nos arquivos de referência (na nuvem):
                 [versionFileURL, rfDataHubURL] = util.publicLink(appName, rootFolder, 'VersionFile+RFDataHub');

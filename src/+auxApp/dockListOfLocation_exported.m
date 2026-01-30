@@ -37,7 +37,6 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
     properties (Access = private)
         %-----------------------------------------------------------------%
         inputArgs
-        projectData
         measData
     end
     
@@ -46,15 +45,15 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function updateForm(app)
             index = app.inputArgs.index;
-            currentListOfLocations = getFullListOfLocation(app.projectData, app.measData(index), app.mainApp.General.MonitoringPlan.Distance_km);
+            currentLocationList = getFullListOfLocation(app.mainApp.projectData, app.measData(index), app.mainApp.General.context.MONITORINGPLAN.maxMeasurementDistanceKm);
 
-            refListOfLocations     = setdiff(app.projectData.modules.MonitoringPlan.referenceData.locations, currentListOfLocations, 'stable');
+            referenceLocationList = setdiff(app.mainApp.projectData.modules.MONITORINGPLAN.referenceData.locations, currentLocationList, 'stable');
             if ~isempty(app.Filter.Value)
-                refListOfLocations = refListOfLocations(endsWith(refListOfLocations, app.Filter.Value));
+                referenceLocationList = referenceLocationList(endsWith(referenceLocationList, app.Filter.Value));
             end
 
-            app.RefLocation.Items  = refListOfLocations;
-            app.Location.Items     = currentListOfLocations;
+            app.RefLocation.Items  = referenceLocationList;
+            app.Location.Items     = currentLocationList;
         end
 
         %-----------------------------------------------------------------%
@@ -77,11 +76,6 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
                     app.RefLocation.Value = {};
             end
         end
-
-        %-----------------------------------------------------------------%
-        function CallingMainApp(app, callType, updateFlag, returnFlag, varargin)
-            ipcSecondaryMatlabCallsHandler(app.callingApp, app, callType, updateFlag, returnFlag, varargin{:})
-        end
     end
     
 
@@ -94,11 +88,9 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             try
                 appEngine.boot(app, app.Role, mainApp, callingApp)
 
-                app.inputArgs    = struct('context', context, 'index', index);
-                app.projectData  = mainApp.projectData;
-                app.measData     = callingApp.measData;
-
-                app.Filter.Items = [{''}; app.projectData.modules.MonitoringPlan.referenceData.states];
+                app.inputArgs = struct('context', context, 'index', index);
+                app.measData = callingApp.measData;
+                app.Filter.Items = [{''}; app.mainApp.projectData.modules.MONITORINGPLAN.referenceData.states];
                 updateForm(app)
                 
             catch ME
@@ -110,7 +102,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         % Callback function: UIFigure, btnClose, btnOK
         function closeFcn(app, event)
             
-            CallingMainApp(app, 'closeFcn', false, false)
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'closeFcnCallFromPopupApp', 'MONITORINGPLAN', 'auxApp.dockListOfLocation')
             delete(app)
             
         end
@@ -128,25 +120,25 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
                 case app.Add
                     if ~isempty(app.RefLocation.Value)
                         index = app.inputArgs.index;
-                        manualLocations = union(getCurrentManualLocations(app.projectData, app.measData(index)), app.RefLocation.Value);
-                        addManualLocations(app.projectData, app.measData(index), manualLocations);
+                        manualLocations = union(getCurrentManualLocations(app.mainApp.projectData, app.measData(index)), app.RefLocation.Value);
+                        addManualLocations(app.mainApp.projectData, app.measData(index), manualLocations);
                         
                         updateForm(app)
                         updateLayout(app, 'AddedLocation')
 
-                        CallingMainApp(app, 'MonitoringPlan:ManualLocationListChanged', true, true)
+                        ipcMainMatlabCallsHandler(app.mainApp, app, 'onLocationListModeChanged', 'MONITORINGPLAN')
                     end
 
                 case app.Delete
                     if ~isempty(app.Location.Value)
                         index = app.inputArgs.index;
-                        manualLocations = setdiff(getCurrentManualLocations(app.projectData, app.measData(index)), app.Location.Value);
-                        addManualLocations(app.projectData, app.measData(index), manualLocations);
+                        manualLocations = setdiff(getCurrentManualLocations(app.mainApp.projectData, app.measData(index)), app.Location.Value);
+                        addManualLocations(app.mainApp.projectData, app.measData(index), manualLocations);
                         
                         updateForm(app)
                         updateLayout(app, 'DeletedLocation')
 
-                        CallingMainApp(app, 'MonitoringPlan:ManualLocationListChanged', true, true)
+                        ipcMainMatlabCallsHandler(app.mainApp, app, 'onLocationListModeChanged', 'MONITORINGPLAN')
                     end
             end
             
@@ -253,12 +245,13 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
 
             % Create Delete
             app.Delete = uiimage(app.LocationPanel);
+            app.Delete.ScaleMethod = 'none';
             app.Delete.ImageClickedFcn = createCallbackFcn(app, @Callbacks, true);
             app.Delete.Enable = 'off';
             app.Delete.Tooltip = {'Exclui localidades selecionadas'};
             app.Delete.Layout.Row = 3;
             app.Delete.Layout.Column = 4;
-            app.Delete.ImageSource = 'Delete_32Red.png';
+            app.Delete.ImageSource = 'delete-12px-red.svg';
 
             % Create LocationLabel
             app.LocationLabel = uilabel(app.LocationPanel);

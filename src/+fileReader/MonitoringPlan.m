@@ -1,44 +1,45 @@
 function [stationTable, referenceData] = MonitoringPlan(appName, rootFolder, generalSettings)
+    % Em 29/01/2026, a planilha base do PM-RNI, em formato .xlsx, possui 13 
+    % colunas. Antes de exportar essa planilha como .mat, acrescentam-se 
+    % outras cinco colunas - "Ano", "Base64Hash", "Location", "Latitude" e 
+    % "Longitude".
+
+    % • Colunas 01-07: ["ID", "UD", "UF", "Município", "Tipo", "Serviço", "Entidade"] - cellstr
+    % • Coluna     08: ["Fistel"]                                                     - uint64
+    % • Coluna     09: ["Estação"]                                                    - uint32
+    % • Coluna     10: ["Endereço"]                                                   - cellstr
+    % • Colunas 11-12: ["Lat" e "Long"]                                               - double
+    % • Coluna     13: ["Áreas Críticas"]                                             - cellstr
+    % • Coluna     14: ["Ano"]                                                        - double
+    % • Colunas 15-16: ["Base64Hash", "Location"]                                     - cellstr
+    % • Colunas 17-18: ["Latitude", "Longitude"]                                      - double
+
+    % No processo de leitura, são eliminados registros que não correspondem 
+    % aos anos de interesse. Além disso, são incluídas colunas que auxiliam 
+    % no registro da análise realizada por meio do app.
     
     [projectFolder, ...
      programDataFolder] = appEngine.util.Path(appName, rootFolder);
 
-    projectFilePath     = fullfile(projectFolder,     'DataBase', [generalSettings.MonitoringPlan.ReferenceFile '.mat']);
-    programDataFilePath = fullfile(programDataFolder, 'DataBase', [generalSettings.MonitoringPlan.ReferenceFile '.mat']);
+    projectFilePath     = fullfile(projectFolder,     'DataBase', [generalSettings.context.MONITORINGPLAN.referenceFile '.mat']);
+    programDataFilePath = fullfile(programDataFolder, 'DataBase', [generalSettings.context.MONITORINGPLAN.referenceFile '.mat']);
 
-    if isfile(programDataFilePath)
+    try
         load(programDataFilePath, 'stationTable');
-    else
+    catch
         load(projectFilePath,     'stationTable')
     end
 
-    % Dados inválidos (Coordenada geográficas):
     idxInvalid = isnan(stationTable.Lat) | isnan(stationTable.Long);
     if any(idxInvalid)
-        stationTable(idxInvalid, :)       = [];
+        stationTable(idxInvalid, :) = [];
     end
 
-    % Filtro por ano:
-    listOfYears = unique(stationTable.Ano);
-    idxFilter   = ~ismember(stationTable.Ano, generalSettings.MonitoringPlan.Period);
+    yearList = unique(stationTable.Ano);
+    idxFilter = ~ismember(stationTable.Ano, generalSettings.context.MONITORINGPLAN.periodYears);
     if any(idxFilter)
-        stationTable(idxFilter, :)        = [];
+        stationTable(idxFilter, :) = [];
     end
-    
-    % Conversões:
-    stationTable.Fistel                   = uint64(stationTable.Fistel);
-    stationTable.("Estação")              = uint32(stationTable.("Estação"));
-
-    % Dados inválidos (Duplicados por possuírem mesmos valores p/ colunas 
-    % "Fistel", "Nº estação", "Lat" e "Long"):
-    stationTable   =  model.projectLib.generateHash(stationTable, 'stationTable');
-    [~, idxUnique] = unique(stationTable.Base64Hash, 'stable');
-    stationTable   = stationTable(idxUnique, :);
-    
-    % Novas colunas:
-    stationTable.Location                 = strcat(stationTable.("Município"), '/', stationTable.UF);
-    stationTable.Latitude                 = stationTable.Lat;
-    stationTable.Longitude                = stationTable.Long;
     
     stationTable.numberOfMeasures(:)      = 0;
     stationTable.numberOfRiskMeasures(:)  = 0;
@@ -53,22 +54,21 @@ function [stationTable, referenceData] = MonitoringPlan(appName, rootFolder, gen
     stationTable.maxFieldLongitude(:)     = 0;
 
     stationTable.("Fonte de dados")(:)    = {''};
-    stationTable.("Justificativa")(:)     = categorical("-1", generalSettings.MonitoringPlan.NoMeasureReasons);
+    stationTable.("Justificativa")(:)     = categorical("-", generalSettings.context.MONITORINGPLAN.noMeasurementReasons, 'Protected', true);
     stationTable.("Observações")(:)       = {''};
 
-    stationTable.AnalysisFlag(:)          = false;
-    
+    stationTable.AnalysisFlag(:)          = false;    
 
-    % Ordenando lista (evitando que "Águas Claras" seja apresentada 
-    % depois dos municípios que se iniciam com a letra "z")
-    referenceList   = unique(stationTable.Location);
-    referenceEditedList = textAnalysis.normalizeWords(lower(referenceList));
-    [~, idxSort] = sort(referenceEditedList);
+    % Por fim, ordena-se a tabela, de forma que "Águas Claras", por exemplo, 
+    % não seja apresentada depois dos municípios que se iniciam com a letra "z".
+    locationList = unique(stationTable.Location);
+    locationNormalizedList = textAnalysis.normalizeWords(lower(locationList));
+    [~, idxSort] = sort(locationNormalizedList);
     
-    listOfLocations = referenceList(idxSort);
-    listOfStates    = unique(stationTable.UF);
-
-    referenceData   = struct('years',      listOfYears,      ...
-                             'locations', {listOfLocations}, ...
-                             'states',    {listOfStates});
+    referenceData = struct( ...
+        'years', yearList, ...
+        'selectedYears', generalSettings.context.MONITORINGPLAN.periodYears, ...
+        'locations', {locationList(idxSort)}, ...
+        'states', {unique(stationTable.UF)} ...
+    );
 end

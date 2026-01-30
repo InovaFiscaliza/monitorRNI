@@ -21,8 +21,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         TabGroup                 matlab.ui.container.TabGroup
         Tab1_File                matlab.ui.container.Tab
         file_Grid                matlab.ui.container.GridLayout
-        file_Metadata            matlab.ui.control.Label
-        file_Tree                matlab.ui.container.Tree
+        FileMetadata             matlab.ui.control.Label
+        FileTree                 matlab.ui.container.Tree
         SubTabGroup              matlab.ui.container.TabGroup
         SubTab1                  matlab.ui.container.Tab
         SubGrid1                 matlab.ui.container.GridLayout
@@ -46,6 +46,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
     properties (Access = private)
         %-----------------------------------------------------------------%
         Role = 'mainApp'
+        Context = 'FILE'
     end
 
 
@@ -103,18 +104,18 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                         if ~app.renderCount
                             appEngine.activate(app, app.Role, MFilePath, parpoolFlag)
                         else
-                            selectedNodes = app.file_Tree.SelectedNodes;
-                            if ~isempty(app.file_Tree.SelectedNodes)
-                                app.file_Tree.SelectedNodes = [];
-                                file_TreeSelectionChanged(app)
+                            selectedNodes = app.FileTree.SelectedNodes;
+                            if ~isempty(app.FileTree.SelectedNodes)
+                                app.FileTree.SelectedNodes = [];
+                                onTreeSelectionChanged(app)
                             end
 
                             appEngine.beforeReload(app, app.Role)
                             appEngine.activate(app, app.Role, MFilePath, parpoolFlag)
 
                             if ~isempty(selectedNodes)
-                                app.file_Tree.SelectedNodes = selectedNodes;
-                                file_TreeSelectionChanged(app)
+                                app.FileTree.SelectedNodes = selectedNodes;
+                                onTreeSelectionChanged(app)
                             end
                         end
                         
@@ -140,7 +141,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                     % MAINAPP
                     case 'mainApp.file_Tree'
-                        file_ContextMenu_delTreeNodeSelected(app)
+                        ContextMenu_DeleteSelectedTreeNode(app)
 
                     % AUXAPP.WINEXTERNALREQUEST
                     case 'auxApp.winExternalRequest.TreePoints'
@@ -157,106 +158,103 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function varargout = ipcMainMatlabCallsHandler(app, callingApp, operationType, varargin)
+        function varargout = ipcMainMatlabCallsHandler(app, callingApp, eventName, varargin)
             varargout = {};
 
             try
-                switch class(callingApp)
-                    % auxApp.winConfig
-                    case {'auxApp.winConfig', 'auxApp.winConfig_exported'}
-                        switch operationType
-                            case 'closeFcn'
-                                closeModule(app.tabGroupController, "CONFIG", app.General)
+                switch eventName
+                    case 'closeFcn'
+                        auxAppTag    = varargin{1};
+                        closeModule(app.tabGroupController, auxAppTag, app.General, 'normal')
 
-                            case 'dockButtonPushed'
-                                auxAppTag = varargin{1};
-                                varargout{1} = auxAppInputArguments(app, auxAppTag);
+                    case 'dockButtonPushed'
+                        auxAppTag    = varargin{1};
+                        varargout{1} = {app};
 
-                            case 'checkDataHubLampStatus'
-                                DataHubWarningLamp(app)
-
-                            case 'openDevTools'
-                                dialogBox    = struct('id', 'login',    'label', 'Usuário: ', 'type', 'text');
-                                dialogBox(2) = struct('id', 'password', 'label', 'Senha: ',   'type', 'password');
-                                sendEventToHTMLSource(app.jsBackDoor, 'customForm', struct('UUID', 'openDevTools', 'Fields', dialogBox))
-
-                            case 'simulationModeChanged'
-                                if app.General.operationMode.Simulation
-                                    tool_ReadFilesImageClicked(app)
-
-                                    % Muda programaticamente o modo p/ ARQUIVOS.
-                                    app.Tab1Button.Value = true;                    
-                                    tabNavigatorButtonPushed(app, struct('Source', app.Tab1Button, 'PreviousValue', false))
-                                end
-
-                            case 'onRFDataHubUpdate'
-                                initializeRFDataHub(app)
-                                ipcMainMatlabCallAuxiliarApp(app, 'RFDATAHUB', 'MATLAB', operationType)
-
-                            case 'fileSortMethodChanged'
-                                if ~strcmp(app.file_FileSortMethod.Value, app.General.File.sortMethod)
-                                    app.file_FileSortMethod.Value = app.General.File.sortMethod;
-                                    file_FileSortMethodValueChanged(app)
-                                end
-
-                            case {'MonitoringPlan:AnalysisParameterChanged', ...
-                                  'MonitoringPlan:AxesParameterChanged', ...
-                                  'MonitoringPlan:PlotParameterChanged'}
-                                ipcMainMatlabCallAuxiliarApp(app, 'MONITORINGPLAN', 'MATLAB', operationType)
-
-                            case {'ExternalRequest:AnalysisParameterChanged', ...
-                                  'ExternalRequest:AxesParameterChanged', ...
-                                  'ExternalRequest:PlotParameterChanged'}
-                                ipcMainMatlabCallAuxiliarApp(app, 'EXTERNALREQUEST', 'MATLAB', operationType)
-
-                            otherwise
-                                error('UnexpectedCall')
-                        end
-
-                    % auxApp.winMonitoringPlan
-                    case {'auxApp.winMonitoringPlan',  'auxApp.winMonitoringPlan_exported'}
-                        switch operationType
-                            case 'closeFcn'
-                                closeModule(app.tabGroupController, "MONITORINGPLAN", app.General)
-
-                            case 'dockButtonPushed'
-                                auxAppTag = varargin{1};
-                                varargout{1} = auxAppInputArguments(app, auxAppTag);
-
-                            otherwise
-                                error('UnexpectedCall')
-                        end
-
-                    % auxApp.winExternalRequest
-                    case {'auxApp.winExternalRequest',  'auxApp.winExternalRequest_exported'}
-                        switch operationType
-                            case 'closeFcn'
-                                closeModule(app.tabGroupController, "EXTERNALREQUEST", app.General)
-
-                            case 'dockButtonPushed'
-                                auxAppTag = varargin{1};
-                                varargout{1} = auxAppInputArguments(app, auxAppTag);
-
-                            otherwise
-                                error('UnexpectedCall')
-                        end
-
-                    % auxApp.winRFDataHub
-                    case {'auxApp.winRFDataHub', 'auxApp.winRFDataHub_exported'}
-                        switch operationType
-                            case 'closeFcn'
-                                closeModule(app.tabGroupController, "RFDATAHUB", app.General)
-
-                            case 'dockButtonPushed'
-                                auxAppTag = varargin{1};
-                                varargout{1} = auxAppInputArguments(app, auxAppTag);
-
-                            otherwise
-                                error('UnexpectedCall')
-                        end
-    
                     otherwise
-                        error('UnexpectedCall')
+                        switch class(callingApp)
+                            % auxApp.winConfig (CONFIG)
+                            case {'auxApp.winConfig', 'auxApp.winConfig_exported'}
+                                switch eventName
+                                    case 'checkDataHubLampStatus'
+                                        DataHubWarningLamp(app)
+        
+                                    case 'openDevTools'
+                                        dialogBox    = struct('id', 'login',    'label', 'Usuário: ', 'type', 'text');
+                                        dialogBox(2) = struct('id', 'password', 'label', 'Senha: ',   'type', 'password');
+                                        sendEventToHTMLSource(app.jsBackDoor, 'customForm', struct('UUID', 'openDevTools', 'Fields', dialogBox))
+        
+                                    case 'onSimulationMode'
+                                        if app.General.operationMode.Simulation
+                                            Toolbar_SelectFileToReadImageClicked(app)
+        
+                                            % Muda programaticamente o modo p/ ARQUIVOS.
+                                            app.Tab1Button.Value = true;                    
+                                            onTabNavigatorButtonPushed(app, struct('Source', app.Tab1Button, 'PreviousValue', false))
+                                        end
+        
+                                    case 'onRFDataHubUpdate'
+                                        initializeRFDataHub(app)
+                                        ipcMainMatlabCallAuxiliarApp(app, 'RFDATAHUB', 'MATLAB', eventName)
+        
+                                    case 'onFileSortMethodChanged'
+                                        if ~strcmp(app.file_FileSortMethod.Value, app.General.context.FILE.sortMethod)
+                                            app.file_FileSortMethod.Value = app.General.context.FILE.sortMethod;
+                                            onFileSortMethodValueChanged(app)
+                                        end
+        
+                                    case {'onAnalysisParameterChanged', ...
+                                          'onAxesParameterChanged', ...
+                                          'onPlotParameterChanged'}
+                                        context = varargin{1};
+                                        ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', eventName)
+        
+                                    otherwise
+                                        error('winMonitorRNI:UnexpectedCall', 'Unexpected call "%s"', eventName)
+                                end
+
+                            case {'auxApp.winMonitoringPlan',  'auxApp.winMonitoringPlan_exported', ...
+                                  'auxApp.winExternalRequest', 'auxApp.winExternalRequest_exported'}
+                                error('winMonitorRNI:UnexpectedCaller', 'Unexpected caller "%s"', class(callingApp))
+
+
+                            % DOCKS:OTHERS
+                            case {'auxApp.dockListOfLocation', 'auxApp.dockListOfLocation_exported', ...
+                                  'auxApp.dockReportLib',      'auxApp.dockReportLib_exported',      ...
+                                  'auxApp.dockStationInfo',    'auxApp.dockStationInfo_exported'}
+                                switch eventName
+                                    case 'closeFcnCallFromPopupApp'
+                                        context = varargin{1};
+                                        moduleTag = varargin{2};
+        
+                                        switch context
+                                            case {app.Role, app.Context}
+                                                hApp = app;
+                                                app.popupContainer.Parent.Visible = 0;
+                                            otherwise
+                                                hApp = getAppHandle(app.tabGroupController, context);
+                                                ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', eventName)
+                                        end
+                                        
+                                        if ~isempty(hApp)
+                                            deleteContextMenu(app.tabGroupController, hApp.UIFigure, moduleTag)
+                                        end
+
+                                    case {'onLocationListModeChanged', ...
+                                          'onStationCoordinatesEdited', ...
+                                          'onStationInfoChanged', ...
+                                          'onStationSelectionChanged'}
+                                        context = varargin{1};
+                                        varargin = [{eventName}, varargin(2:end)];
+                                        ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', varargin{:})
+
+                                    otherwise
+                                        error('winMonitorRNI:UnexpectedCall', 'Unexpected call "%s"', eventName)
+                                end
+            
+                            otherwise
+                                error('winMonitorRNI:UnexpectedCaller', 'Unexpected caller "%s"', class(callingApp))
+                        end
                 end
 
             catch ME
@@ -333,37 +331,45 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
     methods (Access = public)
         %-----------------------------------------------------------------%
         function navigateToTab(app, clickedButton)
-            tabNavigatorButtonPushed(app, struct('Source', clickedButton, 'PreviousValue', false))
+            onTabNavigatorButtonPushed(app, struct('Source', clickedButton, 'PreviousValue', false))
         end
 
         %-----------------------------------------------------------------%
         function applyJSCustomizations(app, tabIndex)
-            persistent customizationStatus
-            if isempty(customizationStatus)
-                customizationStatus = zeros(1, numel(app.SubTabGroup.Children), 'logical');
-            end
-
-            if customizationStatus(tabIndex)
+            if app.SubTabGroup.UserData.isTabInitialized(tabIndex)
                 return
             end
-
-            customizationStatus(tabIndex) = true;
+            app.SubTabGroup.UserData.isTabInitialized(tabIndex) = true;
+            
             switch tabIndex
-                case 1 % FILE
-                    elToModify = {app.file_Tree, app.file_Metadata};                            
+                case 1
+                    appName = class(app);
+                    elToModify = {
+                        app.Tab1Button;
+                        app.Tab2Button;
+                        app.Tab3Button;
+                        app.Tab4Button;
+                        app.Tab5Button;
+                        app.FileTree;
+                        app.FileMetadata                        
+                    };                            
                     ui.CustomizationBase.getElementsDataTag(elToModify);
 
-                    appName = class(app);
                     try
-                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', {struct('appName', appName, 'dataTag', elToModify{1}.UserData.id, 'listener', struct('componentName', 'mainApp.file_Tree', 'keyEvents', {{'Delete', 'Backspace'}}))});
-                    catch ME
-                        ui.Dialog(app.UIFigure, 'error', getReport(ME));
+                        ui.TextView.startup(app.jsBackDoor, app.FileMetadata, appName);
+                    catch
                     end
 
                     try
-                        ui.TextView.startup(app.jsBackDoor, elToModify{2}, appName);
-                    catch ME
-                        ui.Dialog(app.UIFigure, 'error', getReport(ME));
+                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                            struct('appName', appName, 'dataTag', app.Tab1Button.UserData.id, 'generation', 1, 'class', 'tab-navigator-button'), ...
+                            struct('appName', appName, 'dataTag', app.Tab2Button.UserData.id, 'generation', 1, 'class', 'tab-navigator-button'), ...
+                            struct('appName', appName, 'dataTag', app.Tab3Button.UserData.id, 'generation', 1, 'class', 'tab-navigator-button'), ...
+                            struct('appName', appName, 'dataTag', app.Tab4Button.UserData.id, 'generation', 1, 'class', 'tab-navigator-button'), ...
+                            struct('appName', appName, 'dataTag', app.Tab5Button.UserData.id, 'generation', 1, 'class', 'tab-navigator-button'), ...
+                            struct('appName', appName, 'dataTag', app.FileTree.UserData.id, 'listener', struct('componentName', 'mainApp.file_Tree', 'keyEvents', {{'Delete', 'Backspace'}})) ...
+                        });
+                    catch
                     end
 
                 otherwise
@@ -407,8 +413,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     % mais eficiente a comunicação com webapp porque as imagens
                     % Base64 são menores (uma imagem com Basemap "sattelite" pode 
                     % ter 500 kB, enquanto uma imagem sem Basemap pode ter 25 kB).
-                    app.General_I.Plot.GeographicAxes.Basemap = 'none';
-                    app.General_I.Report.Basemap              = 'none';
+                    app.General_I.plot.geographicAxes.basemap = 'none';
+                    app.General_I.reportLib.basemap           = 'none';
 
                 otherwise    
                     % Resgata a pasta de trabalho do usuário (configurável).
@@ -445,20 +451,21 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function initializeUIComponents(app)
             app.tabGroupController = ui.TabNavigator(app.NavBar, app.TabGroup, app.progressDialog);
-            addComponent(app.tabGroupController, "Built-in", "",                          app.Tab1Button, "AlwaysOn", struct('On', 'OpenFile_32Yellow.png',      'Off', 'OpenFile_32White.png'),      matlab.graphics.GraphicsPlaceholder, 1)
-            addComponent(app.tabGroupController, "External", "auxApp.winMonitoringPlan",  app.Tab2Button, "AlwaysOn", struct('On', 'Detection_32Yellow.png',     'Off', 'Detection_32White.png'),     app.Tab1Button,                    2)
-            addComponent(app.tabGroupController, "External", "auxApp.winExternalRequest", app.Tab3Button, "AlwaysOn", struct('On', 'exceptionList_32Yellow.png', 'Off', 'exceptionList_32White.png'), app.Tab1Button,                    3)
-            addComponent(app.tabGroupController, "External", "auxApp.winRFDataHub",       app.Tab4Button, "AlwaysOn", struct('On', 'mosaic_32Yellow.png',        'Off', 'mosaic_32White.png'),        app.Tab1Button,                    4)
-            addComponent(app.tabGroupController, "External", "auxApp.winConfig",          app.Tab5Button, "AlwaysOn", struct('On', 'Settings_36Yellow.png',      'Off', 'Settings_36White.png'),      app.Tab1Button,                    5)
+            addComponent(app.tabGroupController, "Built-in", "",                          app.Tab1Button, "AlwaysOn", struct('On', '', 'Off', ''), matlab.graphics.GraphicsPlaceholder, 1)
+            addComponent(app.tabGroupController, "External", "auxApp.winMonitoringPlan",  app.Tab2Button, "AlwaysOn", struct('On', '', 'Off', ''), app.Tab1Button,                      2)
+            addComponent(app.tabGroupController, "External", "auxApp.winExternalRequest", app.Tab3Button, "AlwaysOn", struct('On', '', 'Off', ''), app.Tab1Button,                      3)
+            addComponent(app.tabGroupController, "External", "auxApp.winRFDataHub",       app.Tab4Button, "AlwaysOn", struct('On', '', 'Off', ''), app.Tab1Button,                      4)
+            addComponent(app.tabGroupController, "External", "auxApp.winConfig",          app.Tab5Button, "AlwaysOn", struct('On', '', 'Off', ''), app.Tab1Button,                      5)
+            app.tabGroupController.inlineSVG = true;
 
-            addStyle(app.file_Tree, uistyle('Interpreter', 'html'))
+            addStyle(app.FileTree, uistyle('Interpreter', 'html'))
         end
 
 
         %-----------------------------------------------------------------%
         function applyInitialLayout(app)
             DataHubWarningLamp(app)
-            app.file_FileSortMethod.Value = app.General.File.sortMethod;
+            app.file_FileSortMethod.Value = app.General.context.FILE.sortMethod;
         end
     end
 
@@ -493,15 +500,15 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             arguments
                 app
                 indexes
-                updateType char {mustBeMember(updateType, {'FileListChanged:Add', ...
-                                                           'FileListChanged:Del', ...
-                                                           'FileListChanged:Unmerge', ...
-                                                           'FileListChanged:Merge'})}
+                updateType char {mustBeMember(updateType, {'onFileListAdded', ...
+                                                           'onFileListRemoved', ...
+                                                           'onFileListUnmerged', ...
+                                                           'onFileListMerged'})}
             end
 
             file_TreeBuilding(app, indexes)
 
-            if ismember(updateType, {'FileListChanged:Add', 'FileListChanged:Del'})
+            if ismember(updateType, {'onFileListAdded', 'onFileListRemoved'})
                 updateAnalysis( ...
                     app.projectData, ...
                     app.measData, ...
@@ -521,9 +528,9 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 selectedNodeData = []
             end
 
-            if ~isempty(app.file_Tree.Children)
-                app.file_Metadata.UserData = [];
-                delete(app.file_Tree.Children)
+            if ~isempty(app.FileTree.Children)
+                app.FileMetadata.UserData = [];
+                delete(app.FileTree.Children)
             end
 
             selectedNode = [];
@@ -531,7 +538,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             switch app.file_FileSortMethod.Value
                 case 'ARQUIVO'
                     for ii = 1:numel(app.measData)
-                        treeNode = file_createTreeElements(app, ii, app.file_Tree, 'FILE');
+                        treeNode = file_createTreeElements(app, ii, app.FileTree, 'FILE');
 
                         if ismember(ii, selectedNodeData)
                             selectedNode = [selectedNode, treeNode];
@@ -548,7 +555,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                         [~, idSort]      = sort(arrayfun(@(x) x.Data.Timestamp(1), app.measData(locationIndexes)));
                         locationIndexes  = locationIndexes(idSort);
 
-                        locationTreeNode = uitreenode(app.file_Tree, 'Text', location, ...
+                        locationTreeNode = uitreenode(app.FileTree, 'Text', location, ...
                                                                      'NodeData', locationIndexes, ...
                                                                      'ContextMenu', app.ContextMenu);
 
@@ -562,21 +569,21 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     end
             end
 
-            expand(app.file_Tree, 'all')
+            expand(app.FileTree, 'all')
 
             if ~isempty(app.measData)
                 if ~isempty(selectedNode)
-                    app.file_Tree.SelectedNodes = selectedNode;
+                    app.FileTree.SelectedNodes = selectedNode;
                 else
-                    if isempty(app.file_Tree.Children(1).Children)
-                        app.file_Tree.SelectedNodes = app.file_Tree.Children(1);
+                    if isempty(app.FileTree.Children(1).Children)
+                        app.FileTree.SelectedNodes = app.FileTree.Children(1);
                     else
-                        app.file_Tree.SelectedNodes = app.file_Tree.Children(1).Children(1);
+                        app.FileTree.SelectedNodes = app.FileTree.Children(1).Children(1);
                     end
                 end
             end
 
-            file_TreeSelectionChanged(app)
+            onTreeSelectionChanged(app)
         end
 
         %-----------------------------------------------------------------%
@@ -613,8 +620,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function indexes = file_findSelectedNodeData(app)
             indexes = [];
-            if ~isempty(app.file_Tree.SelectedNodes)
-                indexes = unique([app.file_Tree.SelectedNodes.NodeData]);
+            if ~isempty(app.FileTree.SelectedNodes)
+                indexes = unique([app.FileTree.SelectedNodes.NodeData]);
             end
         end
 
@@ -641,31 +648,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.General.fileFolder.lastVisited   = filePath;
 
             appEngine.util.generalSettingsSave(class.Constants.appName, app.rootFolder, app.General_I, app.executionMode)
-        end
-
-        %-----------------------------------------------------------------%
-        function inputArguments = auxAppInputArguments(app, auxAppName)
-            arguments
-                app
-                auxAppName char {mustBeMember(auxAppName, {'FILE', 'MONITORINGPLAN', 'EXTERNALREQUEST', 'RFDATAHUB', 'CONFIG'})}
-            end
-            
-            [auxAppIsOpen, ...
-             auxAppHandle] = checkStatusModule(app.tabGroupController, auxAppName);
-
-            inputArguments = {app};
-
-            switch auxAppName
-                case 'RFDATAHUB'
-                    if auxAppIsOpen
-                        filterTable         = auxAppHandle.filterTable;
-                        rfDataHubAnnotation = auxAppHandle.rfDataHubAnnotation;
-                        inputArguments      = {app, filterTable, rfDataHubAnnotation};
-                    end
-
-                otherwise
-                    % ...
-            end
         end
     end
 
@@ -801,8 +783,21 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 return
             end
 
-            if ~strcmp(app.executionMode, 'webApp') && ~isempty(app.measData)
-                msgQuestion   = 'Deseja fechar o aplicativo?';
+            % msgQuestion = '';
+            % if checkIfUpdateNeeded(app.projectData, app.measData)
+            %     msgQuestion = sprintf([ ...
+            %         'O projeto "%s" foi modificado (nome, arquivo de saída, ' ...
+            %         'lista de arquivos de entrada ou tabelas de anotação das ' ...
+            %         'contas de resultado). Caso o aplicativo seja encerrado ' ...
+            %         'agora, todas as alterações serão descartadas.\n\n' ...
+            %         'Deseja realmente fechar o aplicativo?' ...
+            %         ], app.projectData.name);
+            % 
+            % elseif ~strcmp(app.executionMode, 'webApp')
+            %     msgQuestion = 'Deseja fechar o aplicativo?';
+            % end
+msgQuestion = 'Deseja fechar o aplicativo?';
+            if ~isempty(msgQuestion)                
                 userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 1, 2);
                 if userSelection == "Não"
                     return
@@ -815,68 +810,72 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             
         end
 
-        % Value changed function: Tab1Button, Tab2Button, Tab3Button, 
-        % ...and 2 other components
-        function tabNavigatorButtonPushed(app, event)
+        % Callback function: AppInfo, DataHubLamp, FigurePosition, 
+        % ...and 5 other components
+        function onTabNavigatorButtonPushed(app, event)
 
-            clickedButton  = event.Source;
-            auxAppTag      = clickedButton.Tag;
-            inputArguments = auxAppInputArguments(app, auxAppTag);
-
-            openModule(app.tabGroupController, event.Source, event.PreviousValue, app.General, inputArguments{:})
-
-        end
-
-        % Image clicked function: AppInfo, FigurePosition
-        function menuImageClicked(app, event)
-            
             switch event.Source
+                case {app.Tab1Button, app.Tab2Button, app.Tab3Button, app.Tab4Button, app.Tab5Button}
+                    openModule(app.tabGroupController, event.Source, event.PreviousValue, app.General, app)
+
+                case app.DataHubLamp
+                    msg = [ ...
+                        'Pendente mapear a pasta POST do SharePoint, de modo a viabilizar:<br>' ...
+                        '•&thinsp;Upload do relatório final para o SEI.' ...
+                    ];
+                    ui.Dialog(app.UIFigure, 'error', msg);
+
                 case app.FigurePosition
                     app.UIFigure.Position(3:4) = class.Constants.windowSize;
                     appEngine.util.setWindowPosition(app.UIFigure)
+                    focus(findobj(app.NavBar.Children, 'Type', 'uistatebutton', 'Value', true))
 
                 case app.AppInfo
-                    appInfo = util.HtmlTextGenerator.AppInfo(app.General, app.rootFolder, app.executionMode, app.renderCount, "popup");
+                    appInfo = util.HtmlTextGenerator.AppInfo( ...
+                        app.General, ...
+                        app.rootFolder, ...
+                        app.executionMode, ...
+                        app.renderCount, ...
+                        app.projectData, ...
+                        "popup" ...
+                    );
                     ui.Dialog(app.UIFigure, 'info', appInfo);
             end
 
         end
 
-        % Selection changed function: file_Tree
-        function file_TreeSelectionChanged(app, event)
+        % Selection changed function: FileTree
+        function onTreeSelectionChanged(app, event)
 
             indexes = file_findSelectedNodeData(app);
 
             if isempty(indexes)
-                app.file_Metadata.Text     = '';
-                app.file_Metadata.UserData = [];
+                app.FileMetadata.Text     = '';
+                app.FileMetadata.UserData = [];
 
             else
-                if isequal(app.file_Metadata.UserData, indexes)
+                if isequal(app.FileMetadata.UserData, indexes)
                     return
                 end
 
-                app.file_Metadata.Text     = util.HtmlTextGenerator.SelectedFile(app.measData(indexes));
-                app.file_Metadata.UserData = indexes;
+                app.FileMetadata.Text     = util.HtmlTextGenerator.SelectedFile(app.measData(indexes));
+                app.FileMetadata.UserData = indexes;
             end
 
             updateToolbar(app)
             
         end
 
-        % Menu selected function: contextmenu_del
-        function file_ContextMenu_delTreeNodeSelected(app, event)
+        % Value changed function: file_FileSortMethod
+        function onFileSortMethodValueChanged(app, event)
             
-            if ~isempty(app.file_Tree.SelectedNodes)
-                indexes = [app.file_Tree.SelectedNodes.NodeData];
-                app.measData(indexes) = [];
-                file_ProjectRestart(app, [], 'FileListChanged:Del')
-            end
+            indexes = file_findSelectedNodeData(app);
+            file_TreeBuilding(app, indexes)
 
         end
 
         % Image clicked function: tool_ReadFiles
-        function tool_ReadFilesImageClicked(app, event)
+        function Toolbar_SelectFileToReadImageClicked(app, event)
 
             d = [];
             fileFullName = {};
@@ -907,7 +906,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 end
 
             else
-                switch app.General.File.input
+                switch app.General.context.FILE.input
                     case 'file'
                         [fileName, filePath] = uigetfile({'*.txt';'*.csv';'*.mat';'*.*'}, ...
                                                           '', app.General.fileFolder.lastVisited, 'MultiSelect', 'on');
@@ -982,22 +981,14 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             end
             
             indexes = file_findSelectedNodeData(app);
-            file_ProjectRestart(app, indexes, 'FileListChanged:Add')
+            file_ProjectRestart(app, indexes, 'onFileListAdded')
 
             delete(d)
 
         end
 
-        % Value changed function: file_FileSortMethod
-        function file_FileSortMethodValueChanged(app, event)
-            
-            indexes = file_findSelectedNodeData(app);
-            file_TreeBuilding(app, indexes)
-
-        end
-
         % Callback function: contextmenu_merge, tool_MergeFiles
-        function file_MergeFilesImageClicked(app, event)
+        function Toolbar_MergeFilesImageClicked(app, event)
             
             % O processo de "mesclagem" é apenas o controle da localidade
             % de agrupamento, não tendo impacto na análise, mas apenas na
@@ -1016,7 +1007,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     for ii = indexes
                         app.measData(ii).Location = app.measData(ii).Location_I;
                     end
-                    file_ProjectRestart(app, indexes, 'FileListChanged:Unmerge')
+                    file_ProjectRestart(app, indexes, 'onFileListUnmerged')
                     return
                 end
             end
@@ -1041,7 +1032,18 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 for ii = indexes
                     app.measData(ii).Location = userSelection;
                 end
-                file_ProjectRestart(app, indexes, 'FileListChanged:Merge')
+                file_ProjectRestart(app, indexes, 'onFileListMerged')
+            end
+
+        end
+
+        % Menu selected function: contextmenu_del
+        function ContextMenu_DeleteSelectedTreeNode(app, event)
+            
+            if ~isempty(app.FileTree.SelectedNodes)
+                indexes = [app.FileTree.SelectedNodes.NodeData];
+                app.measData(indexes) = [];
+                file_ProjectRestart(app, [], 'onFileListRemoved')
             end
 
         end
@@ -1107,7 +1109,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             % Create tool_ReadFiles
             app.tool_ReadFiles = uiimage(app.file_toolGrid);
             app.tool_ReadFiles.ScaleMethod = 'none';
-            app.tool_ReadFiles.ImageClickedFcn = createCallbackFcn(app, @tool_ReadFilesImageClicked, true);
+            app.tool_ReadFiles.ImageClickedFcn = createCallbackFcn(app, @Toolbar_SelectFileToReadImageClicked, true);
             app.tool_ReadFiles.Tooltip = {'Seleciona arquivos'};
             app.tool_ReadFiles.Layout.Row = 2;
             app.tool_ReadFiles.Layout.Column = 1;
@@ -1116,7 +1118,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             % Create tool_MergeFiles
             app.tool_MergeFiles = uiimage(app.file_toolGrid);
             app.tool_MergeFiles.ScaleMethod = 'none';
-            app.tool_MergeFiles.ImageClickedFcn = createCallbackFcn(app, @file_MergeFilesImageClicked, true);
+            app.tool_MergeFiles.ImageClickedFcn = createCallbackFcn(app, @Toolbar_MergeFilesImageClicked, true);
             app.tool_MergeFiles.Enable = 'off';
             app.tool_MergeFiles.Tooltip = {'Mescla informações'};
             app.tool_MergeFiles.Layout.Row = [1 3];
@@ -1165,7 +1167,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             % Create file_FileSortMethod
             app.file_FileSortMethod = uidropdown(app.SubGrid1);
             app.file_FileSortMethod.Items = {'ARQUIVO', 'LOCALIDADE'};
-            app.file_FileSortMethod.ValueChangedFcn = createCallbackFcn(app, @file_FileSortMethodValueChanged, true);
+            app.file_FileSortMethod.ValueChangedFcn = createCallbackFcn(app, @onFileSortMethodValueChanged, true);
             app.file_FileSortMethod.FontSize = 10;
             app.file_FileSortMethod.BackgroundColor = [0.9804 0.9804 0.9804];
             app.file_FileSortMethod.Layout.Row = 2;
@@ -1179,24 +1181,24 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.file_FileSortMethodIcon.Layout.Column = 1;
             app.file_FileSortMethodIcon.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'sort_az_ascending.png');
 
-            % Create file_Tree
-            app.file_Tree = uitree(app.file_Grid);
-            app.file_Tree.Multiselect = 'on';
-            app.file_Tree.SelectionChangedFcn = createCallbackFcn(app, @file_TreeSelectionChanged, true);
-            app.file_Tree.FontSize = 11;
-            app.file_Tree.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.file_Tree.Layout.Row = 3;
-            app.file_Tree.Layout.Column = [2 3];
+            % Create FileTree
+            app.FileTree = uitree(app.file_Grid);
+            app.FileTree.Multiselect = 'on';
+            app.FileTree.SelectionChangedFcn = createCallbackFcn(app, @onTreeSelectionChanged, true);
+            app.FileTree.FontSize = 11;
+            app.FileTree.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
+            app.FileTree.Layout.Row = 3;
+            app.FileTree.Layout.Column = [2 3];
 
-            % Create file_Metadata
-            app.file_Metadata = uilabel(app.file_Grid);
-            app.file_Metadata.VerticalAlignment = 'top';
-            app.file_Metadata.WordWrap = 'on';
-            app.file_Metadata.FontSize = 11;
-            app.file_Metadata.Layout.Row = 3;
-            app.file_Metadata.Layout.Column = [5 6];
-            app.file_Metadata.Interpreter = 'html';
-            app.file_Metadata.Text = '';
+            % Create FileMetadata
+            app.FileMetadata = uilabel(app.file_Grid);
+            app.FileMetadata.VerticalAlignment = 'top';
+            app.FileMetadata.WordWrap = 'on';
+            app.FileMetadata.FontSize = 11;
+            app.FileMetadata.Layout.Row = 3;
+            app.FileMetadata.Layout.Column = [5 6];
+            app.FileMetadata.Interpreter = 'html';
+            app.FileMetadata.Text = '';
 
             % Create Tab2_MonitoringPlan
             app.Tab2_MonitoringPlan = uitab(app.TabGroup);
@@ -1248,11 +1250,10 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create Tab1Button
             app.Tab1Button = uibutton(app.NavBar, 'state');
-            app.Tab1Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
+            app.Tab1Button.ValueChangedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.Tab1Button.Tag = 'FILE';
             app.Tab1Button.Tooltip = {'Leitura de arquivos'};
-            app.Tab1Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'OpenFile_32Yellow.png');
-            app.Tab1Button.IconAlignment = 'top';
+            app.Tab1Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'folder-active-24px-yellow.svg');
             app.Tab1Button.Text = '';
             app.Tab1Button.BackgroundColor = [0.2 0.2 0.2];
             app.Tab1Button.FontSize = 11;
@@ -1271,11 +1272,10 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create Tab2Button
             app.Tab2Button = uibutton(app.NavBar, 'state');
-            app.Tab2Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
+            app.Tab2Button.ValueChangedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.Tab2Button.Tag = 'MONITORINGPLAN';
             app.Tab2Button.Tooltip = {'PM-RNI'};
-            app.Tab2Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'Detection_32White.png');
-            app.Tab2Button.IconAlignment = 'right';
+            app.Tab2Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'graph-line-24px-white.svg');
             app.Tab2Button.Text = '';
             app.Tab2Button.BackgroundColor = [0.2 0.2 0.2];
             app.Tab2Button.FontSize = 11;
@@ -1284,11 +1284,10 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create Tab3Button
             app.Tab3Button = uibutton(app.NavBar, 'state');
-            app.Tab3Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
+            app.Tab3Button.ValueChangedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.Tab3Button.Tag = 'EXTERNALREQUEST';
             app.Tab3Button.Tooltip = {'Demanda externa'};
-            app.Tab3Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'exceptionList_32White.png');
-            app.Tab3Button.IconAlignment = 'right';
+            app.Tab3Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'report-24px-2hite.svg');
             app.Tab3Button.Text = '';
             app.Tab3Button.BackgroundColor = [0.2 0.2 0.2];
             app.Tab3Button.FontSize = 11;
@@ -1306,11 +1305,10 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create Tab4Button
             app.Tab4Button = uibutton(app.NavBar, 'state');
-            app.Tab4Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
+            app.Tab4Button.ValueChangedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.Tab4Button.Tag = 'RFDATAHUB';
             app.Tab4Button.Tooltip = {'RFDataHub'};
-            app.Tab4Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'mosaic_32White.png');
-            app.Tab4Button.IconAlignment = 'right';
+            app.Tab4Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'database-24px-white.svg');
             app.Tab4Button.Text = '';
             app.Tab4Button.BackgroundColor = [0.2 0.2 0.2];
             app.Tab4Button.FontSize = 11;
@@ -1319,10 +1317,10 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create Tab5Button
             app.Tab5Button = uibutton(app.NavBar, 'state');
-            app.Tab5Button.ValueChangedFcn = createCallbackFcn(app, @tabNavigatorButtonPushed, true);
+            app.Tab5Button.ValueChangedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.Tab5Button.Tag = 'CONFIG';
             app.Tab5Button.Tooltip = {'Configurações gerais'};
-            app.Tab5Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'Settings_36White.png');
+            app.Tab5Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'gear-24px-white.svg');
             app.Tab5Button.IconAlignment = 'right';
             app.Tab5Button.Text = '';
             app.Tab5Button.BackgroundColor = [0.2 0.2 0.2];
@@ -1337,26 +1335,28 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create DataHubLamp
             app.DataHubLamp = uiimage(app.NavBar);
+            app.DataHubLamp.ImageClickedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.DataHubLamp.Visible = 'off';
-            app.DataHubLamp.Tooltip = {'Pendente mapear o Sharepoint'};
             app.DataHubLamp.Layout.Row = 3;
-            app.DataHubLamp.Layout.Column = [13 14];
+            app.DataHubLamp.Layout.Column = 13;
             app.DataHubLamp.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'red-circle-blink.gif');
 
             % Create FigurePosition
             app.FigurePosition = uiimage(app.NavBar);
-            app.FigurePosition.ImageClickedFcn = createCallbackFcn(app, @menuImageClicked, true);
+            app.FigurePosition.ScaleMethod = 'none';
+            app.FigurePosition.ImageClickedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.FigurePosition.Visible = 'off';
             app.FigurePosition.Layout.Row = 3;
             app.FigurePosition.Layout.Column = 15;
-            app.FigurePosition.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'layout1_32White.png');
+            app.FigurePosition.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'screen-normal-24px-white.svg');
 
             % Create AppInfo
             app.AppInfo = uiimage(app.NavBar);
-            app.AppInfo.ImageClickedFcn = createCallbackFcn(app, @menuImageClicked, true);
+            app.AppInfo.ScaleMethod = 'none';
+            app.AppInfo.ImageClickedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.AppInfo.Layout.Row = 3;
             app.AppInfo.Layout.Column = 16;
-            app.AppInfo.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'Dots_32White.png');
+            app.AppInfo.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'kebab-vertical-24px-white.svg');
 
             % Create ContextMenu
             app.ContextMenu = uicontextmenu(app.UIFigure);
@@ -1364,13 +1364,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create contextmenu_merge
             app.contextmenu_merge = uimenu(app.ContextMenu);
-            app.contextmenu_merge.MenuSelectedFcn = createCallbackFcn(app, @file_MergeFilesImageClicked, true);
+            app.contextmenu_merge.MenuSelectedFcn = createCallbackFcn(app, @Toolbar_MergeFilesImageClicked, true);
             app.contextmenu_merge.Enable = 'off';
             app.contextmenu_merge.Text = '🔀 Mesclar';
 
             % Create contextmenu_del
             app.contextmenu_del = uimenu(app.ContextMenu);
-            app.contextmenu_del.MenuSelectedFcn = createCallbackFcn(app, @file_ContextMenu_delTreeNodeSelected, true);
+            app.contextmenu_del.MenuSelectedFcn = createCallbackFcn(app, @ContextMenu_DeleteSelectedTreeNode, true);
             app.contextmenu_del.Enable = 'off';
             app.contextmenu_del.Text = '❌ Excluir';
 

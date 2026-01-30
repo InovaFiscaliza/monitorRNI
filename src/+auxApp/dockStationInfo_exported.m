@@ -47,7 +47,6 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
     properties (Access = private)
         %-----------------------------------------------------------------%
         inputArgs
-        projectData
     end
     
     
@@ -67,7 +66,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function initialValues(app)
-            app.Reason.Items = categories(app.projectData.modules.MonitoringPlan.stationTable.("Justificativa"));
+            app.Reason.Items = categories(app.mainApp.projectData.modules.MONITORINGPLAN.stationTable.("Justificativa"));
             updateForm(app)
         end
 
@@ -85,19 +84,19 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
         
         %-----------------------------------------------------------------%
         function updateFormValues(app, idxStation)
-            app.Station.Text   = util.HtmlTextGenerator.StationInfo(app.projectData.modules.MonitoringPlan.stationTable, idxStation, app.mainApp.rfDataHub);
-            app.Reason.Value   = char(app.projectData.modules.MonitoringPlan.stationTable.("Justificativa")(idxStation));
-            app.optNotes.Value = app.projectData.modules.MonitoringPlan.stationTable.("Observações"){idxStation};
+            app.Station.Text   = util.HtmlTextGenerator.StationInfo(app.mainApp.projectData.modules.MONITORINGPLAN.stationTable, idxStation, app.mainApp.rfDataHub);
+            app.Reason.Value   = char(app.mainApp.projectData.modules.MONITORINGPLAN.stationTable.("Justificativa")(idxStation));
+            app.optNotes.Value = app.mainApp.projectData.modules.MONITORINGPLAN.stationTable.("Observações"){idxStation};
 
-            set(app.Latitude,  'Value', app.projectData.modules.MonitoringPlan.stationTable.("Latitude")(idxStation),  'UserData', app.projectData.modules.MonitoringPlan.stationTable.("Latitude")(idxStation))
-            set(app.Longitude, 'Value', app.projectData.modules.MonitoringPlan.stationTable.("Longitude")(idxStation), 'UserData', app.projectData.modules.MonitoringPlan.stationTable.("Longitude")(idxStation))            
+            set(app.Latitude,  'Value', app.mainApp.projectData.modules.MONITORINGPLAN.stationTable.("Latitude")(idxStation),  'UserData', app.mainApp.projectData.modules.MONITORINGPLAN.stationTable.("Latitude")(idxStation))
+            set(app.Longitude, 'Value', app.mainApp.projectData.modules.MONITORINGPLAN.stationTable.("Longitude")(idxStation), 'UserData', app.mainApp.projectData.modules.MONITORINGPLAN.stationTable.("Longitude")(idxStation))            
         end
 
         %-----------------------------------------------------------------%
         function updateFormLayout(app, idxStation)
             % Identifica se ocorreu alteração nas coordenadas geográficas:
-            if (app.projectData.modules.MonitoringPlan.stationTable.("Lat")(idxStation)  ~= app.projectData.modules.MonitoringPlan.stationTable.("Latitude")(idxStation)) || ...
-               (app.projectData.modules.MonitoringPlan.stationTable.("Long")(idxStation) ~= app.projectData.modules.MonitoringPlan.stationTable.("Longitude")(idxStation))
+            if (app.mainApp.projectData.modules.MONITORINGPLAN.stationTable.("Lat")(idxStation)  ~= app.mainApp.projectData.modules.MONITORINGPLAN.stationTable.("Latitude")(idxStation)) || ...
+               (app.mainApp.projectData.modules.MONITORINGPLAN.stationTable.("Long")(idxStation) ~= app.mainApp.projectData.modules.MONITORINGPLAN.stationTable.("Longitude")(idxStation))
                 app.LocationRefresh.Visible = 1;
             else
                 app.LocationRefresh.Visible = 0;
@@ -139,11 +138,6 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             idxRow     = app.callingApp.UITable.Selection;
             idxStation = app.callingApp.UITable.UserData(idxRow);
         end
-
-        %-----------------------------------------------------------------%
-        function CallingMainApp(app, callType, updateFlag, returnFlag, varargin)
-            ipcSecondaryMatlabCallsHandler(app.callingApp, app, callType, updateFlag, returnFlag, varargin{:})
-        end
     end
     
 
@@ -156,9 +150,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             try
                 appEngine.boot(app, app.Role, mainApp, callingApp)
 
-                app.inputArgs   = struct('context', context);
-                app.projectData = mainApp.projectData;
-    
+                app.inputArgs = struct('context', context);    
                 jsBackDoor_Customizations(app)
                 initialValues(app)
                 
@@ -171,19 +163,20 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
         % Callback function: UIFigure, btnClose
         function closeFcn(app, event)
             
-            CallingMainApp(app, 'closeFcn', false, false)
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'closeFcnCallFromPopupApp', 'MONITORINGPLAN', 'auxApp.dockStationInfo')
             delete(app)
             
         end
 
         % Value changed function: Reason, optNotes
-        function FormValueChanged(app, event)
+        function onFormValueChanged(app, event)
             
             switch event.Source
                 case {app.Reason, app.optNotes}
                     newReason    = app.Reason.Value;
                     newOptNote   = textFormatGUI.cellstr2TextField(app.optNotes.Value);
-                    CallingMainApp(app, 'StationTableValueChanged: ReasonOrNote', true, true, newReason, newOptNote)
+                    
+                    ipcMainMatlabCallsHandler(app.mainApp, app, 'onStationInfoChanged', 'MONITORINGPLAN', newReason, newOptNote)
 
                 case {app.LocationRefresh, app.LocationEditionConfirm}
                     if isequal(app.Latitude.Value,  app.Latitude.UserData) && ...
@@ -193,7 +186,8 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
                     newLatitude  = app.Latitude.Value;
                     newLongitude = app.Longitude.Value;
-                    CallingMainApp(app, 'MonitoringPlan:StationCoordinatesEdited', true, true, newLatitude, newLongitude)
+                    
+                    ipcMainMatlabCallsHandler(app.mainApp, app, 'onStationCoordinatesEdited', 'MONITORINGPLAN', newLatitude, newLongitude)
             end
             
             updateForm(app)
@@ -202,28 +196,28 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
         % Image clicked function: LocationEditionCancel, 
         % ...and 3 other components
-        function LocationEditionModeCallbacks(app, event)
+        function onLocationEditionModeChanged(app, event)
             
             switch event.Source
                 case app.LocationRefresh
                     idxStation = selectedStation(app);
-                    app.Latitude.Value  = app.projectData.modules.MonitoringPlan.stationTable.("Lat")(idxStation);
-                    app.Longitude.Value = app.projectData.modules.MonitoringPlan.stationTable.("Long")(idxStation);
+                    app.Latitude.Value  = app.mainApp.projectData.modules.MONITORINGPLAN.stationTable.("Lat")(idxStation);
+                    app.Longitude.Value = app.mainApp.projectData.modules.MONITORINGPLAN.stationTable.("Long")(idxStation);
 
-                    FormValueChanged(app, struct('Source', event.Source))
+                    onFormValueChanged(app, struct('Source', event.Source))
 
                 case app.LocationEditionMode
                     app.LocationEditionMode.UserData = ~app.LocationEditionMode.UserData;
                     if app.LocationEditionMode.UserData
                         updateLocationPanelLayout(app, 'on')
-                        LocationValueChanged(app, struct('Source', event.Source))
+                        onLocationInfoChanged(app, struct('Source', event.Source))
                     else
                         updateLocationPanelLayout(app, 'off')
                         updateForm(app)
                     end
 
                 case app.LocationEditionConfirm
-                    FormValueChanged(app, struct('Source', event.Source))
+                    onFormValueChanged(app, struct('Source', event.Source))
 
                 case app.LocationEditionCancel
                     updateForm(app)
@@ -232,7 +226,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
         end
 
         % Value changed function: Latitude, Longitude
-        function LocationValueChanged(app, event)
+        function onLocationInfoChanged(app, event)
             
             switch event.Source
                 case app.LocationEditionMode
@@ -246,7 +240,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
         end
 
         % Image clicked function: NextSelection, PreviousSelection
-        function UITableSelectionChanged(app, event)
+        function onStationSelectionChanged(app, event)
             
             idxStations = app.callingApp.UITable.UserData;
             [~, idxSelectedRow] = selectedStation(app);
@@ -265,7 +259,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
                 idxNewRowSelection = 1;
             end
 
-            CallingMainApp(app, 'UITableSelectionChanged', true, true, idxNewRowSelection)
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'onStationSelectionChanged', 'MONITORINGPLAN', idxNewRowSelection)
             updateForm(app, idxStations(idxNewRowSelection))
 
         end
@@ -354,7 +348,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             % Create Reason
             app.Reason = uidropdown(app.StationPanel);
             app.Reason.Items = {};
-            app.Reason.ValueChangedFcn = createCallbackFcn(app, @FormValueChanged, true);
+            app.Reason.ValueChangedFcn = createCallbackFcn(app, @onFormValueChanged, true);
             app.Reason.FontSize = 11;
             app.Reason.BackgroundColor = [1 1 1];
             app.Reason.Layout.Row = 3;
@@ -371,7 +365,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             % Create optNotes
             app.optNotes = uitextarea(app.StationPanel);
-            app.optNotes.ValueChangedFcn = createCallbackFcn(app, @FormValueChanged, true);
+            app.optNotes.ValueChangedFcn = createCallbackFcn(app, @onFormValueChanged, true);
             app.optNotes.FontSize = 11;
             app.optNotes.Layout.Row = 5;
             app.optNotes.Layout.Column = [1 3];
@@ -396,7 +390,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             % Create LocationRefresh
             app.LocationRefresh = uiimage(app.LocationLabelGrid);
-            app.LocationRefresh.ImageClickedFcn = createCallbackFcn(app, @LocationEditionModeCallbacks, true);
+            app.LocationRefresh.ImageClickedFcn = createCallbackFcn(app, @onLocationEditionModeChanged, true);
             app.LocationRefresh.Visible = 'off';
             app.LocationRefresh.Tooltip = {'Retorna à informação inicial'; '(extraída da tabela de referência)'};
             app.LocationRefresh.Layout.Row = 1;
@@ -406,7 +400,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             % Create LocationEditionMode
             app.LocationEditionMode = uiimage(app.LocationLabelGrid);
-            app.LocationEditionMode.ImageClickedFcn = createCallbackFcn(app, @LocationEditionModeCallbacks, true);
+            app.LocationEditionMode.ImageClickedFcn = createCallbackFcn(app, @onLocationEditionModeChanged, true);
             app.LocationEditionMode.Tooltip = {'Habilita painel de edição'};
             app.LocationEditionMode.Layout.Row = 1;
             app.LocationEditionMode.Layout.Column = 3;
@@ -415,7 +409,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             % Create LocationEditionConfirm
             app.LocationEditionConfirm = uiimage(app.LocationLabelGrid);
-            app.LocationEditionConfirm.ImageClickedFcn = createCallbackFcn(app, @LocationEditionModeCallbacks, true);
+            app.LocationEditionConfirm.ImageClickedFcn = createCallbackFcn(app, @onLocationEditionModeChanged, true);
             app.LocationEditionConfirm.Enable = 'off';
             app.LocationEditionConfirm.Tooltip = {'Confirma edição'};
             app.LocationEditionConfirm.Layout.Row = 1;
@@ -425,7 +419,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             % Create LocationEditionCancel
             app.LocationEditionCancel = uiimage(app.LocationLabelGrid);
-            app.LocationEditionCancel.ImageClickedFcn = createCallbackFcn(app, @LocationEditionModeCallbacks, true);
+            app.LocationEditionCancel.ImageClickedFcn = createCallbackFcn(app, @onLocationEditionModeChanged, true);
             app.LocationEditionCancel.Enable = 'off';
             app.LocationEditionCancel.Tooltip = {'Cancela edição'};
             app.LocationEditionCancel.Layout.Row = 1;
@@ -458,7 +452,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.Latitude = uieditfield(app.LocationPanelGrid, 'numeric');
             app.Latitude.Limits = [-90 90];
             app.Latitude.ValueDisplayFormat = '%.6f';
-            app.Latitude.ValueChangedFcn = createCallbackFcn(app, @LocationValueChanged, true);
+            app.Latitude.ValueChangedFcn = createCallbackFcn(app, @onLocationInfoChanged, true);
             app.Latitude.Editable = 'off';
             app.Latitude.FontSize = 11;
             app.Latitude.Layout.Row = 2;
@@ -476,7 +470,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.Longitude = uieditfield(app.LocationPanelGrid, 'numeric');
             app.Longitude.Limits = [-180 180];
             app.Longitude.ValueDisplayFormat = '%.6f';
-            app.Longitude.ValueChangedFcn = createCallbackFcn(app, @LocationValueChanged, true);
+            app.Longitude.ValueChangedFcn = createCallbackFcn(app, @onLocationInfoChanged, true);
             app.Longitude.Editable = 'off';
             app.Longitude.FontSize = 11;
             app.Longitude.Layout.Row = 2;
@@ -484,7 +478,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             % Create PreviousSelection
             app.PreviousSelection = uiimage(app.StationPanel);
-            app.PreviousSelection.ImageClickedFcn = createCallbackFcn(app, @UITableSelectionChanged, true);
+            app.PreviousSelection.ImageClickedFcn = createCallbackFcn(app, @onStationSelectionChanged, true);
             app.PreviousSelection.Tooltip = {'Navega para o produto anterior'};
             app.PreviousSelection.Layout.Row = 6;
             app.PreviousSelection.Layout.Column = 1;
@@ -492,7 +486,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             % Create NextSelection
             app.NextSelection = uiimage(app.StationPanel);
-            app.NextSelection.ImageClickedFcn = createCallbackFcn(app, @UITableSelectionChanged, true);
+            app.NextSelection.ImageClickedFcn = createCallbackFcn(app, @onStationSelectionChanged, true);
             app.NextSelection.Tooltip = {'Navega para o produto posterior'};
             app.NextSelection.Layout.Row = 6;
             app.NextSelection.Layout.Column = 2;
