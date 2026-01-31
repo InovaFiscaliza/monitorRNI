@@ -1,5 +1,5 @@
 {
-    "version": 0.86,
+    "version": 0.87,
     "operationMode": {
         "Debug": false,
         "Dock": true,
@@ -65,6 +65,16 @@
                 "Difícil acesso",
                 "Outra"
             ],
+            "locationLimits": {
+                "lat": {
+                    "min": -33.75,
+                    "max": 5.27
+                },
+                "lng": {
+                    "min": -73.99,
+                    "max": -34.79
+                }
+            },
             "locationType": [
                 "Apartamento",
                 "Casa", 

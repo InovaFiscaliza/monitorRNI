@@ -202,40 +202,45 @@ classdef projectLib < handle
         end
 
         %-----------------------------------------------------------------%
-        function updateAnalysis(obj, measData, generalSettings, updateType)
+        function updateAnalysis(obj, measData, generalSettings, eventName, varargin)
             arguments
                 obj
                 measData
                 generalSettings
-                updateType char {mustBeMember(updateType, {'FileListChanged:Add',                      ... % winMonitorRNI
-                                                           'FileListChanged:Del',                      ... % winMonitorRNI
-                                                           'MonitoringPlan:AnalysisParameterChanged',  ... % auxApp.winConfig
-                                                           'MonitoringPlan:ManualLocationListChanged', ... % auxApp.winMonitoringPlan >> auxApp.dockListOfLocation
-                                                           'MonitoringPlan:StationCoordinatesEdited',  ... % auxApp.winMonitoringPlan >> auxApp.dockStationInfo
-                                                           'ExternalRequest:AnalysisParameterChanged', ... % auxApp.winConfig
-                                                           'ExternalRequest:PointsTableChanged'})}         % auxApp.winExternalRequest
+                eventName char {mustBeMember(eventName, {'onFileListAdded',            ... % winMonitorRNI
+                                                         'onFileListRemoved',          ... % winMonitorRNI
+                                                         'onAnalysisParameterChanged', ... % auxApp.winConfig
+                                                         'onLocationListModeChanged',  ... % auxApp.winMonitoringPlan >> auxApp.dockListOfLocation
+                                                         'onStationCoordinatesEdited', ... % auxApp.winMonitoringPlan >> auxApp.dockStationInfo
+                                                         'onPointsInfoChanged'})}          % auxApp.winExternalRequest
+            end
+
+            arguments (Repeating)
+                varargin
             end
 
             updateAnnotationTable(obj, 'MONITORINGPLAN',  'stationTable', 'save')
             updateAnnotationTable(obj, 'EXTERNALREQUEST', 'pointsTable',  'save')
 
             if ~isempty(measData)
+                context = varargin{1};
                 measTable = createMeasTable(measData);
 
-                switch updateType
-                    case {'FileListChanged:Add', ...
-                          'FileListChanged:Del'}
-                        updateStationTableAnalysis(obj, measData, measTable, generalSettings)
-                        updatePointsTableAnalysis(obj, measTable, generalSettings)
+                switch eventName
+                    case {'onFileListAdded', 'onFileListRemoved'}
+                        updateStationTableAnalysis(obj, 'MONITORINGPLAN', measData, measTable, generalSettings)
+                        updatePointsTableAnalysis(obj, 'EXTERNALREQUEST', measTable, generalSettings)
     
-                    case {'MonitoringPlan:AnalysisParameterChanged',  ...
-                          'MonitoringPlan:ManualLocationListChanged', ...
-                          'MonitoringPlan:StationCoordinatesEdited'}
-                        updateStationTableAnalysis(obj, measData, measTable, generalSettings)
-    
-                    case {'ExternalRequest:AnalysisParameterChanged', ...
-                          'ExternalRequest:PointsTableChanged'}
-                        updatePointsTableAnalysis(obj, measTable, generalSettings)
+                    case {'onAnalysisParameterChanged', ...
+                          'onLocationListModeChanged',  ...
+                          'onStationCoordinatesEdited', ...
+                          'onPointsInfoChanged'}
+                        switch context
+                            case 'MONITORINGPLAN'
+                                updateStationTableAnalysis(obj, context, measData, measTable, generalSettings)
+                            case 'EXTERNALREQUEST'
+                                updatePointsTableAnalysis(obj, context, measTable, generalSettings)
+                        end
                 end
 
             else

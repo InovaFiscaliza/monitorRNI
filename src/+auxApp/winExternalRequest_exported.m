@@ -2,69 +2,70 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                     matlab.ui.Figure
-        GridLayout                   matlab.ui.container.GridLayout
-        SubTabGroup                  matlab.ui.container.TabGroup
-        SubTab1                      matlab.ui.container.Tab
-        SubGrid1                     matlab.ui.container.GridLayout
-        TreePoints                   matlab.ui.container.Tree
-        AddNewPointPanel             matlab.ui.container.Panel
-        AddNewPointGrid              matlab.ui.container.GridLayout
-        NewPointDescription          matlab.ui.control.EditField
-        NewPointDescriptionLabel     matlab.ui.control.Label
-        NewPointLongitude            matlab.ui.control.NumericEditField
-        NewPointLongitudeLabel       matlab.ui.control.Label
-        NewPointLatitude             matlab.ui.control.NumericEditField
-        NewPointLatitudeLabel        matlab.ui.control.Label
-        NewPointStation              matlab.ui.control.NumericEditField
-        NewPointStationLabel         matlab.ui.control.Label
-        NewPointType                 matlab.ui.control.DropDown
-        NewPointTypeLabel            matlab.ui.control.Label
-        AddNewPointCancel            matlab.ui.control.Image
-        AddNewPointConfirm           matlab.ui.control.Image
-        AddNewPointMode              matlab.ui.control.Image
-        TreePointsLabel              matlab.ui.control.Label
-        TreeFileLocations            matlab.ui.container.Tree
-        config_geoAxesLabel          matlab.ui.control.Label
-        SubTab2                      matlab.ui.container.Tab
-        SubGrid2                     matlab.ui.container.GridLayout
-        reportPanel                  matlab.ui.container.Panel
-        reportGrid                   matlab.ui.container.GridLayout
-        reportVersion                matlab.ui.control.DropDown
-        reportVersionLabel           matlab.ui.control.Label
-        reportModelName              matlab.ui.control.DropDown
-        reportModelNameLabel         matlab.ui.control.Label
-        reportLabel                  matlab.ui.control.Label
-        eFiscalizaPanel              matlab.ui.container.Panel
-        eFiscalizaGrid               matlab.ui.container.GridLayout
-        reportIssue                  matlab.ui.control.NumericEditField
-        reportIssueLabel             matlab.ui.control.Label
-        reportUnit                   matlab.ui.control.DropDown
-        reportUnitLabel              matlab.ui.control.Label
-        reportSystem                 matlab.ui.control.DropDown
-        reportSystemLabel            matlab.ui.control.Label
-        eFiscalizaLabel              matlab.ui.control.Label
-        DockModule                   matlab.ui.container.GridLayout
-        dockModule_Undock            matlab.ui.control.Image
-        dockModule_Close             matlab.ui.control.Image
-        Document                     matlab.ui.container.GridLayout
-        AxesToolbar                  matlab.ui.container.GridLayout
-        axesTool_RegionZoom          matlab.ui.control.Image
-        axesTool_RestoreView         matlab.ui.control.Image
-        plotPanel                    matlab.ui.container.Panel
-        UITable                      matlab.ui.control.Table
-        Toolbar                      matlab.ui.container.GridLayout
-        tool_UploadFinalFile         matlab.ui.control.Image
-        tool_GenerateReport          matlab.ui.control.Image
-        tool_peakLabel               matlab.ui.control.Label
-        tool_peakIcon                matlab.ui.control.Image
-        tool_Separator2              matlab.ui.control.Image
-        tool_ExportFiles             matlab.ui.control.Image
-        tool_TableVisibility         matlab.ui.control.Image
-        tool_Separator1              matlab.ui.control.Image
-        tool_ControlPanelVisibility  matlab.ui.control.Image
-        ContextMenu                  matlab.ui.container.ContextMenu
-        DeletePoint                  matlab.ui.container.Menu
+        UIFigure                  matlab.ui.Figure
+        GridLayout                matlab.ui.container.GridLayout
+        SubTabGroup               matlab.ui.container.TabGroup
+        SubTab1                   matlab.ui.container.Tab
+        SubGrid1                  matlab.ui.container.GridLayout
+        TreePoints                matlab.ui.container.Tree
+        AddNewPointPanel          matlab.ui.container.Panel
+        AddNewPointGrid           matlab.ui.container.GridLayout
+        NewPointDescription       matlab.ui.control.EditField
+        NewPointDescriptionLabel  matlab.ui.control.Label
+        NewPointLongitude         matlab.ui.control.NumericEditField
+        NewPointLongitudeLabel    matlab.ui.control.Label
+        NewPointLatitude          matlab.ui.control.NumericEditField
+        NewPointLatitudeLabel     matlab.ui.control.Label
+        NewPointStation           matlab.ui.control.NumericEditField
+        NewPointStationLabel      matlab.ui.control.Label
+        NewPointType              matlab.ui.control.DropDown
+        NewPointTypeLabel         matlab.ui.control.Label
+        AddNewPointCancel         matlab.ui.control.Image
+        AddNewPointConfirm        matlab.ui.control.Image
+        AddNewPointMode           matlab.ui.control.Image
+        TreePointsLabel           matlab.ui.control.Label
+        TreeFileLocations         matlab.ui.container.Tree
+        TreeFileLocationsLabel    matlab.ui.control.Label
+        SubTab2                   matlab.ui.container.Tab
+        SubGrid2                  matlab.ui.container.GridLayout
+        reportPanel               matlab.ui.container.Panel
+        reportGrid                matlab.ui.container.GridLayout
+        reportVersion             matlab.ui.control.DropDown
+        reportVersionLabel        matlab.ui.control.Label
+        reportModelName           matlab.ui.control.DropDown
+        reportModelNameLabel      matlab.ui.control.Label
+        reportLabel               matlab.ui.control.Label
+        eFiscalizaPanel           matlab.ui.container.Panel
+        eFiscalizaGrid            matlab.ui.container.GridLayout
+        reportIssue               matlab.ui.control.NumericEditField
+        reportIssueLabel          matlab.ui.control.Label
+        reportUnit                matlab.ui.control.DropDown
+        reportUnitLabel           matlab.ui.control.Label
+        reportSystem              matlab.ui.control.DropDown
+        reportSystemLabel         matlab.ui.control.Label
+        eFiscalizaLabel           matlab.ui.control.Label
+        DockModule                matlab.ui.container.GridLayout
+        dockModule_Close          matlab.ui.control.Image
+        dockModule_Undock         matlab.ui.control.Image
+        Document                  matlab.ui.container.GridLayout
+        AxesToolbar               matlab.ui.container.GridLayout
+        axesTool_RegionZoom       matlab.ui.control.Image
+        axesTool_RestoreView      matlab.ui.control.Image
+        plotPanel                 matlab.ui.container.Panel
+        UITable                   matlab.ui.control.Table
+        Toolbar                   matlab.ui.container.GridLayout
+        tool_UploadFinalFile      matlab.ui.control.Image
+        tool_GenerateReport       matlab.ui.control.Image
+        tool_OpenPopupProject     matlab.ui.control.Image
+        tool_PeakLabel            matlab.ui.control.Label
+        tool_PeakIcon             matlab.ui.control.Image
+        tool_Separator2           matlab.ui.control.Image
+        tool_ExportFiles          matlab.ui.control.Image
+        tool_TableVisibility      matlab.ui.control.Image
+        tool_Separator1           matlab.ui.control.Image
+        tool_PanelVisibility      matlab.ui.control.Image
+        ContextMenu               matlab.ui.container.ContextMenu
+        DeletePoint               matlab.ui.container.Menu
     end
 
     
@@ -99,8 +100,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
 
     methods
-        %-----------------------------------------------------------------%
-        % IPC: COMUNICAÇÃO ENTRE PROCESSOS
         %-----------------------------------------------------------------%
         function ipcSecondaryJSEventsHandler(app, event)
             try
@@ -188,14 +187,43 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             switch tabIndex
                 case 1
-                    elDataTag = ui.CustomizationBase.getElementsDataTag({app.AxesToolbar, app.TreePoints});
-                    if ~isempty(elDataTag)
-                        appName = class(app);
-                        
+                    appName = class(app);
+                    elToModify = {
+                        app.AxesToolbar;
+                        app.AddNewPointMode;
+                        app.AddNewPointConfirm;
+                        app.AddNewPointCancel;
+                        app.tool_PanelVisibility;
+                        app.tool_TableVisibility;
+                        app.tool_ExportFiles;
+                        app.tool_PeakIcon;
+                        app.tool_OpenPopupProject;
+                        app.tool_GenerateReport;
+                        app.tool_UploadFinalFile;
+                        app.dockModule_Undock;
+                        app.dockModule_Close;
+                        app.TreePoints
+                    };
+                    ui.CustomizationBase.getElementsDataTag(elToModify);
+
+                    try
                         sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
-                            struct('appName', appName, 'dataTag', elDataTag{1}, 'styleImportant', struct('borderTopLeftRadius', '0', 'borderTopRightRadius', '0')), ...
-                            struct('appName', appName, 'dataTag', elDataTag{2}, 'listener', struct('componentName', 'auxApp.winExternalRequest.TreePoints', 'keyEvents', {{'Delete', 'Backspace'}})) ...
+                            struct('appName', appName, 'dataTag', app.AxesToolbar.UserData.id,    'styleImportant', struct('borderTopLeftRadius', '0', 'borderTopRightRadius', '0')), ...
+                            struct('appName', appName, 'dataTag', app.AddNewPointMode.UserData.id,       'tooltip', struct('defaultPosition', 'top',    'textContent', 'Alterna visibilidade do painel de inclusão de ponto')), ...
+                            struct('appName', appName, 'dataTag', app.AddNewPointConfirm.UserData.id,    'tooltip', struct('defaultPosition', 'top',    'textContent', 'Confirma edição')), ...
+                            struct('appName', appName, 'dataTag', app.AddNewPointCancel.UserData.id,     'tooltip', struct('defaultPosition', 'top',    'textContent', 'Cancela edição')), ...
+                            struct('appName', appName, 'dataTag', app.tool_PanelVisibility.UserData.id,  'tooltip', struct('defaultPosition', 'top',    'textContent', 'Alterna visibilidade do painel')), ...
+                            struct('appName', appName, 'dataTag', app.tool_TableVisibility.UserData.id,  'tooltip', struct('defaultPosition', 'top',    'textContent', 'Alterna entre três layouts do conjunto plot+tabela<br>(apenas plot, apenas tabela ou plot+tabela)')), ...
+                            struct('appName', appName, 'dataTag', app.tool_ExportFiles.UserData.id,      'tooltip', struct('defaultPosition', 'top',    'textContent', 'Exporta análise (.xlsx, .kml)')), ...
+                            struct('appName', appName, 'dataTag', app.tool_PeakIcon.UserData.id,         'tooltip', struct('defaultPosition', 'top',    'textContent', 'Aplica zoom em torno do local de valor máximo')), ...
+                            struct('appName', appName, 'dataTag', app.tool_OpenPopupProject.UserData.id, 'tooltip', struct('defaultPosition', 'top',    'textContent', 'Edita informações do projeto<br>(fiscalizada, arquivo de backup etc)')), ...
+                            struct('appName', appName, 'dataTag', app.tool_GenerateReport.UserData.id,   'tooltip', struct('defaultPosition', 'top',    'textContent', 'Gera relatório')), ...
+                            struct('appName', appName, 'dataTag', app.tool_UploadFinalFile.UserData.id,  'tooltip', struct('defaultPosition', 'top',    'textContent', 'Upload relatório')), ...
+                            struct('appName', appName, 'dataTag', app.dockModule_Undock.UserData.id,     'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Reabre módulo em outra janela')), ...
+                            struct('appName', appName, 'dataTag', app.dockModule_Close.UserData.id,      'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Fecha módulo')), ...
+                            struct('appName', appName, 'dataTag', app.TreePoints.UserData.id, 'listener', struct('componentName', 'auxApp.winExternalRequest.TreePoints', 'keyEvents', {{'Delete', 'Backspace'}})) ...
                         });
+                    catch
                     end
 
                 case 2
@@ -337,16 +365,16 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.tool_GenerateReport.Enable  = pointsTableNonEmpty & measDataNonEmpty & reportModelSelected;
             app.tool_UploadFinalFile.Enable = reportFinalVersionGenerated;
 
-            app.tool_peakLabel.Visible      = measTableNonEmpty;
-            app.tool_peakIcon.Enable        = measTableNonEmpty;
+            app.tool_PeakLabel.Visible      = measTableNonEmpty;
+            app.tool_PeakIcon.Enable        = measTableNonEmpty;
 
             if measTableNonEmpty
                 [~, maxIndex] = max(app.measTable.FieldValue);
 
-                app.tool_peakLabel.Text    = sprintf('%.2f V/m\n(%.6f, %.6f)', app.measTable.FieldValue(maxIndex), ...
+                app.tool_PeakLabel.Text    = sprintf('%.2f V/m\n(%.6f, %.6f)', app.measTable.FieldValue(maxIndex), ...
                                                                                app.measTable.Latitude(maxIndex),   ...
                                                                                app.measTable.Longitude(maxIndex));
-                app.tool_peakIcon.UserData = struct('idxMax',    maxIndex,                         ...
+                app.tool_PeakIcon.UserData = struct('idxMax',    maxIndex,                         ...
                                                     'Latitude',  app.measTable.Latitude(maxIndex), ...
                                                     'Longitude', app.measTable.Longitude(maxIndex));
             end
@@ -500,17 +528,19 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             switch editionStatus
                 case 'on'
-                    set(app.AddNewPointMode, 'ImageSource', 'addFiles_32Filled.png', 'Tooltip', 'Desabilita painel de inclusão de ponto', 'UserData', true)
+                    app.AddNewPointMode.ImageSource = 'addFiles_32Filled.png';
+                    app.AddNewPointMode.UserData.status = true;
                     
-                    app.SubGrid1.RowHeight{4} = 170;
+                    app.SubGrid1.RowHeight{5} = 170;
                     app.SubGrid1.ColumnWidth(end-1:end) = {18, 18};
                     app.AddNewPointConfirm.Enable = 1;
                     app.AddNewPointCancel.Enable  = 1;
 
                 case 'off'
-                    set(app.AddNewPointMode, 'ImageSource', 'addFiles_32.png',       'Tooltip', 'Habilita painel de inclusão de ponto',   'UserData', false)
+                    app.AddNewPointMode.ImageSource = 'addFiles_32.png';
+                    app.AddNewPointMode.UserData.status = false;
 
-                    app.SubGrid1.RowHeight{4} = 0;
+                    app.SubGrid1.RowHeight{5} = 0;
                     app.SubGrid1.ColumnWidth(end-1:end) = {0,0};
                     app.AddNewPointConfirm.Enable = 0;
                     app.AddNewPointCancel.Enable  = 0;
@@ -568,18 +598,18 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
         end
 
-        % Image clicked function: tool_ControlPanelVisibility, 
-        % ...and 2 other components
+        % Image clicked function: tool_PanelVisibility, tool_PeakIcon, 
+        % ...and 1 other component
         function Toolbar_InteractionImageClicked(app, event)
             
             switch event.Source
-                case app.tool_ControlPanelVisibility
+                case app.tool_PanelVisibility
                     if app.SubTabGroup.Visible
-                        app.tool_ControlPanelVisibility.ImageSource = 'layout-sidebar-left-off.svg';
+                        app.tool_PanelVisibility.ImageSource = 'layout-sidebar-left-off.svg';
                         app.SubTabGroup.Visible = 0;
                         app.Document.Layout.Column = [2 5];
                     else
-                        app.tool_ControlPanelVisibility.ImageSource = 'layout-sidebar-left.svg';
+                        app.tool_PanelVisibility.ImageSource = 'layout-sidebar-left.svg';
                         app.SubTabGroup.Visible = 1;
                         app.Document.Layout.Column = [4 5];
                     end
@@ -599,11 +629,11 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                             app.Document.RowHeight = {0, 0, 0, '1x'};
                     end
 
-                case app.tool_peakIcon
-                    if ~isempty(app.tool_peakIcon.UserData)
+                case app.tool_PeakIcon
+                    if ~isempty(app.tool_PeakIcon.UserData)
                         ReferenceDistance_km = 1;
-                        plot.zoom(app.UIAxes, app.tool_peakIcon.UserData.Latitude, app.tool_peakIcon.UserData.Longitude, ReferenceDistance_km)
-                        plot.datatip.Create(app.UIAxes, 'Measures', app.tool_peakIcon.UserData.idxMax)
+                        plot.zoom(app.UIAxes, app.tool_PeakIcon.UserData.Latitude, app.tool_PeakIcon.UserData.Longitude, ReferenceDistance_km)
+                        plot.datatip.Create(app.UIAxes, 'Measures', app.tool_PeakIcon.UserData.idxMax)
                     end
             end
 
@@ -939,8 +969,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             switch app.NewPointType.Value
                 case 'Estação'
                     app.NewPointStation.Enable = 1;
-                    set(app.NewPointLatitude,  'Value', -1, 'Enable', 0)
-                    set(app.NewPointLongitude, 'Value', -1, 'Enable', 0)
+                    set(app.NewPointLatitude,  'Value', [], 'Enable', 0)
+                    set(app.NewPointLongitude, 'Value', [], 'Enable', 0)
 
                 otherwise
                     set(app.NewPointStation, 'Value', -1, 'Enable', 0)
@@ -963,8 +993,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 set(app.NewPointLongitude, 'Value', longStation, 'Enable', 1)
 
             else
-                set(app.NewPointLatitude,  'Value', -1, 'Enable', 1)
-                set(app.NewPointLongitude, 'Value', -1, 'Enable', 1)
+                set(app.NewPointLatitude,  'Value', [], 'Enable', 1)
+                set(app.NewPointLongitude, 'Value', [], 'Enable', 1)
             end
 
             focus(app.NewPointLatitude);
@@ -984,9 +1014,9 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             
             switch event.Source
                 case app.AddNewPointMode
-                    app.AddNewPointMode.UserData = ~app.AddNewPointMode.UserData;
+                    app.AddNewPointMode.UserData.status = ~app.AddNewPointMode.UserData.status;
                     
-                    if app.AddNewPointMode.UserData
+                    if app.AddNewPointMode.UserData.status
                         layout_newPointPanel(app, 'on')
                     else
                         layout_newPointPanel(app, 'off')
@@ -994,8 +1024,25 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
                 case app.AddNewPointConfirm
                     % VALIDAÇÃO
-                    if isempty(app.NewPointType.Value) || ((app.NewPointLatitude.Value == -1) && (app.NewPointLongitude.Value == -1))
-                        msgWarning = 'Um novo ponto crítico somente poderá ser incluído se definido o seu tipo e coordenadas geográficas diferentes de (-1, -1).';
+                    msgWarning = '';
+                    if isempty(app.NewPointType.Value) || isempty(app.NewPointLatitude.Value) || isempty(app.NewPointLongitude.Value)
+                        msgWarning = 'Um novo ponto crítico somente poderá ser incluído se definido o seu tipo e coordenadas geográficas.';
+
+                    elseif app.NewPointLatitude.Value  < app.mainApp.General.context.EXTERNALREQUEST.locationLimits.lat.min || ...
+                           app.NewPointLatitude.Value  > app.mainApp.General.context.EXTERNALREQUEST.locationLimits.lat.max || ...
+                           app.NewPointLongitude.Value < app.mainApp.General.context.EXTERNALREQUEST.locationLimits.lng.min || ...
+                           app.NewPointLongitude.Value > app.mainApp.General.context.EXTERNALREQUEST.locationLimits.lng.max
+                        
+                        msgWarning = sprintf([ ...
+                            'Um novo ponto crítico somente poderá ser incluído ' ...
+                            'se definido dentro dos limites:<br>' ...
+                            '• Latitude: %.2fº a %.2fº<br>' ...
+                            '• Longitude: %.2fº a %.2fº' ...
+                        ], app.mainApp.General.context.EXTERNALREQUEST.locationLimits.lat.min, app.mainApp.General.context.EXTERNALREQUEST.locationLimits.lat.max, app.mainApp.General.context.EXTERNALREQUEST.locationLimits.lng.min, app.mainApp.General.context.EXTERNALREQUEST.locationLimits.lng.max);
+
+                    end
+
+                    if ~isempty(msgWarning)
                         ui.Dialog(app.UIFigure, 'warning', msgWarning);
                         return
                     end
@@ -1092,6 +1139,11 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             end
 
         end
+
+        % Image clicked function: tool_OpenPopupProject
+        function tool_OpenPopupProjectImageClicked(app, event)
+            
+        end
     end
 
     % Component initialization
@@ -1139,7 +1191,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
             % Create Toolbar
             app.Toolbar = uigridlayout(app.GridLayout);
-            app.Toolbar.ColumnWidth = {22, 5, 22, 22, 5, 22, '1x', 22, 22};
+            app.Toolbar.ColumnWidth = {22, 5, 22, 22, 5, 22, '1x', 22, 22, 22};
             app.Toolbar.RowHeight = {4, 17, '1x'};
             app.Toolbar.ColumnSpacing = 5;
             app.Toolbar.RowSpacing = 0;
@@ -1148,13 +1200,13 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.Toolbar.Layout.Column = [1 7];
             app.Toolbar.BackgroundColor = [0.9412 0.9412 0.9412];
 
-            % Create tool_ControlPanelVisibility
-            app.tool_ControlPanelVisibility = uiimage(app.Toolbar);
-            app.tool_ControlPanelVisibility.ScaleMethod = 'none';
-            app.tool_ControlPanelVisibility.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
-            app.tool_ControlPanelVisibility.Layout.Row = [1 3];
-            app.tool_ControlPanelVisibility.Layout.Column = 1;
-            app.tool_ControlPanelVisibility.ImageSource = 'layout-sidebar-left.svg';
+            % Create tool_PanelVisibility
+            app.tool_PanelVisibility = uiimage(app.Toolbar);
+            app.tool_PanelVisibility.ScaleMethod = 'none';
+            app.tool_PanelVisibility.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
+            app.tool_PanelVisibility.Layout.Row = [1 3];
+            app.tool_PanelVisibility.Layout.Column = 1;
+            app.tool_PanelVisibility.ImageSource = 'layout-sidebar-left.svg';
 
             % Create tool_Separator1
             app.tool_Separator1 = uiimage(app.Toolbar);
@@ -1168,7 +1220,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.tool_TableVisibility = uiimage(app.Toolbar);
             app.tool_TableVisibility.ScaleMethod = 'none';
             app.tool_TableVisibility.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
-            app.tool_TableVisibility.Tooltip = {'Visibilidade da tabela'};
             app.tool_TableVisibility.Layout.Row = [1 3];
             app.tool_TableVisibility.Layout.Column = 3;
             app.tool_TableVisibility.ImageSource = 'View_16.png';
@@ -1178,7 +1229,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.tool_ExportFiles.ScaleMethod = 'none';
             app.tool_ExportFiles.ImageClickedFcn = createCallbackFcn(app, @Toolbar_ExportTableAsExcelSheet, true);
             app.tool_ExportFiles.Enable = 'off';
-            app.tool_ExportFiles.Tooltip = {'Exporta análise (.xlsx, .kml)'};
             app.tool_ExportFiles.Layout.Row = [1 3];
             app.tool_ExportFiles.Layout.Column = 4;
             app.tool_ExportFiles.ImageSource = 'Export_16.png';
@@ -1191,32 +1241,38 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.tool_Separator2.Layout.Column = 5;
             app.tool_Separator2.ImageSource = 'LineV.svg';
 
-            % Create tool_peakIcon
-            app.tool_peakIcon = uiimage(app.Toolbar);
-            app.tool_peakIcon.ScaleMethod = 'none';
-            app.tool_peakIcon.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
-            app.tool_peakIcon.Enable = 'off';
-            app.tool_peakIcon.Tooltip = {'Zoom em torno do local de máximo'};
-            app.tool_peakIcon.Layout.Row = [1 3];
-            app.tool_peakIcon.Layout.Column = 6;
-            app.tool_peakIcon.ImageSource = 'Detection_18.png';
+            % Create tool_PeakIcon
+            app.tool_PeakIcon = uiimage(app.Toolbar);
+            app.tool_PeakIcon.ScaleMethod = 'none';
+            app.tool_PeakIcon.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
+            app.tool_PeakIcon.Enable = 'off';
+            app.tool_PeakIcon.Layout.Row = [1 3];
+            app.tool_PeakIcon.Layout.Column = 6;
+            app.tool_PeakIcon.ImageSource = 'Detection_18.png';
 
-            % Create tool_peakLabel
-            app.tool_peakLabel = uilabel(app.Toolbar);
-            app.tool_peakLabel.FontSize = 10;
-            app.tool_peakLabel.Visible = 'off';
-            app.tool_peakLabel.Layout.Row = [1 3];
-            app.tool_peakLabel.Layout.Column = 7;
-            app.tool_peakLabel.Text = {'5.3 V/m'; '(-12.354321, -38.123456)'};
+            % Create tool_PeakLabel
+            app.tool_PeakLabel = uilabel(app.Toolbar);
+            app.tool_PeakLabel.FontSize = 10;
+            app.tool_PeakLabel.Visible = 'off';
+            app.tool_PeakLabel.Layout.Row = [1 3];
+            app.tool_PeakLabel.Layout.Column = 7;
+            app.tool_PeakLabel.Text = {'5.3 V/m'; '(-12.354321, -38.123456)'};
+
+            % Create tool_OpenPopupProject
+            app.tool_OpenPopupProject = uiimage(app.Toolbar);
+            app.tool_OpenPopupProject.ScaleMethod = 'none';
+            app.tool_OpenPopupProject.ImageClickedFcn = createCallbackFcn(app, @tool_OpenPopupProjectImageClicked, true);
+            app.tool_OpenPopupProject.Layout.Row = [1 3];
+            app.tool_OpenPopupProject.Layout.Column = 8;
+            app.tool_OpenPopupProject.ImageSource = 'organization-20px-black.svg';
 
             % Create tool_GenerateReport
             app.tool_GenerateReport = uiimage(app.Toolbar);
             app.tool_GenerateReport.ScaleMethod = 'none';
             app.tool_GenerateReport.ImageClickedFcn = createCallbackFcn(app, @Toolbar_GenerateReportImageClicked, true);
             app.tool_GenerateReport.Enable = 'off';
-            app.tool_GenerateReport.Tooltip = {'Gera relatório (.html)'};
             app.tool_GenerateReport.Layout.Row = [1 3];
-            app.tool_GenerateReport.Layout.Column = 8;
+            app.tool_GenerateReport.Layout.Column = 9;
             app.tool_GenerateReport.ImageSource = 'Publish_HTML_16.png';
 
             % Create tool_UploadFinalFile
@@ -1224,9 +1280,8 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.tool_UploadFinalFile.ScaleMethod = 'none';
             app.tool_UploadFinalFile.ImageClickedFcn = createCallbackFcn(app, @Toolbar_UploadFinalFileImageClicked, true);
             app.tool_UploadFinalFile.Enable = 'off';
-            app.tool_UploadFinalFile.Tooltip = {'Upload relatório'};
             app.tool_UploadFinalFile.Layout.Row = [1 3];
-            app.tool_UploadFinalFile.Layout.Column = 9;
+            app.tool_UploadFinalFile.Layout.Column = 10;
             app.tool_UploadFinalFile.ImageSource = 'up-20px.png';
 
             % Create Document
@@ -1278,7 +1333,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.axesTool_RestoreView = uiimage(app.AxesToolbar);
             app.axesTool_RestoreView.ScaleMethod = 'none';
             app.axesTool_RestoreView.ImageClickedFcn = createCallbackFcn(app, @AxesToolbarImageClicked, true);
-            app.axesTool_RestoreView.Tooltip = {'RestoreView'};
             app.axesTool_RestoreView.Layout.Row = 1;
             app.axesTool_RestoreView.Layout.Column = 1;
             app.axesTool_RestoreView.ImageSource = 'Home_18.png';
@@ -1287,7 +1341,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.axesTool_RegionZoom = uiimage(app.AxesToolbar);
             app.axesTool_RegionZoom.ScaleMethod = 'none';
             app.axesTool_RegionZoom.ImageClickedFcn = createCallbackFcn(app, @AxesToolbarImageClicked, true);
-            app.axesTool_RegionZoom.Tooltip = {'RegionZoom'};
             app.axesTool_RegionZoom.Layout.Row = 1;
             app.axesTool_RegionZoom.Layout.Column = 2;
             app.axesTool_RegionZoom.ImageSource = 'ZoomRegion_20.png';
@@ -1302,26 +1355,22 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.DockModule.Layout.Column = [5 6];
             app.DockModule.BackgroundColor = [0.2 0.2 0.2];
 
-            % Create dockModule_Close
-            app.dockModule_Close = uiimage(app.DockModule);
-            app.dockModule_Close.ScaleMethod = 'none';
-            app.dockModule_Close.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
-            app.dockModule_Close.Tag = 'DRIVETEST';
-            app.dockModule_Close.Tooltip = {'Fecha módulo'};
-            app.dockModule_Close.Layout.Row = 1;
-            app.dockModule_Close.Layout.Column = 2;
-            app.dockModule_Close.ImageSource = 'Delete_12SVG_white.svg';
-
             % Create dockModule_Undock
             app.dockModule_Undock = uiimage(app.DockModule);
             app.dockModule_Undock.ScaleMethod = 'none';
             app.dockModule_Undock.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
-            app.dockModule_Undock.Tag = 'DRIVETEST';
             app.dockModule_Undock.Enable = 'off';
-            app.dockModule_Undock.Tooltip = {'Reabre módulo em outra janela'};
             app.dockModule_Undock.Layout.Row = 1;
             app.dockModule_Undock.Layout.Column = 1;
             app.dockModule_Undock.ImageSource = 'Undock_18White.png';
+
+            % Create dockModule_Close
+            app.dockModule_Close = uiimage(app.DockModule);
+            app.dockModule_Close.ScaleMethod = 'none';
+            app.dockModule_Close.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
+            app.dockModule_Close.Layout.Row = 1;
+            app.dockModule_Close.Layout.Column = 2;
+            app.dockModule_Close.ImageSource = 'Delete_12SVG_white.svg';
 
             % Create SubTabGroup
             app.SubTabGroup = uitabgroup(app.GridLayout);
@@ -1338,20 +1387,20 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % Create SubGrid1
             app.SubGrid1 = uigridlayout(app.SubTab1);
             app.SubGrid1.ColumnWidth = {'1x', 18, 0, 0};
-            app.SubGrid1.RowHeight = {30, '1x', 37, 0, 174};
+            app.SubGrid1.RowHeight = {30, '1x', 9, 18, 0, 174};
             app.SubGrid1.ColumnSpacing = 5;
             app.SubGrid1.RowSpacing = 5;
             app.SubGrid1.BackgroundColor = [1 1 1];
 
-            % Create config_geoAxesLabel
-            app.config_geoAxesLabel = uilabel(app.SubGrid1);
-            app.config_geoAxesLabel.VerticalAlignment = 'bottom';
-            app.config_geoAxesLabel.WordWrap = 'on';
-            app.config_geoAxesLabel.FontSize = 10;
-            app.config_geoAxesLabel.Layout.Row = 1;
-            app.config_geoAxesLabel.Layout.Column = 1;
-            app.config_geoAxesLabel.Interpreter = 'html';
-            app.config_geoAxesLabel.Text = {'LOCALIDADES DE AGRUPAMENTO:'; '<font style="color: gray; font-size: 9px;">(relacionadas aos arquivos de medição)</font>'};
+            % Create TreeFileLocationsLabel
+            app.TreeFileLocationsLabel = uilabel(app.SubGrid1);
+            app.TreeFileLocationsLabel.VerticalAlignment = 'bottom';
+            app.TreeFileLocationsLabel.WordWrap = 'on';
+            app.TreeFileLocationsLabel.FontSize = 10;
+            app.TreeFileLocationsLabel.Layout.Row = 1;
+            app.TreeFileLocationsLabel.Layout.Column = 1;
+            app.TreeFileLocationsLabel.Interpreter = 'html';
+            app.TreeFileLocationsLabel.Text = {'LOCALIDADES DE AGRUPAMENTO:'; '<font style="color: gray; font-size: 9px;">(relacionadas aos arquivos de medição)</font>'};
 
             % Create TreeFileLocations
             app.TreeFileLocations = uitree(app.SubGrid1);
@@ -1364,7 +1413,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.TreePointsLabel = uilabel(app.SubGrid1);
             app.TreePointsLabel.VerticalAlignment = 'bottom';
             app.TreePointsLabel.FontSize = 10;
-            app.TreePointsLabel.Layout.Row = 3;
+            app.TreePointsLabel.Layout.Row = [3 4];
             app.TreePointsLabel.Layout.Column = 1;
             app.TreePointsLabel.Interpreter = 'html';
             app.TreePointsLabel.Text = {'PONTOS CRÍTICOS SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionado àquilo que fora pedido pelo demandante)</font>'};
@@ -1372,36 +1421,28 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             % Create AddNewPointMode
             app.AddNewPointMode = uiimage(app.SubGrid1);
             app.AddNewPointMode.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
-            app.AddNewPointMode.Tooltip = {'Habilita painel de inclusão de ponto'};
-            app.AddNewPointMode.Layout.Row = 3;
+            app.AddNewPointMode.Layout.Row = 4;
             app.AddNewPointMode.Layout.Column = 2;
-            app.AddNewPointMode.VerticalAlignment = 'bottom';
             app.AddNewPointMode.ImageSource = 'addFiles_32.png';
 
             % Create AddNewPointConfirm
             app.AddNewPointConfirm = uiimage(app.SubGrid1);
             app.AddNewPointConfirm.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
-            app.AddNewPointConfirm.Enable = 'off';
-            app.AddNewPointConfirm.Tooltip = {'Confirma edição'};
-            app.AddNewPointConfirm.Layout.Row = 3;
+            app.AddNewPointConfirm.Layout.Row = 4;
             app.AddNewPointConfirm.Layout.Column = 3;
-            app.AddNewPointConfirm.VerticalAlignment = 'bottom';
             app.AddNewPointConfirm.ImageSource = 'Ok_32Green.png';
 
             % Create AddNewPointCancel
             app.AddNewPointCancel = uiimage(app.SubGrid1);
             app.AddNewPointCancel.ImageClickedFcn = createCallbackFcn(app, @AddNewPointEditionModeCallbacks, true);
-            app.AddNewPointCancel.Enable = 'off';
-            app.AddNewPointCancel.Tooltip = {'Cancela edição'};
-            app.AddNewPointCancel.Layout.Row = 3;
+            app.AddNewPointCancel.Layout.Row = 4;
             app.AddNewPointCancel.Layout.Column = 4;
-            app.AddNewPointCancel.VerticalAlignment = 'bottom';
             app.AddNewPointCancel.ImageSource = 'Delete_32Red.png';
 
             % Create AddNewPointPanel
             app.AddNewPointPanel = uipanel(app.SubGrid1);
             app.AddNewPointPanel.AutoResizeChildren = 'off';
-            app.AddNewPointPanel.Layout.Row = 4;
+            app.AddNewPointPanel.Layout.Row = 5;
             app.AddNewPointPanel.Layout.Column = [1 4];
 
             % Create AddNewPointGrid
@@ -1463,12 +1504,13 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.NewPointLatitude = uieditfield(app.AddNewPointGrid, 'numeric');
             app.NewPointLatitude.Limits = [-90 90];
             app.NewPointLatitude.ValueDisplayFormat = '%.6f';
+            app.NewPointLatitude.AllowEmpty = 'on';
             app.NewPointLatitude.ValueChangedFcn = createCallbackFcn(app, @NewPointLatitudeValueChanged, true);
             app.NewPointLatitude.HorizontalAlignment = 'left';
             app.NewPointLatitude.FontSize = 11;
             app.NewPointLatitude.Layout.Row = 4;
             app.NewPointLatitude.Layout.Column = 2;
-            app.NewPointLatitude.Value = -1;
+            app.NewPointLatitude.Value = [];
 
             % Create NewPointLongitudeLabel
             app.NewPointLongitudeLabel = uilabel(app.AddNewPointGrid);
@@ -1482,11 +1524,12 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.NewPointLongitude = uieditfield(app.AddNewPointGrid, 'numeric');
             app.NewPointLongitude.Limits = [-180 180];
             app.NewPointLongitude.ValueDisplayFormat = '%.6f';
+            app.NewPointLongitude.AllowEmpty = 'on';
             app.NewPointLongitude.HorizontalAlignment = 'left';
             app.NewPointLongitude.FontSize = 11;
             app.NewPointLongitude.Layout.Row = 4;
             app.NewPointLongitude.Layout.Column = 3;
-            app.NewPointLongitude.Value = -1;
+            app.NewPointLongitude.Value = [];
 
             % Create NewPointDescriptionLabel
             app.NewPointDescriptionLabel = uilabel(app.AddNewPointGrid);
@@ -1506,7 +1549,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             app.TreePoints = uitree(app.SubGrid1);
             app.TreePoints.SelectionChangedFcn = createCallbackFcn(app, @TreePointsSelectionChanged, true);
             app.TreePoints.FontSize = 11;
-            app.TreePoints.Layout.Row = 5;
+            app.TreePoints.Layout.Row = 6;
             app.TreePoints.Layout.Column = [1 4];
 
             % Create SubTab2

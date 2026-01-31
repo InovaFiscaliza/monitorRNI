@@ -35,8 +35,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         reportSystemLabel           matlab.ui.control.Label
         eFiscalizaLabel             matlab.ui.control.Label
         DockModule                  matlab.ui.container.GridLayout
-        dockModule_Undock           matlab.ui.control.Image
         dockModule_Close            matlab.ui.control.Image
+        dockModule_Undock           matlab.ui.control.Image
         Document                    matlab.ui.container.GridLayout
         AxesToolbar                 matlab.ui.container.GridLayout
         axesTool_RegionZoom         matlab.ui.control.Image
@@ -46,8 +46,9 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         Toolbar                     matlab.ui.container.GridLayout
         tool_UploadFinalFile        matlab.ui.control.Image
         tool_GenerateReport         matlab.ui.control.Image
-        tool_PeakIcon               matlab.ui.control.Image
+        tool_OpenPopupProject       matlab.ui.control.Image
         tool_PeakLabel              matlab.ui.control.Label
+        tool_PeakIcon               matlab.ui.control.Image
         tool_Separator2             matlab.ui.control.Image
         tool_ExportFiles            matlab.ui.control.Image
         tool_TableEdition           matlab.ui.control.Image
@@ -211,11 +212,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     appName = class(app);
                     elToModify = {
                         app.AxesToolbar;
+                        app.LocationListEdit;
                         app.tool_PanelVisibility;
                         app.tool_TableVisibility;
                         app.tool_TableEdition;
                         app.tool_ExportFiles;
                         app.tool_PeakIcon;
+                        app.tool_OpenPopupProject;
                         app.tool_GenerateReport;
                         app.tool_UploadFinalFile;
                         app.dockModule_Undock;
@@ -226,11 +229,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     try
                         sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
                             struct('appName', appName, 'dataTag', app.AxesToolbar.UserData.id,    'styleImportant', struct('borderTopLeftRadius', '0', 'borderTopRightRadius', '0')), ...
+                            struct('appName', appName, 'dataTag', app.LocationListEdit.UserData.id,      'tooltip', struct('defaultPosition', 'top',    'textContent', 'Edita lista de localidades sob análise')), ...
                             struct('appName', appName, 'dataTag', app.tool_PanelVisibility.UserData.id,  'tooltip', struct('defaultPosition', 'top',    'textContent', 'Alterna visibilidade do painel')), ...
                             struct('appName', appName, 'dataTag', app.tool_TableVisibility.UserData.id,  'tooltip', struct('defaultPosition', 'top',    'textContent', 'Alterna entre três layouts do conjunto plot+tabela<br>(apenas plot, apenas tabela ou plot+tabela)')), ...
                             struct('appName', appName, 'dataTag', app.tool_TableEdition.UserData.id,     'tooltip', struct('defaultPosition', 'top',    'textContent', 'Edita, em formulário, as informações do registro selecionado na tabela')), ...
                             struct('appName', appName, 'dataTag', app.tool_ExportFiles.UserData.id,      'tooltip', struct('defaultPosition', 'top',    'textContent', 'Exporta análise (.xlsx, .kml)')), ...
                             struct('appName', appName, 'dataTag', app.tool_PeakIcon.UserData.id,         'tooltip', struct('defaultPosition', 'top',    'textContent', 'Aplica zoom em torno do local de valor máximo')), ...
+                            struct('appName', appName, 'dataTag', app.tool_OpenPopupProject.UserData.id, 'tooltip', struct('defaultPosition', 'top',    'textContent', 'Edita informações do projeto<br>(fiscalizada, arquivo de backup etc)')), ...
                             struct('appName', appName, 'dataTag', app.tool_GenerateReport.UserData.id,   'tooltip', struct('defaultPosition', 'top',    'textContent', 'Gera relatório')), ...
                             struct('appName', appName, 'dataTag', app.tool_UploadFinalFile.UserData.id,  'tooltip', struct('defaultPosition', 'top',    'textContent', 'Upload relatório')), ...
                             struct('appName', appName, 'dataTag', app.dockModule_Undock.UserData.id,     'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Reabre módulo em outra janela')), ...
@@ -1032,6 +1037,11 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             end
             
         end
+
+        % Image clicked function: tool_OpenPopupProject
+        function tool_OpenPopupProjectClicked(app, event)
+            
+        end
     end
 
     % Component initialization
@@ -1079,7 +1089,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Create Toolbar
             app.Toolbar = uigridlayout(app.GridLayout);
-            app.Toolbar.ColumnWidth = {22, 5, 22, 22, 22, 5, 22, '1x', 22, 22};
+            app.Toolbar.ColumnWidth = {22, 5, 22, 22, 22, 5, 22, '1x', 22, 22, 22};
             app.Toolbar.RowHeight = {4, 17, '1x'};
             app.Toolbar.ColumnSpacing = 5;
             app.Toolbar.RowSpacing = 0;
@@ -1108,7 +1118,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_TableVisibility = uiimage(app.Toolbar);
             app.tool_TableVisibility.ScaleMethod = 'none';
             app.tool_TableVisibility.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
-            app.tool_TableVisibility.Tooltip = {''};
             app.tool_TableVisibility.Layout.Row = [1 3];
             app.tool_TableVisibility.Layout.Column = 3;
             app.tool_TableVisibility.ImageSource = 'View_16.png';
@@ -1118,7 +1127,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_TableEdition.ScaleMethod = 'none';
             app.tool_TableEdition.ImageClickedFcn = createCallbackFcn(app, @Toolbar_OpenPopUpEditionMode, true);
             app.tool_TableEdition.Enable = 'off';
-            app.tool_TableEdition.Tooltip = {''};
             app.tool_TableEdition.Layout.Row = [1 3];
             app.tool_TableEdition.Layout.Column = 4;
             app.tool_TableEdition.ImageSource = 'Variable_edit_16.png';
@@ -1128,7 +1136,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_ExportFiles.ScaleMethod = 'none';
             app.tool_ExportFiles.ImageClickedFcn = createCallbackFcn(app, @Toolbar_ExportTableAsExcelSheet, true);
             app.tool_ExportFiles.Enable = 'off';
-            app.tool_ExportFiles.Tooltip = {''};
             app.tool_ExportFiles.Layout.Row = [1 3];
             app.tool_ExportFiles.Layout.Column = 5;
             app.tool_ExportFiles.ImageSource = 'Export_16.png';
@@ -1141,6 +1148,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_Separator2.Layout.Column = 6;
             app.tool_Separator2.ImageSource = 'LineV.svg';
 
+            % Create tool_PeakIcon
+            app.tool_PeakIcon = uiimage(app.Toolbar);
+            app.tool_PeakIcon.ScaleMethod = 'none';
+            app.tool_PeakIcon.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
+            app.tool_PeakIcon.Enable = 'off';
+            app.tool_PeakIcon.Layout.Row = [1 3];
+            app.tool_PeakIcon.Layout.Column = 7;
+            app.tool_PeakIcon.ImageSource = 'Detection_18.png';
+
             % Create tool_PeakLabel
             app.tool_PeakLabel = uilabel(app.Toolbar);
             app.tool_PeakLabel.FontSize = 10;
@@ -1149,24 +1165,21 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_PeakLabel.Layout.Column = 8;
             app.tool_PeakLabel.Text = {'5.3 V/m'; '(-12.354321, -38.123456)'};
 
-            % Create tool_PeakIcon
-            app.tool_PeakIcon = uiimage(app.Toolbar);
-            app.tool_PeakIcon.ScaleMethod = 'none';
-            app.tool_PeakIcon.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
-            app.tool_PeakIcon.Enable = 'off';
-            app.tool_PeakIcon.Tooltip = {''};
-            app.tool_PeakIcon.Layout.Row = [1 3];
-            app.tool_PeakIcon.Layout.Column = 7;
-            app.tool_PeakIcon.ImageSource = 'Detection_18.png';
+            % Create tool_OpenPopupProject
+            app.tool_OpenPopupProject = uiimage(app.Toolbar);
+            app.tool_OpenPopupProject.ScaleMethod = 'none';
+            app.tool_OpenPopupProject.ImageClickedFcn = createCallbackFcn(app, @tool_OpenPopupProjectClicked, true);
+            app.tool_OpenPopupProject.Layout.Row = [1 3];
+            app.tool_OpenPopupProject.Layout.Column = 9;
+            app.tool_OpenPopupProject.ImageSource = 'organization-20px-black.svg';
 
             % Create tool_GenerateReport
             app.tool_GenerateReport = uiimage(app.Toolbar);
             app.tool_GenerateReport.ScaleMethod = 'none';
             app.tool_GenerateReport.ImageClickedFcn = createCallbackFcn(app, @Toolbar_GenerateReportImageClicked, true);
             app.tool_GenerateReport.Enable = 'off';
-            app.tool_GenerateReport.Tooltip = {''};
             app.tool_GenerateReport.Layout.Row = [1 3];
-            app.tool_GenerateReport.Layout.Column = 9;
+            app.tool_GenerateReport.Layout.Column = 10;
             app.tool_GenerateReport.ImageSource = 'Publish_HTML_16.png';
 
             % Create tool_UploadFinalFile
@@ -1174,9 +1187,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_UploadFinalFile.ScaleMethod = 'none';
             app.tool_UploadFinalFile.ImageClickedFcn = createCallbackFcn(app, @Toolbar_UploadFinalFileImageClicked, true);
             app.tool_UploadFinalFile.Enable = 'off';
-            app.tool_UploadFinalFile.Tooltip = {''};
             app.tool_UploadFinalFile.Layout.Row = [1 3];
-            app.tool_UploadFinalFile.Layout.Column = 10;
+            app.tool_UploadFinalFile.Layout.Column = 11;
             app.tool_UploadFinalFile.ImageSource = 'up-20px.png';
 
             % Create Document
@@ -1229,7 +1241,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.axesTool_RestoreView = uiimage(app.AxesToolbar);
             app.axesTool_RestoreView.ScaleMethod = 'none';
             app.axesTool_RestoreView.ImageClickedFcn = createCallbackFcn(app, @AxesToolbarImageClicked, true);
-            app.axesTool_RestoreView.Tooltip = {'RestoreView'};
             app.axesTool_RestoreView.Layout.Row = 1;
             app.axesTool_RestoreView.Layout.Column = 1;
             app.axesTool_RestoreView.ImageSource = 'Home_18.png';
@@ -1238,7 +1249,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.axesTool_RegionZoom = uiimage(app.AxesToolbar);
             app.axesTool_RegionZoom.ScaleMethod = 'none';
             app.axesTool_RegionZoom.ImageClickedFcn = createCallbackFcn(app, @AxesToolbarImageClicked, true);
-            app.axesTool_RegionZoom.Tooltip = {'RegionZoom'};
             app.axesTool_RegionZoom.Layout.Row = 1;
             app.axesTool_RegionZoom.Layout.Column = 2;
             app.axesTool_RegionZoom.ImageSource = 'ZoomRegion_20.png';
@@ -1253,26 +1263,22 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.DockModule.Layout.Column = [5 6];
             app.DockModule.BackgroundColor = [0.2 0.2 0.2];
 
-            % Create dockModule_Close
-            app.dockModule_Close = uiimage(app.DockModule);
-            app.dockModule_Close.ScaleMethod = 'none';
-            app.dockModule_Close.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
-            app.dockModule_Close.Tag = 'DRIVETEST';
-            app.dockModule_Close.Tooltip = {''};
-            app.dockModule_Close.Layout.Row = 1;
-            app.dockModule_Close.Layout.Column = 2;
-            app.dockModule_Close.ImageSource = 'Delete_12SVG_white.svg';
-
             % Create dockModule_Undock
             app.dockModule_Undock = uiimage(app.DockModule);
             app.dockModule_Undock.ScaleMethod = 'none';
             app.dockModule_Undock.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
-            app.dockModule_Undock.Tag = 'DRIVETEST';
             app.dockModule_Undock.Enable = 'off';
-            app.dockModule_Undock.Tooltip = {''};
             app.dockModule_Undock.Layout.Row = 1;
             app.dockModule_Undock.Layout.Column = 1;
             app.dockModule_Undock.ImageSource = 'Undock_18White.png';
+
+            % Create dockModule_Close
+            app.dockModule_Close = uiimage(app.DockModule);
+            app.dockModule_Close.ScaleMethod = 'none';
+            app.dockModule_Close.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
+            app.dockModule_Close.Layout.Row = 1;
+            app.dockModule_Close.Layout.Column = 2;
+            app.dockModule_Close.ImageSource = 'Delete_12SVG_white.svg';
 
             % Create SubTabGroup
             app.SubTabGroup = uitabgroup(app.GridLayout);
@@ -1289,7 +1295,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Create SubGrid1
             app.SubGrid1 = uigridlayout(app.SubTab1);
             app.SubGrid1.ColumnWidth = {144, 116, 18};
-            app.SubGrid1.RowHeight = {30, 5, '1x', 42, 5, '0.5x', 10, 83, 10, 83};
+            app.SubGrid1.RowHeight = {30, 5, '1x', 20, 18, 5, '0.5x', 10, 83, 10, 83};
             app.SubGrid1.RowSpacing = 0;
             app.SubGrid1.BackgroundColor = [1 1 1];
 
@@ -1314,7 +1320,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.LocationListLabel = uilabel(app.SubGrid1);
             app.LocationListLabel.VerticalAlignment = 'bottom';
             app.LocationListLabel.FontSize = 10;
-            app.LocationListLabel.Layout.Row = 4;
+            app.LocationListLabel.Layout.Row = [4 5];
             app.LocationListLabel.Layout.Column = [1 2];
             app.LocationListLabel.Interpreter = 'html';
             app.LocationListLabel.Text = {'LOCALIDADES SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
@@ -1323,17 +1329,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.LocationListEdit = uiimage(app.SubGrid1);
             app.LocationListEdit.ImageClickedFcn = createCallbackFcn(app, @LocationListEditClicked, true);
             app.LocationListEdit.Enable = 'off';
-            app.LocationListEdit.Tooltip = {'Edita lista de localidades'};
-            app.LocationListEdit.Layout.Row = 4;
+            app.LocationListEdit.Layout.Row = 5;
             app.LocationListEdit.Layout.Column = 3;
-            app.LocationListEdit.VerticalAlignment = 'bottom';
             app.LocationListEdit.ImageSource = 'Edit_32.png';
 
             % Create LocationList
             app.LocationList = uitextarea(app.SubGrid1);
             app.LocationList.Editable = 'off';
             app.LocationList.FontSize = 11;
-            app.LocationList.Layout.Row = 6;
+            app.LocationList.Layout.Row = 7;
             app.LocationList.Layout.Column = [1 3];
 
             % Create Card1_numberOfStations
@@ -1343,7 +1347,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card1_numberOfStations.WordWrap = 'on';
             app.Card1_numberOfStations.FontSize = 10;
             app.Card1_numberOfStations.FontColor = [0.502 0.502 0.502];
-            app.Card1_numberOfStations.Layout.Row = 8;
+            app.Card1_numberOfStations.Layout.Row = 9;
             app.Card1_numberOfStations.Layout.Column = 1;
             app.Card1_numberOfStations.Interpreter = 'html';
             app.Card1_numberOfStations.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: BLACK; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS NAS LOCALIDADES SOB ANÁLISE</p>'};
@@ -1355,7 +1359,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card2_numberOfRiskStations.WordWrap = 'on';
             app.Card2_numberOfRiskStations.FontSize = 10;
             app.Card2_numberOfRiskStations.FontColor = [0.502 0.502 0.502];
-            app.Card2_numberOfRiskStations.Layout.Row = 8;
+            app.Card2_numberOfRiskStations.Layout.Row = 9;
             app.Card2_numberOfRiskStations.Layout.Column = [2 3];
             app.Card2_numberOfRiskStations.Interpreter = 'html';
             app.Card2_numberOfRiskStations.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">0</font>'; 'ESTAÇÕES NO ENTORNO DE REGISTROS DE NÍVEIS ACIMA DE 14 V/m</p>'};
@@ -1367,7 +1371,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card3_stationsOnRoute.WordWrap = 'on';
             app.Card3_stationsOnRoute.FontSize = 10;
             app.Card3_stationsOnRoute.FontColor = [0.502 0.502 0.502];
-            app.Card3_stationsOnRoute.Layout.Row = 10;
+            app.Card3_stationsOnRoute.Layout.Row = 11;
             app.Card3_stationsOnRoute.Layout.Column = 1;
             app.Card3_stationsOnRoute.Interpreter = 'html';
             app.Card3_stationsOnRoute.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: black; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS NO ENTORNO DA ROTA</p>'};
@@ -1379,7 +1383,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card4_stationsOutRoute.WordWrap = 'on';
             app.Card4_stationsOutRoute.FontSize = 10;
             app.Card4_stationsOutRoute.FontColor = [0.502 0.502 0.502];
-            app.Card4_stationsOutRoute.Layout.Row = 10;
+            app.Card4_stationsOutRoute.Layout.Row = 11;
             app.Card4_stationsOutRoute.Layout.Column = [2 3];
             app.Card4_stationsOutRoute.Interpreter = 'html';
             app.Card4_stationsOutRoute.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS FORA DA ROTA</p>'};
