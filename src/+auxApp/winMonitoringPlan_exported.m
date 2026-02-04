@@ -16,24 +16,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         LocationListLabel           matlab.ui.control.Label
         TreeFileLocations           matlab.ui.container.Tree
         config_geoAxesLabel_2       matlab.ui.control.Label
-        SubTab2                     matlab.ui.container.Tab
-        SubGrid2                    matlab.ui.container.GridLayout
-        reportPanel                 matlab.ui.container.Panel
-        reportGrid                  matlab.ui.container.GridLayout
-        reportVersion               matlab.ui.control.DropDown
-        reportVersionLabel          matlab.ui.control.Label
-        reportModelName             matlab.ui.control.DropDown
-        reportModelNameLabel        matlab.ui.control.Label
-        reportLabel                 matlab.ui.control.Label
-        eFiscalizaPanel             matlab.ui.container.Panel
-        eFiscalizaGrid              matlab.ui.container.GridLayout
-        reportIssue                 matlab.ui.control.NumericEditField
-        reportIssueLabel            matlab.ui.control.Label
-        reportUnit                  matlab.ui.control.DropDown
-        reportUnitLabel             matlab.ui.control.Label
-        reportSystem                matlab.ui.control.DropDown
-        reportSystemLabel           matlab.ui.control.Label
-        eFiscalizaLabel             matlab.ui.control.Label
         DockModule                  matlab.ui.container.GridLayout
         dockModule_Close            matlab.ui.control.Image
         dockModule_Undock           matlab.ui.control.Image
@@ -115,23 +97,24 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                         switch eventName
                             % auxApp.dockListOfLocation >> winMonitorRNI >> auxApp.winMonitoringPlan
                             % auxApp.dockStationInfo    >> winMonitorRNI >> auxApp.winMonitoringPlan
+                            % auxApp.dockReportLib      >> winMonitorRNI >> auxApp.winMonitoringPlan
                             case 'closeFcnCallFromPopupApp'
                                 app.popupContainer.Parent.Visible = 0;
                                 
                             % winMonitorRNI >> auxApp.winMonitoringPlan
                             case {'onFileListAdded', 'onFileListRemoved', 'onFileListUnmerged', 'onFileListMerged'}
                                 app.measData = app.mainApp.measData;
-                                TreeFileLocationBuilding(app)
+                                buildFileLocationTree(app)
 
                                 if ~isempty(app.measData)
-                                    Analysis(app)
+                                    refreshAnalysis(app)
                                 end
 
                             % auxApp.winConfig >> winMonitorRNI >> auxApp.winMonitoringPlan
                             case 'onAnalysisParameterChanged'
-                                app.UITable.ColumnName{5} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold);
-                                updateAnalysis(app.projectData, app.measData, app.mainApp.General, eventName);
-                                Analysis(app)
+                                app.UITable.ColumnName{6} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold);
+                                updateAnalysis(app.projectData, app.measData, app.mainApp.General, eventName, app.Context);
+                                refreshAnalysis(app)
 
                             case 'onAxesParameterChanged'
                                 if ~isequal(app.UIAxes.Basemap, app.mainApp.General.plot.geographicAxes.basemap)
@@ -149,31 +132,30 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                 plot.axes.Colorbar(app.UIAxes, app.mainApp.General.plot.geographicAxes.colorbar)
 
                             case 'onPlotParameterChanged'
-                                Analysis(app)
+                                refreshAnalysis(app)
+
+                            % winMonitorRNI >> auxApp.winMonitoringPlan
+                            % auxApp.dockReportLib >> winMonitorRNI >> auxApp.winProducts
+                            case {'onReportGenerate', 'onFinalReportFileChanged'}
+                                updateToolbar(app)
 
                             % auxApp.dockStationInfo >> winMonitorRNI >> auxApp.winMonitoringPlan
                             case 'onStationInfoChanged'
-                                newReason      = varargin{1};
+                                [stationIdx, stationTableRow] = getSelectedStationIndex(app);
+                                newReason = varargin{1};
                                 newObservation = varargin{2};
+                                updateStationTable(app.projectData, eventName, stationIdx, newReason, newObservation)
 
-                                [idxStation, idxRow] = selectedStation(app);
-                                app.projectData.modules.MONITORINGPLAN.stationTable.("Justificativa")(idxStation) = newReason;
-                                app.projectData.modules.MONITORINGPLAN.stationTable.("Observações"){idxStation}   = newObservation;
-                                updateAnnotationTable(app.projectData, app.Context,  'stationTable', 'save')
-
-                                app.UITable.Data.("Justificativa")(idxRow) = newReason;
-                                layout_TableStyle(app)
+                                app.UITable.Data.("Justificativa")(stationTableRow) = newReason;
+                                applyTableStyle(app)
 
                             case 'onStationCoordinatesEdited'
+                                stationIdx = getSelectedStationIndex(app);
                                 newLatitude  = varargin{1};
                                 newLongitude = varargin{2};
+                                updateStationTable(app.projectData, eventName, stationIdx, newLatitude, newLongitude, app.measData, app.mainApp.General)
 
-                                idxStation   = selectedStation(app);
-                                app.projectData.modules.MONITORINGPLAN.stationTable.("Latitude")(idxStation)  = newLatitude;
-                                app.projectData.modules.MONITORINGPLAN.stationTable.("Longitude")(idxStation) = newLongitude;
-                                updateAnalysis(app.projectData, app.measData, app.mainApp.General, eventName)
-
-                                Analysis(app)
+                                refreshAnalysis(app)
 
                             case 'onStationSelectionChanged'
                                 newRowSelection = varargin{1};
@@ -184,8 +166,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
                             % auxApp.dockListOfLocation >> winMonitorRNI >> auxApp.winMonitoringPlan
                             case 'onLocationListModeChanged'
-                                updateAnalysis(app.projectData, app.measData, app.mainApp.General, eventName)
-                                Analysis(app)
+                                updateAnalysis(app.projectData, app.measData, app.mainApp.General, eventName, app.Context)
+                                refreshAnalysis(app)
 
                             otherwise
                                 error('model:winMonitoringPlan:UnexpectedCall', 'Unexpected call "%s"', eventName)
@@ -244,26 +226,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     catch
                     end
 
-                case 2
-                    context = app.Context;
-
-                    if isempty(app.projectData.modules.(context).ui.system) && ~isequal(app.projectData.modules.(context).ui.system, app.mainApp.General.reportLib.system)
-                        app.projectData.modules.(context).ui.system = app.mainApp.General.reportLib.system;
-                    end
-                    
-                    if isempty(app.projectData.modules.(context).ui.unit)   && ~isequal(app.projectData.modules.(context).ui.unit,   app.mainApp.General.reportLib.unit)
-                        app.projectData.modules.(context).ui.unit   = app.mainApp.General.reportLib.unit;
-                    end
-
-                    if ~isdeployed()
-                        app.reportSystem.Items = {'eFiscaliza', 'eFiscaliza TS', 'eFiscaliza HM', 'eFiscaliza DS'};
-                    end
-                    app.reportSystem.Value     = app.projectData.modules.(context).ui.system;
-
-                    set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, ...
-                                        'Value', app.projectData.modules.(context).ui.unit)
-                    app.reportIssue.Value      = app.projectData.modules.(context).ui.issue;
-                    app.reportModelName.Items  = app.projectData.modules.(context).ui.templates;
+                otherwise
+                    % ...
             end
         end
 
@@ -279,14 +243,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             end
 
             if app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold ~= 14
-                app.UITable.ColumnName{5} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold);
+                app.UITable.ColumnName{6} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold);
             end
+            app.UITable.RowName = 'numbered';
 
             [app.UIAxes, app.restoreView] = plot.axesCreationController(app.plotPanel, app.mainApp.General);
             
-            TreeFileLocationBuilding(app)
+            buildFileLocationTree(app)
             if ~isempty(app.measData)
-                Analysis(app)
+                refreshAnalysis(app)
             end
                         
             app.tool_TableVisibility.UserData = 1;
@@ -301,40 +266,34 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
     methods (Access = private)
         %-----------------------------------------------------------------%
-        function Analysis(app)
+        function refreshAnalysis(app)
             app.progressDialog.Visible = 'visible';
 
             % Identifica arquivos selecionados pelo usuário, atualizando a
             % tabela de referência para o plot (app.measTable) e a relação
             % de localidades selecionadas na GUI (em app.projectData).
-            [idxFile, selectedFileLocations] = FileIndex(app);
-            app.measTable = createMeasTable(app.measData(idxFile));
+            [fileIdxs, selectedFileLocations] = getFileIndexes(app);
+            app.measTable = buildMeasurementTable(app.measData(fileIdxs));
 
             updateSelectedListOfLocations(app.projectData, selectedFileLocations, app.Context)
-
-            fullListOfLocation = getFullListOfLocation( ...
-                app.projectData, ...
-                app.measData(idxFile), ...
-                app.mainApp.General.context.MONITORINGPLAN.maxMeasurementDistanceKm ...
-            );
-
-            idxStations = find(ismember(app.projectData.modules.MONITORINGPLAN.stationTable.Location, fullListOfLocation));
-            initialSelection = updateTable(app, idxStations);
-            layout_TableStyle(app)
+            
+            [stationIdxs, fullListOfLocation] = getAnalyzedStationIndexes(app, 'Todas');            
+            initialSelection = updateTable(app, stationIdxs);
+            applyTableStyle(app)
 
             % Atualiza outros elementos da GUI, inclusive painel com quantitativo 
             % de estações.
-            updatePanel(app, fullListOfLocation, idxStations)
+            updatePanel(app, fullListOfLocation, stationIdxs)
             updateToolbar(app)
 
             % Atualiza plot.
-            plot_MeasuresAndPoints(app)
+            plotMeasuresAndPoints(app)
 
             if ~isempty(initialSelection)
-                [~, idxRow] = ismember(initialSelection, app.UITable.UserData);
-                if idxRow
-                    app.UITable.Selection = idxRow;
-                    UITableSelectionChanged(app, struct('PreviousSelection', [], 'Selection', idxRow))
+                [~, rowIdx] = ismember(initialSelection, app.UITable.UserData);
+                if rowIdx
+                    app.UITable.Selection = rowIdx;
+                    UITableSelectionChanged(app, struct('PreviousSelection', [], 'Selection', rowIdx))
                 end
             end
 
@@ -342,24 +301,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function [idxFile, selectedFileLocations] = FileIndex(app)
-            if ~isempty(app.TreeFileLocations.SelectedNodes)
-                selectedFileLocations = {app.TreeFileLocations.SelectedNodes.Text};
-                idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
-            else
-                selectedFileLocations = {};
-                idxFile = [];
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function initialSelection = updateTable(app, idxStations)
+        function initialSelection = updateTable(app, stationIdxs)
             initialSelection = [];
             if ~isempty(app.UITable.Selection)
                 initialSelection = app.UITable.UserData(app.UITable.Selection);
             end
 
-            table2Render = app.projectData.modules.MONITORINGPLAN.stationTable(idxStations, {'Estação',               ...
+            table2Render = app.projectData.modules.MONITORINGPLAN.stationTable(stationIdxs, {'Fistel',                ...
+                                                                                             'Estação',               ...
                                                                                              'Location',              ...
                                                                                              'Serviço',               ...                                                                                      
                                                                                              'numberOfMeasures',      ...
@@ -369,7 +318,39 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                                                                              'meanFieldValue',        ...
                                                                                              'maxFieldValue',         ...
                                                                                              'Justificativa'});
-            set(app.UITable, 'Data', table2Render, 'UserData', idxStations, 'Selection', [])
+            set(app.UITable, 'Data', table2Render, 'UserData', stationIdxs, 'Selection', [])
+        end
+
+        %-----------------------------------------------------------------%
+        function applyTableStyle(app)
+            removeStyle(app.UITable)
+
+            if ~isempty(app.UITable.Data)
+                % Identifica estações que NÃO tiveram medições no seu entorno, 
+                % apesar da rota englobar o município em que está instalada a
+                % estação. Ou estações que apresentaram medições com níveis
+                % acima de 14 V/m.
+                stationIdxs = getAnalyzedStationIndexes(app, 'Selecionada');
+                [invalidRowIdxs, ~, ~, manualEditionRowIdxs, riskMeasurementsIdxs] = validateAuditorClassification(app.projectData, app.Context, app.mainApp.General, stationIdxs);
+
+                if ~isempty(invalidRowIdxs)
+                    columnIndex1 = find(ismember(app.UITable.Data.Properties.VariableNames, 'Justificativa'));
+                    s1 = uistyle('BackgroundColor', '#c80b0f', 'FontColor', 'white');                
+                    addStyle(app.UITable, s1, "cell", [invalidRowIdxs, repmat(columnIndex1, numel(invalidRowIdxs), 1)])
+                end
+
+                if ~isempty(manualEditionRowIdxs)
+                    s2 = uistyle('Icon', 'edit.svg', 'IconAlignment', 'leftmargin');
+                    addStyle(app.UITable, s2, "cell", [manualEditionRowIdxs, ones(numel(manualEditionRowIdxs), 1)])
+                end
+
+                if ~isempty(riskMeasurementsIdxs)
+                    columnIndex2 = find(ismember(app.UITable.Data.Properties.VariableNames, 'numberOfRiskMeasures'));
+
+                    s3 = uistyle('BackgroundColor', '#c80b0f', 'FontColor', 'white');
+                    addStyle(app.UITable, s3, "cell", [riskMeasurementsIdxs, repmat(columnIndex2, numel(riskMeasurementsIdxs), 1)])
+                end
+            end
         end
 
         %-----------------------------------------------------------------%
@@ -398,13 +379,12 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             measDataNonEmpty                = ~isempty(app.measData);
             measTableNonEmpty               = ~isempty(app.measTable);
             rowTableSelected                = ~isempty(app.UITable.Selection);
-            reportModelSelected             = ~isempty(app.reportModelName.Value);
             reportFinalVersionGenerated     = ~isempty(app.projectData.modules.(app.Context).generatedFiles.lastHTMLDocFullPath);
 
             app.LocationListEdit.Enable     = measDataNonEmpty;
-            app.tool_TableEdition.Enable    = measDataNonEmpty & rowTableSelected;
+            app.tool_TableEdition.Enable    = measDataNonEmpty && rowTableSelected;
             app.tool_ExportFiles.Enable     = measDataNonEmpty;
-            app.tool_GenerateReport.Enable  = measDataNonEmpty & reportModelSelected;
+            app.tool_GenerateReport.Enable  = measDataNonEmpty;
             app.tool_UploadFinalFile.Enable = reportFinalVersionGenerated;
 
             app.tool_PeakLabel.Visible      = measTableNonEmpty;
@@ -413,149 +393,17 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             if measTableNonEmpty
                 [~, maxIndex] = max(app.measTable.FieldValue);
 
-                app.tool_PeakLabel.Text    = sprintf('%.2f V/m\n(%.6f, %.6f)', app.measTable.FieldValue(maxIndex), ...
-                                                                               app.measTable.Latitude(maxIndex),   ...
-                                                                               app.measTable.Longitude(maxIndex));
-                app.tool_PeakIcon.UserData = struct('idxMax',    maxIndex,                         ...
-                                                    'Latitude',  app.measTable.Latitude(maxIndex), ...
-                                                    'Longitude', app.measTable.Longitude(maxIndex));
+                app.tool_PeakLabel.Text     = sprintf('%.2f V/m\n(%.6f, %.6f)', app.measTable.FieldValue(maxIndex), ...
+                                                                                app.measTable.Latitude(maxIndex),   ...
+                                                                                app.measTable.Longitude(maxIndex));
+                app.tool_PeakIcon.UserData  = struct('idxMax',    maxIndex,                         ...
+                                                     'Latitude',  app.measTable.Latitude(maxIndex), ...
+                                                     'Longitude', app.measTable.Longitude(maxIndex));
             end
         end
 
         %-----------------------------------------------------------------%
-        function plot_RestartAxes(app)
-            cla(app.UIAxes)
-            geolimits(app.UIAxes, 'auto')
-            app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
-        end
-
-        %-----------------------------------------------------------------%
-        function plot_MeasuresAndPoints(app)
-            % prePlot
-            plot_RestartAxes(app)
-
-            % Measures
-            if ~isempty(app.measTable)
-                plot.draw.Measures(app.UIAxes, app.measTable, app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold, app.mainApp.General);
-
-                % Abaixo estabelece como limites do eixo os limites atuais,
-                % configurados automaticamente pelo MATLAB. Ao fazer isso,
-                % contudo, esses limites serão orientados às medidas e não às
-                % estações.
-                plot_AxesDefaultLimits(app, 'measures')
-            end
-
-            % Stations/Points
-            if ~isempty(app.UITable.Data)
-                idxStations    = app.UITable.UserData;
-                refPointsTable = app.projectData.modules.MONITORINGPLAN.stationTable(idxStations, :);
-
-                plot.draw.Points(app.UIAxes, refPointsTable, 'Estações de referência PM-RNI', app.mainApp.General)
-            end
-            plot_AxesDefaultLimits(app, 'stations/points')
-        end
-
-        %-----------------------------------------------------------------%
-        function plot_SelectedPoint(app)
-            delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedPoint'))
-
-            if ~isempty(app.UITable.Selection)
-                idxSelectedPoint   = app.UITable.UserData(app.UITable.Selection);
-                selectedPointTable = app.projectData.modules.MONITORINGPLAN.stationTable(idxSelectedPoint, :);
-
-                plot.draw.SelectedPoint(app.UIAxes, selectedPointTable, app.mainApp.General, class(app))
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function plot_AxesDefaultLimits(app, zoomOrientation)
-            arguments
-                app
-                zoomOrientation {mustBeMember(zoomOrientation, {'stations/points', 'measures'})}
-            end
-
-            if strcmp(app.mainApp.General.plot.geographicAxes.zoomOrientation, zoomOrientation) || (isempty(app.measTable) && strcmp(app.mainApp.General.plot.geographicAxes.zoomOrientation, 'measures'))
-                geolimits(app.UIAxes, app.UIAxes.LatitudeLimits, app.UIAxes.LongitudeLimits)
-                app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function [idxMissingInfo, idxManualEdition, idxRiskMeasures] = layout_searchUnexpectedTableValues(app, operationType)
-            arguments
-                app
-                operationType char {mustBeMember(operationType, {'Todas', 'Selecionada'})} = 'Selecionada'
-            end
-
-            idxMissingInfo   = [];
-            idxManualEdition = [];
-            idxRiskMeasures  = [];
-
-            switch operationType
-                case 'Todas'
-                    locations   = getFullListOfLocation(app.projectData, app.measData, app.projectData.modules.MONITORINGPLAN.distance_km);                        
-                    idxStations = ismember(app.projectData.modules.MONITORINGPLAN.stationTable.Location, locations);
-                case 'Selecionada'
-                    idxStations = app.UITable.UserData;
-            end
-
-            relatedStationTable = app.projectData.modules.MONITORINGPLAN.stationTable(idxStations, :);
-
-            if ~isempty(relatedStationTable)
-                % "Registros anotados" por meio da inclusão de uma observação 
-                % ou da edição das coordenadas geográficas da estação.
-                addedObservationLogical = cellfun(@(x) ~isempty(x), relatedStationTable.("Observações"));
-                editedLocationLogical   = (relatedStationTable.("Lat") ~= relatedStationTable.("Latitude")) | (relatedStationTable.("Long") ~= relatedStationTable.("Longitude"));                
-
-                % Registros ainda pendentes de edição, seja por não ter sido 
-                % especificada uma "Justificativa" válida (precisa ser diferente 
-                % de "-" quando não identificada medição no entorno da estação) 
-                % ou porque foi especificada uma válida, porém que demanda a 
-                % inclusão de uma observação ou a edição das coordenadas da estação.
-                reasonsThatRequireObservation = app.mainApp.General.context.MONITORINGPLAN.reasonsRequiringComment;
-                reasonsThatRequireNewLocation = app.mainApp.General.context.MONITORINGPLAN.reasonsRequiringLocationUpdate;
-
-                idxMissingInfo   = find(((relatedStationTable.numberOfMeasures == 0) & (relatedStationTable.("Justificativa") == "-"))             | ...
-                                        (ismember(relatedStationTable.("Justificativa"), reasonsThatRequireObservation) & ~addedObservationLogical) | ...
-                                        (ismember(relatedStationTable.("Justificativa"), reasonsThatRequireNewLocation) & ~editedLocationLogical));
-                idxManualEdition = find(addedObservationLogical | editedLocationLogical);
-                idxRiskMeasures  = find(relatedStationTable.numberOfRiskMeasures > 0);
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function layout_TableStyle(app)
-            removeStyle(app.UITable)
-
-            if ~isempty(app.UITable.Data)
-                % Identifica estações que NÃO tiveram medições no seu entorno, 
-                % apesar da rota englobar o município em que está instalada a
-                % estação. Ou estações que apresentaram medições com níveis
-                % acima de 14 V/m.
-                [idxMissingInfo, idxManualEdition, idxRiskMeasures] = layout_searchUnexpectedTableValues(app);
-
-                if ~isempty(idxMissingInfo)
-                    columnIndex1 = find(ismember(app.UITable.Data.Properties.VariableNames, 'Justificativa'));
-                    s1 = uistyle('BackgroundColor', '#c80b0f', 'FontColor', 'white');                
-                    addStyle(app.UITable, s1, "cell", [idxMissingInfo, repmat(columnIndex1, numel(idxMissingInfo), 1)])
-                end
-
-                if ~isempty(idxManualEdition)
-                    s2 = uistyle('Icon', 'Edit_32.png', 'IconAlignment', 'leftmargin');
-                    addStyle(app.UITable, s2, "cell", [idxManualEdition, ones(numel(idxManualEdition), 1)])
-                end
-
-                if ~isempty(idxRiskMeasures)
-                    columnIndex2 = find(ismember(app.UITable.Data.Properties.VariableNames, 'numberOfRiskMeasures'));
-
-                    s3 = uistyle('BackgroundColor', '#c80b0f', 'FontColor', 'white');
-                    addStyle(app.UITable, s3, "cell", [idxRiskMeasures, repmat(columnIndex2, numel(idxRiskMeasures), 1)])
-                end
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function TreeFileLocationBuilding(app)
+        function buildFileLocationTree(app)
             if ~isempty(app.TreeFileLocations.Children)
                 delete(app.TreeFileLocations.Children)
             end
@@ -582,7 +430,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             else
                 app.measTable = [];
 
-                plot_RestartAxes(app)
+                plotRefreshAxes(app)
                 updateTable(app, []);
                 updatePanel(app, {}, [])
             end
@@ -591,9 +439,124 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function [idxStation, idxRow] = selectedStation(app)
-            idxRow     = app.UITable.Selection;
-            idxStation = app.UITable.UserData(idxRow);
+        % ## PLOT ##
+        %-----------------------------------------------------------------%
+        function plotRefreshAxes(app)
+            cla(app.UIAxes)
+            geolimits(app.UIAxes, 'auto')
+            app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
+        end
+
+        %-----------------------------------------------------------------%
+        function plotMeasuresAndPoints(app)
+            % prePlot
+            plotRefreshAxes(app)
+
+            % Measures
+            if ~isempty(app.measTable)
+                plot.draw.Measures(app.UIAxes, app.measTable, app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold, app.mainApp.General);
+
+                % Abaixo estabelece como limites do eixo os limites atuais,
+                % configurados automaticamente pelo MATLAB. Ao fazer isso,
+                % contudo, esses limites serão orientados às medidas e não às
+                % estações.
+                plotAxesDefaultLimits(app, 'measures')
+            end
+
+            % Stations/Points
+            if ~isempty(app.UITable.Data)
+                idxStations    = app.UITable.UserData;
+                refPointsTable = app.projectData.modules.MONITORINGPLAN.stationTable(idxStations, :);
+                plot.draw.Points(app.UIAxes, refPointsTable, 'Estações de referência PM-RNI', app.mainApp.General)
+            end
+            plotAxesDefaultLimits(app, 'stations/points')
+        end
+
+        %-----------------------------------------------------------------%
+        function plotSelectedPoint(app)
+            delete(findobj(app.UIAxes.Children, 'Tag', 'SelectedPoint'))
+
+            if ~isempty(app.UITable.Selection)
+                selectedStationIdx = app.UITable.UserData(app.UITable.Selection);
+                selectedPointTable = app.projectData.modules.MONITORINGPLAN.stationTable(selectedStationIdx, :);
+
+                plot.draw.SelectedPoint(app.UIAxes, selectedPointTable, app.mainApp.General, class(app))
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function plotAxesDefaultLimits(app, zoomOrientation)
+            arguments
+                app
+                zoomOrientation {mustBeMember(zoomOrientation, {'stations/points', 'measures'})}
+            end
+
+            if strcmp(app.mainApp.General.plot.geographicAxes.zoomOrientation, zoomOrientation) || (isempty(app.measTable) && strcmp(app.mainApp.General.plot.geographicAxes.zoomOrientation, 'measures'))
+                geolimits(app.UIAxes, app.UIAxes.LatitudeLimits, app.UIAxes.LongitudeLimits)
+                app.restoreView = struct('ID', 'app.UIAxes', 'xLim', app.UIAxes.LatitudeLimits, 'yLim', app.UIAxes.LongitudeLimits, 'cLim', 'auto');
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        % ## GET ##
+        %-----------------------------------------------------------------%
+        function [idxFile, selectedFileLocations] = getFileIndexes(app)
+            if ~isempty(app.TreeFileLocations.SelectedNodes)
+                selectedFileLocations = {app.TreeFileLocations.SelectedNodes.Text};
+                idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
+            else
+                selectedFileLocations = {};
+                idxFile = [];
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function [stationIdx, rowIdx] = getSelectedStationIndex(app)
+            rowIdx     = app.UITable.Selection;
+            stationIdx = app.UITable.UserData(rowIdx);
+        end
+
+        %-----------------------------------------------------------------%
+        function [stationIdxs, locations] = getAnalyzedStationIndexes(app, stationScope)
+            fileIdxs = getFileIndexes(app);
+
+            switch stationScope
+                case 'Todas'
+                    locations   = getFullListOfLocation(app.projectData, app.measData(fileIdxs), app.projectData.modules.MONITORINGPLAN.analysis.maxMeasurementDistanceKm);
+                    stationIdxs = find(ismember(app.projectData.modules.MONITORINGPLAN.stationTable.Location, locations));
+                case 'Selecionada'
+                    locations   = {};
+                    stationIdxs = app.UITable.UserData;
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        % ## REPORTLIB ##
+        %-----------------------------------------------------------------%
+        function reportDispatchOperation(app, eventName, varargin)
+            arguments
+                app
+                eventName {mustBeMember(eventName, {'onReportGenerate', 'onUploadArtifacts'})}
+            end
+
+            arguments (Repeating)
+                varargin
+            end
+
+            if isempty(app.mainApp.eFiscalizaObj) || ~isvalid(app.mainApp.eFiscalizaObj)
+                dialogBox    = struct('id', 'login',    'label', 'Usuário: ', 'type', 'text');
+                dialogBox(2) = struct('id', 'password', 'label', 'Senha: ',   'type', 'password');
+
+                customFormData = struct('UUID', eventName, 'Fields', dialogBox, 'Context', app.Context);
+                if ~isempty(varargin)
+                    customFormData.Varargin = varargin;
+                end
+
+                sendEventToHTMLSource(app.jsBackDoor, 'customForm', customFormData)
+
+            else
+                ipcMainMatlabCallsHandler(app.mainApp, app, eventName, app.Context, varargin{:})
+            end
         end
     end
     
@@ -701,11 +664,11 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         function Toolbar_ExportTableAsExcelSheet(app, event)
             
             context = app.Context;
-            indexes = FileIndex(app);
+            fileIdxs = getFileIndexes(app);
 
-            if ~isempty(indexes)
+            if ~isempty(fileIdxs)
                 % <VALIDAÇÕES>
-                if numel(indexes) < numel(app.measData)
+                if numel(fileIdxs) < numel(app.measData)
                     initialQuestion  = 'Deseja exportar arquivos de análise preliminar (.xlsx / .kml) que contemplem informações de TODAS as localidades de agrupamento, ou apenas da SELECIONADA?';
                     initialSelection = ui.Dialog(app.UIFigure, 'uiconfirm', initialQuestion, {'Todas', 'Selecionada', 'Cancelar'}, 1, 3);
 
@@ -713,18 +676,24 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                         case 'Cancelar'
                             return
                         case 'Todas'
-                            indexes = 1:numel(app.measData);
+                            fileIdxs = 1:numel(app.measData);
                     end
                 else
                     initialSelection = 'Todas';
                 end
 
-                if ~isempty(layout_searchUnexpectedTableValues(app, initialSelection))
-                    warningMessages = ['Há registro de estações instaladas na(s) localidade(s) sob análise para as quais '     ...
-                                       'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
-                                       'o campo "Justificativa" e anotar os registros, caso aplicável.<br><br>Deseja ignorar ' ...
-                                       'esse alerta, exportando PRÉVIA da análise?'];
-                    userSelection   = ui.Dialog(app.UIFigure, 'uiconfirm', warningMessages, {'Sim', 'Não'}, 2, 2);
+                stationIdxs = getAnalyzedStationIndexes(app, initialSelection);
+                invalidRowIndexes = validateAuditorClassification(app.projectData, context, app.mainApp.General, stationIdxs);
+                
+                if ~isempty(invalidRowIndexes)
+                    msgWarning = [
+                        'Há registro de estações instaladas na(s) localidade(s) sob análise para as quais ' ...
+                        'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
+                        'o campo "Justificativa" e anotar os registros, caso aplicável.<br><br>Deseja ignorar ' ...
+                        'esse alerta, exportando PRÉVIA da análise?' ...
+                    ];
+
+                    userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgWarning, {'Sim', 'Não'}, 2, 2);
                     if userSelection == "Não"
                         return
                     end
@@ -743,18 +712,16 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
     
                 d = ui.Dialog(app.UIFigure, 'progressdlg', 'Em andamento a criação do arquivo de medidas no formato ".xlsx".');
     
-                savedFiles   = {};
-                errorFiles   = {};
+                savedFiles = {};
+                errorFiles = {};
 
                 % (b) Gera a tabela global de medidas (englobando as localidades 
                 %     de agrupamento selecionadas), além do recorte da planilha
                 %     de referência do PM-RNI (stationTable).
-                measTableGlobal    = createMeasTable(app.measData(indexes));
+                measTableGlobal = buildMeasurementTable(app.measData(fileIdxs));
                 stationTableGlobal = app.projectData.modules.(context).stationTable;
-
-                locations      = getFullListOfLocation(app.projectData, app.measData(indexes), app.projectData.modules.(context).distance_km);                        
-                stationIndexes = ismember(stationTableGlobal.Location, locations);                
-                stationTable   = stationTableGlobal(stationIndexes, :);
+                stationIdxs = getAnalyzedStationIndexes(app, 'Todas');
+                stationTable = stationTableGlobal(stationIdxs, :);
     
                 % (c) Arquivo no formato .XLSX
                 fileName_XLSX = fullfile(app.mainApp.General.fileFolder.tempPath, 'PM-RNI (Preview).xlsx');
@@ -769,7 +736,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 if app.mainApp.General.context.MONITORINGPLAN.exportOptions.kml
                     d.Message = textFormatGUI.HTMLParagraph('Em andamento a criação dos arquivos de medidas e rotas no formato ".kml".');
 
-                    groupLocations = unique({app.measData(indexes).Location});
+                    groupLocations = unique({app.measData(fileIdxs).Location});
 
                     for ii = 1:numel(groupLocations)
                         groupLocation = groupLocations{ii};
@@ -781,8 +748,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                         end
 
                         groupLocationText    = replace(app.TreeFileLocations.SelectedNodes.Text, '/', '-');
-                        groupLocationIndexes = FileIndex(app);
-                        groupLocationMeasTable = createMeasTable(app.measData(groupLocationIndexes));
+                        groupLocationIndexes = getFileIndexes(app);
+                        groupLocationMeasTable = buildMeasurementTable(app.measData(groupLocationIndexes));
 
                         % MEDIDAS
                         hMeasPlot = findobj(app.UIAxes.Children, 'Tag', 'Measures');                        
@@ -823,77 +790,121 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
         end
 
+        % Image clicked function: tool_OpenPopupProject
+        function Toolbar_OpenPopupProjectImageClicked(app, event)
+            
+            ipcMainMatlabOpenPopupApp(app.mainApp, app, 'ReportLib', app.Context)
+
+        end
+
         % Image clicked function: tool_GenerateReport
         function Toolbar_GenerateReportImageClicked(app, event)
 
             context = app.Context;
-            indexes = FileIndex(app);
+            fileIdxs = getFileIndexes(app);
+            
+            issue = app.projectData.modules.(context).ui.issue;
+            reportVersion = app.projectData.modules.(context).ui.reportVersion;
 
-            if ~isempty(indexes)
-                % <VALIDAÇÕES>
-                if numel(indexes) < numel(app.measData)
-                    initialQuestion  = 'Deseja gerar relatório que contemple informações de TODAS as localidades de agrupamento, ou apenas da SELECIONADA?';
-                    initialSelection = ui.Dialog(app.UIFigure, 'uiconfirm', initialQuestion, {'Todas', 'Selecionada', 'Cancelar'}, 1, 3);
-
-                    switch initialSelection
-                        case 'Cancelar'
-                            return
-                        case 'Todas'
-                            indexes = 1:numel(app.measData);
-                    end
-                else
-                    initialSelection = 'Todas';
-                end
-
-                warningMessages = {};
-                if ~report_checkEFiscalizaIssueId(app.mainApp, app.projectData.modules.(context).ui.issue)
-                    warningMessages{end+1} = sprintf('O número da inspeção "%.0f" é inválido.', app.projectData.modules.(context).ui.issue);
-                end
-                
-                if ~isempty(layout_searchUnexpectedTableValues(app, initialSelection))
-                    warningMessages{end+1} = ['Há registro de estações instaladas na(s) localidade(s) sob análise para as quais '     ...
-                                              'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
-                                              'o campo "Justificativa" e anotar os registros, caso aplicável.'];
-                end
-    
-                if ~isempty(warningMessages)
-                    warningMessages = strjoin(warningMessages, '<br><br>');
-
-                    switch app.reportVersion.Value
-                        case 'Definitiva'
-                            warningMessages = [warningMessages, '<br><br>Isso impossibilita a geração da versão DEFINITIVA do relatório.'];
-                            ui.Dialog(app.UIFigure, "warning", warningMessages);
-                            return
-
-                        otherwise % 'Preliminar'
-                            warningMessages = [warningMessages, '<br><br>Deseja ignorar esse alerta, gerando a versão PRÉVIA do relatório?'];
-                            userSelection   = ui.Dialog(app.UIFigure, 'uiconfirm', warningMessages, {'Sim', 'Não'}, 2, 2);
-                            if userSelection == "Não"
-                                return
-                            end
-                    end
-                end
-                % </VALIDAÇÕES>
-
-                % <PROCESSO>
-                app.progressDialog.Visible = 'visible';
-
-                try
-                    reportSettings = struct('system',        app.reportSystem.Value, ...
-                                            'unit',          app.reportUnit.Value, ...
-                                            'issue',         app.reportIssue.Value, ...
-                                            'model',         app.reportModelName.Value, ...
-                                            'reportVersion', app.reportVersion.Value);
-                    reportLibConnection.Controller.Run(app, app.projectData, app.measData(indexes), reportSettings, app.mainApp.General)
-                catch ME
-                    ui.Dialog(app.UIFigure, 'error', getReport(ME));
-                end
-
-                updateToolbar(app)
-
-                app.progressDialog.Visible = 'hidden';
-                % </PROCESSO>
+            if ~validateReportRequirements(app.projectData, context, 'reportModel')
+                ui.Dialog(app.UIFigure, 'warning', 'Pendente escolha do modelo de relatório.');
+                return
             end
+
+            % <VALIDAÇÕES>
+            if numel(fileIdxs) < numel(app.measData)
+                initialQuestion  = 'Deseja gerar relatório que contemple informações de TODAS as localidades de agrupamento, ou apenas da SELECIONADA?';
+                initialSelection = ui.Dialog(app.UIFigure, 'uiconfirm', initialQuestion, {'Todas', 'Selecionada', 'Cancelar'}, 1, 3);
+
+                switch initialSelection
+                    case 'Cancelar'
+                        return
+                    case 'Todas'
+                        fileIdxs = 1:numel(app.measData);
+                end
+            else
+                initialSelection = 'Todas';
+            end
+
+            stationIdxs = getAnalyzedStationIndexes(app, initialSelection);
+            if isempty(stationIdxs)
+                ui.Dialog(app.UIFigure, 'warning', [ ...
+                    'Não há estações do PM-RNI associadas às medições. ' ...
+                    'Ajuste o período de referência ou gere o resultado ' ...
+                    'no módulo DEMANDA EXTERNA, no qual é possível adicionar ' ...
+                    'manualmente pontos de interesse.' ...
+                ]);
+                return
+            end
+
+            msgWarning = {};
+            if ~validateReportRequirements(app.projectData, context, 'issue')
+                msgWarning{end+1} = sprintf('• O número da inspeção "%.0f" é inválido.', issue);
+            end
+
+            if ~validateReportRequirements(app.projectData, context, 'unit')
+                msgWarning{end+1} = '• Unidade geradora do documento precisa ser selecionada.';
+            end
+
+            invalidRowIndexes = validateAuditorClassification(app.projectData, context, app.mainApp.General, stationIdxs);
+            if ~isempty(invalidRowIndexes)
+                msgWarning{end+1} = [
+                    '• Há registro de estações instaladas na(s) localidade(s) sob análise para as quais ' ...
+                    'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
+                    'o campo "Justificativa" e anotar os registros, caso aplicável.' ...
+                ];
+            end
+
+            if isempty(msgWarning)
+                switch reportVersion
+                    case 'Definitiva'
+                        msgQuestion = sprintf('Confirma que se trata de monitoração relacionada à Atividade de Inspeção nº %.0f?', issue);
+                        userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 1, 2);
+                        if userSelection == "Não"
+                            return
+                        end
+                        
+                    case 'Preliminar'
+                        % ...
+                end
+
+            else
+                msgInfo = model.ProjectBase.WARNING_VALIDATIONSRULES.MONITORINGPLAN;
+
+                switch reportVersion
+                    case 'Definitiva'
+                        msgInfo = sprintf([ ...
+                                'Foi(ram) identificada(s) pendência(s) :<br>%s' ...
+                                '<br><br>' ...
+                                '<b>Essa(s) pendência(s) precisa(m) ser resolvida(s) ' ...
+                                'antes de ser gerada a versão "Definitiva" do relatório</b>. ' ...
+                                '<br><br>' ...
+                                '<font style="color: gray; font-size: 11px;">%s</font></p>' ...
+                            ], strjoin(msgWarning, '<br>'), msgInfo ...
+                        );
+                        ui.Dialog(app.UIFigure, 'warning', msgInfo);
+                        return
+
+                    case 'Preliminar'
+                        msgQuestion = sprintf([ ...
+                                'Foi(ram) identificado(s) a(s) pendência(s):<br>%s' ...
+                                '<br><br>' ...
+                                '<b>Continuar mesmo assim?</b>' ...
+                                '<br><br>' ...
+                                '<font style="color: gray; font-size: 11px;">%s</font></p>' ...
+                            ], strjoin(msgWarning, '<br>'), msgInfo ...
+                        );
+                        selection = ui.Dialog(app.UIFigure, "uiconfirm", msgQuestion, {'Sim', 'Não'}, 1, 2);
+                        if strcmp(selection, 'Não')
+                            return
+                        end
+                end
+            end
+            % </VALIDAÇÕES>
+
+            % <PROCESSO>
+            reportDispatchOperation(app, 'onReportGenerate', fileIdxs)
+            % </PROCESSO>
 
         end
 
@@ -902,46 +913,81 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             
             % <VALIDAÇÕES>
             context = app.Context;
-            lastHTMLDocFullPath = getGeneratedDocumentFileName(app.projectData, '.html', context);
-
+            system = app.projectData.modules.(context).ui.system;
+            issue = app.projectData.modules.(context).ui.issue;
+            generatedHtmlFilePath = getGeneratedDocumentFileName(app.projectData, '.html', context);
+            
             msg = '';
-            if isempty(lastHTMLDocFullPath)
+            if isempty(generatedHtmlFilePath)
                 msg = 'A versão definitiva do relatório ainda não foi gerada.';
-            elseif ~isfile(lastHTMLDocFullPath)
-                msg = sprintf('O arquivo "%s" não foi encontrado.', lastHTMLDocFullPath);
+            elseif ~isfile(generatedHtmlFilePath)
+                msg = sprintf('O arquivo "%s" não foi encontrado.', generatedHtmlFilePath);
             elseif ~isfolder(app.mainApp.General.fileFolder.DataHub_POST)
                 msg = 'Pendente mapear pasta do Sharepoint';
-            elseif ~report_checkEFiscalizaIssueId(app.mainApp, app.projectData.modules.(context).ui.issue)
-                msg = sprintf('O número da inspeção "%.0f" é inválido.', app.projectData.modules.(context).ui.issue);
-            elseif isempty(app.projectData.modules.(context).ui.system)
-                msg = 'Ambiente do eFiscaliza precisa ser selecionado.';
-            elseif isempty(app.projectData.modules.(context).ui.unit)
+            elseif ~validateReportRequirements(app.projectData, context, 'issue')
+                msg = sprintf('O número da inspeção "%.0f" é inválido.', issue);
+            elseif ~validateReportRequirements(app.projectData, context, 'unit')
                 msg = 'Unidade geradora do documento precisa ser selecionada.';
+            elseif isempty(system)
+                msg = 'Ambiente do eFiscaliza precisa ser selecionado.';
             end
 
             if ~isempty(msg)
                 ui.Dialog(app.UIFigure, 'warning', msg);
                 return
             end
+
+            selectedMeasData  = app.measData(getFileIndexes(app));
+            storedReportHash  = app.projectData.modules.(context).generatedFiles.id;
+            currentReportHash = model.ProjectBase.computeReportAnalysisResultsHash(app.projectData.modules, context, selectedMeasData);
+
+            if ~isequal(storedReportHash, currentReportHash)
+                [~, generatedHtmlFileName, generatedHtmlFileExt] = fileparts(generatedHtmlFilePath);
+                msgQuestion = sprintf([ ...
+                    'O relatório indicado a seguir foi gerado com base em ' ...
+                    'um conjunto específico de arquivos e anotações.<br>%s<br><br>' ...
+                    '<i>Hash</i> no momento da geração:<br>' ...
+                    '%s<br><br>' ...
+                    '<i>Hash</i> atual (após alterações):<br>' ...
+                    '%s<br><br>' ...
+                    'Isso indica que um arquivo diferente foi selecionado ' ...
+                    'ou que alguma anotação foi modificada desde a geração ' ...
+                    'do relatório.<br><br>' ...
+                    '<b>Deseja continuar com o <i>upload</i> mesmo assim?</b>' ...
+                ], [generatedHtmlFileName, generatedHtmlFileExt], textFormatGUI.cellstr2Bullets(strsplit(storedReportHash, ' - ')), textFormatGUI.cellstr2Bullets(strsplit(currentReportHash, ' - ')));
+                userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
+
+                if strcmp(userSelection, 'Não')
+                    return
+                end
+            end
+
+            uploadedFiles = getUploadedFiles(app.projectData, context, system, issue);
+            if ~isempty(uploadedFiles)
+                uploadedStatus = extractAfter({uploadedFiles.status}, 'Documento cadastrado no SEI sob o nº ');
+
+                if isscalar(uploadedStatus)
+                    uploadedStatus = uploadedStatus{1};
+                else                    
+                    uploadedStatus = strjoin([{strjoin(uploadedStatus(1:end-1), ', ')}, uploadedStatus(end)], ' e ');
+                end
+
+                msgQuestion = sprintf([ ...
+                    'Já foi realizado <i>upload</i> para o SEI de relatório que engloba ' ...
+                    'a presente lista de produtos sob análise - SEI nº %s.<br><br>' ...
+                    'Deseja realizar um novo <i>upload</i> para o SEI?' ...
+                ], uploadedStatus);
+                userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
+
+                if strcmp(userSelection, 'Não')
+                    return
+                end
+            end
             % </VALIDAÇÕES>
 
             % <PROCESSO>
-            if isempty(app.mainApp.eFiscalizaObj)
-                dialogBox    = struct('id', 'login',    'label', 'Usuário: ', 'type', 'text');
-                dialogBox(2) = struct('id', 'password', 'label', 'Senha: ',   'type', 'password');
-                sendEventToHTMLSource(app.jsBackDoor, 'customForm', struct('UUID', 'eFiscalizaSignInPage', 'Fields', dialogBox, 'Context', context))
-            else
-                report_uploadInfoController(app.mainApp, [], 'uploadDocument', context)
-            end
+            reportDispatchOperation(app, 'onUploadArtifacts')
             % </PROCESSO>
-
-        end
-
-        % Selection change function: SubTabGroup
-        function SubTabGroupSelectionChanged(app, event)
-            
-            [~, tabIndex] = ismember(app.SubTabGroup.SelectedTab, app.SubTabGroup.Children);
-            applyJSCustomizations(app, tabIndex)
 
         end
 
@@ -966,25 +1012,21 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 return
             end
 
-            Analysis(app)
+            refreshAnalysis(app)
 
         end
 
         % Cell edit callback: UITable
         function UITableCellEdit(app, event)
 
-            idxStations = app.UITable.UserData;
-            idxSelectedStation = idxStations(event.Indices(1));
-            
-            if ~ismember(event.EditData, app.mainApp.General.context.MONITORINGPLAN.noMeasurementReasons)
-                app.UITable.Data.("Justificativa") = app.projectData.modules.MONITORINGPLAN.stationTable.("Justificativa")(idxStations);
+            if isequal(event.PreviousData, event.NewData)
                 return
             end
-                        
-            app.projectData.modules.MONITORINGPLAN.stationTable.("Justificativa")(idxSelectedStation) = event.NewData;
-            updateAnnotationTable(app.projectData, app.Context,  'stationTable', 'save')
+
+            stationIdx = app.UITable.UserData(event.Indices(1));
+            updateStationTable(app.projectData, 'onStationInfoChanged', stationIdx, event.NewData, {})
             
-            layout_TableStyle(app)
+            applyTableStyle(app)
 
         end
 
@@ -1004,43 +1046,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             end
 
             updateToolbar(app)
-            plot_SelectedPoint(app)
+            plotSelectedPoint(app)
             
         end
 
         % Image clicked function: LocationListEdit
         function LocationListEditClicked(app, event)
 
-            ipcMainMatlabOpenPopupApp(app.mainApp, app, 'ListOfLocation', app.Context, FileIndex(app))
+            ipcMainMatlabOpenPopupApp(app.mainApp, app, 'ListOfLocation', app.Context, getFileIndexes(app))
 
-        end
-
-        % Value changed function: reportModelName
-        function reportModelNameValueChanged(app, event)
-            
-            updateToolbar(app)
-
-        end
-
-        % Value changed function: reportIssue, reportSystem, reportUnit
-        function reportInfoValueChanged(app, event)
-            
-            context = app.Context;
-
-            switch event.Source
-                case app.reportSystem
-                    updateUiInfo(app.projectData, context, 'system', app.reportSystem.Value)
-                case app.reportUnit
-                    updateUiInfo(app.projectData, context, 'unit',   app.reportUnit.Value)
-                case app.reportIssue
-                    updateUiInfo(app.projectData, context, 'issue',  app.reportIssue.Value)
-            end
-            
-        end
-
-        % Image clicked function: tool_OpenPopupProject
-        function tool_OpenPopupProjectClicked(app, event)
-            
         end
     end
 
@@ -1168,7 +1182,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Create tool_OpenPopupProject
             app.tool_OpenPopupProject = uiimage(app.Toolbar);
             app.tool_OpenPopupProject.ScaleMethod = 'none';
-            app.tool_OpenPopupProject.ImageClickedFcn = createCallbackFcn(app, @tool_OpenPopupProjectClicked, true);
+            app.tool_OpenPopupProject.ImageClickedFcn = createCallbackFcn(app, @Toolbar_OpenPopupProjectImageClicked, true);
             app.tool_OpenPopupProject.Layout.Row = [1 3];
             app.tool_OpenPopupProject.Layout.Column = 9;
             app.tool_OpenPopupProject.ImageSource = 'organization-20px-black.svg';
@@ -1205,12 +1219,12 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Create UITable
             app.UITable = uitable(app.Document);
             app.UITable.BackgroundColor = [1 1 1;0.96078431372549 0.96078431372549 0.96078431372549];
-            app.UITable.ColumnName = {'ESTAÇÃO'; 'LOCALIDADE'; 'SERVIÇO'; 'Qtd.|Medidas'; 'Qtd.|> 14 V/m'; 'Dmin|(km)'; 'Emin|(V/m)'; 'Emean|(V/m)'; 'Emax|(V/m)'; 'JUSTIFICATIVA'};
-            app.UITable.ColumnWidth = {90, 150, 'auto', 70, 70, 70, 70, 70, 70, 'auto'};
+            app.UITable.ColumnName = {'FISTEL'; 'ESTAÇÃO'; 'LOCALIDADE'; 'SERVIÇO'; 'Qtd.|Medidas'; 'Qtd.|> 14 V/m'; 'Dmin|(km)'; 'Emin|(V/m)'; 'Emean|(V/m)'; 'Emax|(V/m)'; 'JUSTIFICATIVA'};
+            app.UITable.ColumnWidth = {100, 75, 150, 'auto', 70, 70, 70, 70, 70, 70, 'auto'};
             app.UITable.RowName = {};
-            app.UITable.ColumnSortable = [true true true true true true true true true false];
+            app.UITable.ColumnSortable = [true true true true true true true true true true false];
             app.UITable.SelectionType = 'row';
-            app.UITable.ColumnEditable = [false false false false false false false false false true];
+            app.UITable.ColumnEditable = [false false false false false false false false false false true];
             app.UITable.CellEditCallback = createCallbackFcn(app, @UITableCellEdit, true);
             app.UITable.SelectionChangedFcn = createCallbackFcn(app, @UITableSelectionChanged, true);
             app.UITable.Multiselect = 'off';
@@ -1283,7 +1297,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             % Create SubTabGroup
             app.SubTabGroup = uitabgroup(app.GridLayout);
             app.SubTabGroup.AutoResizeChildren = 'off';
-            app.SubTabGroup.SelectionChangedFcn = createCallbackFcn(app, @SubTabGroupSelectionChanged, true);
             app.SubTabGroup.Layout.Row = [3 4];
             app.SubTabGroup.Layout.Column = 2;
 
@@ -1387,146 +1400,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card4_stationsOutRoute.Layout.Column = [2 3];
             app.Card4_stationsOutRoute.Interpreter = 'html';
             app.Card4_stationsOutRoute.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS FORA DA ROTA</p>'};
-
-            % Create SubTab2
-            app.SubTab2 = uitab(app.SubTabGroup);
-            app.SubTab2.AutoResizeChildren = 'off';
-            app.SubTab2.Title = 'PROJETO';
-
-            % Create SubGrid2
-            app.SubGrid2 = uigridlayout(app.SubTab2);
-            app.SubGrid2.ColumnWidth = {'1x', 22};
-            app.SubGrid2.RowHeight = {17, 100, 22, '1x'};
-            app.SubGrid2.RowSpacing = 5;
-            app.SubGrid2.BackgroundColor = [1 1 1];
-
-            % Create eFiscalizaLabel
-            app.eFiscalizaLabel = uilabel(app.SubGrid2);
-            app.eFiscalizaLabel.VerticalAlignment = 'bottom';
-            app.eFiscalizaLabel.FontSize = 10;
-            app.eFiscalizaLabel.Layout.Row = 1;
-            app.eFiscalizaLabel.Layout.Column = 1;
-            app.eFiscalizaLabel.Text = 'eFISCALIZA';
-
-            % Create eFiscalizaPanel
-            app.eFiscalizaPanel = uipanel(app.SubGrid2);
-            app.eFiscalizaPanel.Layout.Row = 2;
-            app.eFiscalizaPanel.Layout.Column = [1 2];
-
-            % Create eFiscalizaGrid
-            app.eFiscalizaGrid = uigridlayout(app.eFiscalizaPanel);
-            app.eFiscalizaGrid.ColumnWidth = {'1x', 150};
-            app.eFiscalizaGrid.RowHeight = {22, 22, 22, '1x'};
-            app.eFiscalizaGrid.RowSpacing = 5;
-            app.eFiscalizaGrid.BackgroundColor = [1 1 1];
-
-            % Create reportSystemLabel
-            app.reportSystemLabel = uilabel(app.eFiscalizaGrid);
-            app.reportSystemLabel.FontSize = 11;
-            app.reportSystemLabel.Layout.Row = 1;
-            app.reportSystemLabel.Layout.Column = 1;
-            app.reportSystemLabel.Text = 'Sistema:';
-
-            % Create reportSystem
-            app.reportSystem = uidropdown(app.eFiscalizaGrid);
-            app.reportSystem.Items = {'eFiscaliza', 'eFiscaliza TS'};
-            app.reportSystem.ValueChangedFcn = createCallbackFcn(app, @reportInfoValueChanged, true);
-            app.reportSystem.FontSize = 11;
-            app.reportSystem.BackgroundColor = [1 1 1];
-            app.reportSystem.Layout.Row = 1;
-            app.reportSystem.Layout.Column = 2;
-            app.reportSystem.Value = 'eFiscaliza';
-
-            % Create reportUnitLabel
-            app.reportUnitLabel = uilabel(app.eFiscalizaGrid);
-            app.reportUnitLabel.FontSize = 11;
-            app.reportUnitLabel.Layout.Row = 2;
-            app.reportUnitLabel.Layout.Column = 1;
-            app.reportUnitLabel.Text = 'Unidade responsável:';
-
-            % Create reportUnit
-            app.reportUnit = uidropdown(app.eFiscalizaGrid);
-            app.reportUnit.Items = {};
-            app.reportUnit.ValueChangedFcn = createCallbackFcn(app, @reportInfoValueChanged, true);
-            app.reportUnit.FontSize = 11;
-            app.reportUnit.BackgroundColor = [1 1 1];
-            app.reportUnit.Layout.Row = 2;
-            app.reportUnit.Layout.Column = 2;
-            app.reportUnit.Value = {};
-
-            % Create reportIssueLabel
-            app.reportIssueLabel = uilabel(app.eFiscalizaGrid);
-            app.reportIssueLabel.FontSize = 11;
-            app.reportIssueLabel.Layout.Row = [3 4];
-            app.reportIssueLabel.Layout.Column = 1;
-            app.reportIssueLabel.Text = {'Atividade de inspeção:'; '(# ID)'};
-
-            % Create reportIssue
-            app.reportIssue = uieditfield(app.eFiscalizaGrid, 'numeric');
-            app.reportIssue.Limits = [-1 Inf];
-            app.reportIssue.RoundFractionalValues = 'on';
-            app.reportIssue.ValueDisplayFormat = '%d';
-            app.reportIssue.ValueChangedFcn = createCallbackFcn(app, @reportInfoValueChanged, true);
-            app.reportIssue.FontSize = 11;
-            app.reportIssue.FontColor = [0.149 0.149 0.149];
-            app.reportIssue.Layout.Row = 3;
-            app.reportIssue.Layout.Column = 2;
-            app.reportIssue.Value = -1;
-
-            % Create reportLabel
-            app.reportLabel = uilabel(app.SubGrid2);
-            app.reportLabel.VerticalAlignment = 'bottom';
-            app.reportLabel.FontSize = 10;
-            app.reportLabel.Layout.Row = 3;
-            app.reportLabel.Layout.Column = 1;
-            app.reportLabel.Text = 'RELATÓRIO';
-
-            % Create reportPanel
-            app.reportPanel = uipanel(app.SubGrid2);
-            app.reportPanel.BackgroundColor = [1 1 1];
-            app.reportPanel.Layout.Row = 4;
-            app.reportPanel.Layout.Column = [1 2];
-
-            % Create reportGrid
-            app.reportGrid = uigridlayout(app.reportPanel);
-            app.reportGrid.ColumnWidth = {'1x', 150};
-            app.reportGrid.RowHeight = {22, 22};
-            app.reportGrid.RowSpacing = 5;
-            app.reportGrid.BackgroundColor = [1 1 1];
-
-            % Create reportModelNameLabel
-            app.reportModelNameLabel = uilabel(app.reportGrid);
-            app.reportModelNameLabel.FontSize = 11;
-            app.reportModelNameLabel.Layout.Row = 1;
-            app.reportModelNameLabel.Layout.Column = 1;
-            app.reportModelNameLabel.Text = 'Modelo (.json):';
-
-            % Create reportModelName
-            app.reportModelName = uidropdown(app.reportGrid);
-            app.reportModelName.Items = {''};
-            app.reportModelName.ValueChangedFcn = createCallbackFcn(app, @reportModelNameValueChanged, true);
-            app.reportModelName.FontSize = 11;
-            app.reportModelName.BackgroundColor = [1 1 1];
-            app.reportModelName.Layout.Row = 1;
-            app.reportModelName.Layout.Column = 2;
-            app.reportModelName.Value = '';
-
-            % Create reportVersionLabel
-            app.reportVersionLabel = uilabel(app.reportGrid);
-            app.reportVersionLabel.WordWrap = 'on';
-            app.reportVersionLabel.FontSize = 11;
-            app.reportVersionLabel.Layout.Row = 2;
-            app.reportVersionLabel.Layout.Column = 1;
-            app.reportVersionLabel.Text = 'Versão do relatório:';
-
-            % Create reportVersion
-            app.reportVersion = uidropdown(app.reportGrid);
-            app.reportVersion.Items = {'Preliminar', 'Definitiva'};
-            app.reportVersion.FontSize = 11;
-            app.reportVersion.BackgroundColor = [1 1 1];
-            app.reportVersion.Layout.Row = 2;
-            app.reportVersion.Layout.Column = 2;
-            app.reportVersion.Value = 'Preliminar';
 
             % Create ContextMenu
             app.ContextMenu = uicontextmenu(app.UIFigure);

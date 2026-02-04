@@ -39,10 +39,10 @@ classdef (Abstract) Plot
                 
                 switch axesType{ii}
                     case 'Geographic'
-                        hAxes = plot.axes.Creation(axesParent, 'Geographic',  {'Basemap',  generalSettings.Report.Basemap, ...
+                        hAxes = plot.axes.Creation(axesParent, 'Geographic',  {'Basemap',  generalSettings.reportLib.basemap, ...
                                                                                'Color',    [.2, .2, .2], 'GridColor', [.5, .5, .5]});
 
-                        if ismember(generalSettings.Plot.GeographicAxes.Basemap, {'darkwater', 'none'})
+                        if ismember(generalSettings.plot.geographicAxes.basemap, {'darkwater', 'none'})
                             hAxes.Grid = 'on';
                         end
                     
@@ -51,8 +51,8 @@ classdef (Abstract) Plot
                         
                         geolimits(hAxes, 'auto')
                     
-                        plot.axes.Colormap(hAxes, generalSettings.Plot.GeographicAxes.Colormap)
-                        plot.axes.Colorbar(hAxes, generalSettings.Plot.GeographicAxes.Colorbar)
+                        plot.axes.Colormap(hAxes, generalSettings.plot.geographicAxes.colormap)
+                        plot.axes.Colorbar(hAxes, generalSettings.plot.geographicAxes.colorbar)
 
                         legend(hAxes, 'Location', 'southwest', 'Color', [.94,.94,.94], 'EdgeColor', [.9,.9,.9], 'NumColumns', 4, 'LineWidth', .5, 'FontSize', 7.5, 'PickableParts', 'none')
 
@@ -70,7 +70,7 @@ classdef (Abstract) Plot
                 for plotTag = plotNames
                     switch plotTag{1}
                         case 'DriveTest'
-                            plot.draw.Measures(hAxes, measTable, generalSettings.MonitoringPlan.FieldValue, generalSettings);
+                            plot.draw.Measures(hAxes, measTable, generalSettings.context.MONITORINGPLAN.electricFieldStrengthThreshold, generalSettings);
                             geolimits(hAxes, hAxes.LatitudeLimits, hAxes.LongitudeLimits)
                             plot.draw.Points(hAxes, refPointsTable, 'Estações de referência PM-RNI', generalSettings)
 
@@ -111,12 +111,12 @@ classdef (Abstract) Plot
 
             % Espera renderizar e salva a imagem...
             defaultFilename = appEngine.util.DefaultFileName(generalSettings.fileFolder.tempPath, class.Constants.appName, reportInfo.Function.var_Issue);
-            imgFileName     = sprintf('%s.%s', defaultFilename, generalSettings.Report.Image.Format);
+            imgFileName     = sprintf('%s.%s', defaultFilename, generalSettings.reportLib.image.format);
             if ~ismember(reportInfo.Model.Version, {'final', 'Definitiva'})
                 imgFileName = replace(imgFileName, 'Image', '~Image');
             end
             
-            exportgraphics(hContainer, imgFileName, 'ContentType', 'image', 'Resolution', generalSettings.Report.Image.Resolution)
+            exportgraphics(hContainer, imgFileName, 'ContentType', 'image', 'Resolution', generalSettings.reportLib.image.resolutionDpi)
             
             while true
                 pause(1)

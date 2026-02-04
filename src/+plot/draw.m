@@ -49,7 +49,7 @@ classdef (Abstract) draw
                     displayName = 'Maior nível em torno da estação';
 
                 case {'auxApp.winExternalRequest', 'auxApp.winExternalRequest_exported'}
-                    DIST_km     = generalSettings.context.EXTERNALREQUEST.maxMeasurementDistanceKmm;
+                    DIST_km     = generalSettings.context.EXTERNALREQUEST.maxMeasurementDistanceKm;
                     pointID     = selectedPointTable.ID{1};
                     displayName = 'Maior nível em torno do ponto';
             end

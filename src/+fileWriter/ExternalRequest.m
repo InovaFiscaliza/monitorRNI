@@ -19,7 +19,7 @@ function [status, msgError] = ExternalRequest(fileName, pointsTable, measTable, 
         pointsTable.("Limite (V/m)")(:) = ReferenceFielValue;
     
         % (b) Troca valores inválidos ("-1", por exemplo) por valores nulos.
-        pointsTable = model.projectLib.prepareStationTableForExport(pointsTable, "pointsTable");
+        pointsTable = model.ProjectBase.prepareTableForExport(pointsTable, "POINTS");
     
         % (c) Edita nomes de algumas das colunas da tabela.
         pointsTable = renamevars(pointsTable, ...

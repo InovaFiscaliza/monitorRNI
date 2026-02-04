@@ -51,7 +51,10 @@ classdef (Abstract) HtmlTextGenerator
             dataStruct(end+1) = struct('group', 'RENDERIZAÇÕES','value', renderCount);
             dataStruct(end+1) = struct('group', 'APLICATIVO', 'value', appVersion.application);
 
-            dataStruct(end+1) = struct('group', 'PM-RNI DATABASE', 'value', struct('selectedYears', projectData.modules.MONITORINGPLAN.referenceData.selectedYears, 'numberOfRows', height(projectData.modules.MONITORINGPLAN.stationTable)));
+            dataStruct(end+1) = struct('group', 'PM-RNI DATABASE', 'value', struct( ...
+                'selectedYears', "[ " + strjoin(string(projectData.modules.MONITORINGPLAN.referenceData.selectedYears), ', ') + " ]", ...
+                'numberOfRows', height(projectData.modules.MONITORINGPLAN.stationTable) ...
+            ));
 
             global RFDataHub
             global RFDataHub_info
@@ -67,7 +70,7 @@ classdef (Abstract) HtmlTextGenerator
         %-----------------------------------------------------------------%
         function htmlContent = SelectedFile(measData)
             if isscalar(measData)
-                dataStruct      = struct('group', 'ARQUIVO',  'value', sprintf('"%s"', measData.Filename));
+                dataStruct      = struct('group', 'ARQUIVO',  'value', sprintf('"%s"', measData.FileName));
                 dataStruct(2)   = struct('group', 'SENSOR',   'value', measData.MetaData);
 
                 locationInfo = measData.Location;
@@ -80,7 +83,7 @@ classdef (Abstract) HtmlTextGenerator
                                                                               'Latitude',         measData.Latitude,        ...
                                                                               'Longitude',        measData.Longitude,       ...
                                                                               'Location',         locationInfo,             ...
-                                                                              'CoveredDistance',  sprintf('%.1f km', measData.CoveredDistance)));
+                                                                              'CoveredDistance',  sprintf('%.1f km', measData.CoveredDistanceKm)));
 
                 dataStruct(4)   = struct('group', 'MEDIDAS',  'value', struct('Measures',         measData.Measures,        ...
                                                                               'ObservationTime',  measData.ObservationTime, ...
@@ -96,7 +99,7 @@ classdef (Abstract) HtmlTextGenerator
                 locations = unique(locationList);
 
                 if isscalar(locations)
-                    dataStruct(1)   = struct('group', 'ARQUIVO', 'value', textFormatGUI.cellstr2Bullets(cellfun(@(x) sprintf('"%s"', x), {measData.Filename}, 'UniformOutput', false)));
+                    dataStruct(1)   = struct('group', 'ARQUIVO', 'value', textFormatGUI.cellstr2Bullets(cellfun(@(x) sprintf('"%s"', x), {measData.FileName}, 'UniformOutput', false)));
 
                     [minField, maxField] = bounds([measData.FieldValueLimits], 'all');
                     freeInitialText = sprintf(['<p style="padding-left: 10px; padding-top: 10px; font-size: 16px;"><b>%s </b>' ...
@@ -104,7 +107,7 @@ classdef (Abstract) HtmlTextGenerator
                                                '</p>'], measData(1).Location, sprintf('[%.1f - %.1f] V/m', minField, maxField));
 
                 else
-                    dataStruct(1)   = struct('group', 'ARQUIVO', 'value', textFormatGUI.cellstr2Bullets(cellfun(@(x) sprintf('"%s"', x), {measData.Filename}, 'UniformOutput', false)));
+                    dataStruct(1)   = struct('group', 'ARQUIVO', 'value', textFormatGUI.cellstr2Bullets(cellfun(@(x) sprintf('"%s"', x), {measData.FileName}, 'UniformOutput', false)));
                     freeInitialText = '<p style="padding-left: 10px; padding-top: 10px; font-size: 16px;"><b>*.*</b></p>';
                 end
             end
@@ -125,7 +128,7 @@ classdef (Abstract) HtmlTextGenerator
                     locationInfo = sprintf('<del>%s</del> → <font style="color: red;">%s</font>', measData(ii).Location_I, measData(ii).Location);
                 end
                 
-                fileInfo{end+1} = sprintf('•&thinsp;"%s": %s', measData(ii).Filename, locationInfo);
+                fileInfo{end+1} = sprintf('•&thinsp;"%s": %s', measData(ii).FileName, locationInfo);
             end
 
             switch messageType
@@ -339,7 +342,7 @@ classdef (Abstract) HtmlTextGenerator
                     end
                     stationRFDataHub{end+1} = [stationTag newline model.RFDataHub.Description(rfDataHub, ii)];
                 end
-                stationRFDataHub   = strjoin(unique(stationRFDataHub), '\n\n');
+                stationRFDataHub   = strjoin(unique(stationRFDataHub, 'stable'), '\n\n');
         
             else
                 stationRFDataHub   = '(registro não encontrado na base do RFDataHub)';

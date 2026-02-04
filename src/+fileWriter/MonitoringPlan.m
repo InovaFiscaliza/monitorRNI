@@ -14,17 +14,17 @@ function [status, msgError] = MonitoringPlan(fileName, stationTable, measTable, 
     try
         % PREPARA TABELA
         % (a) Elimina linhas idênticas, caso existentes.
-        [~, uniqueIdx] = unique(stationTable.("Base64Hash"), "stable");
+        [~, uniqueIdx] = unique(stationTable.("Hash"), "stable");
         stationTable   = stationTable(uniqueIdx, :);
 
         % (b) Insere coordenadas geográficas da estação no campo "Observações", 
         %     caso editadas, e troca valores inválidos ("-1", por exemplo) por 
         %     valores nulos.
-        stationTable = model.projectLib.prepareStationTableForExport(stationTable, 'stationTable');
+        stationTable = model.ProjectBase.prepareTableForExport(stationTable, 'STATIONS');
     
         % (c) Seleciona colunas que irão compor o arquivo .XLSX, criando coluna 
         %     com informação do "Limite".
-        stationTable = removevars(stationTable, {'Ano', 'Base64Hash', 'Location', 'Latitude', 'Longitude', 'AnalysisFlag'});
+        stationTable = removevars(stationTable, {'Ano', 'Hash', 'Location', 'Latitude', 'Longitude', 'AnalysisFlag'});
         stationTable.("Limite (V/m)")(:) = ReferenceFielValue;
     
         % (d) Edita nomes de algumas das colunas da tabela.

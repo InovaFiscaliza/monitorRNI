@@ -313,6 +313,8 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.tool_PDFButton.UserData          = false;
 
             startup_AxesCreation(app)
+
+            app.UITable.RowName = 'numbered';
         end
 
         %-----------------------------------------------------------------%
@@ -970,7 +972,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
             % Filtragem, preenchendo a tabela e o seu label (nº de linhas).
             idxRFDataHubArray = find(util.TableFiltering(app.rfDataHub, app.filterTable));
-            columnGUINames    = {'ID', 'Frequency', 'Description', 'Service', 'Station', 'BW', 'Distance'};
+            columnGUINames    = {'ID', 'Frequency', 'Description', 'Fistel', 'Service', 'Station', 'BW', 'Distance'};
 
             set(app.UITable, 'Selection', [], 'Data', app.rfDataHub(idxRFDataHubArray, columnGUINames))
             [app.UITable.Data, idxSort] = sortrows(app.UITable.Data, 'Distance');
@@ -3138,10 +3140,10 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             % Create UITable
             app.UITable = uitable(app.Document);
             app.UITable.BackgroundColor = [1 1 1;0.96078431372549 0.96078431372549 0.96078431372549];
-            app.UITable.ColumnName = {'ID'; 'FREQUÊNCIA|(MHz)'; 'DESCRIÇÃO|(Entidade+Fistel+Multiplicidade+Localidade)'; 'SERVIÇO'; 'ESTAÇÃO'; 'LARGURA|(kHz)'; 'DISTÂNCIA|(km)'};
-            app.UITable.ColumnWidth = {60, 110, 'auto', 75, 75, 75, 90};
+            app.UITable.ColumnName = {'ID'; 'FREQUÊNCIA|(MHz)'; 'DESCRIÇÃO|(Entidade+Fistel+Multiplicidade+Localidade)'; 'FISTEL'; 'SERVIÇO'; 'ESTAÇÃO'; 'LARGURA|(kHz)'; 'DISTÂNCIA|(km)'};
+            app.UITable.ColumnWidth = {60, 110, 'auto', 75, 75, 75, 75, 90};
             app.UITable.RowName = {};
-            app.UITable.ColumnSortable = [false true false true true true true];
+            app.UITable.ColumnSortable = [false true false true true true true true];
             app.UITable.SelectionChangedFcn = createCallbackFcn(app, @UITableSelectionChanged, true);
             app.UITable.Multiselect = 'off';
             app.UITable.ForegroundColor = [0.149 0.149 0.149];

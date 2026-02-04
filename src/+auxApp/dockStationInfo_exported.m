@@ -116,7 +116,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             switch editionStatus
                 case 'on'
-                    set(app.LocationEditionMode, 'ImageSource', 'Edit_32Filled.png', 'UserData', true)
+                    set(app.LocationEditionMode, 'ImageSource', 'Edit_32Filled.png', 'UserData', true, 'Tooltip', 'Desabilita painel de edição')
                     set(hEditFields, 'Editable', true)
                     
                     app.LocationLabelGrid.ColumnWidth(end-1:end) = {18, 18};
@@ -124,7 +124,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
                     app.LocationEditionCancel.Enable  = 1;
 
                 case 'off'
-                    set(app.LocationEditionMode, 'ImageSource', 'Edit_32.png', 'UserData', false)
+                    set(app.LocationEditionMode, 'ImageSource', 'Edit_32.png', 'UserData', false, 'Tooltip', 'Habilita painel de edição')
                     set(hEditFields, 'Editable', false)
 
                     app.LocationLabelGrid.ColumnWidth(end-1:end) = {0,0};
@@ -172,9 +172,14 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
         function onFormValueChanged(app, event)
             
             switch event.Source
-                case {app.Reason, app.optNotes}
-                    newReason    = app.Reason.Value;
-                    newOptNote   = textFormatGUI.cellstr2TextField(app.optNotes.Value);
+                case {app.optNotes, app.Reason}
+                    newOptNote = textFormatGUI.cellstr2TextField(app.optNotes.Value);
+                    newReason  = app.Reason.Value;
+
+                    if event.Source == app.optNotes && ismember(newOptNote, {'', '-'})
+                        app.optNotes.Value = event.PreviousValue;
+                        return
+                    end
                     
                     ipcMainMatlabCallsHandler(app.mainApp, app, 'onStationInfoChanged', 'MONITORINGPLAN', newReason, newOptNote)
 
@@ -325,7 +330,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.StationPanel.RowSpacing = 5;
             app.StationPanel.Layout.Row = 2;
             app.StationPanel.Layout.Column = [1 2];
-            app.StationPanel.BackgroundColor = [0.9804 0.9804 0.9804];
+            app.StationPanel.BackgroundColor = [1 1 1];
 
             % Create Station
             app.Station = uilabel(app.StationPanel);
@@ -438,7 +443,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.LocationPanelGrid.RowHeight = {17, 22};
             app.LocationPanelGrid.RowSpacing = 5;
             app.LocationPanelGrid.Padding = [10 10 10 5];
-            app.LocationPanelGrid.BackgroundColor = [0.9804 0.9804 0.9804];
+            app.LocationPanelGrid.BackgroundColor = [1 1 1];
 
             % Create LatitudeLabel
             app.LatitudeLabel = uilabel(app.LocationPanelGrid);
@@ -479,7 +484,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             % Create PreviousSelection
             app.PreviousSelection = uiimage(app.StationPanel);
             app.PreviousSelection.ImageClickedFcn = createCallbackFcn(app, @onStationSelectionChanged, true);
-            app.PreviousSelection.Tooltip = {'Navega para o produto anterior'};
+            app.PreviousSelection.Tooltip = {'Navega para o registro anterior'};
             app.PreviousSelection.Layout.Row = 6;
             app.PreviousSelection.Layout.Column = 1;
             app.PreviousSelection.ImageSource = 'Previous_32.png';
@@ -487,7 +492,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             % Create NextSelection
             app.NextSelection = uiimage(app.StationPanel);
             app.NextSelection.ImageClickedFcn = createCallbackFcn(app, @onStationSelectionChanged, true);
-            app.NextSelection.Tooltip = {'Navega para o produto posterior'};
+            app.NextSelection.Tooltip = {'Navega para o próximo registro'};
             app.NextSelection.Layout.Row = 6;
             app.NextSelection.Layout.Column = 2;
             app.NextSelection.ImageSource = 'After_32.png';

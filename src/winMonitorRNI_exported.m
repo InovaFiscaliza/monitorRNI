@@ -69,8 +69,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         rfDataHub
         rfDataHubLOG
         rfDataHubSummary
-        cacheData = model.measData.empty
-        measData  = model.measData.empty
+        measData  = model.EMFieldData.empty
     end
 
 
@@ -123,11 +122,22 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                     case 'unload'
                         closeFcn(app)
-                    
+
                     case 'customForm'
                         switch event.HTMLEventData.uuid
-                            case 'eFiscalizaSignInPage'
-                                report_uploadInfoController(app, event.HTMLEventData, 'uploadDocument', event.HTMLEventData.context)
+                            case {'onFetchIssueDetails', 'onReportGenerate', 'onUploadArtifacts'}
+                                eventName = event.HTMLEventData.uuid;
+                                context = event.HTMLEventData.context;
+
+                                varargin = {};
+                                if isfield(event.HTMLEventData, 'varargin')
+                                    varargin = event.HTMLEventData.varargin;
+                                    if ~iscell(varargin)
+                                        varargin = {varargin};
+                                    end
+                                end
+
+                                reportHandleOperation(app, eventName, context, event.HTMLEventData, varargin{:})
 
                             case 'openDevTools'
                                 if isequal(app.General.operationMode.DevTools, rmfield(event.HTMLEventData, 'uuid'))
@@ -140,7 +150,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                         app.General.AppVersion.browser = event.HTMLEventData;
 
                     % MAINAPP
-                    case 'mainApp.file_Tree'
+                    case 'mainApp.FileTree'
                         ContextMenu_DeleteSelectedTreeNode(app)
 
                     % AUXAPP.WINEXTERNALREQUEST
@@ -148,7 +158,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                         ipcMainMatlabCallAuxiliarApp(app, 'EXTERNALREQUEST', 'JS', event)
 
                     otherwise
-                        error('UnexpectedEvent')
+                        error('winMonitorRNI:UnexpectedEvent', 'Unexpected event "%s"', event.HTMLEventName)
                 end
                 drawnow
 
@@ -177,7 +187,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                             case {'auxApp.winConfig', 'auxApp.winConfig_exported'}
                                 switch eventName
                                     case 'checkDataHubLampStatus'
-                                        DataHubWarningLamp(app)
+                                        updateWarningLampVisibility(app)
         
                                     case 'openDevTools'
                                         dialogBox    = struct('id', 'login',    'label', 'Usuário: ', 'type', 'text');
@@ -215,7 +225,16 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                             case {'auxApp.winMonitoringPlan',  'auxApp.winMonitoringPlan_exported', ...
                                   'auxApp.winExternalRequest', 'auxApp.winExternalRequest_exported'}
-                                error('winMonitorRNI:UnexpectedCaller', 'Unexpected caller "%s"', class(callingApp))
+                                switch eventName
+                                    case 'onReportGenerate'
+                                        context = varargin{1};
+                                        indexes = varargin{2};
+                                        reportGenerate(app, context, [], indexes)
+
+                                    case 'onUploadArtifacts'
+                                        context = varargin{1};
+                                        reportUploadArtifacts(app, context, [], 'uploadDocument')
+                                end
 
 
                             % DOCKS:OTHERS
@@ -247,6 +266,20 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                         context = varargin{1};
                                         varargin = [{eventName}, varargin(2:end)];
                                         ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', varargin{:})
+
+                                    % auxApp.dockReportLib
+                                    case {'onProjectRestart', 'onProjectLoad', 'onFinalReportFileChanged'}
+                                        context  = varargin{1};
+                                        varargin = [{eventName}, varargin(2:end)];
+                                        ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', varargin{:})
+                                        
+                                    case 'onUpdateLastVisitedFolder'
+                                        filePath = varargin{1};
+                                        updateLastVisitedFolder(app, filePath)
+
+                                    case 'onFetchIssueDetails'
+                                        context  = varargin{1};
+                                        reportFetchIssueDetails(app, context, [])
 
                                     otherwise
                                         error('winMonitorRNI:UnexpectedCall', 'Unexpected call "%s"', eventName)
@@ -298,7 +331,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             switch auxAppName
                 case 'ReportLib'
                     screenWidth  = 460;
-                    screenHeight = 308;
+                    screenHeight = 602;
                 case 'ListOfLocation'
                     screenWidth  = 540;
                     screenHeight = 440;
@@ -367,7 +400,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                             struct('appName', appName, 'dataTag', app.Tab3Button.UserData.id, 'generation', 1, 'class', 'tab-navigator-button'), ...
                             struct('appName', appName, 'dataTag', app.Tab4Button.UserData.id, 'generation', 1, 'class', 'tab-navigator-button'), ...
                             struct('appName', appName, 'dataTag', app.Tab5Button.UserData.id, 'generation', 1, 'class', 'tab-navigator-button'), ...
-                            struct('appName', appName, 'dataTag', app.FileTree.UserData.id, 'listener', struct('componentName', 'mainApp.file_Tree', 'keyEvents', {{'Delete', 'Backspace'}})) ...
+                            struct('appName', appName, 'dataTag', app.FileTree.UserData.id, 'listener', struct('componentName', 'mainApp.FileTree', 'keyEvents', {{'Delete', 'Backspace'}})) ...
                         });
                     catch
                     end
@@ -445,7 +478,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function initializeAppProperties(app)
             initializeRFDataHub(app)
-            app.projectData = model.projectLib(app, app.rootFolder, app.General);
+            app.projectData = model.Project(app, app.rootFolder, app.General);
         end
 
         %-----------------------------------------------------------------%
@@ -464,7 +497,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function applyInitialLayout(app)
-            DataHubWarningLamp(app)
+            updateWarningLampVisibility(app)
             app.file_FileSortMethod.Value = app.General.context.FILE.sortMethod;
         end
     end
@@ -487,16 +520,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function DataHubWarningLamp(app)
-            if isfolder(app.General.fileFolder.DataHub_POST)
-                app.DataHubLamp.Visible = 0;
-            else
-                app.DataHubLamp.Visible = 1;
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function file_ProjectRestart(app, indexes, updateType)
+        function refreshProjectFiles(app, indexes, updateType)
             arguments
                 app
                 indexes
@@ -506,15 +530,10 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                                            'onFileListMerged'})}
             end
 
-            file_TreeBuilding(app, indexes)
+            buildFileTree(app, indexes)
 
             if ismember(updateType, {'onFileListAdded', 'onFileListRemoved'})
-                updateAnalysis( ...
-                    app.projectData, ...
-                    app.measData, ...
-                    app.General, ...
-                    updateType ...
-                );
+                updateAnalysis(app.projectData, app.measData, app.General, updateType);
             end
             
             ipcMainMatlabCallAuxiliarApp(app, 'MONITORINGPLAN',  'MATLAB', updateType)
@@ -522,7 +541,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
         
         %-----------------------------------------------------------------%
-        function file_TreeBuilding(app, selectedNodeData)
+        function buildFileTree(app, selectedNodeData)
             arguments
                 app
                 selectedNodeData = []
@@ -538,7 +557,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             switch app.file_FileSortMethod.Value
                 case 'ARQUIVO'
                     for ii = 1:numel(app.measData)
-                        treeNode = file_createTreeElements(app, ii, app.FileTree, 'FILE');
+                        treeNode = createFileTreeNodes(app, ii, app.FileTree, 'FILE');
 
                         if ismember(ii, selectedNodeData)
                             selectedNode = [selectedNode, treeNode];
@@ -560,7 +579,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                                                      'ContextMenu', app.ContextMenu);
 
                         for jj = locationIndexes
-                            treeNode = file_createTreeElements(app, jj, locationTreeNode, 'LOCATION');
+                            treeNode = createFileTreeNodes(app, jj, locationTreeNode, 'LOCATION');
     
                             if ismember(jj, selectedNodeData)
                                 selectedNode = [selectedNode, treeNode];
@@ -587,7 +606,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function treeNode = file_createTreeElements(app, index, treeNodeParent, treeNodePreffixType)
+        function treeNode = createFileTreeNodes(app, index, treeNodeParent, treeNodePreffixType)
             arguments
                 app
                 index
@@ -599,7 +618,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             
             switch treeNodePreffixType
                 case 'FILE'
-                    treeNodePreffix = currentMeasData.Filename;
+                    treeNodePreffix = currentMeasData.FileName;
                 case 'LOCATION'
                     treeNodePreffix = currentMeasData.ObservationTime;
             end
@@ -618,7 +637,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function indexes = file_findSelectedNodeData(app)
+        function indexes = getSelectedEMFieldDataIndexes(app)
             indexes = [];
             if ~isempty(app.FileTree.SelectedNodes)
                 indexes = unique([app.FileTree.SelectedNodes.NodeData]);
@@ -626,8 +645,15 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
+        % MISCELÂNEAS
+        %-----------------------------------------------------------------%
+        function updateWarningLampVisibility(app)
+            app.DataHubLamp.Visible = ~isfolder(app.General.fileFolder.DataHub_POST);
+        end
+
+        %-----------------------------------------------------------------%
         function updateToolbar(app)
-            indexes = file_findSelectedNodeData(app);
+            indexes = getSelectedEMFieldDataIndexes(app);
 
             nonEmptySelection = ~isempty(indexes);
             nonScalarSelection = ~isscalar(indexes);
@@ -652,101 +678,211 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
     end
 
 
-    methods (Access = public)
+    methods (Access = private)
         %-----------------------------------------------------------------%
         % SISTEMA DE GESTÃO DA FISCALIZAÇÃO (eFiscaliza/SEI)
-        %-----------------------------------------------------------------%                
-        function status = report_checkEFiscalizaIssueId(app, issue)
-            status = (issue > 0) && (issue < inf);
+        %-----------------------------------------------------------------%
+        function createEFiscalizaObject(app, credentials)
+            if ~isempty(credentials)
+                app.eFiscalizaObj = ws.eFiscaliza(credentials.login, credentials.password);
+            end
         end
 
         %-----------------------------------------------------------------%
-        function report_uploadInfoController(app, credentials, operation, context)
-            communicationStatus = report_sendHTMLDocToSEIviaEFiscaliza(app, credentials, operation, context);
-            if communicationStatus && strcmp(app.projectData.modules.(context).ui.system, 'eFiscaliza')
-                report_sendFilesToSharepoint(app, context)
+        function reportDispatchOperation(app, eventName, varargin)
+            arguments
+                app
+                eventName {mustBeMember(eventName, {'onReportGenerate', 'onUploadArtifacts'})}
+            end
+
+            arguments (Repeating)
+                varargin
+            end
+
+            if isempty(app.eFiscalizaObj) || ~isvalid(app.eFiscalizaObj)
+                dialogBox    = struct('id', 'login',    'label', 'Usuário: ', 'type', 'text');
+                dialogBox(2) = struct('id', 'password', 'label', 'Senha: ',   'type', 'password');
+
+                customFormData = struct('UUID', eventName, 'Fields', dialogBox, 'Context', app.Context);
+                if ~isempty(varargin)
+                    customFormData.Varargin = varargin;
+                end
+
+                sendEventToHTMLSource(app.jsBackDoor, 'customForm', customFormData)
+
+            else
+                reportHandleOperation(app, eventName, app.Context, [], varargin{:})
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function reportHandleOperation(app, eventName, context, credentials, varargin)
+            arguments
+                app
+                eventName {mustBeMember(eventName, {'onFetchIssueDetails', 'onReportGenerate', 'onUploadArtifacts'})}
+                context {mustBeMember(context, {'MONITORINGPLAN', 'EXTERNALREQUEST'})}
+                credentials
+            end
+
+            arguments (Repeating)
+                varargin
+            end
+
+            switch eventName
+                case 'onFetchIssueDetails'
+                    reportFetchIssueDetails(app, context, credentials)
+
+                case 'onReportGenerate'
+                    indexes = varargin{1};
+                    reportGenerate(app, context, credentials, indexes);
+        
+                case 'onUploadArtifacts'
+                    reportUploadArtifacts(app, context, credentials, 'uploadDocument');
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function reportFetchIssueDetails(app, context, credentials)
+            callingApp = getAppHandle(app.tabGroupController, context);
+            if isempty(callingApp)
+                callingApp = app;
+            end
+
+            callingApp.progressDialog.Visible = 'visible';
+
+            createEFiscalizaObject(app, credentials)
+            system = app.projectData.modules.(context).ui.system;
+            issue  = app.projectData.modules.(context).ui.issue;
+            [details, msgError] = getOrFetchIssueDetails(app.projectData, system, issue, app.eFiscalizaObj);
+
+            if app ~= callingApp
+                ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', 'onFetchIssueDetails', system, issue, details, msgError)
+            end
+
+            callingApp.progressDialog.Visible = 'hidden';
+        end
+
+        %-----------------------------------------------------------------%
+        function reportGenerate(app, context, credentials, indexes)
+            callingApp = getAppHandle(app.tabGroupController, context);
+            if isempty(callingApp)
+                callingApp = app;
+            end
+
+            callingApp.progressDialog.Visible = 'visible';
+
+            createEFiscalizaObject(app, credentials)
+            try
+                reportLibConnection.Controller.Run(app, callingApp, context, app.measData(indexes))
+                if app == callingApp
+                    updateToolbar(app)
+                else
+                    ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', 'onReportGenerate')
+                end
+            catch ME
+                ui.Dialog(callingApp.UIFigure, 'error', getReport(ME));
+            end
+
+            callingApp.progressDialog.Visible = 'hidden';
+        end
+
+        %-----------------------------------------------------------------%
+        function reportUploadArtifacts(app, context, credentials, operation)
+            callingApp = getAppHandle(app.tabGroupController, context);
+            if isempty(callingApp)
+                callingApp = app;
+            end
+
+            callingApp.progressDialog.Visible = 'visible';
+
+            createEFiscalizaObject(app, credentials)
+            [status1, icon1, msg1] = reportUploadToSEI(app, context, operation);
+            ui.Dialog(callingApp.UIFigure, icon1, msg1);
+
+            callingApp.progressDialog.Visible = 'hidden';
+            
+            if status1 && strcmp(app.projectData.modules.(context).ui.system, 'eFiscaliza')
+                msg2 = reportUploadFilesToSharepoint(app, context);
+                ui.Dialog(callingApp.UIFigure, 'error', msg2);
             end
         end
 
         %-------------------------------------------------------------------------%
-        function communicationStatus = report_sendHTMLDocToSEIviaEFiscaliza(app, credentials, operation, context)
-            app.progressDialog.Visible = 'visible';
-            communicationStatus = false;
-
+        function [status, icon, msg] = reportUploadToSEI(app, context, operation)
             try
-                if ~isempty(credentials)
-                    app.eFiscalizaObj = ws.eFiscaliza(credentials.login, credentials.password);
+                env = strsplit(app.projectData.modules.(context).ui.system);
+                if isscalar(env)
+                    env = 'PD';
+                else
+                    env = env{2};
                 end
 
-                % Parâmetros configurados no módulo auxiliar:
-                env   = strsplit(app.projectData.modules.(context).ui.system);
-                if numel(env) < 2; env = 'PD';
-                else;              env = env{2};
-                end
-                unit  = app.projectData.modules.(context).ui.unit;
-                issue = struct('type', 'ATIVIDADE DE INSPEÇÃO', 'id', app.projectData.modules.(context).ui.issue);                
+                system = app.projectData.modules.(context).ui.system;
+                unit = app.projectData.modules.(context).ui.unit;
+                issue = app.projectData.modules.(context).ui.issue;
+                issueInfo = struct( ...
+                    'type', 'ATIVIDADE DE INSPEÇÃO', ...
+                    'id', issue ...
+                );
 
                 switch operation
                     case 'uploadDocument'
-                        fileName = getGeneratedDocumentFileName(app.projectData, '.html', context);
-                        docSpec  = app.General.eFiscaliza;
-                        docSpec.originId = docSpec.internal.originId;
-                        docSpec.typeId   = docSpec.internal.typeId;
+                        HTMLFile = getGeneratedDocumentFileName(app.projectData, '.html', context);
 
-                        msg = run(app.eFiscalizaObj, env, operation, issue, unit, docSpec, fileName);
-        
+                        [~, modelIdx]   = ismember(app.projectData.modules.(context).ui.reportModel, {app.projectData.report.templates.Name});
+                        docType         = app.projectData.report.templates(modelIdx).DocumentType;
+                        [~, docTypeIdx] = ismember(docType, {app.General.eFiscaliza.internal.typeIdMapping.type});
+
+                        docSpec = app.General.eFiscaliza;
+                        docSpec.originId = docSpec.internal.originId;
+                        docSpec.typeId = app.General.eFiscaliza.internal.typeIdMapping(docTypeIdx).id;
+
+                        response = run(app.eFiscalizaObj, env, operation, issueInfo, unit, docSpec, HTMLFile);
+
                     otherwise
                         error('Unexpected call')
                 end
-                
-                if ~contains(msg, 'Documento cadastrado no SEI', 'IgnoreCase', true)
-                    error(msg)
+
+                if ~contains(response, 'Documento cadastrado no SEI', 'IgnoreCase', true)
+                    error(response)
                 end
 
-                modalWindowIcon     = 'success';
-                modalWindowMessage  = msg;
-                communicationStatus = true;
+                updateUploadedFiles(app.projectData, context, system, issue, response)
+
+                status = true;
+                icon   = 'success';
+                msg    = response;
 
             catch ME
-                app.eFiscalizaObj   = [];
+                app.eFiscalizaObj = [];
                 
-                modalWindowIcon     = 'error';
-                modalWindowMessage  = ME.message;
+                status = false;
+                icon   = 'error';
+                msg    = ME.message;
             end
-
-            ui.Dialog(app.UIFigure, modalWindowIcon, modalWindowMessage);
-            app.progressDialog.Visible = 'hidden';
         end
 
         %------------------------------------------------------------------------%
-        function report_sendFilesToSharepoint(app, context)
-            % Evita subir por engano, quando no ambiente de desenvolvimento,
-            % de arquivos na pasta "POST".
-            try
-                if ~isdeployed()
-                    error('ForceDebugMode')
-                end
-                sharepointFolder = app.General.fileFolder.DataHub_POST;
-            catch
-                sharepointFolder = app.General.fileFolder.userPath;
-            end
+        function msg = reportUploadFilesToSharepoint(app, context)
+            msg = {};
 
+            sharepointFolder = app.General.fileFolder.DataHub_POST;
             sharepointFileList = getGeneratedDocumentFileName(app.projectData, 'rawFiles', context);
-            if strcmp(context, 'MonitoringPlan')
+            if strcmp(context, 'MONITORINGPLAN')
                 sharepointFileList = [sharepointFileList, {getGeneratedDocumentFileName(app.projectData, '.xlsx', context)}];
             end
-            
+
             for ii = 1:numel(sharepointFileList)
                 tempFilename = sharepointFileList{ii};
 
                 try
                     if isfile(tempFilename)
                         copyfile(tempFilename, sharepointFolder, 'f');
-    
+
                         if ~endsWith(tempFilename, '.xlsx')
                             [~, basename]  = fileparts(tempFilename);
                             jsonFilename   = [basename '.json'];
-                            [~, fileIndex] = ismember(tempFilename, {app.measData.Filename});
+                            [~, fileIndex] = ismember(tempFilename, {app.measData.FileName});
     
                             if fileIndex
                                 fileWriter.RawFileMetaData(fullfile(sharepointFolder, jsonFilename), app.measData(fileIndex));
@@ -754,9 +890,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                         end
                     end
                 catch ME
-                    ui.Dialog(app.UIFigure, 'error', getReport(ME))
+                    msg{end+1} = ME.message;
                 end
             end
+
+            msg = strjoin(msg, '\n');
         end
     end
     
@@ -847,7 +985,7 @@ msgQuestion = 'Deseja fechar o aplicativo?';
         % Selection changed function: FileTree
         function onTreeSelectionChanged(app, event)
 
-            indexes = file_findSelectedNodeData(app);
+            indexes = getSelectedEMFieldDataIndexes(app);
 
             if isempty(indexes)
                 app.FileMetadata.Text     = '';
@@ -869,8 +1007,8 @@ msgQuestion = 'Deseja fechar o aplicativo?';
         % Value changed function: file_FileSortMethod
         function onFileSortMethodValueChanged(app, event)
             
-            indexes = file_findSelectedNodeData(app);
-            file_TreeBuilding(app, indexes)
+            indexes = getSelectedEMFieldDataIndexes(app);
+            buildFileTree(app, indexes)
 
         end
 
@@ -908,14 +1046,19 @@ msgQuestion = 'Deseja fechar o aplicativo?';
             else
                 switch app.General.context.FILE.input
                     case 'file'
-                        [fileName, filePath] = uigetfile({'*.txt';'*.csv';'*.mat';'*.*'}, ...
-                                                          '', app.General.fileFolder.lastVisited, 'MultiSelect', 'on');
-                        figure(app.UIFigure)
+                        [~, filePath, ~, fileName] = ui.Dialog( ...
+                            app.UIFigure, ...
+                            'uigetfile', ...
+                            '', ...
+                            {'*.txt;*.csv;*.mat', 'monitorRNI (*.txt,*.csv,*.mat)'}, ...
+                            app.General.fileFolder.lastVisited, ...
+                            {'MultiSelect', 'on'} ...
+                        );
             
-                        if isequal(fileName, 0)
+                        if isempty(fileName)
                             return
-                        elseif ~iscellstr(fileName)
-                            fileName = cellstr(fileName);
+                        elseif ~iscell(fileName)
+                            fileName = {fileName};
                         end
                         fileFullName = fullfile(filePath, fileName);
     
@@ -937,51 +1080,37 @@ msgQuestion = 'Deseja fechar o aplicativo?';
                 d = ui.Dialog(app.UIFigure, "progressdlg", "Em andamento...");
             end
 
-            filesInCache = {};
-            filesError   = struct('File', {}, 'Error', {});
+            filesError = struct('File', {}, 'Error', {});
 
             for ii = 1:numel(fileFullName)
                 d.Message = textFormatGUI.HTMLParagraph(sprintf('Em andamento a leitura do arquivo %d de %d:<br>• <b>%s</b>', ii, numel(fileFullName), fileName{ii}));
 
-                % Verifica se arquivo já foi lido, comparando o seu nome com 
-                % a variável app.cacheData.
-                [~, idxCache] = ismember(fileName{ii}, {app.cacheData.Filename});
-                if ~idxCache
-                    try
-                        app.cacheData(end+1) = fileReader.CSV.Controller(fileFullName{ii});
-                    catch ME
-                        filesError(end+1) = struct('File', fileName{ii}, 'Error', ME.message);
-                        continue
-                    end
-                    idxCache = numel(app.cacheData);
+                [~, ~, fileExt] = fileparts(fileFullName{ii});
+                switch fileExt
+                    case '.mat'
+                        [app.measData, msg] = load(app.projectData, app.measData, fileFullName{ii});
+                    
+                    otherwise % '.txt', '.csv' etc
+                        [app.measData, msg] = addFiles(app.measData, fileFullName{ii});
                 end
 
-                % Verifica se arquivo já está ativo, comparando o seu nome com 
-                % a variável app.measData.
-                [~, idxFile] = ismember(fileName{ii}, {app.measData.Filename});
-                if ~idxFile
-                    app.measData(end+1) = app.cacheData(idxCache);
-                else
-                    filesInCache{end+1} = fileName{ii};
+                if ~isempty(msg)
+                    filesError(end+1) = struct('File', sprintf('"%s"', fileName{ii}), 'Error', msg);
+                    continue
                 end
             end
 
             % LOG
-            msgWarning = '';
             if ~isempty(filesError)
-                msgWarning = sprintf('Arquivos que apresentaram erro na leitura:\n%s\n\n', strjoin(strcat({'<font style="font-size: 11px;">•&thinsp;'}, {filesError.File}, {': '}, {filesError.Error}), '</font>\n'));
-            end
-
-            if ~isempty(filesInCache)
-                msgWarning = [msgWarning, sprintf('Arquivos já lidos:\n%s', textFormatGUI.cellstr2Bullets(filesInCache))];
-            end
-
-            if ~isempty(msgWarning)
-                ui.Dialog(app.UIFigure, "warning", msgWarning);
+                msgWarning = sprintf('Arquivos que apresentaram erro na leitura:\n%s\n\n', strjoin(strcat({'•&thinsp;<b>'}, {filesError.File}, {'</b>: <i>'}, {filesError.Error}), '</i>\n\n'));
+                ui.Dialog(app.UIFigure, "error", msgWarning);
             end
             
-            indexes = file_findSelectedNodeData(app);
-            file_ProjectRestart(app, indexes, 'onFileListAdded')
+            % Atualiza app.FileTree.
+            if numel(fileFullName) > numel(filesError)
+                indexes = getSelectedEMFieldDataIndexes(app);
+                refreshProjectFiles(app, indexes, 'onFileListAdded')
+            end
 
             delete(d)
 
@@ -994,22 +1123,22 @@ msgQuestion = 'Deseja fechar o aplicativo?';
             % de agrupamento, não tendo impacto na análise, mas apenas na
             % visualização da informação no app (e no relatório).
 
-            indexes = file_findSelectedNodeData(app);
+            indexes = getSelectedEMFieldDataIndexes(app);
 
             locationMergedStatus = any(arrayfun(@(x) ~strcmp(x.Location, x.Location_I), app.measData(indexes)));
             if locationMergedStatus
                 msgQuestion   = util.HtmlTextGenerator.MergedFiles(app.measData(indexes), 'MergedStatusOn');
                 userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
 
-                if userSelection == "Sim"
-                    delLocationCache(app.projectData, app.measData, indexes)
-                    
-                    for ii = indexes
-                        app.measData(ii).Location = app.measData(ii).Location_I;
-                    end
-                    file_ProjectRestart(app, indexes, 'onFileListUnmerged')
+                if userSelection == "Não"
                     return
                 end
+
+                delLocationCache(app.projectData, app.measData, indexes)                
+                for ii = indexes
+                    app.measData(ii).Location = app.measData(ii).Location_I;
+                end
+                refreshProjectFiles(app, indexes, 'onFileListUnmerged')
             end
 
             if numel(indexes) >= 2
@@ -1032,7 +1161,7 @@ msgQuestion = 'Deseja fechar o aplicativo?';
                 for ii = indexes
                     app.measData(ii).Location = userSelection;
                 end
-                file_ProjectRestart(app, indexes, 'onFileListMerged')
+                refreshProjectFiles(app, indexes, 'onFileListMerged')
             end
 
         end
@@ -1041,9 +1170,13 @@ msgQuestion = 'Deseja fechar o aplicativo?';
         function ContextMenu_DeleteSelectedTreeNode(app, event)
             
             if ~isempty(app.FileTree.SelectedNodes)
+                app.progressDialog.Visible = 'visible';
+
                 indexes = [app.FileTree.SelectedNodes.NodeData];
                 app.measData(indexes) = [];
-                file_ProjectRestart(app, [], 'onFileListRemoved')
+                refreshProjectFiles(app, [], 'onFileListRemoved')
+
+                app.progressDialog.Visible = 'hidden';
             end
 
         end

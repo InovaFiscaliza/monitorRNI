@@ -8,7 +8,6 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         Filter            matlab.ui.control.DropDown
         FilterLabel       matlab.ui.control.Label
         FilterIcon        matlab.ui.control.Image
-        btnOK             matlab.ui.control.Button
         Location          matlab.ui.control.ListBox
         LocationLabel     matlab.ui.control.Label
         Delete            matlab.ui.control.Image
@@ -99,7 +98,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             
         end
 
-        % Callback function: UIFigure, btnClose, btnOK
+        % Callback function: UIFigure, btnClose
         function closeFcn(app, event)
             
             ipcMainMatlabCallsHandler(app.mainApp, app, 'closeFcnCallFromPopupApp', 'MONITORINGPLAN', 'auxApp.dockListOfLocation')
@@ -212,7 +211,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.LocationPanel.RowSpacing = 5;
             app.LocationPanel.Layout.Row = 2;
             app.LocationPanel.Layout.Column = [1 2];
-            app.LocationPanel.BackgroundColor = [0.9804 0.9804 0.9804];
+            app.LocationPanel.BackgroundColor = [1 1 1];
 
             % Create RefLocationLabel
             app.RefLocationLabel = uilabel(app.LocationPanel);
@@ -271,16 +270,6 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.Location.Layout.Row = [2 4];
             app.Location.Layout.Column = [5 7];
             app.Location.Value = {};
-
-            % Create btnOK
-            app.btnOK = uibutton(app.LocationPanel, 'push');
-            app.btnOK.ButtonPushedFcn = createCallbackFcn(app, @closeFcn, true);
-            app.btnOK.Tag = 'OK';
-            app.btnOK.IconAlignment = 'right';
-            app.btnOK.BackgroundColor = [0.9804 0.9804 0.9804];
-            app.btnOK.Layout.Row = 5;
-            app.btnOK.Layout.Column = 7;
-            app.btnOK.Text = 'OK';
 
             % Create FilterIcon
             app.FilterIcon = uiimage(app.LocationPanel);

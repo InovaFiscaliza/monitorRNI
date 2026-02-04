@@ -1,5 +1,5 @@
 {
-    "version": 0.87,
+    "version": 0.89,
     "operationMode": {
         "Debug": false,
         "Dock": true,
@@ -147,6 +147,16 @@
         "system": "eFiscaliza",
         "unit": "",
         "outputCompressionMode": "Sim",
+        "entityType": {
+            "default": "",
+            "options": [
+                "",
+                "Prestadora",
+                "Importador",
+                "Fornecedor",
+                "Usuário"
+            ]
+        },
         "basemap": "streets-dark",
         "image": {
             "format": "jpeg",

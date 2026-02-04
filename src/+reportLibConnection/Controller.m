@@ -27,44 +27,37 @@ classdef (Abstract) Controller
         %-----------------------------------------------------------------%
         docVersion = dictionary( ...
             ["Preliminar", "Definitiva"], ...
-            [struct('version', 'preview', 'encoding', 'UTF-8'), struct('version', 'final', 'encoding', 'ISO-8859-1')] ...
+            ["preview", "final"] ...
         )
     end
 
     methods (Static)
         %-----------------------------------------------------------------%
-        function Run(callingApp, projectData, measData, reportSettings, generalSettings)
+        function Run(mainApp, callingApp, context, EMFieldObj)
             arguments
+                mainApp
                 callingApp
-                projectData
-                measData
-                reportSettings
-                generalSettings
+                context {mustBeMember(context, {'MONITORINGPLAN', 'EXTERNALREQUEST'})}
+                EMFieldObj
             end
 
-            switch class(callingApp)
-                case {'auxApp.winMonitoringPlan',  'auxApp.winMonitoringPlan_exported'}
-                    app = callingApp.mainApp;
-                    context = 'MonitoringPlan';
-                case {'auxApp.winExternalRequest', 'auxApp.winExternalRequest_exported'}
-                    app = callingApp.mainApp;
-                    context = 'ExternalRequest';
-                otherwise
-                    error('UnexpectedCaller')
-            end
+            appName = class.Constants.appName;
+            projectData = mainApp.projectData;
+            generalSettings = mainApp.General;
+            rootFolder = mainApp.rootFolder;
 
             [projectFolder, ...
-             programDataFolder] = appEngine.util.Path(class.Constants.appName, app.rootFolder);
+             programDataFolder] = appEngine.util.Path(class.Constants.appName, rootFolder);
 
-            issueId    = num2str(reportSettings.issue);
-            docName    = reportSettings.model;
-            docIndex   = find(strcmp({projectData.report.templates.Name}, docName), 1);
+            issueId = num2str(projectData.modules.(context).ui.issue);
+            docName = projectData.modules.(context).ui.reportModel;
+            docIndex = find(strcmp({projectData.report.templates.Name}, docName), 1);
             if isempty(docIndex)
-                error('Pendente escolha do modelo de relatório')
+                error('Pendente escolha do modelo de relatório.')
             end
 
-            docType    = projectData.report.templates(docIndex).DocumentType;
-            docVersion = reportLibConnection.Controller.docVersion(reportSettings.reportVersion);
+            docType = projectData.report.templates(docIndex).DocumentType;
+            docVersion = reportLibConnection.Controller.docVersion(projectData.modules.(context).ui.reportVersion);
 
             try
                 if ~isdeployed()
@@ -75,10 +68,9 @@ classdef (Abstract) Controller
                 docScript = jsondecode(fileread(fullfile(projectFolder,     'ReportTemplates', projectData.report.templates(docIndex).File)));
             end
 
-            stationTableGlobal = projectData.modules.MonitoringPlan.stationTable;
-            pointsTableGlobal  = projectData.modules.ExternalRequest.pointsTable;
-            pointsTableGlobal  = model.projectLib.prepareStationTableForExport(pointsTableGlobal, 'pointsTable', '-');
-        
+            stationTableGlobal = projectData.modules.MONITORINGPLAN.stationTable;
+            pointsTableGlobal  = projectData.modules.EXTERNALREQUEST.pointsTable;
+            pointsTableGlobal  = model.ProjectBase.prepareTableForExport(pointsTableGlobal, 'POINTS', '-');
             
             %-------------------------------------------------------------%
             % reportInfo
@@ -88,9 +80,9 @@ classdef (Abstract) Controller
             % e informações específicas, a compor itens com recorrências, como 
             % "Resultados".
             %-------------------------------------------------------------%
-            reportInfo = struct('App',      app, ...
-                                'Version',  app.General.AppVersion,                                                   ...
-                                'Path',     struct('rootFolder',                 app.rootFolder,                      ...
+            reportInfo = struct('App',      mainApp,                                                                  ...
+                                'Version',  generalSettings.AppVersion,                                               ...
+                                'Path',     struct('rootFolder',                 rootFolder,                          ...
                                                    'userFolder',                 generalSettings.fileFolder.userPath, ...
                                                    'tempFolder',                 generalSettings.fileFolder.tempPath, ...
                                                    'appConnection',              projectFolder,                       ...
@@ -98,20 +90,36 @@ classdef (Abstract) Controller
                                 'Model',    struct('Name',                       docName,                             ...
                                                    'DocumentType',               docType,                             ...
                                                    'Script',                     docScript,                           ...
-                                                   'Version',                    docVersion.version),                 ...
+                                                   'Version',                    docVersion),                         ...
                                 'Function', struct(... 
                                                    ... % APLICÁVEIS ÀS SEÇÕES GERAIS DO RELATÓRIO
-                                                   'cfg_Context',                jsonencode(generalSettings.(context)), ...
-                                                   'cfg_DataBinning',            jsonencode(generalSettings.Report.DataBinning), ...
-                                                   'cfg_ReportTemplate',         jsonencode(struct('Name', docName, 'DocumentType', docType, 'Version', docVersion.version)), ...
+                                                   'cfg_Context',                jsonencode(generalSettings.context.(context)), ...
+                                                   'cfg_DataBinning',            jsonencode(generalSettings.reportLib.dataBinning), ...
+                                                   'cfg_ReportTemplate',         'reportLibConnection.Variable.GeneralSettings(reportInfo, "ReportTemplate")', ...
+                                                   ...
                                                    'var_Issue',                  issueId, ...
-                                                   'var_Unit',                   reportSettings.unit, ...
+                                                   'var_Unit',                   projectData.modules.(context).ui.unit, ...
+                                                   'var_EntityGroupType',        projectData.modules.(context).ui.entity.type, ...
+                                                   'var_EntityGroupName',        projectData.modules.(context).ui.entity.name, ...
+                                                   'var_EntityGroupId',          projectData.modules.(context).ui.entity.id, ...
+                                                   ...
+                                                   'eFiscaliza_solicitacaoCode', 'reportLibConnection.Variable.GeneralSettings(reportInfo, "Solicitação de Inspeção")', ...
+                                                   'eFiscaliza_acaoCode',       'reportLibConnection.Variable.GeneralSettings(reportInfo, "Ação de Inspeção")', ...
+                                                   'eFiscaliza_atividadeCode',  'reportLibConnection.Variable.GeneralSettings(reportInfo, "Atividade de Inspeção")', ...
+                                                   'eFiscaliza_requester',      'reportLibConnection.Variable.GeneralSettings(reportInfo, "Unidade Demandante")', ...
+                                                   'eFiscaliza_unit',           'reportLibConnection.Variable.GeneralSettings(reportInfo, "Unidade Executante")', ...
+                                                   'eFiscaliza_unitCity',       'reportLibConnection.Variable.GeneralSettings(reportInfo, "Sede da Unidade Executante")', ...
+                                                   'eFiscaliza_description',    'reportLibConnection.Variable.GeneralSettings(reportInfo, "Descrição da Atividade de Inspeção")', ...
+                                                   'eFiscaliza_period',         'reportLibConnection.Variable.GeneralSettings(reportInfo, "Período Previsto da Fiscalização")', ...
+                                                   'eFiscaliza_fiscais',        'reportLibConnection.Variable.GeneralSettings(reportInfo, "Lista de Fiscais")', ...
+                                                   'eFiscaliza_sei',            'reportLibConnection.Variable.GeneralSettings(reportInfo, "Processo SEI")', ...
+                                                   ...
                                                    'var_LocationListGlobal',    'reportLibConnection.Variable.ProjectProperty(reportInfo, analyzedData, "LocationListGlobal")', ...
                                                    'var_LocationSummaryGlobal', 'reportLibConnection.Variable.ProjectProperty(reportInfo, analyzedData, "LocationSummaryGlobal")', ...
                                                    'var_MeasurementsGlobal',    'reportLibConnection.Variable.ProjectPropertyGlobal(dataOverview, "MeasurementsGlobal")', ...
-                                                   'var_ThresholdGlobal',        projectData.modules.(context).threshold, ...
+                                                   'var_ThresholdGlobal',        projectData.modules.(context).analysis.threshold, ...
                                                    'var_NumAboveTHRGlobal',     'reportLibConnection.Variable.ProjectPropertyGlobal(dataOverview, "NumAboveTHRGlobal")', ...
-                                                   'var_DistanceKmGlobal',       projectData.modules.(context).distance_km, ...
+                                                   'var_DistanceKmGlobal',       projectData.modules.(context).analysis.maxMeasurementDistanceKm, ...
                                                    'tbl_StationTable',           stationTableGlobal, ...
                                                    'tbl_PointsTable',            pointsTableGlobal, ...
                                                    'tbl_FileByLocation',        'reportLibConnection.Table.FileByLocation(dataOverview)', ...
@@ -144,7 +152,8 @@ classdef (Abstract) Controller
                                                    'tbl_AboveTHR',              'analyzedData.InfoSet.aboveTHRTable', ...
                                                    'img_Plot',                  'reportLibConnection.Plot.Controller(reportInfo, analyzedData, imgSettings)'), ...
                                 'Project',  projectData, ...
-                                'Object',   measData, ...
+                                'Context',  context,     ...
+                                'Object',   EMFieldObj,    ...
                                 'Settings', generalSettings);
             
             fieldsUnnecessary = {'rootFolder', 'entryPointFolder', 'tempSessionFolder', 'ctfRoot'};
@@ -163,28 +172,28 @@ classdef (Abstract) Controller
             %-------------------------------------------------------------%
             dataOverview = struct('ID', {}, 'InfoSet', {}, 'HTML', {});
 
-            locationList = {measData.Location};
+            locationList = {EMFieldObj.Location};
             groupLocationList = unique(locationList);
 
             for ii = 1:numel(groupLocationList)
                 groupLocation   = groupLocationList{ii};
 
                 locationIndexes = find(strcmp(locationList, groupLocation));
-                [~, idSort]     = sort(arrayfun(@(x) x.Data.Timestamp(1), measData(locationIndexes)));
+                [~, idSort]     = sort(arrayfun(@(x) x.Data.Timestamp(1), EMFieldObj(locationIndexes)));
                 locationIndexes = locationIndexes(idSort);
 
-                fileList        = unique({measData(locationIndexes).Filename});
+                fileList        = unique({EMFieldObj(locationIndexes).FileName});
 
                 switch context
-                    case 'MonitoringPlan'
-                        locations      = getFullListOfLocation(projectData, measData(locationIndexes), projectData.modules.MonitoringPlan.distance_km);                        
+                    case 'MONITORINGPLAN'
+                        locations      = getFullListOfLocation(projectData, EMFieldObj(locationIndexes), projectData.modules.MONITORINGPLAN.analysis.maxMeasurementDistanceKm);                        
                         stationIndexes = ismember(stationTableGlobal.Location, locations);
                         
                         stationTable   = stationTableGlobal(stationIndexes, :);
                         pointsTable    = [];
 
-                    case 'ExternalRequest'
-                        locations      = unique({measData(locationIndexes).Location});
+                    case 'EXTERNALREQUEST'
+                        locations      = unique({EMFieldObj(locationIndexes).Location});
                         pointsIndexes  = [];
                         for jj = 1:height(pointsTableGlobal)
                             sourceFiles = jsondecode(pointsTableGlobal.("Fonte de dados"){jj});
@@ -201,49 +210,45 @@ classdef (Abstract) Controller
                         pointsTable  = pointsTableGlobal(pointsIndexes, :);
                 end
 
-                measTable = createMeasTable(measData(locationIndexes));
+                measTable = buildMeasurementTable(EMFieldObj(locationIndexes));
                 [beginTime, endTime] = bounds(measTable.Timestamp);
                 [minField, maxField] = bounds(measTable.FieldValue);
-                durationTime = sum(arrayfun(@(x) x.Data.Timestamp(end) - x.Data.Timestamp(1), measData(locationIndexes)));
+                durationTime = sum(arrayfun(@(x) x.Data.Timestamp(end) - x.Data.Timestamp(1), EMFieldObj(locationIndexes)));
 
-                aboveTHR = measTable.FieldValue > projectData.modules.(context).threshold;
+                aboveTHR = measTable.FieldValue > projectData.modules.(context).analysis.threshold;
                 if any(aboveTHR)
                     rawTable  = timetable2table(measTable(aboveTHR, :));
                     rawTable  = rawTable(:, {'Timestamp', 'Latitude', 'Longitude', 'FieldValue'});
                     rawFilter = table({}, {}, struct('handle', {}, 'specification', {}), true(0, 1), 'VariableNames', {'type', 'subtype', 'roi', 'enable'});
-                    [~, ~, aboveTHRTable] = RF.DataBinning.execute(rawTable, generalSettings.Report.DataBinning.length_m, generalSettings.Report.DataBinning.function, rawFilter, 'FieldValue');
+                    [~, ~, aboveTHRTable] = RF.DataBinning.execute(rawTable, generalSettings.reportLib.dataBinning.binLengthMeters, generalSettings.reportLib.dataBinning.aggregationFunction, rawFilter, 'FieldValue');
 
                     numAboveTHR = [];
                     for file = fileList
                         idxFile = strcmp(measTable.FileSource, file);
-                        numAboveTHR = [numAboveTHR, sum(measTable.FieldValue(idxFile) > projectData.modules.(context).threshold)];
+                        numAboveTHR = [numAboveTHR, sum(measTable.FieldValue(idxFile) > projectData.modules.(context).analysis.threshold)];
                     end
                 else
                     aboveTHRTable = table('Size', [0,4], 'VariableTypes', {'double', 'double', 'double', 'double'}, 'VariableNames', {'Latitude', 'Longitude', 'FieldValues', 'Measures'});
                     numAboveTHR   = zeros(1, numel(fileList));
                 end
 
-                dataOverview(end+1) = struct('ID',      measData(locationIndexes(1)).Location,               ...
+                dataOverview(end+1) = struct('ID',      EMFieldObj(locationIndexes(1)).Location,               ...
                                              'InfoSet', struct('context',         context,                   ...
                                                                'indexes',         locationIndexes,           ...
-                                                               'measData',        measData(locationIndexes), ...
+                                                               'measData',        EMFieldObj(locationIndexes), ...
                                                                'measTable',       measTable,                 ...
                                                                'locations',       {locations},                 ...
                                                                'durationTime',    durationTime,              ...
                                                                'period',          sprintf('%s - %s<br>⌛%s', beginTime, endTime, durationTime), ...
                                                                'limits',          sprintf('[%.1f - %.1f] V/m', minField, maxField), ...
                                                                'numMeasurements', height(measTable),         ...
-                                                               'threshold',       projectData.modules.(context).threshold, ...
+                                                               'threshold',       projectData.modules.(context).analysis.threshold, ...
                                                                'numAboveTHR',     numAboveTHR, ...
                                                                'aboveTHRTable',   aboveTHRTable, ...
-                                                               'distanceTHR',     projectData.modules.(context).distance_km, ...
+                                                               'distanceTHR',     projectData.modules.(context).analysis.maxMeasurementDistanceKm, ...
                                                                'pointsTable',     pointsTable,  ...
                                                                'stationTable',    stationTable), ...
                                              'HTML',    struct('Component', {}, 'Source', {}, 'Value', {}));
-                    
-                % if ~isempty(measData(idIndexes(1)).UserData) && isfield(measData(idIndexes(1)).UserData, 'externalFiles')
-                %     dataOverview(end).HTML = vertcat([measData(idIndexes).UserData].externalFiles);
-                % end
             end
 
 
@@ -256,7 +261,7 @@ classdef (Abstract) Controller
             %-------------------------------------------------------------%
             % Exclui container criado para os plots, caso aplicável.
             %-------------------------------------------------------------%            
-            hFigure    = app.UIFigure;
+            hFigure    = mainApp.UIFigure;
             hContainer = findobj(hFigure, 'Tag', 'reportGeneratorContainer');
             if ~isempty(hContainer)
                 delete(hContainer)
@@ -271,45 +276,45 @@ classdef (Abstract) Controller
             [baseFullFileName, baseFileName] = appEngine.util.DefaultFileName(generalSettings.fileFolder.tempPath, 'monitorRNI_FinalReport', issueId);
             HTMLFile = [baseFullFileName '.html'];
             
-            writematrix(HTMLDocContent, HTMLFile, 'QuoteStrings', 'none', 'FileType', 'text', 'Encoding', docVersion.encoding)
+            writematrix(HTMLDocContent, HTMLFile, 'QuoteStrings', 'none', 'FileType', 'text', 'Encoding', 'UTF-8')
 
-            switch docVersion.version
+            switch docVersion
                 case 'preview'
                     web(HTMLFile, '-new')
                     updateGeneratedFiles(projectData, context)
 
                 case 'final'
                     XLSXFile = [baseFullFileName '.xlsx'];
-                    RAWFiles = fullfile({measData.Filepath}, {measData.Filename});
+                    RAWFiles = {EMFieldObj.FileFullName};
 
                     if numel(groupLocationList) > 1
-                        measTableGlobal = createMeasTable(measData);
+                        measTableGlobal = buildMeasurementTable(EMFieldObj);
                     else
                         measTableGlobal = measTable;
                     end
 
                     switch context
-                        case 'MonitoringPlan'
+                        case 'MONITORINGPLAN'
                             stationTableArray  = arrayfun(@(x) x.InfoSet.stationTable, dataOverview, "UniformOutput", false);
                             stationTableMerged = vertcat(stationTableArray{:});
-                            [~, msgError]      = fileWriter.MonitoringPlan(XLSXFile, stationTableMerged, measTableGlobal, projectData.modules.(context).threshold);
+                            [~, msgError]      = fileWriter.MonitoringPlan(XLSXFile, stationTableMerged, measTableGlobal, projectData.modules.(context).analysis.threshold);
 
-                        case 'ExternalRequest'
-                            [~, msgError]      = fileWriter.ExternalRequest(XLSXFile, pointsTableGlobal, measTableGlobal, projectData.modules.(context).threshold);
+                        case 'EXTERNALREQUEST'
+                            [~, msgError]      = fileWriter.ExternalRequest(XLSXFile, pointsTableGlobal, measTableGlobal, projectData.modules.(context).analysis.threshold);
                     end
 
                     if ~isempty(msgError)
                         error(msgError)
                     end
                     
-                    ZIPFile  = ui.Dialog(app.UIFigure, 'uiputfile', '', {'*.zip', 'monitorRNI (*.zip)'}, fullfile(generalSettings.fileFolder.userPath, [baseFileName '.zip']));
+                    ZIPFile  = ui.Dialog(mainApp.UIFigure, 'uiputfile', '', {'*.zip', 'monitorRNI (*.zip)'}, fullfile(generalSettings.fileFolder.userPath, [baseFileName '.zip']));
                     if isempty(ZIPFile)
                         return
-                    end                    
-
+                    end
                     zip(ZIPFile, [{HTMLFile}, {XLSXFile}, RAWFiles])
 
-                    updateGeneratedFiles(projectData, context, RAWFiles, HTMLFile, XLSXFile, ZIPFile)
+                    generatedFileId = model.ProjectBase.computeReportAnalysisResultsHash(projectData.modules, context, EMFieldObj);
+                    updateGeneratedFiles(projectData, context, generatedFileId, RAWFiles, HTMLFile, '', XLSXFile, ZIPFile)
             end
         end
     end
