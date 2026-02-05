@@ -5,8 +5,8 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
         UIFigure                        matlab.ui.Figure
         GridLayout                      matlab.ui.container.GridLayout
         DockModule                      matlab.ui.container.GridLayout
-        dockModule_Undock               matlab.ui.control.Image
         dockModule_Close                matlab.ui.control.Image
+        dockModule_Undock               matlab.ui.control.Image
         Document                        matlab.ui.container.GridLayout
         AxesToolbar                     matlab.ui.container.GridLayout
         axesTool_RegionZoom             matlab.ui.control.Image
@@ -180,10 +180,27 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
         elevationObj = RF.Elevation
         ChannelReportObj
 
-        filterTable = table( ...
-            'Size', [0, 9], ...
-            'VariableTypes', {'cell', 'int8', 'int8', 'cell', 'cell', 'int8', 'cell', 'logical', 'cell'}, ...
-            'VariableNames', {'Order', 'ID', 'RelatedID', 'Type', 'Operation', 'Column', 'Value', 'Enable', 'uuid'} ...
+        % "Hash" identifica unicamente o filtro por meio das colunas
+        % "Type", "Operation" e "Value".
+
+        FilterRules = table( ...
+            'Size', [0, 10], ...
+            'VariableTypes', {'cell', 'int8', 'int8', 'cell', 'cell', 'int8', 'cell', 'cell', 'logical', 'cell'}, ...
+            'VariableNames', {'Order', 'ID', 'RelatedID', 'Type', 'Operation', 'Column', 'Value', 'Handle', 'Enable', 'Hash'} ...
+        )
+    end
+
+
+    properties (Access = private, Constant)
+        %-----------------------------------------------------------------%
+        FILTER_TYPE_TO_COLUMNS = dictionary( ...
+            ["Fonte", "Frequência", "Largura banda", "Entidade", "Fistel", "Serviço", "Estação", "UF", "Município", "Distância"], ...
+            ["Source", "Frequency", "BW", "_Name", "Fistel", "Service", "Station", "State", "_Location", "Distance"] ...
+        )
+        
+        UITABLE_HEADER_TO_COLUMNS = dictionary( ...
+            ["ID", "FREQUÊNCIA|(MHz)", "DESCRIÇÃO|(Entidade+Fistel+Multiplicidade+Localidade)", "FISTEL", "SERVIÇO", "ESTAÇÃO", "LARGURA|(kHz)", "DISTÂNCIA|(km)"], ...
+            ["ID", "Frequency", "Description", "Fistel", "Service", "Station", "BW", "Distance"] ...
         )
     end
 
@@ -244,36 +261,85 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             appName = class(app);
             switch tabIndex
                 case 1 % RFDATAHUB
-                    elToModify = {app.SubTabGroup, app.AxesToolbar, app.stationInfo, app.stationInfoImage};
-                    elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
-                    if ~isempty(elDataTag)
-                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
-                            struct('appName', appName, 'dataTag', elDataTag{1}, 'style', struct('border', 'none', 'backgroundColor', 'transparent')), ...
-                            struct('appName', appName, 'dataTag', elDataTag{2}, 'styleImportant', struct('borderTopLeftRadius', '0', 'borderTopRightRadius', '0')), ...
-                        });
+                    appName = class(app);
+                    elToModify = {
+                        app.AxesToolbar;
+                        app.referenceTX_Refresh;
+                        app.referenceTX_EditionMode;
+                        app.referenceTX_EditionConfirm;
+                        app.referenceTX_EditionCancel;
+                        app.stationInfo;
+                        app.stationInfoImage;
+                        app.tool_PanelVisibility;
+                        app.tool_TableVisibility;
+                        app.tool_RFLinkButton;
+                        app.tool_PDFButton;
+                        app.tool_ExportButton;
+                        app.dockModule_Undock;
+                        app.dockModule_Close
+                    };
+                    ui.CustomizationBase.getElementsDataTag(elToModify);
 
-                        ui.TextView.startup(app.jsBackDoor, elToModify{3}, appName);
-                        ui.TextView.startup(app.jsBackDoor, elToModify{4}, appName, 'NÃO HÁ REGISTRO QUE ATENDA<br>AOS CRITÉRIOS DE FILTRAGEM');
+                    try
+                        ui.TextView.startup(app.jsBackDoor, app.stationInfo, appName);
+                        ui.TextView.startup(app.jsBackDoor, app.stationInfoImage, appName, 'NÃO HÁ REGISTRO QUE ATENDA<br>AOS CRITÉRIOS DE FILTRAGEM');
+                    catch
+                    end
+
+                    try
+                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                            struct('appName', appName, 'dataTag', app.AxesToolbar.UserData.id, 'styleImportant', struct('borderTopLeftRadius', '0', 'borderTopRightRadius', '0')), ...
+                            struct('appName', appName, 'dataTag', app.referenceTX_Refresh.UserData.id,        'tooltip', struct('defaultPosition', 'top',    'textContent', 'Retorna aos valores constantes em base')), ...
+                            struct('appName', appName, 'dataTag', app.referenceTX_EditionMode.UserData.id,    'tooltip', struct('defaultPosition', 'top',    'textContent', 'Habilita ou desabilita edição de características da estação')), ...
+                            struct('appName', appName, 'dataTag', app.referenceTX_EditionConfirm.UserData.id, 'tooltip', struct('defaultPosition', 'top',    'textContent', 'Confirma edição')), ...
+                            struct('appName', appName, 'dataTag', app.referenceTX_EditionCancel.UserData.id,  'tooltip', struct('defaultPosition', 'top',    'textContent', 'Cancela edição')), ...
+                            struct('appName', appName, 'dataTag', app.tool_PanelVisibility.UserData.id,       'tooltip', struct('defaultPosition', 'top',    'textContent', 'Alterna visibilidade do painel')), ...
+                            struct('appName', appName, 'dataTag', app.tool_TableVisibility.UserData.id,       'tooltip', struct('defaultPosition', 'top',    'textContent', 'Alterna entre três layouts do conjunto plot+tabela<br>(apenas plot, apenas tabela ou plot+tabela)')), ...
+                            struct('appName', appName, 'dataTag', app.tool_RFLinkButton.UserData.id,          'tooltip', struct('defaultPosition', 'top',    'textContent', 'Apresenta perfil de terreno entre registro selecionado (TX)<br>e estação de referência (RX)')), ...
+                            struct('appName', appName, 'dataTag', app.tool_PDFButton.UserData.id,             'tooltip', struct('defaultPosition', 'top',    'textContent', 'Apresenta documento gerado pelo Mosaico (limitado à radiodifusão)')), ...
+                            struct('appName', appName, 'dataTag', app.tool_ExportButton.UserData.id,          'tooltip', struct('defaultPosition', 'top',    'textContent', 'Exporta planilha filtrada (.xlsx)')), ...
+                            struct('appName', appName, 'dataTag', app.dockModule_Undock.UserData.id,          'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Reabre módulo em outra janela')), ...
+                            struct('appName', appName, 'dataTag', app.dockModule_Close.UserData.id,           'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Fecha módulo')) ...
+                        });
+                    catch
                     end
 
                 case 2 % FILTRAGEM
-                    elToModify = {app.filter_Tree};
-                    elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
-                    if ~isempty(elDataTag)
-                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', {                                                                          ...
-                            struct('appName', appName, 'dataTag', elDataTag{1}, 'listener', struct('componentName', 'auxApp.winRFDataHub.filter_Tree', 'keyEvents', {{'Delete', 'Backspace'}})) ...
+                    elToModify = {
+                        app.referenceRX_Refresh;
+                        app.referenceRX_EditionMode;
+                        app.referenceRX_EditionConfirm;
+                        app.referenceRX_EditionCancel;
+                        app.filter_Tree
+                    };
+                    ui.CustomizationBase.getElementsDataTag(elToModify);
+
+                    try
+                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                            struct('appName', appName, 'dataTag', app.referenceRX_Refresh.UserData.id,        'tooltip', struct('defaultPosition', 'top',    'textContent', 'Retorna aos valores iniciais')), ...
+                            struct('appName', appName, 'dataTag', app.referenceRX_EditionMode.UserData.id,    'tooltip', struct('defaultPosition', 'top',    'textContent', 'Habilita ou desabilita edição de características da estação')), ...
+                            struct('appName', appName, 'dataTag', app.referenceRX_EditionConfirm.UserData.id, 'tooltip', struct('defaultPosition', 'top',    'textContent', 'Confirma edição')), ...
+                            struct('appName', appName, 'dataTag', app.referenceRX_EditionCancel.UserData.id,  'tooltip', struct('defaultPosition', 'top',    'textContent', 'Cancela edição')), ...
+                            struct('appName', appName, 'dataTag', app.filter_Tree.UserData.id, 'listener', struct('componentName', 'auxApp.winRFDataHub.filter_Tree', 'keyEvents', {{'Delete', 'Backspace'}})) ...
                         });
+                    catch
                     end
 
-                    filter_TreeBuilding(app)
+                    buildFilterRuleTree(app)
                     
                 case 3 % CONFIGURAÇÕES GERAIS
-                    elToModify = {app.config_ElevationForceSearch};
-                    elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
-                    if ~isempty(elDataTag)
+                    elToModify = {
+                        app.config_Refresh;
+                        app.config_ElevationForceSearch
+                    };
+                    ui.CustomizationBase.getElementsDataTag(elToModify);
+
+                    try
                         sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
-                            struct('appName', appName, 'dataTag', elDataTag{1}, 'generation', 1, 'style', struct('textAlign', 'justify')) ...
+                            struct('appName', appName, 'dataTag', app.config_Refresh.UserData.id,             'tooltip', struct('defaultPosition', 'top',    'textContent', 'Retorna aos valores iniciais')), ...
+                            struct('appName', appName, 'dataTag', app.config_ElevationForceSearch.UserData.id, 'generation', 1, 'style', struct('textAlign', 'justify')) ...
                         });
+                    catch
                     end
 
                     % Elevação:
@@ -296,7 +362,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             referenceRX_CalculateDistance(app, rxSite)
 
             % lastPrimarySearch
-            filter_getReferenceSearch(app)
+            initializeFilterRules(app)
         end
 
         %-----------------------------------------------------------------%
@@ -306,11 +372,11 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             end
 
             % Controles de funcionalidades:
-            app.referenceTX_EditionMode.UserData = false;
-            app.referenceRX_EditionMode.UserData = false;
-            app.tool_TableVisibility.UserData    = 1;
-            app.tool_RFLinkButton.UserData       = false;
-            app.tool_PDFButton.UserData          = false;
+            app.referenceTX_EditionMode.UserData.status = false;
+            app.referenceRX_EditionMode.UserData.status = false;
+            app.tool_TableVisibility.UserData.layout = 1;
+            app.tool_RFLinkButton.UserData.status = false;
+            app.tool_PDFButton.UserData.status = false;
 
             startup_AxesCreation(app)
 
@@ -319,7 +385,8 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function applyInitialLayout(app)
-            filter_TableFiltering(app)
+            buildFilterRuleTree(app)
+            applyFilterRulesToTable(app)
         end
     end
 
@@ -505,7 +572,8 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
             switch editionStatus
                 case 'on'
-                    set(app.referenceTX_EditionMode, 'ImageSource', 'Edit_32Filled.png', 'UserData', true)
+                    app.referenceTX_EditionMode.ImageSource = 'Edit_32Filled.png';
+                    app.referenceTX_EditionMode.UserData.status = true;
                     set(hEditFields, 'Editable', true)
                     
                     app.referenceTX_TitleGrid.ColumnWidth(end-1:end) = {18, 18};
@@ -515,7 +583,8 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                 case 'off'
                     referenceTX_UpdatePanel(app, idxRFDataHub)
 
-                    set(app.referenceTX_EditionMode, 'ImageSource', 'Edit_32.png', 'UserData', false)
+                    app.referenceTX_EditionMode.ImageSource = 'Edit_32.png';
+                    app.referenceTX_EditionMode.UserData.status = false;
                     set(hEditFields, 'Editable', false)
 
                     app.referenceTX_TitleGrid.ColumnWidth(end-1:end) = {0, 0};
@@ -777,7 +846,8 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
             switch editionStatus
                 case 'on' 
-                    set(app.referenceRX_EditionMode, 'ImageSource', 'Edit_32Filled.png', 'UserData', true)
+                    app.referenceRX_EditionMode.ImageSource = 'Edit_32Filled.png';
+                    app.referenceRX_EditionMode.UserData.status = true;
                     set(hEditFields, 'Editable', true)
                     
                     app.referenceRX_TitleGrid.ColumnWidth(5:6) = {18, 18};
@@ -785,7 +855,8 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     app.referenceRX_EditionCancel.Enable  = 1;
 
                 case 'off'
-                    set(app.referenceRX_EditionMode, 'ImageSource', 'Edit_32.png', 'UserData', false)
+                    app.referenceRX_EditionMode.ImageSource = 'Edit_32.png';
+                    app.referenceRX_EditionMode.UserData.status = false;
                     set(hEditFields, 'Editable', false)
 
                     app.referenceRX_TitleGrid.ColumnWidth(5:6) = {0, 0};
@@ -797,118 +868,135 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function referenceRX_RefreshTableAndPlots(app, rxSite)
             referenceRX_CalculateDistance(app, rxSite)
-            filter_TableFiltering(app)
+            applyFilterRulesToTable(app)
         end
 
 
         %-----------------------------------------------------------------%
         % FILTRAGEM
         %-----------------------------------------------------------------%
-        function filter_getReferenceSearch(app)
-            % Inicialização do filtro, evitando carregar todas as estações
-            % da base no plot.
-            if isempty(app.filterTable)
-                filterType          = app.mainApp.General.context.RFDATAHUB.defaultFilter.columnLabel;
-                filterValue         = app.mainApp.General.context.RFDATAHUB.defaultFilter.value;
-                filterOperation     = app.mainApp.General.context.RFDATAHUB.defaultFilter.operation;
+        function initializeFilterRules(app)
+            if ~isempty(app.mainApp.General.context.RFDATAHUB.lastColumnFilters)
+                try
+                    lastColumnFilters = struct2table(app.mainApp.General.context.RFDATAHUB.lastColumnFilters, "AsArray", true);
+                    
+                    lastColumnDataTypes  = matlab.Compatibility.resolveTableVariableTypes(lastColumnFilters, false);
+                    filterRulesDataTypes = matlab.Compatibility.resolveTableVariableTypes(app.FilterRules, false);
     
-                hFilterNames        = findobj(app.filter_SecondaryTypePanel.Children,  'Type', 'uiradiobutton');
-                hFilterOperations   = findobj(app.filter_SecondaryValuePanel.Children, 'Type', 'uitogglebutton');
-                hFilterValues       = [app.filter_SecondaryNumValue1, ...
-                                       app.filter_SecondaryNumValue2, ...
-                                       app.filter_SecondaryTextFree,  ...
-                                       app.filter_SecondaryTextList];
-    
-                listOfFilterNames   = {hFilterNames.Text};
-                listOfOperations    = {hFilterOperations.Text};
-    
-                [~, idxFilter]      = ismember(filterType,      listOfFilterNames);
-                [~, idxOperation]   = ismember(filterOperation, listOfOperations);
-    
-                if ~isempty(idxFilter) && ~isempty(idxOperation)
-                    hFilterNames(idxFilter).Value   = true;
-                    filter_typePanelSelectionChanged(app)
-    
-                    hFilterOperations(idxOperation).Value = true;
-                    filter_SecondaryValuePanelSelectionChanged(app)
-    
-                    hFilterValues   = hFilterValues(arrayfun(@(x) x.Visible, hFilterValues));
-                    for ii = 1:numel(hFilterValues)
-                        hFilterValues(ii).Value = filterValue(ii);
+                    diffDataTypesIdxs = find(cellfun(@(x,y) ~isequal(x, y), lastColumnDataTypes, filterRulesDataTypes));
+                    for ii = 1:numel(diffDataTypesIdxs)
+                        lastColumnFilters = convertvars(lastColumnFilters, diffDataTypesIdxs(ii), filterRulesDataTypes{diffDataTypesIdxs(ii)});
                     end
+    
+                    app.FilterRules(1:height(lastColumnFilters), :) = lastColumnFilters;
+                catch
                 end
-    
-                columnName       = filter_FilterType2ColumnNames(app, filterType);
-                [~, columnIndex] = ismember(columnName, app.rfDataHub.Properties.VariableNames);
-    
-                newFilter = {'Node', 1, -3, filterType, filterOperation, columnIndex, filterValue, true, char(matlab.lang.internal.uuid())};
-    
-                filter_addNewFilter(app, newFilter)
+            end
+
+            if isempty(app.FilterRules)
+                filterType = app.mainApp.General.context.RFDATAHUB.defaultFilter.columnLabel;
+                filterOperation = app.mainApp.General.context.RFDATAHUB.defaultFilter.operation;
+                columnName = app.FILTER_TYPE_TO_COLUMNS(filterType);
+                filterValue = app.mainApp.General.context.RFDATAHUB.defaultFilter.value;
+                hash = model.ProjectBase.computeFileRuleHash(filterType, filterOperation, filterValue);
+                
+                addFilterRule(app, 'Node', -1, filterType, filterOperation, columnName, filterValue, [], hash)
             end
         end
 
         %-----------------------------------------------------------------%
-        function filter_addNewFilter(app, newFilter)
-            app.filterTable(end+1, [1:6,8:9]) = newFilter([1:6,8:9]);
-            app.filterTable.Value{end} = newFilter{7};
+        function addFilterRule(app, filterOrder, relatedId, filterType, filterOperation, columnName, filterValue, filterHandle, hash)
+            filterIdx = height(app.FilterRules) + 1;
+
+            [~, columnNameIdx] = ismember(columnName, app.rfDataHub.Properties.VariableNames);
+            if ~columnNameIdx
+                columnNameIdx = -1; % ROI
+            end
+
+            app.FilterRules(filterIdx, {'Order', 'ID', 'RelatedID', 'Type', 'Operation', 'Column', 'Enable', 'Hash'}) = { ...
+                filterOrder, ...
+                filterIdx, ...
+                relatedId, ...
+                filterType, ...
+                filterOperation, ...
+                columnNameIdx, ...
+                true, ...
+                hash ...
+            };
+            app.FilterRules.Value{filterIdx}  = filterValue;
+            app.FilterRules.Handle{filterIdx} = filterHandle;
         end
 
         %-----------------------------------------------------------------%
-        function filter_delOldFilter(app, idxFilter)
+        function removeFilterRule(app, filterIdx)
             % Apaga os ROI's, caso existentes.
-            idxROI = find(strcmp(app.filterTable.Type, 'ROI'))';
-            for ii = idxROI
-                if ismember(ii, idxFilter)
-                    UUID = app.filterTable.uuid{ii};
-                    delete(findobj(app.UIAxes1.Children, 'UserData', UUID))
+            roiIdxs = find(contains(app.FilterRules.Type, 'ROI', 'IgnoreCase', true))';
+            for ii = roiIdxs
+                if ismember(ii, filterIdx)
+                    roiHash = app.FilterRules.Hash{ii};
+                    delete(findobj(app.UIAxes1.Children, 'UserData', roiHash))
                 end
             end
 
-            % Apaga os filtros e atualiza os índices dos remanecestes. Por
+            % Apaga os filtros e atualiza os índices dos remanecentes. Por
             % fim, atualiza a árvore e o plot, criando os novos ROI's.
-            app.filterTable(idxFilter, :) = [];
+            app.FilterRules(filterIdx, :) = [];
 
-            idCurrentList = app.filterTable.ID';
-            idNewValue    = 0;
+            currentListIds = app.FilterRules.ID';
+            newValueId = 0;
 
-            for ii = idCurrentList
-                idNewValue = idNewValue+1;
+            for ii = currentListIds
+                newValueId = newValueId+1;
 
-                app.filterTable.ID(app.filterTable.ID == ii) = idNewValue;
-                app.filterTable.RelatedID(app.filterTable.RelatedID == ii) = idNewValue;
+                app.FilterRules.ID(app.FilterRules.ID == ii) = newValueId;
+                app.FilterRules.RelatedID(app.FilterRules.RelatedID == ii) = newValueId;
             end
 
-            filter_TreeBuilding(app)
-            filter_TableFiltering(app)
-        end        
-
-        %-----------------------------------------------------------------%
-        function columnName = filter_FilterType2ColumnNames(app, filterType)
-            filterTypes = ["Fonte", "Frequência", "Largura banda", "Entidade", "Fistel", "Serviço", "Estação", "UF",    "Município", "Distância"];
-            columnNames = ["Source", "Frequency", "BW",            "_Name",    "Fistel", "Service", "Station", "State", "_Location", "Distance"];
-            d = dictionary(filterTypes, columnNames);
-
-            columnName = d(filterType);            
+            buildFilterRuleTree(app)
+            applyFilterRulesToTable(app)
+            syncFilterRulesToConfig(app)
         end
 
         %-----------------------------------------------------------------%
-        function filter_TreeBuilding(app)
+        function syncFilterRulesToConfig(app)
+            configRulesHash  = '';
+            if ~isempty(app.mainApp.General.context.RFDATAHUB.lastColumnFilters)
+                configRulesHash  = strjoin(sort({app.mainApp.General.context.RFDATAHUB.lastColumnFilters.Hash}));
+            end
+            currentRulesHash = strjoin(sort(app.FilterRules.Hash));
+
+            if isequal(configRulesHash, currentRulesHash)
+                return                
+            end
+
+            currentRules = app.FilterRules;
+            currentRules.Handle(:) = {[]};
+            currentRules = table2struct(currentRules);
+
+            app.mainApp.General.context.RFDATAHUB.lastColumnFilters   = currentRules;
+            app.mainApp.General_I.context.RFDATAHUB.lastColumnFilters = currentRules;
+            
+            appEngine.util.generalSettingsSave(class.Constants.appName, app.mainApp.rootFolder, app.mainApp.General_I, app.mainApp.executionMode)
+        end
+
+        %-----------------------------------------------------------------%
+        function buildFilterRuleTree(app)
             if ~isempty(app.filter_Tree.Children)
                 delete(app.filter_Tree.Children)
             end
 
-            idx1 = find(strcmp(app.filterTable.Order, 'Node'))';
+            idx1 = find(strcmp(app.FilterRules.Order, 'Node'))';
             if ~isempty(idx1)
                 checkedNodes = [];
                 for ii = idx1
-                    idx2 = find(app.filterTable.RelatedID == app.filterTable.ID(ii))';
+                    idx2 = find(app.FilterRules.RelatedID == app.FilterRules.ID(ii))';
                     if isempty(idx2)
-                        parentNode = uitreenode(app.filter_Tree, 'Text', sprintf('#%d: RFDataHub.("%s") %s %s', app.filterTable.ID(ii),                        ...
-                                                                                                                app.filterTable.Type{ii},                      ...
-                                                                                                                app.filterTable.Operation{ii},                 ...
-                                                                                                                filter_Value(app, app.filterTable.Value{ii})), ...
+                        parentNode = uitreenode(app.filter_Tree, 'Text', sprintf('#%d: RFDataHub.("%s") %s %s', app.FilterRules.ID(ii),                        ...
+                                                                                                                app.FilterRules.Type{ii},                      ...
+                                                                                                                app.FilterRules.Operation{ii},                 ...
+                                                                                                                filter_Value(app, app.FilterRules.Value{ii})), ...
                                                                  'NodeData', ii, 'ContextMenu', app.ContextMenu);
-                        if app.filterTable.Enable(ii)
+                        if app.FilterRules.Enable(ii)
                             checkedNodes = [checkedNodes, parentNode];
                         end
 
@@ -916,13 +1004,13 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                         parentNode = uitreenode(app.filter_Tree, 'Text', '*.*', ...
                                                                  'NodeData', [ii, idx2], 'ContextMenu', app.ContextMenu);
                         for jj = [ii, idx2]
-                            childNode = uitreenode(parentNode, 'Text', sprintf('#%d: RFDataHub.("%s") %s %s', app.filterTable.ID(jj),                        ...
-                                                                                                              app.filterTable.Type{jj},                      ...
-                                                                                                              app.filterTable.Operation{jj},                 ...
-                                                                                                              filter_Value(app, app.filterTable.Value{jj})), ...
+                            childNode = uitreenode(parentNode, 'Text', sprintf('#%d: RFDataHub.("%s") %s %s', app.FilterRules.ID(jj),                        ...
+                                                                                                              app.FilterRules.Type{jj},                      ...
+                                                                                                              app.FilterRules.Operation{jj},                 ...
+                                                                                                              filter_Value(app, app.FilterRules.Value{jj})), ...
                                                                'NodeData', jj, 'ContextMenu', app.ContextMenu);
         
-                            if app.filterTable.Enable(jj)
+                            if app.FilterRules.Enable(jj)
                                 checkedNodes = [checkedNodes, childNode];
                             end
                         end
@@ -936,65 +1024,74 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function filter_TableFiltering(app)
+        function applyFilterRulesToTable(app)
             app.progressDialog.Visible = 'visible';
 
             % Identifica registro inicialmente selecionado da tabela.
-            initialSelectedRowID = '';
+            initialSelectedRow = "";
             if ~isempty(app.UITable.Selection)
-                initialSelectedRowID = app.UITable.Data.ID{app.UITable.Selection(1)};
+                initialSelectedRow = app.UITable.Data.ID(app.UITable.Selection(1));
             end
 
             % Verifica se todos os filtros geográficos que envolvem ROIs
             % estão válidos, eventualmente recriando os ROIs.
-            idxROIFilter = find(app.filterTable.Type == "ROI");
-            if ~isempty(idxROIFilter) && any(cellfun(@(x) ~isvalid(x.handle), app.filterTable.Value(idxROIFilter)))
+            roiIdxs = find(contains(app.FilterRules.Type, 'ROI', 'IgnoreCase', true));
+            if ~isempty(roiIdxs) && any(cellfun(@(x) isempty(x) || ~isvalid(x), app.FilterRules.Handle(roiIdxs)))
                 delete(findobj(app.UIAxes1, 'Tag', 'FilterROI'))
 
-                for ii = idxROIFilter'
-                    roiFcn  = class(app.filterTable.Value{ii}.handle);
-                    roiSpec = [structUtil.struct2cellWithFields(app.filterTable.Value{ii}.specification), ...
-                               {'Color', [0.40,0.73,0.88], 'Tag', 'FilterROI', 'UserData', app.filterTable.uuid{ii}}];
-                    if isa(app.filterTable.Value{ii}.handle, 'images.roi.Rectangle')
-                        roiSpec = [roiSpec, {'Rotatable', true}];
+                for ii = roiIdxs'
+                    roiType = app.FilterRules.Type{ii};
+                    roiSpecification = [
+                        structUtil.struct2cellWithFields(jsondecode(app.FilterRules.Value{ii})), ...
+                        {'Color', [0.40,0.73,0.88], 'Tag', 'FilterROI', 'UserData', app.FilterRules.Hash{ii}}
+                    ];
+
+                    positionPropIdx = find(cellfun(@(x) isequal('Position', x), roiSpecification), 1);
+                    if ~isempty(positionPropIdx)
+                        if iscolumn(roiSpecification{positionPropIdx+1})
+                            roiSpecification{positionPropIdx+1} = roiSpecification{positionPropIdx+1}';
+                        end
+                    end
+                    
+                    if strcmp(app.FilterRules.Type{ii}, 'images.roi.Rectangle')
+                        roiSpecification = [roiSpecification, {'Rotatable', true}];
                     end
 
-                    hROI = plot.ROI.draw(roiFcn, app.UIAxes1, roiSpec);
+                    hROI = plot.ROI.draw(roiType, app.UIAxes1, roiSpecification);
 
                     plot.axes.Interactivity.DefaultEnable(app.UIAxes1)                    
                     addlistener(hROI, 'MovingROI', @app.filter_ROICallbacks);
                     addlistener(hROI, 'ROIMoved',  @app.filter_ROICallbacks);
                     addlistener(hROI, 'ObjectBeingDestroyed', @(src, ~)plot.axes.Interactivity.DeleteROIListeners(src));
 
-                    app.filterTable.Value{ii}.handle = hROI;                    
+                    app.FilterRules.Handle{ii} = hROI;                    
                 end
             end
 
             % Filtragem, preenchendo a tabela e o seu label (nº de linhas).
-            idxRFDataHubArray = find(util.TableFiltering(app.rfDataHub, app.filterTable));
-            columnGUINames    = {'ID', 'Frequency', 'Description', 'Fistel', 'Service', 'Station', 'BW', 'Distance'};
+            rfDataHubIdxs = find(util.TableFiltering(app.rfDataHub, app.FilterRules));
+            columnNames   = cellstr(values(app.UITABLE_HEADER_TO_COLUMNS)');
+            [rfDataHubFiltered, sortedIdxs] = sortrows(app.rfDataHub(rfDataHubIdxs, columnNames), 'Distance');
 
-            set(app.UITable, 'Selection', [], 'Data', app.rfDataHub(idxRFDataHubArray, columnGUINames))
-            [app.UITable.Data, idxSort] = sortrows(app.UITable.Data, 'Distance');
-            app.UITable.UserData = idxRFDataHubArray(idxSort);
+            set(app.UITable, 'Selection', [], 'Data', rfDataHubFiltered, 'UserData', rfDataHubIdxs(sortedIdxs))
 
-            NN = numel(idxRFDataHubArray);
+            NN = numel(rfDataHubIdxs);
             MM = height(app.rfDataHub);
             app.tool_tableNRows.Text = sprintf('%d de %d registros\n%.1f %%', NN, MM, (NN/MM)*100);
 
             % Aplicando a seleção inicial da tabela, caso aplicável.
-            idxSelectedRow = 0;
+            selectedRow = 0;
             if ~isempty(app.UITable.Data)
-                if ~isempty(initialSelectedRowID)
-                    [~, idxSelectedRow] = ismember(initialSelectedRowID, app.UITable.Data.ID);
+                if initialSelectedRow.strlength
+                    [~, selectedRow] = ismember(initialSelectedRow, app.UITable.Data.ID);
                 end
 
-                if ~idxSelectedRow
-                    idxSelectedRow = 1;
+                if ~selectedRow
+                    selectedRow = 1;
                 end
 
-                app.UITable.Selection = [idxSelectedRow, 1];
-                scroll(app.UITable, 'Row', idxSelectedRow)
+                app.UITable.Selection = [selectedRow, 1];
+                scroll(app.UITable, 'Row', selectedRow)
             end
 
             layout_AddNewTableStyle(app, 'EditedRows')
@@ -1009,7 +1106,12 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             UITableSelectionChanged(app, struct('Source', app.UITable))
             
             plot.axes.StackingOrder.execute(app.UIAxes1, 'RFDataHub')
-            app.restoreView(1) = struct('ID', 'app.UIAxes1', 'xLim', app.UIAxes1.LatitudeLimits, 'yLim', app.UIAxes1.LongitudeLimits, 'cLim', 'auto');
+            app.restoreView(1) = struct( ...
+                'ID', 'app.UIAxes1', ...
+                'xLim', app.UIAxes1.LatitudeLimits, ...
+                'yLim', app.UIAxes1.LongitudeLimits, ...
+                'cLim', 'auto' ...
+            );
 
             app.progressDialog.Visible = 'hidden';
         end
@@ -1100,7 +1202,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             cla(app.UIAxes2)
             delete(findobj(app.UIAxes3.Children, 'Tag', 'Azimuth'))
 
-            if app.tool_RFLinkButton.UserData && ~isempty(app.UITable.Selection)
+            if app.tool_RFLinkButton.UserData.status && ~isempty(app.UITable.Selection)
                 idxRFDataHub = getRFDataHubIndex(app);
 
                 app.progressDialog.Visible = 'visible';
@@ -1150,7 +1252,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                 operationType char {mustBeMember(operationType, {'OnlyCache', 'Cache+RealTime', 'RealTime'})}
             end
 
-            if app.tool_PDFButton.UserData && ~isempty(app.UITable.Selection)
+            if app.tool_PDFButton.UserData.status && ~isempty(app.UITable.Selection)
                 idxRFDataHub = getRFDataHubIndex(app);
 
                 URL = char(app.rfDataHub.URL(idxRFDataHub));
@@ -1334,8 +1436,14 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     
                 case 'ROIMoved'
                     plot.axes.Interactivity.DefaultEnable(app.UIAxes1)
+
+                    filterIdx = find(cellfun(@(x) isequal(src, x), app.FilterRules.Handle), 1);
+                    app.FilterRules.Value{filterIdx} = jsonencode(plot.ROI.specification(src));
                     
-                    filter_TableFiltering(app)
+                    buildFilterRuleTree(app)
+                    applyFilterRulesToTable(app)
+                    syncFilterRulesToConfig(app)
+
                     if isvalid(event.Source)
                         uistack(event.Source, 'top')
                     end
@@ -1366,7 +1474,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                 app.UIFigure.Name = class.Constants.appName;
         
                 if nargin == 4
-                    app.filterTable = filterTable;
+                    app.FilterRules = filterTable;
                     app.rfDataHubAnnotation = rfDataHubAnnotation;
                 end
 
@@ -1434,8 +1542,8 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     end
 
                 case app.tool_TableVisibility
-                    app.tool_TableVisibility.UserData = mod(app.tool_TableVisibility.UserData + 1, 3);
-                    switch app.tool_TableVisibility.UserData
+                    app.tool_TableVisibility.UserData.layout = mod(app.tool_TableVisibility.UserData.layout + 1, 3);
+                    switch app.tool_TableVisibility.UserData.layout
                         case 0
                             app.UITable.Visible    = 0;
                             app.Document.RowHeight = {24,'1x',0,0};
@@ -1448,12 +1556,12 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     end
 
                 case app.tool_PDFButton
-                    app.tool_PDFButton.UserData = ~app.tool_PDFButton.UserData;
-                    if app.tool_PDFButton.UserData
+                    app.tool_PDFButton.UserData.status = ~app.tool_PDFButton.UserData.status;
+                    if app.tool_PDFButton.UserData.status
                         % Se a tabela estiver ocupando toda a tela, então
                         % muda-se o layout.
-                        if app.tool_TableVisibility.UserData == 2
-                            app.tool_TableVisibility.UserData = 1;
+                        if app.tool_TableVisibility.UserData.layout == 2
+                            app.tool_TableVisibility.UserData.layout = 1;
                             app.Document.RowHeight = {24,'1x',10,'.4x'};
                         end
 
@@ -1464,13 +1572,13 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     misc_getChannelReport(app, 'Cache+RealTime')
 
                 case app.tool_RFLinkButton
-                    app.tool_RFLinkButton.UserData = ~app.tool_RFLinkButton.UserData;
-                    if app.tool_RFLinkButton.UserData
+                    app.tool_RFLinkButton.UserData.status = ~app.tool_RFLinkButton.UserData.status;
+                    if app.tool_RFLinkButton.UserData.status
                         % Se a tabela estiver ocupando toda a tela, então
                         % muda-se o layout. O pause é uma espécie de "drawnow"
                         % e garante que o plot será realizado corretamente.
-                        if app.tool_TableVisibility.UserData == 2
-                            app.tool_TableVisibility.UserData = 1;
+                        if app.tool_TableVisibility.UserData.layout == 2
+                            app.tool_TableVisibility.UserData.layout = 1;
                             app.Document.RowHeight = {24,'1x',10,'.4x'};
                             pause(.100)
                         end
@@ -1591,7 +1699,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             end
 
             referenceTX_UpdatePanel(app, idxRFDataHub)
-            if app.referenceTX_EditionMode.UserData
+            if app.referenceTX_EditionMode.UserData.status
                 referenceTX_EditionModeImageClicked(app, struct('Source', app.referenceTX_EditionMode))
             end
 
@@ -1638,9 +1746,9 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     referenceTX_EditionPanelLayout(app, 'off')
 
                 case app.referenceTX_EditionMode
-                    app.referenceTX_EditionMode.UserData = ~app.referenceTX_EditionMode.UserData;
+                    app.referenceTX_EditionMode.UserData.status = ~app.referenceTX_EditionMode.UserData.status;
                     
-                    if app.referenceTX_EditionMode.UserData
+                    if app.referenceTX_EditionMode.UserData.status
                         referenceTX_EditionPanelLayout(app, 'on')
                         focus(app.referenceTX_Latitude)
                     else
@@ -1669,9 +1777,9 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     referenceRX_EditionPanelLayout(app, 'off')
 
                 case app.referenceRX_EditionMode
-                    app.referenceRX_EditionMode.UserData = ~app.referenceRX_EditionMode.UserData;
+                    app.referenceRX_EditionMode.UserData.status = ~app.referenceRX_EditionMode.UserData.status;
 
-                    if app.referenceRX_EditionMode.UserData
+                    if app.referenceRX_EditionMode.UserData.status
                         referenceRX_EditionPanelLayout(app, 'on')
                         focus(app.referenceRX_Latitude)
                     else
@@ -1719,7 +1827,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
                 case app.filter_SecondaryType12                           % ROI
                     filterType    = 'ROI';
-                    filterDefault = {'ROI:Círculo', 'ROI:Retângulo', 'ROI:Polígono'};
+                    filterDefault = {'images.roi.Circle', 'images.roi.Rectangle', 'images.roi.Polygon'};
 
                 case app.filter_SecondaryType13                           % Padrão de antena
                     filterType    = 'textList3';
@@ -1762,54 +1870,60 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
         % Image clicked function: filter_AddImage
         function filter_addFilter(app, event)
             
-            selectedFilterType      = app.filter_SecondaryTypePanel.SelectedObject;
-            selectedFilterOperation = app.filter_SecondaryValuePanel.SelectedObject;
+            selectedRadioButtonFilterType = app.filter_SecondaryTypePanel.SelectedObject;
+            selectedRadioButtonFilterOperation = app.filter_SecondaryValuePanel.SelectedObject;
 
             if isempty(app.filter_SecondaryReferenceFilter.Value)
-                Order     = 'Node';
-                RelatedID = -1;
+                filterOrder = 'Node';
+                relatedId   = -1;
             else
-                Order     = 'Child';
-                RelatedID = str2double(app.filter_SecondaryReferenceFilter.Value(2:end));
+                filterOrder = 'Child';
+                relatedId   = str2double(app.filter_SecondaryReferenceFilter.Value(2:end));
             end
-            UUID = char(matlab.lang.internal.uuid());
 
-            switch selectedFilterType
-                case {app.filter_SecondaryType1, ...                      % BASE DE DADOS
-                      app.filter_SecondaryType9, ...                      % UF
-                      app.filter_SecondaryType13}                         % PADRÃO DA ANTENA
-                    Value = app.filter_SecondaryTextList.Value;
+            filterType = selectedRadioButtonFilterType.Text;
+            filterOperation = selectedRadioButtonFilterOperation.Text;
+            filterHandle = [];
 
-                case {app.filter_SecondaryType2, ...                      % FREQUÊNCIA
-                      app.filter_SecondaryType3, ...                      % LARGURA BANDA
-                      app.filter_SecondaryType6, ...                      % FISTEL
-                      app.filter_SecondaryType7, ...                      % SERVIÇO
-                      app.filter_SecondaryType8, ...                      % ESTAÇÃO
-                      app.filter_SecondaryType11}                         % DISTÂNCIA
+            switch selectedRadioButtonFilterType
+                case {app.filter_SecondaryType1, ...                        % BASE DE DADOS
+                      app.filter_SecondaryType9, ...                        % UF
+                      app.filter_SecondaryType13}                           % PADRÃO DA ANTENA
+                    filterValue = app.filter_SecondaryTextList.Value;
 
-                    if ismember(selectedFilterOperation.Text, {'<>', '><'})
-                        Value = [app.filter_SecondaryNumValue1.Value, ...
-                                 app.filter_SecondaryNumValue2.Value];
+                case {app.filter_SecondaryType2, ...                        % FREQUÊNCIA
+                      app.filter_SecondaryType3, ...                        % LARGURA BANDA
+                      app.filter_SecondaryType6, ...                        % FISTEL
+                      app.filter_SecondaryType7, ...                        % SERVIÇO
+                      app.filter_SecondaryType8, ...                        % ESTAÇÃO
+                      app.filter_SecondaryType11}                           % DISTÂNCIA
+
+                    if ismember(selectedRadioButtonFilterOperation.Text, {'<>', '><'})
+                        filterValue = [ ...
+                            app.filter_SecondaryNumValue1.Value, ...
+                            app.filter_SecondaryNumValue2.Value ...
+                        ];
                     else
-                        Value = app.filter_SecondaryNumValue1.Value;
+                        filterValue = app.filter_SecondaryNumValue1.Value;
                     end
 
-                case {app.filter_SecondaryType5, ...                      % ENTIDADE
-                      app.filter_SecondaryType10}                         % MUNICÍPIO
-                    Value = app.filter_SecondaryTextFree.Value;
+                case {app.filter_SecondaryType5, ...                        % ENTIDADE
+                      app.filter_SecondaryType10}                           % MUNICÍPIO
+                    filterValue = app.filter_SecondaryTextFree.Value;
 
-                case app.filter_SecondaryType12                           % ROI
+                case app.filter_SecondaryType12                             % ROI
                     hROI = [];
-
+                    
                     plot.axes.Interactivity.DefaultDisable(app.UIAxes1)
                     pause(.1)
 
-                    switch app.filter_SecondaryTextList.Value
-                        case 'ROI:Círculo';   roiFcn = 'drawcircle';    roiNameArgument = '';
-                        case 'ROI:Retângulo'; roiFcn = 'drawrectangle'; roiNameArgument = 'Rotatable=true, ';
-                        case 'ROI:Polígono';  roiFcn = 'drawpolygon';   roiNameArgument = '';
+                    filterType = app.filter_SecondaryTextList.Value;
+                    switch filterType
+                        case 'images.roi.Circle';    roiFcn = 'drawcircle';    roiNameArgument = '';
+                        case 'images.roi.Rectangle'; roiFcn = 'drawrectangle'; roiNameArgument = 'Rotatable=true, ';
+                        case 'images.roi.Polygon';   roiFcn = 'drawpolygon';   roiNameArgument = '';
                     end
-                    eval(sprintf('hROI = %s(app.UIAxes1, Color=[0.40,0.73,0.88], LineWidth=1, Deletable=0, FaceSelectable=0, %sTag="FilterROI", UserData="%s");', roiFcn, roiNameArgument, UUID))
+                    eval(sprintf('hROI = %s(app.UIAxes1, Color=[0.40,0.73,0.88], LineWidth=1, Deletable=0, FaceSelectable=0, %sTag="FilterROI");', roiFcn, roiNameArgument))
                     plot.axes.Interactivity.DefaultEnable(app.UIAxes1)
 
                     if isempty(hROI.Position)
@@ -1819,30 +1933,17 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     addlistener(hROI, 'MovingROI', @app.filter_ROICallbacks);
                     addlistener(hROI, 'ROIMoved',  @app.filter_ROICallbacks);
                     addlistener(hROI, 'ObjectBeingDestroyed', @(src, ~)plot.axes.Interactivity.DeleteROIListeners(src));
-                    Value = struct('handle', hROI, 'specification', plot.ROI.specification(hROI));
+
+                    filterValue  = jsonencode(plot.ROI.specification(hROI));
+                    filterHandle = hROI;
             end
 
-            columnName = selectedFilterType.Tag;
-            [~, columnIndex] = ismember(columnName, app.rfDataHub.Properties.VariableNames);
-            if ~columnIndex
-                columnIndex = -1;                                         % ROI
-            end
+            hash = model.ProjectBase.computeFileRuleHash(filterType, filterOperation, filterValue);
 
-            newFilter     = {Order, height(app.filterTable)+1, RelatedID,           ...
-                             selectedFilterType.Text, selectedFilterOperation.Text, ...
-                             columnIndex, Value, true, UUID};
-            newFilterFlag = true;
-
-            for ii = 1:height(app.filterTable)
-                if isequal(app.filterTable{ii,[4,5,7]}, newFilter([4,5,7]))
-                    newFilterFlag = false;
-                    break
-                end
-            end
-
-            if ~newFilterFlag
+            if ismember(hash, app.FilterRules.Hash)
                 msg = 'Filtro já incluído!';
                 ui.Dialog(app.UIFigure, 'warning', msg);
+
                 if exist('hROI', 'var')
                     delete(hROI)
                 end
@@ -1850,16 +1951,23 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                 return
             end
 
-            filter_addNewFilter(app, newFilter)
-            filter_TreeBuilding(app)
-            filter_TableFiltering(app)
+            if exist('hROI', 'var')
+                hROI.UserData = hash;
+            end
+            
+            columnName = selectedRadioButtonFilterType.Tag;
+            addFilterRule(app, filterOrder, relatedId, filterType, filterOperation, columnName, filterValue, filterHandle, hash)
+
+            buildFilterRuleTree(app)
+            applyFilterRulesToTable(app)
+            syncFilterRulesToConfig(app)
 
         end
 
         % Menu selected function: contextmenu_del, contextmenu_delAll
         function filter_delFilter(app, event)
             
-            if isempty(app.filterTable)
+            if isempty(app.FilterRules)
                 return
             end
 
@@ -1872,14 +1980,14 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     
                     % Identifica se algum dos fluxos selecionado é um nó de
                     % filtros, inserindo na lista os seus filhos.
-                    idx1 = [idx1, find(ismember(app.filterTable.RelatedID, idx1))'];
+                    idx1 = [idx1, find(ismember(app.FilterRules.RelatedID, idx1))'];
 
                 case app.contextmenu_delAll
-                    idx1 = 1:height(app.filterTable);
+                    idx1 = 1:height(app.FilterRules);
             end 
     
             if ~isempty(idx1)
-                filter_delOldFilter(app, idx1);
+                removeFilterRule(app, idx1);
             end
 
         end
@@ -1896,12 +2004,12 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             hCheckedNodeData  = unique(horzcat(hCheckedNode{:}));
 
             disableIndexList  = setdiff(hTreeNodeDataList, hCheckedNodeData);
-            enableIndexList   = setdiff((1:height(app.filterTable))', disableIndexList);
+            enableIndexList   = setdiff((1:height(app.FilterRules))', disableIndexList);
 
-            app.filterTable.Enable(disableIndexList) = false;
-            app.filterTable.Enable(enableIndexList)  = true;
+            app.FilterRules.Enable(disableIndexList) = false;
+            app.FilterRules.Enable(enableIndexList)  = true;
 
-            filter_TableFiltering(app)
+            applyFilterRulesToTable(app)
             
         end
 
@@ -1971,7 +2079,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
         end
 
         % Image clicked function: config_Refresh
-        function config_RefreshImageClicked(app, event)
+        function config_Refreshconfig_RefreshClicked(app, event)
             
             % ToDo: Pendente finalizar a implementação dessa funcionalidade.
             % Não gostei de plotar novamente a coisa... preciso identificar
@@ -1994,7 +2102,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             
             % % Atualiza o plot...
             app.stationInfo.UserData.idxRFDataHub = [];
-            filter_TableFiltering(app)            
+            applyFilterRulesToTable(app)            
 
             app.config_Refresh.Visible = 0;
 
@@ -2076,7 +2184,6 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.tool_TableVisibility = uiimage(app.Toolbar);
             app.tool_TableVisibility.ScaleMethod = 'none';
             app.tool_TableVisibility.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
-            app.tool_TableVisibility.Tooltip = {'Visibilidade da tabela'};
             app.tool_TableVisibility.Layout.Row = [1 3];
             app.tool_TableVisibility.Layout.Column = 3;
             app.tool_TableVisibility.ImageSource = 'View_16.png';
@@ -2085,7 +2192,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.tool_RFLinkButton = uiimage(app.Toolbar);
             app.tool_RFLinkButton.ScaleMethod = 'none';
             app.tool_RFLinkButton.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
-            app.tool_RFLinkButton.Tooltip = {'Perfil de terreno entre registro selecionado (TX) '; 'e estação de referência (RX)'};
+            app.tool_RFLinkButton.Enable = 'off';
             app.tool_RFLinkButton.Layout.Row = [1 3];
             app.tool_RFLinkButton.Layout.Column = 4;
             app.tool_RFLinkButton.ImageSource = 'Publish_HTML_16.png';
@@ -2094,7 +2201,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.tool_PDFButton = uiimage(app.Toolbar);
             app.tool_PDFButton.ScaleMethod = 'none';
             app.tool_PDFButton.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
-            app.tool_PDFButton.Tooltip = {'Documento relacionado ao registro selecionado'; '(limitado à radiodifusão)'};
+            app.tool_PDFButton.Enable = 'off';
             app.tool_PDFButton.Layout.Row = [1 3];
             app.tool_PDFButton.Layout.Column = 5;
             app.tool_PDFButton.ImageSource = 'Publish_PDF_16.png';
@@ -2112,7 +2219,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.tool_ExportButton = uiimage(app.Toolbar);
             app.tool_ExportButton.ScaleMethod = 'none';
             app.tool_ExportButton.ImageClickedFcn = createCallbackFcn(app, @Toolbar_exportButtonPushed, true);
-            app.tool_ExportButton.Tooltip = {'Exporta planilha filtrada'};
+            app.tool_ExportButton.Enable = 'off';
             app.tool_ExportButton.Layout.Row = [1 3];
             app.tool_ExportButton.Layout.Column = 7;
             app.tool_ExportButton.ImageSource = 'Export_16.png';
@@ -2160,8 +2267,9 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             % Create referenceTX_TitleGrid
             app.referenceTX_TitleGrid = uigridlayout(app.SubGrid1);
             app.referenceTX_TitleGrid.ColumnWidth = {22, '1x', 18, 18, 0, 0};
-            app.referenceTX_TitleGrid.RowHeight = {36};
+            app.referenceTX_TitleGrid.RowHeight = {18, 18};
             app.referenceTX_TitleGrid.ColumnSpacing = 5;
+            app.referenceTX_TitleGrid.RowSpacing = 0;
             app.referenceTX_TitleGrid.Padding = [0 0 0 0];
             app.referenceTX_TitleGrid.Layout.Row = 1;
             app.referenceTX_TitleGrid.Layout.Column = [1 3];
@@ -2169,7 +2277,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
             % Create referenceTX_Icon
             app.referenceTX_Icon = uiimage(app.referenceTX_TitleGrid);
-            app.referenceTX_Icon.Layout.Row = 1;
+            app.referenceTX_Icon.Layout.Row = [1 2];
             app.referenceTX_Icon.Layout.Column = 1;
             app.referenceTX_Icon.ImageSource = 'Pin_32.png';
 
@@ -2178,7 +2286,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.referenceTX_Label.VerticalAlignment = 'bottom';
             app.referenceTX_Label.FontSize = 11;
             app.referenceTX_Label.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.referenceTX_Label.Layout.Row = 1;
+            app.referenceTX_Label.Layout.Row = [1 2];
             app.referenceTX_Label.Layout.Column = 2;
             app.referenceTX_Label.Interpreter = 'html';
             app.referenceTX_Label.Text = {'<b>Estação transmissora - TX</b>'; '<font style="font-size: 9px; color: gray;">(Registro selecionado em tabela)</font>'};
@@ -2188,39 +2296,31 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.referenceTX_Refresh.ScaleMethod = 'none';
             app.referenceTX_Refresh.ImageClickedFcn = createCallbackFcn(app, @referenceTX_EditionModeImageClicked, true);
             app.referenceTX_Refresh.Visible = 'off';
-            app.referenceTX_Refresh.Tooltip = {'Retorna aos valores constantes em base'};
-            app.referenceTX_Refresh.Layout.Row = 1;
+            app.referenceTX_Refresh.Layout.Row = 2;
             app.referenceTX_Refresh.Layout.Column = 3;
-            app.referenceTX_Refresh.VerticalAlignment = 'bottom';
             app.referenceTX_Refresh.ImageSource = 'Refresh_18.png';
 
             % Create referenceTX_EditionMode
             app.referenceTX_EditionMode = uiimage(app.referenceTX_TitleGrid);
             app.referenceTX_EditionMode.ImageClickedFcn = createCallbackFcn(app, @referenceTX_EditionModeImageClicked, true);
-            app.referenceTX_EditionMode.Tooltip = {'Habilita painel de edição'};
-            app.referenceTX_EditionMode.Layout.Row = 1;
+            app.referenceTX_EditionMode.Layout.Row = 2;
             app.referenceTX_EditionMode.Layout.Column = 4;
-            app.referenceTX_EditionMode.VerticalAlignment = 'bottom';
             app.referenceTX_EditionMode.ImageSource = 'Edit_32.png';
 
             % Create referenceTX_EditionConfirm
             app.referenceTX_EditionConfirm = uiimage(app.referenceTX_TitleGrid);
             app.referenceTX_EditionConfirm.ImageClickedFcn = createCallbackFcn(app, @referenceTX_EditionModeImageClicked, true);
             app.referenceTX_EditionConfirm.Enable = 'off';
-            app.referenceTX_EditionConfirm.Tooltip = {'Confirma edição'};
-            app.referenceTX_EditionConfirm.Layout.Row = 1;
+            app.referenceTX_EditionConfirm.Layout.Row = 2;
             app.referenceTX_EditionConfirm.Layout.Column = 5;
-            app.referenceTX_EditionConfirm.VerticalAlignment = 'bottom';
             app.referenceTX_EditionConfirm.ImageSource = 'Ok_32Green.png';
 
             % Create referenceTX_EditionCancel
             app.referenceTX_EditionCancel = uiimage(app.referenceTX_TitleGrid);
             app.referenceTX_EditionCancel.ImageClickedFcn = createCallbackFcn(app, @referenceTX_EditionModeImageClicked, true);
             app.referenceTX_EditionCancel.Enable = 'off';
-            app.referenceTX_EditionCancel.Tooltip = {'Cancela edição'};
-            app.referenceTX_EditionCancel.Layout.Row = 1;
+            app.referenceTX_EditionCancel.Layout.Row = 2;
             app.referenceTX_EditionCancel.Layout.Column = 6;
-            app.referenceTX_EditionCancel.VerticalAlignment = 'bottom';
             app.referenceTX_EditionCancel.ImageSource = 'Delete_32Red.png';
 
             % Create referenceTX_Panel
@@ -2546,7 +2646,6 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.filter_SecondaryNumValue1.ValueDisplayFormat = '%10.10g';
             app.filter_SecondaryNumValue1.FontSize = 11;
             app.filter_SecondaryNumValue1.FontColor = [0.149 0.149 0.149];
-            app.filter_SecondaryNumValue1.Visible = 'off';
             app.filter_SecondaryNumValue1.Layout.Row = 1;
             app.filter_SecondaryNumValue1.Layout.Column = 1;
             app.filter_SecondaryNumValue1.Value = 30;
@@ -2582,6 +2681,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             % Create filter_SecondaryTextList
             app.filter_SecondaryTextList = uidropdown(app.filter_SecondaryValueGrid);
             app.filter_SecondaryTextList.Items = {};
+            app.filter_SecondaryTextList.Visible = 'off';
             app.filter_SecondaryTextList.FontSize = 11;
             app.filter_SecondaryTextList.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.filter_SecondaryTextList.BackgroundColor = [1 1 1];
@@ -2651,8 +2751,9 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             % Create referenceRX_TitleGrid
             app.referenceRX_TitleGrid = uigridlayout(app.SubGrid2);
             app.referenceRX_TitleGrid.ColumnWidth = {22, '1x', 18, 18, 0, 0};
-            app.referenceRX_TitleGrid.RowHeight = {36};
+            app.referenceRX_TitleGrid.RowHeight = {18, 18};
             app.referenceRX_TitleGrid.ColumnSpacing = 5;
+            app.referenceRX_TitleGrid.RowSpacing = 0;
             app.referenceRX_TitleGrid.Padding = [0 0 0 0];
             app.referenceRX_TitleGrid.Layout.Row = 1;
             app.referenceRX_TitleGrid.Layout.Column = [1 2];
@@ -2660,7 +2761,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
             % Create referenceRX_Icon
             app.referenceRX_Icon = uiimage(app.referenceRX_TitleGrid);
-            app.referenceRX_Icon.Layout.Row = 1;
+            app.referenceRX_Icon.Layout.Row = [1 2];
             app.referenceRX_Icon.Layout.Column = 1;
             app.referenceRX_Icon.ImageSource = 'Pin_32Triangle.png';
 
@@ -2669,8 +2770,8 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.referenceRX_Label.VerticalAlignment = 'bottom';
             app.referenceRX_Label.FontSize = 11;
             app.referenceRX_Label.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.referenceRX_Label.Layout.Row = 1;
-            app.referenceRX_Label.Layout.Column = [2 5];
+            app.referenceRX_Label.Layout.Row = [1 2];
+            app.referenceRX_Label.Layout.Column = 2;
             app.referenceRX_Label.Interpreter = 'html';
             app.referenceRX_Label.Text = {'<b>Estação receptora - RX</b>'; '<font style="font-size: 9px; color: gray;">(Referência coluna "Distância" e enlace)</font>'};
 
@@ -2679,39 +2780,31 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.referenceRX_Refresh.ScaleMethod = 'none';
             app.referenceRX_Refresh.ImageClickedFcn = createCallbackFcn(app, @referenceRX_EditionModeImageClicked, true);
             app.referenceRX_Refresh.Visible = 'off';
-            app.referenceRX_Refresh.Tooltip = {'Retorna aos valores iniciais'};
-            app.referenceRX_Refresh.Layout.Row = 1;
+            app.referenceRX_Refresh.Layout.Row = 2;
             app.referenceRX_Refresh.Layout.Column = 3;
-            app.referenceRX_Refresh.VerticalAlignment = 'bottom';
             app.referenceRX_Refresh.ImageSource = 'Refresh_18.png';
 
             % Create referenceRX_EditionMode
             app.referenceRX_EditionMode = uiimage(app.referenceRX_TitleGrid);
             app.referenceRX_EditionMode.ImageClickedFcn = createCallbackFcn(app, @referenceRX_EditionModeImageClicked, true);
-            app.referenceRX_EditionMode.Tooltip = {'Habilita painel de edição'};
-            app.referenceRX_EditionMode.Layout.Row = 1;
+            app.referenceRX_EditionMode.Layout.Row = 2;
             app.referenceRX_EditionMode.Layout.Column = 4;
-            app.referenceRX_EditionMode.VerticalAlignment = 'bottom';
             app.referenceRX_EditionMode.ImageSource = 'Edit_32.png';
 
             % Create referenceRX_EditionConfirm
             app.referenceRX_EditionConfirm = uiimage(app.referenceRX_TitleGrid);
             app.referenceRX_EditionConfirm.ImageClickedFcn = createCallbackFcn(app, @referenceRX_EditionModeImageClicked, true);
             app.referenceRX_EditionConfirm.Enable = 'off';
-            app.referenceRX_EditionConfirm.Tooltip = {'Confirma edição'};
-            app.referenceRX_EditionConfirm.Layout.Row = 1;
+            app.referenceRX_EditionConfirm.Layout.Row = 2;
             app.referenceRX_EditionConfirm.Layout.Column = 5;
-            app.referenceRX_EditionConfirm.VerticalAlignment = 'bottom';
             app.referenceRX_EditionConfirm.ImageSource = 'Ok_32Green.png';
 
             % Create referenceRX_EditionCancel
             app.referenceRX_EditionCancel = uiimage(app.referenceRX_TitleGrid);
             app.referenceRX_EditionCancel.ImageClickedFcn = createCallbackFcn(app, @referenceRX_EditionModeImageClicked, true);
             app.referenceRX_EditionCancel.Enable = 'off';
-            app.referenceRX_EditionCancel.Tooltip = {'Cancela edição'};
-            app.referenceRX_EditionCancel.Layout.Row = 1;
+            app.referenceRX_EditionCancel.Layout.Row = 2;
             app.referenceRX_EditionCancel.Layout.Column = 6;
-            app.referenceRX_EditionCancel.VerticalAlignment = 'bottom';
             app.referenceRX_EditionCancel.ImageSource = 'Delete_32Red.png';
 
             % Create filter_SecondaryTypePanel
@@ -2863,12 +2956,10 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             % Create config_Refresh
             app.config_Refresh = uiimage(app.SubGrid3);
             app.config_Refresh.ScaleMethod = 'none';
-            app.config_Refresh.ImageClickedFcn = createCallbackFcn(app, @config_RefreshImageClicked, true);
+            app.config_Refresh.ImageClickedFcn = createCallbackFcn(app, @config_Refreshconfig_RefreshClicked, true);
             app.config_Refresh.Visible = 'off';
-            app.config_Refresh.Tooltip = {'Volta à configuração inicial'};
             app.config_Refresh.Layout.Row = 1;
             app.config_Refresh.Layout.Column = 2;
-            app.config_Refresh.VerticalAlignment = 'bottom';
             app.config_Refresh.ImageSource = 'Refresh_18.png';
 
             % Create config_geoAxesPanel
@@ -3128,7 +3219,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
             % Create Document
             app.Document = uigridlayout(app.GridLayout);
-            app.Document.ColumnWidth = {5, 50, '1x', 10, 22, 22, '1x'};
+            app.Document.ColumnWidth = {5, 50, '1x', 0, 0, 0, 0};
             app.Document.RowHeight = {24, '1x', 10, '0.4x'};
             app.Document.ColumnSpacing = 0;
             app.Document.RowSpacing = 0;
@@ -3210,7 +3301,6 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.axesTool_RestoreView = uiimage(app.AxesToolbar);
             app.axesTool_RestoreView.ScaleMethod = 'none';
             app.axesTool_RestoreView.ImageClickedFcn = createCallbackFcn(app, @AxesToolbar_InteractionImageClicked, true);
-            app.axesTool_RestoreView.Tooltip = {'RestoreView'};
             app.axesTool_RestoreView.Layout.Row = 1;
             app.axesTool_RestoreView.Layout.Column = 1;
             app.axesTool_RestoreView.ImageSource = 'Home_18.png';
@@ -3219,7 +3309,6 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.axesTool_RegionZoom = uiimage(app.AxesToolbar);
             app.axesTool_RegionZoom.ScaleMethod = 'none';
             app.axesTool_RegionZoom.ImageClickedFcn = createCallbackFcn(app, @AxesToolbar_InteractionImageClicked, true);
-            app.axesTool_RegionZoom.Tooltip = {'RegionZoom'};
             app.axesTool_RegionZoom.Layout.Row = 1;
             app.axesTool_RegionZoom.Layout.Column = 2;
             app.axesTool_RegionZoom.ImageSource = 'ZoomRegion_20.png';
@@ -3234,26 +3323,22 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.DockModule.Layout.Column = [5 6];
             app.DockModule.BackgroundColor = [0.2 0.2 0.2];
 
-            % Create dockModule_Close
-            app.dockModule_Close = uiimage(app.DockModule);
-            app.dockModule_Close.ScaleMethod = 'none';
-            app.dockModule_Close.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
-            app.dockModule_Close.Tag = 'DRIVETEST';
-            app.dockModule_Close.Tooltip = {'Fecha módulo'};
-            app.dockModule_Close.Layout.Row = 1;
-            app.dockModule_Close.Layout.Column = 2;
-            app.dockModule_Close.ImageSource = 'Delete_12SVG_white.svg';
-
             % Create dockModule_Undock
             app.dockModule_Undock = uiimage(app.DockModule);
             app.dockModule_Undock.ScaleMethod = 'none';
             app.dockModule_Undock.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
-            app.dockModule_Undock.Tag = 'DRIVETEST';
             app.dockModule_Undock.Enable = 'off';
-            app.dockModule_Undock.Tooltip = {'Reabre módulo em outra janela'};
             app.dockModule_Undock.Layout.Row = 1;
             app.dockModule_Undock.Layout.Column = 1;
             app.dockModule_Undock.ImageSource = 'Undock_18White.png';
+
+            % Create dockModule_Close
+            app.dockModule_Close = uiimage(app.DockModule);
+            app.dockModule_Close.ScaleMethod = 'none';
+            app.dockModule_Close.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
+            app.dockModule_Close.Layout.Row = 1;
+            app.dockModule_Close.Layout.Column = 2;
+            app.dockModule_Close.ImageSource = 'Delete_12SVG_white.svg';
 
             % Create ContextMenu
             app.ContextMenu = uicontextmenu(app.UIFigure);

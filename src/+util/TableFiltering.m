@@ -40,8 +40,8 @@ function fLogical = TableFiltering(hTable, filterTable)
                     end
     
                     switch filterTable.Type{jj}
-                        case 'ROI'
-                            tempLogical = or(tempLogical, inROI(filterTable.Value{jj}.handle, hTable.Latitude, hTable.Longitude));
+                        case {'images.roi.Circle', 'images.roi.Rectangle', 'images.roi.Polygon'}
+                            tempLogical = or(tempLogical, inROI(filterTable.Handle{jj}, hTable.Latitude, hTable.Longitude));
                             
                         otherwise
                             Fcn = filterFcn(filterTable.Operation{jj}, filterTable.Value{jj}, fTolerance);

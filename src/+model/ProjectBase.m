@@ -78,6 +78,11 @@ classdef (Abstract) ProjectBase
         end
 
         %-----------------------------------------------------------------%
+        function hash = computeFileRuleHash(filterType, filterOperation, filterValue)
+            hash = Hash.sha1(sprintf('%s - %s - %s', filterType, filterOperation, strjoin(string(filterValue), ' - ')));
+        end
+
+        %-----------------------------------------------------------------%
         function varargout = initializeCustomTable(tableId, varargin)
             arguments
                 tableId {mustBeMember(tableId, {'STATIONS', 'POINTS', 'ANNOTATION'})}

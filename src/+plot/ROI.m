@@ -2,25 +2,19 @@ classdef (Abstract) ROI
 
     methods (Static = true)
         %-----------------------------------------------------------------%
-        function hROI = draw(Type, hAxes, customProp)
-            
-            % ToDo
-            % Em 16/03/25: pendente concetrar nessa classe a criação desse 
-            % tipo de plot. Ainda há criação de ROIs nos módulos winDriveTest 
-            % e winRFDataHub.
-
+        function hROI = draw(roiType, hAxes, customProp)
             arguments
-                Type char {mustBeMember(Type, {'images.roi.Line',      ...
-                                               'images.roi.Circle',    ...
-                                               'images.roi.Rectangle', ...
-                                               'images.roi.Polygon'})}
+                roiType char {mustBeMember(roiType, {'images.roi.Line',      ...
+                                                     'images.roi.Circle',    ...
+                                                     'images.roi.Rectangle', ...
+                                                     'images.roi.Polygon'})}
                 hAxes
                 customProp cell = {}
             end
         
-            defaultProp = plot.ROI.defaultProperties(Type);
+            defaultProp = plot.ROI.defaultProperties(roiType);
         
-            switch Type
+            switch roiType
                 case 'images.roi.Line'
                     hROI = images.roi.Line(hAxes, defaultProp{:});
                 case 'images.roi.Circle'
@@ -37,15 +31,15 @@ classdef (Abstract) ROI
         end
         
         %-----------------------------------------------------------------%
-        function defaultProp = defaultProperties(Type)
+        function defaultProp = defaultProperties(roiType)
             arguments
-                Type char {mustBeMember(Type, {'images.roi.Line',      ...
-                                               'images.roi.Circle',    ...
-                                               'images.roi.Rectangle', ...
-                                               'images.roi.Polygon'})}
+                roiType char {mustBeMember(roiType, {'images.roi.Line',      ...
+                                                     'images.roi.Circle',    ...
+                                                     'images.roi.Rectangle', ...
+                                                     'images.roi.Polygon'})}
             end
 
-            switch Type
+            switch roiType
                 case 'images.roi.Line'
                     defaultProp = {'Color', 'red',  ...
                                    'MarkerSize', 4, ...
@@ -58,7 +52,7 @@ classdef (Abstract) ROI
                                    'FaceSelectable', 0};
             end
         
-            if Type == "Rectangle"
+            if roiType == "Rectangle"
                 defaultProp = [defaultProp, {'Rotatable', true}];
             end
         end
@@ -70,16 +64,20 @@ classdef (Abstract) ROI
             
             switch class(hROI)
                 case 'images.roi.Line'
-                    spec = struct('Position', hROI.Position);        
+                    spec = struct('Position', round(hROI.Position, 6));
+                
                 case 'images.roi.Circle'
-                    spec = struct('Center', hROI.Center, 'Radius', hROI.Radius);        
+                    spec = struct('Center',   round(hROI.Center,   6), 'Radius', round(hROI.Radius, 6));
+                
                 case 'images.roi.Rectangle'
-                    spec = struct('Position', hROI.Position, 'RotationAngle', hROI.RotationAngle);        
+                    spec = struct('Position', round(hROI.Position, 6), 'RotationAngle', round(hROI.RotationAngle, 6));
+                
                 case 'images.roi.Polygon'
-                    spec = struct('Position', hROI.Position);        
+                    spec = struct('Position', round(hROI.Position, 6));
+
                 case 'map.graphics.chart.primitive.Polygon'
-                    spec = struct('Latitude',  struct(hROI.ShapeData).InternalData.VertexCoordinate1, ...
-                                  'Longitude', struct(hROI.ShapeData).InternalData.VertexCoordinate2);
+                    spec = struct('Latitude',  round(struct(hROI.ShapeData).InternalData.VertexCoordinate1, 6), ...
+                                  'Longitude', round(struct(hROI.ShapeData).InternalData.VertexCoordinate2), 6);
             end
         end
     end

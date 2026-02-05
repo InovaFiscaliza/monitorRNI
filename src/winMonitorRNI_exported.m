@@ -30,8 +30,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         file_FileSortMethod      matlab.ui.control.DropDown
         file_ModuleIntro         matlab.ui.control.Label
         file_toolGrid            matlab.ui.container.GridLayout
-        tool_Separator           matlab.ui.control.Image
         tool_MergeFiles          matlab.ui.control.Image
+        tool_Separator           matlab.ui.control.Image
         tool_ReadFiles           matlab.ui.control.Image
         Tab2_MonitoringPlan      matlab.ui.container.Tab
         Tab3_ExternalRequest     matlab.ui.container.Tab
@@ -196,7 +196,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         
                                     case 'onSimulationMode'
                                         if app.General.operationMode.Simulation
-                                            Toolbar_SelectFileToReadImageClicked(app)
+                                            Toolbar_SelectFileToReadtool_ReadFilesClicked(app)
         
                                             % Muda programaticamente o modo p/ ARQUIVOS.
                                             app.Tab1Button.Value = true;                    
@@ -384,7 +384,9 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                         app.Tab4Button;
                         app.Tab5Button;
                         app.FileTree;
-                        app.FileMetadata                        
+                        app.FileMetadata;
+                        app.tool_ReadFiles;
+                        app.tool_MergeFiles
                     };                            
                     ui.CustomizationBase.getElementsDataTag(elToModify);
 
@@ -395,6 +397,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                     try
                         sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                            struct('appName', appName, 'dataTag', app.tool_ReadFiles.UserData.id,  'tooltip', struct('defaultPosition', 'top', 'textContent', 'Seleciona arquivos')), ...
+                            struct('appName', appName, 'dataTag', app.tool_MergeFiles.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Mescla localidade de agrupamento')), ...
                             struct('appName', appName, 'dataTag', app.Tab1Button.UserData.id, 'generation', 1, 'class', 'tab-navigator-button'), ...
                             struct('appName', appName, 'dataTag', app.Tab2Button.UserData.id, 'generation', 1, 'class', 'tab-navigator-button'), ...
                             struct('appName', appName, 'dataTag', app.Tab3Button.UserData.id, 'generation', 1, 'class', 'tab-navigator-button'), ...
@@ -1013,7 +1017,7 @@ msgQuestion = 'Deseja fechar o aplicativo?';
         end
 
         % Image clicked function: tool_ReadFiles
-        function Toolbar_SelectFileToReadImageClicked(app, event)
+        function Toolbar_SelectFileToReadtool_ReadFilesClicked(app, event)
 
             d = [];
             fileFullName = {};
@@ -1242,21 +1246,10 @@ msgQuestion = 'Deseja fechar o aplicativo?';
             % Create tool_ReadFiles
             app.tool_ReadFiles = uiimage(app.file_toolGrid);
             app.tool_ReadFiles.ScaleMethod = 'none';
-            app.tool_ReadFiles.ImageClickedFcn = createCallbackFcn(app, @Toolbar_SelectFileToReadImageClicked, true);
-            app.tool_ReadFiles.Tooltip = {'Seleciona arquivos'};
-            app.tool_ReadFiles.Layout.Row = 2;
+            app.tool_ReadFiles.ImageClickedFcn = createCallbackFcn(app, @Toolbar_SelectFileToReadtool_ReadFilesClicked, true);
+            app.tool_ReadFiles.Layout.Row = [1 3];
             app.tool_ReadFiles.Layout.Column = 1;
             app.tool_ReadFiles.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'Import_16.png');
-
-            % Create tool_MergeFiles
-            app.tool_MergeFiles = uiimage(app.file_toolGrid);
-            app.tool_MergeFiles.ScaleMethod = 'none';
-            app.tool_MergeFiles.ImageClickedFcn = createCallbackFcn(app, @Toolbar_MergeFilesImageClicked, true);
-            app.tool_MergeFiles.Enable = 'off';
-            app.tool_MergeFiles.Tooltip = {'Mescla informações'};
-            app.tool_MergeFiles.Layout.Row = [1 3];
-            app.tool_MergeFiles.Layout.Column = 3;
-            app.tool_MergeFiles.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'Merge_18.png');
 
             % Create tool_Separator
             app.tool_Separator = uiimage(app.file_toolGrid);
@@ -1265,6 +1258,15 @@ msgQuestion = 'Deseja fechar o aplicativo?';
             app.tool_Separator.Layout.Row = [1 3];
             app.tool_Separator.Layout.Column = 2;
             app.tool_Separator.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV.svg');
+
+            % Create tool_MergeFiles
+            app.tool_MergeFiles = uiimage(app.file_toolGrid);
+            app.tool_MergeFiles.ScaleMethod = 'none';
+            app.tool_MergeFiles.ImageClickedFcn = createCallbackFcn(app, @Toolbar_MergeFilesImageClicked, true);
+            app.tool_MergeFiles.Enable = 'off';
+            app.tool_MergeFiles.Layout.Row = [1 3];
+            app.tool_MergeFiles.Layout.Column = 3;
+            app.tool_MergeFiles.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'Merge_18.png');
 
             % Create SubTabGroup
             app.SubTabGroup = uitabgroup(app.file_Grid);

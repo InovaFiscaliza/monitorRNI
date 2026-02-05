@@ -5,8 +5,8 @@ classdef winConfig_exported < matlab.apps.AppBase
         UIFigure                      matlab.ui.Figure
         GridLayout                    matlab.ui.container.GridLayout
         DockModule                    matlab.ui.container.GridLayout
-        dockModule_Undock             matlab.ui.control.Image
         dockModule_Close              matlab.ui.control.Image
+        dockModule_Undock             matlab.ui.control.Image
         SubTabGroup                   matlab.ui.container.TabGroup
         SubTab1                       matlab.ui.container.Tab
         SubGrid1                      matlab.ui.container.GridLayout
@@ -174,9 +174,29 @@ classdef winConfig_exported < matlab.apps.AppBase
             
             switch tabIndex
                 case 1
-                    elDataTag = ui.CustomizationBase.getElementsDataTag({app.versionInfo});
-                    if ~isempty(elDataTag)
-                        ui.TextView.startup(app.jsBackDoor, app.versionInfo, class(app));
+                    appName = class(app);
+                    elToModify = {
+                        app.versionInfo;
+                        app.tool_simulationMode;
+                        app.tool_openDevTools;
+                        app.dockModule_Undock;
+                        app.dockModule_Close
+                    };
+                    ui.CustomizationBase.getElementsDataTag(elToModify);
+
+                    try
+                        ui.TextView.startup(app.jsBackDoor, app.versionInfo, appName);
+                    catch
+                    end
+
+                    try
+                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                            struct('appName', appName, 'dataTag', app.tool_simulationMode.UserData.id, 'tooltip', struct('defaultPosition', 'top',    'textContent', 'Leitura arquivos de simulação')), ...
+                            struct('appName', appName, 'dataTag', app.tool_openDevTools.UserData.id,   'tooltip', struct('defaultPosition', 'top',    'textContent', 'Abre DevTools')), ...
+                            struct('appName', appName, 'dataTag', app.dockModule_Undock.UserData.id,   'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Reabre módulo em outra janela')), ...
+                            struct('appName', appName, 'dataTag', app.dockModule_Close.UserData.id,    'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Fecha módulo')) ...
+                        });
+                    catch
                     end
 
                 case 2
@@ -936,7 +956,6 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.tool_simulationMode = uiimage(app.Toolbar);
             app.tool_simulationMode.ScaleMethod = 'none';
             app.tool_simulationMode.ImageClickedFcn = createCallbackFcn(app, @Toolbar_SimulationModeButtonPushed, true);
-            app.tool_simulationMode.Tooltip = {'Leitura arquivos de simulação'};
             app.tool_simulationMode.Layout.Row = [1 3];
             app.tool_simulationMode.Layout.Column = 1;
             app.tool_simulationMode.ImageSource = 'Import_16.png';
@@ -946,7 +965,6 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.tool_openDevTools.ScaleMethod = 'none';
             app.tool_openDevTools.ImageClickedFcn = createCallbackFcn(app, @Toolbar_OpenDevToolsClicked, true);
             app.tool_openDevTools.Enable = 'off';
-            app.tool_openDevTools.Tooltip = {'Abre DevTools'};
             app.tool_openDevTools.Layout.Row = [1 3];
             app.tool_openDevTools.Layout.Column = 4;
             app.tool_openDevTools.ImageSource = 'Debug_18.png';
@@ -1897,26 +1915,22 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.DockModule.Layout.Column = [3 4];
             app.DockModule.BackgroundColor = [0.2 0.2 0.2];
 
-            % Create dockModule_Close
-            app.dockModule_Close = uiimage(app.DockModule);
-            app.dockModule_Close.ScaleMethod = 'none';
-            app.dockModule_Close.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
-            app.dockModule_Close.Tag = 'DRIVETEST';
-            app.dockModule_Close.Tooltip = {'Fecha módulo'};
-            app.dockModule_Close.Layout.Row = 1;
-            app.dockModule_Close.Layout.Column = 2;
-            app.dockModule_Close.ImageSource = 'Delete_12SVG_white.svg';
-
             % Create dockModule_Undock
             app.dockModule_Undock = uiimage(app.DockModule);
             app.dockModule_Undock.ScaleMethod = 'none';
             app.dockModule_Undock.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
-            app.dockModule_Undock.Tag = 'DRIVETEST';
             app.dockModule_Undock.Enable = 'off';
-            app.dockModule_Undock.Tooltip = {'Reabre módulo em outra janela'};
             app.dockModule_Undock.Layout.Row = 1;
             app.dockModule_Undock.Layout.Column = 1;
             app.dockModule_Undock.ImageSource = 'Undock_18White.png';
+
+            % Create dockModule_Close
+            app.dockModule_Close = uiimage(app.DockModule);
+            app.dockModule_Close.ScaleMethod = 'none';
+            app.dockModule_Close.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
+            app.dockModule_Close.Layout.Row = 1;
+            app.dockModule_Close.Layout.Column = 2;
+            app.dockModule_Close.ImageSource = 'Delete_12SVG_white.svg';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
