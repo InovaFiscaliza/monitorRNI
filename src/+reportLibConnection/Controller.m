@@ -47,7 +47,7 @@ classdef (Abstract) Controller
             rootFolder = mainApp.rootFolder;
 
             [projectFolder, ...
-             programDataFolder] = appEngine.util.Path(class.Constants.appName, rootFolder);
+             programDataFolder] = appEngine.util.Path(appName, rootFolder);
 
             issueId = num2str(projectData.modules.(context).ui.issue);
             docName = projectData.modules.(context).ui.reportModel;
@@ -71,7 +71,7 @@ classdef (Abstract) Controller
             stationTableGlobal = projectData.modules.MONITORINGPLAN.stationTable;
             pointsTableGlobal  = projectData.modules.EXTERNALREQUEST.pointsTable;
             pointsTableGlobal  = model.ProjectBase.prepareTableForExport(pointsTableGlobal, 'POINTS', '-');
-            
+
             %-------------------------------------------------------------%
             % reportInfo
             %
@@ -91,7 +91,7 @@ classdef (Abstract) Controller
                                                    'DocumentType',               docType,                             ...
                                                    'Script',                     docScript,                           ...
                                                    'Version',                    docVersion),                         ...
-                                'Function', struct(... 
+                                'Function', struct(...
                                                    ... % APLICÁVEIS ÀS SEÇÕES GERAIS DO RELATÓRIO
                                                    'cfg_Context',                jsonencode(generalSettings.context.(context)), ...
                                                    'cfg_DataBinning',            jsonencode(generalSettings.reportLib.dataBinning), ...
@@ -153,15 +153,14 @@ classdef (Abstract) Controller
                                                    'img_Plot',                  'reportLibConnection.Plot.Controller(reportInfo, analyzedData, imgSettings)'), ...
                                 'Project',  projectData, ...
                                 'Context',  context,     ...
-                                'Object',   EMFieldObj,    ...
+                                'Object',   EMFieldObj,  ...
                                 'Settings', generalSettings);
-            
+
             fieldsUnnecessary = {'rootFolder', 'entryPointFolder', 'tempSessionFolder', 'ctfRoot'};
             fieldsUnnecessary(cellfun(@(x) ~isfield(reportInfo.Version.application, x), fieldsUnnecessary)) = [];
             if ~isempty(fieldsUnnecessary)
                 reportInfo.Version.application = rmfield(reportInfo.Version.application, fieldsUnnecessary);
             end
-
 
             %-------------------------------------------------------------%
             % dataOverview
@@ -251,29 +250,26 @@ classdef (Abstract) Controller
                                              'HTML',    struct('Component', {}, 'Source', {}, 'Value', {}));
             end
 
-
             %-------------------------------------------------------------%
             % Conexão com reportLib, parte do repositório "SupportPackages"
             %-------------------------------------------------------------%
             HTMLDocContent = reportLib.Controller(reportInfo, dataOverview);
 
-
             %-------------------------------------------------------------%
             % Exclui container criado para os plots, caso aplicável.
-            %-------------------------------------------------------------%            
+            %-------------------------------------------------------------%
             hFigure    = mainApp.UIFigure;
             hContainer = findobj(hFigure, 'Tag', 'reportGeneratorContainer');
             if ~isempty(hContainer)
                 delete(hContainer)
             end
 
-
             %-------------------------------------------------------------%
             % Em sendo a versão "Preliminar", apenas apresenta o html no
             % navegador. Por outro lado, em sendo a versão "Definitiva",
             % salva-se o arquivo ZIP em pasta local.
             %-------------------------------------------------------------%
-            [baseFullFileName, baseFileName] = appEngine.util.DefaultFileName(generalSettings.fileFolder.tempPath, 'monitorRNI_FinalReport', issueId);
+            [baseFullFileName, baseFileName] = appEngine.util.DefaultFileName(generalSettings.fileFolder.tempPath, [appName '_FinalReport'], issueId);
             HTMLFile = [baseFullFileName '.html'];
             
             writematrix(HTMLDocContent, HTMLFile, 'QuoteStrings', 'none', 'FileType', 'text', 'Encoding', 'UTF-8')
@@ -284,8 +280,13 @@ classdef (Abstract) Controller
                     updateGeneratedFiles(projectData, context)
 
                 case 'final'
+                    JSONFile = '';
                     XLSXFile = [baseFullFileName '.xlsx'];
                     RAWFiles = {EMFieldObj.FileFullName};
+                    ZIPFile  = ui.Dialog(callingApp.UIFigure, 'uiputfile', '', {'*.zip', [appName ' (*.zip)']}, fullfile(generalSettings.fileFolder.userPath, [baseFileName '.zip']));
+                    if isempty(ZIPFile)
+                        return
+                    end
 
                     if numel(groupLocationList) > 1
                         measTableGlobal = buildMeasurementTable(EMFieldObj);
@@ -306,15 +307,11 @@ classdef (Abstract) Controller
                     if ~isempty(msgError)
                         error(msgError)
                     end
-                    
-                    ZIPFile  = ui.Dialog(mainApp.UIFigure, 'uiputfile', '', {'*.zip', 'monitorRNI (*.zip)'}, fullfile(generalSettings.fileFolder.userPath, [baseFileName '.zip']));
-                    if isempty(ZIPFile)
-                        return
-                    end
+
                     zip(ZIPFile, [{HTMLFile}, {XLSXFile}, RAWFiles])
 
                     generatedFileId = model.ProjectBase.computeReportAnalysisResultsHash(projectData.modules, context, EMFieldObj);
-                    updateGeneratedFiles(projectData, context, generatedFileId, RAWFiles, HTMLFile, '', XLSXFile, ZIPFile)
+                    updateGeneratedFiles(projectData, context, generatedFileId, RAWFiles, HTMLFile, JSONFile, XLSXFile, ZIPFile)
             end
         end
     end
