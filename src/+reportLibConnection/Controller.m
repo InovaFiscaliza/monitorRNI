@@ -69,8 +69,7 @@ classdef (Abstract) Controller
             end
 
             stationTableGlobal = projectData.modules.MONITORINGPLAN.stationTable;
-            pointsTableGlobal  = projectData.modules.EXTERNALREQUEST.pointsTable;
-            pointsTableGlobal  = model.ProjectBase.prepareTableForExport(pointsTableGlobal, 'POINTS', '-');
+            pointsTableGlobal  = model.ProjectBase.normalizePointsTableAnnotation(projectData.modules.EXTERNALREQUEST.pointsTable);
 
             %-------------------------------------------------------------%
             % reportInfo
@@ -269,9 +268,11 @@ classdef (Abstract) Controller
             % navegador. Por outro lado, em sendo a versão "Definitiva",
             % salva-se o arquivo ZIP em pasta local.
             %-------------------------------------------------------------%
-            [baseFullFileName, baseFileName] = appEngine.util.DefaultFileName(generalSettings.fileFolder.tempPath, [appName '_FinalReport'], issueId);
-            HTMLFile = [baseFullFileName '.html'];
-            
+            correlationKey     = char(matlab.lang.internal.uuid());
+            sharepointFileBase = sprintf('%s_%s_%s',  appName, datestr(now, 'yyyymmdd'), correlationKey);
+            [~, zipFileBase]   = appEngine.util.DefaultFileName('', [appName '_FinalReport'], issueId);
+
+            HTMLFile = fullfile(generalSettings.fileFolder.tempPath, [sharepointFileBase '.html']);
             writematrix(HTMLDocContent, HTMLFile, 'QuoteStrings', 'none', 'FileType', 'text', 'Encoding', 'UTF-8')
 
             switch docVersion
@@ -280,38 +281,55 @@ classdef (Abstract) Controller
                     updateGeneratedFiles(projectData, context)
 
                 case 'final'
-                    JSONFile = '';
-                    XLSXFile = [baseFullFileName '.xlsx'];
-                    RAWFiles = {EMFieldObj.FileFullName};
-                    ZIPFile  = ui.Dialog(callingApp.UIFigure, 'uiputfile', '', {'*.zip', [appName ' (*.zip)']}, fullfile(generalSettings.fileFolder.userPath, [baseFileName '.zip']));
+                    try
+                        [issueDetails, msgError] = getOrFetchIssueDetails(projectData, projectData.modules.(context).ui.system, projectData.modules.(context).ui.issue, mainApp.eFiscalizaObj);
+                        if ~isempty(msgError)
+                            error('reportLibConnection:Controller', msgError)
+                        end
+                    catch ME
+                        if ~isdeployed()
+                            issueDetails = struct('usuario', struct('nome', 'NOME_FISCAL', 'email', 'EMAIL_FISCAL@anatel.gov.br', 'unidade', 'LOTACAO_FISCAL', 'funcao', 'FISCAL'));
+                        else
+                            rethrow(ME)
+                        end
+                    end
+
+                    JSONFile  = '';
+                    TEAMSFile = '';
+                    XLSXFile  = '';
+                    RAWFiles  = {EMFieldObj.FileFullName};
+                    ZIPFile   = ui.Dialog(callingApp.UIFigure, 'uiputfile', '', {'*.zip', [appName ' (*.zip)']}, fullfile(generalSettings.fileFolder.userPath, [zipFileBase '.zip']));
                     if isempty(ZIPFile)
                         return
                     end
 
-                    if numel(groupLocationList) > 1
-                        measTableGlobal = buildMeasurementTable(EMFieldObj);
-                    else
-                        measTableGlobal = measTable;
+                    ZIPFileList = [{HTMLFile}, RAWFiles];
+
+                    if ismember(context, {'MONITORINGPLAN', 'EXTERNALREQUEST'})
+                        JSONFile  = fullfile(generalSettings.fileFolder.tempPath, [sharepointFileBase '.json']);
+                        TEAMSFile = fullfile(generalSettings.fileFolder.tempPath, [sharepointFileBase '.teams']);
+
+                        switch context
+                            case 'MONITORINGPLAN'
+                                referenceTable = arrayfun(@(x) x.InfoSet.stationTable, dataOverview, "UniformOutput", false);
+                                referenceTable = vertcat(referenceTable{:});
+                            case 'EXTERNALREQUEST'
+                                referenceTable = pointsTableGlobal;
+                        end
+
+                        JSONContent  = reportLibConnection.Table.scarabJsonFile(projectData, context, correlationKey, mainApp.executionMode, issueDetails, generalSettings, EMFieldObj, referenceTable);
+                        TEAMSContent = reportLibConnection.Table.scarabTeamsFileContent(issueDetails, [{EMFieldObj.FileName}, {[sharepointFileBase '.json']}]);
+
+                        writematrix(JSONContent,  JSONFile,  "FileType", "text", "QuoteStrings", "none", "WriteMode", "overwrite", "Encoding", "UTF-8")
+                        writematrix(TEAMSContent, TEAMSFile, "FileType", "text", "QuoteStrings", "none", "WriteMode", "overwrite", "Encoding", "UTF-8")
+
+                        ZIPFileList = [ZIPFileList, {JSONFile, TEAMSFile}];
                     end
 
-                    switch context
-                        case 'MONITORINGPLAN'
-                            stationTableArray  = arrayfun(@(x) x.InfoSet.stationTable, dataOverview, "UniformOutput", false);
-                            stationTableMerged = vertcat(stationTableArray{:});
-                            [~, msgError]      = fileWriter.MonitoringPlan(XLSXFile, stationTableMerged, measTableGlobal, projectData.modules.(context).analysis.threshold);
-
-                        case 'EXTERNALREQUEST'
-                            [~, msgError]      = fileWriter.ExternalRequest(XLSXFile, pointsTableGlobal, measTableGlobal, projectData.modules.(context).analysis.threshold);
-                    end
-
-                    if ~isempty(msgError)
-                        error(msgError)
-                    end
-
-                    zip(ZIPFile, [{HTMLFile}, {XLSXFile}, RAWFiles])
+                    zip(ZIPFile, ZIPFileList)
 
                     generatedFileId = model.ProjectBase.computeReportAnalysisResultsHash(projectData.modules, context, EMFieldObj);
-                    updateGeneratedFiles(projectData, context, generatedFileId, RAWFiles, HTMLFile, JSONFile, XLSXFile, ZIPFile)
+                    updateGeneratedFiles(projectData, context, generatedFileId, RAWFiles, HTMLFile, JSONFile, XLSXFile, TEAMSFile, ZIPFile)
             end
         end
     end

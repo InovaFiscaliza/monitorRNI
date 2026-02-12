@@ -1,5 +1,5 @@
 {
-    "version": 0.92,
+    "version": 0.94,
     "operationMode": {
         "Debug": false,
         "Dock": true,
@@ -90,20 +90,29 @@
             }
         },
         "RFDATAHUB": {
-            "defaultTx": {
-                "height": 10
+            "tx": {
+                "defaultHeight": 10
             },
-            "defaultRx": {
-                "latitude": -15.805479,
-                "longitude": -47.882499,
-                "height": 2
-            },
-            "defaultFilter": {
-                "columnLabel": "Distância",
-                "operation": "≤",
-                "value": 30
-            },
-            "lastColumnFilters": []
+            "rx": {
+                "default": {
+                    "latitude": -15.805479,
+                    "longitude": -47.882499,
+                    "height": 2
+                },
+                "last": {
+                    "latitude": -15.805479,
+                    "longitude": -47.882499,
+                    "height": 2
+                }
+            },               
+            "filter": {
+                "default": {
+                    "columnLabel": "Distância",
+                    "operation": "≤",
+                    "value": 30
+                },
+                "last": []
+            }
         }
     },
     "plot": {

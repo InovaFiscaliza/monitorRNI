@@ -107,11 +107,11 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 switch class(callingApp)
                     case {'winMonitorRNI', 'winMonitorRNI_exported'}
                         switch eventName
-                            % auxApp.dockReportLib >> winMonitorRNI >> auxApp.winMonitoringPlan
+                            % auxApp.dockReportLib >> winMonitorRNI >> auxApp.winExternalRequest
                             case 'closeFcnCallFromPopupApp'
                                 app.popupContainer.Parent.Visible = 0;
 
-                            % winMonitorRNI >> auxApp.winMonitoringPlan
+                            % winMonitorRNI >> auxApp.winExternalRequest
                             case {'onFileListAdded', 'onFileListRemoved', 'onFileListUnmerged', 'onFileListMerged'}
                                 app.measData = app.mainApp.measData;
                                 buildFileLocationTree(app)
@@ -120,7 +120,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                                     refreshAnalysis(app)
                                 end
 
-                            % auxApp.winConfig >> winMonitorRNI >> auxApp.winMonitoringPlan
+                            % auxApp.winConfig >> winMonitorRNI >> auxApp.winExternalRequest
                             case 'onAnalysisParameterChanged'
                                 app.UITable.ColumnName{4} = sprintf('Qtd.|> %.0f V/m', app.mainApp.General.context.EXTERNALREQUEST.electricFieldStrengthThreshold);
                                 updateAnalysis(app.projectData, app.measData, app.mainApp.General, eventName, app.Context);
@@ -144,10 +144,23 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                             case 'onPlotParameterChanged'
                                 refreshAnalysis(app)
 
-                            % winMonitorRNI >> auxApp.winMonitoringPlan
-                            % auxApp.dockReportLib >> winMonitorRNI >> auxApp.winProducts
+                            % winMonitorRNI >> auxApp.winExternalRequest
+                            % auxApp.dockReportLib >> winMonitorRNI >> auxApp.winExternalRequest
                             case {'onReportGenerate', 'onFinalReportFileChanged'}
                                 updateToolbar(app)
+
+                            case 'onFetchIssueDetails'
+                                system   = varargin{1};
+                                issue    = varargin{2};
+                                details  = varargin{3};
+                                msgError = varargin{4};
+
+                                if ~isempty(msgError)
+                                    error(msgError)
+                                end
+
+                                msg = util.HtmlTextGenerator.issueDetails(system, issue, details);
+                                ui.Dialog(app.UIFigure, 'info', msg);
 
                             otherwise
                                 error('model:winExternalRequest:UnexpectedCall', 'Unexpected call "%s"', eventName)
@@ -177,6 +190,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                         app.AddNewPointMode;
                         app.AddNewPointConfirm;
                         app.AddNewPointCancel;
+                        app.TreePoints;
                         app.tool_PanelVisibility;
                         app.tool_TableVisibility;
                         app.tool_ExportFiles;
@@ -185,8 +199,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                         app.tool_GenerateReport;
                         app.tool_UploadFinalFile;
                         app.dockModule_Undock;
-                        app.dockModule_Close;
-                        app.TreePoints
+                        app.dockModule_Close
                     };
                     ui.CustomizationBase.getElementsDataTag(elToModify);
 
@@ -648,9 +661,9 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 
                 if ~isempty(invalidRowIndexes)
                     msgWarning = [ ...
-                        'Há registro de pontos críticos localizados na(s) localidade(s) sob análise para os quais '     ...
-                        'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
-                        'o campo "Justificativa" e anotar os registros, caso aplicável.<br><br>Deseja ignorar ' ...
+                        'Há registro de pontos críticos localizados na(s) localidade(s) sob análise para os quais ' ...
+                        'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher '     ...
+                        'o campo "Justificativa" e anotar os registros, caso aplicável.<br><br>Deseja ignorar '     ...
                         'esse alerta, exportando PRÉVIA da análise?' ...
                     ];
                     userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgWarning, {'Sim', 'Não'}, 2, 2);
@@ -682,7 +695,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
                 % (c) Arquivo no formato .XLSX
                 fileName_XLSX = fullfile(app.mainApp.General.fileFolder.tempPath, 'Demanda externa (Preview).xlsx');
-                [status, msgError] = fileWriter.ExternalRequest(fileName_XLSX, pointsTable, timetable2table(measTableGlobal), app.mainApp.General.context.EXTERNALREQUEST.electricFieldStrengthThreshold, app.mainApp.General.context.EXTERNALREQUEST.exportOptions.xlsx);
+                [status, msgError] = model.ProjectBase.exportAnalysisPreview(app.Context, pointsTable, app.mainApp.General, timetable2table(measTableGlobal), fileName_XLSX, app.mainApp.General.context.EXTERNALREQUEST.exportOptions.xlsx);
                 if status
                     savedFiles{end+1} = fileName_XLSX;
                 else
@@ -704,14 +717,14 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                             TreeFileLocationsSelectionChanged(app, struct('SelectedNodes', app.TreeFileLocations.Children(groupLocationIndex)))
                         end
 
-                        groupLocationText    = replace(app.TreeFileLocations.SelectedNodes.Text, '/', '-');
-                        groupLocationIndexes = getFileIndexes(app);
-                        groupLocationMeasTable = buildMeasurementTable(app.measData(groupLocationIndexes));
+                        groupLocationText      = replace(app.TreeFileLocations.SelectedNodes.Text, '/', '-');
+                        groupLocationIndexes   = getFileIndexes(app);
+                        groupLocationMeasTable = timetable2table(buildMeasurementTable(app.measData(groupLocationIndexes)));
 
                         % MEDIDAS
-                        hMeasPlot = findobj(app.UIAxes.Children, 'Tag', 'Measures');                        
+                        hMeasPlot = findobj(app.UIAxes.Children, 'Tag', 'Measures');
                         KML1File  = fullfile(app.mainApp.General.fileFolder.tempPath, sprintf('%s (Measures).kml', groupLocationText));
-                        [status1, msgError1] = fileWriter.KML(KML1File, 'Measures', timetable2table(groupLocationMeasTable), hMeasPlot);
+                        [status1, msgError1] = RF.KML.generateKML(KML1File, 'measures', groupLocationMeasTable, 'FieldValue', hMeasPlot);
                         if status1
                             savedFiles{end+1} = KML1File;
                         else
@@ -720,7 +733,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
                         % ROTA
                         KML2File = fullfile(app.mainApp.General.fileFolder.tempPath, sprintf('%s (Route).kml', groupLocationText));
-                        [status2, msgError2] = fileWriter.KML(KML2File, 'Route', timetable2table(groupLocationMeasTable));
+                        [status2, msgError2] = RF.KML.generateKML(KML2File, 'route', groupLocationMeasTable);
                         if status2
                             savedFiles{end+1} = KML2File;
                         else
@@ -1120,6 +1133,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                         app.NewPointLongitude.Value,   ...
                         app.NewPointDescription.Value, ...
                         categorical("-"),              ...
+                        '',                            ...
                         false
                     };
                     updatePointsTable(app.projectData, app.measData, app.mainApp.General, 'onPointAdded', valuesToFill)

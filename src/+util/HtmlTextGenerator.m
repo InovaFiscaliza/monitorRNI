@@ -355,5 +355,22 @@ classdef (Abstract) HtmlTextGenerator
             htmlContent{2} = textFormatGUI.struct2PrettyPrintList(dataStruct, 'delete');
             htmlContent    = strjoin(htmlContent);
         end
+
+        
+        %-----------------------------------------------------------------%
+        % AUXAPP.DOCKREPORTLIB
+        %-----------------------------------------------------------------%
+        function htmlContent = issueDetails(system, issue, details)
+            dataStruct      = struct('group', 'CADASTRO', 'value', details);
+            freeInitialText = sprintf('<font style="font-size: 16px;"><b>Atividade de Inspeção #%d</b></font> %s<br><br>', issue, system);
+            htmlContent     = textFormatGUI.struct2PrettyPrintList(dataStruct, 'print -1', freeInitialText, 'popup');
+        end
+    
+        %-----------------------------------------------------------------%
+        function htmlContent = entityDetails(id, details)
+            dataStruct      = struct('group', 'CADASTRO', 'value', details);
+            freeInitialText = sprintf('<font style="font-size: 16px;"><b>%s</b></font><br><br>', id);
+            htmlContent     = textFormatGUI.struct2PrettyPrintList(dataStruct, 'delete', freeInitialText, 'popup');
+        end
     end
 end

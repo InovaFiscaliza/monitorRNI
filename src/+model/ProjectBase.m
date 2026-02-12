@@ -217,28 +217,33 @@ classdef (Abstract) ProjectBase
 
                 if any(idxLogicalMeasures)
                     pointMeasures = measTable(idxLogicalMeasures, :);
-                    [maxFieldValue, idxMaxFieldValue] = max(pointMeasures.FieldValue);
+                    [maxFieldValue, idxMaxFieldValue]  = max(pointMeasures.FieldValue);
 
-                    refTable.numberOfMeasures(ii)     = height(pointMeasures);
-                    refTable.numberOfRiskMeasures(ii) = sum(pointMeasures.FieldValue > threshold);
-                    refTable.minFieldValue(ii)        = min(pointMeasures.FieldValue);
-                    refTable.meanFieldValue(ii)       = mean(pointMeasures.FieldValue);
-                    refTable.maxFieldValue(ii)        = maxFieldValue;
-                    refTable.maxFieldLatitude(ii)     = pointMeasures.Latitude(idxMaxFieldValue);
-                    refTable.maxFieldLongitude(ii)    = pointMeasures.Longitude(idxMaxFieldValue);
-                    refTable.("Fonte de dados"){ii}   = jsonencode(unique(pointMeasures.FileSource));
+                    refTable.numberOfMeasures(ii)      = height(pointMeasures);
+                    refTable.numberOfRiskMeasures(ii)  = sum(pointMeasures.FieldValue > threshold);
+                    refTable.minFieldValue(ii)         = round(min(pointMeasures.FieldValue),             6);
+                    refTable.meanFieldValue(ii)        = round(mean(pointMeasures.FieldValue),            6);
+                    refTable.maxFieldValue(ii)         = round(maxFieldValue,                             6);
+                    refTable.maxFieldLatitude(ii)      = round(pointMeasures.Latitude(idxMaxFieldValue),  6);
+                    refTable.maxFieldLongitude(ii)     = round(pointMeasures.Longitude(idxMaxFieldValue), 6);
+                    refTable.("Fonte de dados"){ii}    = jsonencode(unique(pointMeasures.FileSource));
+
+                    if ismember('maxFieldTimestamp', refTable.Properties.VariableNames)
+                        refTable.maxFieldTimestamp(ii) = pointMeasures.Timestamp(idxMaxFieldValue);
+                    end
+
                 else
-                    refTable.numberOfMeasures(ii)     = 0;
-                    refTable.numberOfRiskMeasures(ii) = 0;
-                    refTable.minFieldValue(ii)        = 0;
-                    refTable.meanFieldValue(ii)       = 0;
-                    refTable.maxFieldValue(ii)        = 0;
-                    refTable.maxFieldLatitude(ii)     = 0;
-                    refTable.maxFieldLongitude(ii)    = 0;
-                    refTable.("Fonte de dados"){ii}   = jsonencode({''});   % '[""]'
+                    refTable.numberOfMeasures(ii)      = 0;
+                    refTable.numberOfRiskMeasures(ii)  = 0;
+                    refTable.minFieldValue(ii)         = 0;
+                    refTable.meanFieldValue(ii)        = 0;
+                    refTable.maxFieldValue(ii)         = 0;
+                    refTable.maxFieldLatitude(ii)      = 0;
+                    refTable.maxFieldLongitude(ii)     = 0;
+                    refTable.("Fonte de dados"){ii}    = jsonencode({''});   % '[""]'
                 end
 
-                refTable.minDistanceForMeasure(ii)    = min(pointDistance); % km
+                refTable.minDistanceForMeasure(ii)     = round(min(pointDistance), 3); % km
             end
         end
 
@@ -268,33 +273,152 @@ classdef (Abstract) ProjectBase
         end
 
         %-----------------------------------------------------------------%
-        function referenceTable = prepareTableForExport(referenceTable, tableId, charReplace)
+        function [status, msgError] = exportAnalysisPreview(context, referenceTable, generalSettings, measTable, fileName, exportRawMeasuresFlag)
             arguments
-                referenceTable table
-                tableId        char {mustBeMember(tableId, {'STATIONS', 'POINTS'})}
-                charReplace    char = ''
+                context {mustBeMember(context, {'MONITORINGPLAN', 'EXTERNALREQUEST'})}
+                referenceTable                
+                generalSettings
+                measTable
+                fileName
+                exportRawMeasuresFlag
+            end
+        
+            status = true;
+            msgError = '';
+
+            referenceTable = model.ProjectBase.prepareReferenceTableToExport(context, referenceTable, generalSettings);
+
+            switch context
+                case 'MONITORINGPLAN'
+                    referenceTable = renamevars(referenceTable, ...
+                        {'id', 'unit', 'state', 'city', 'stationType', 'stationService', 'stationCompanyName', 'stationFistel', 'stationId', 'stationAddress', 'stationLat', 'stationLng', 'criticalAreas', 'measurementCount', 'measurementsAboveLimit', 'nearestMeasurementDistanceKm', 'electricFieldLimit', 'electricFieldMin', 'electricFieldMean', 'electricFieldMax', 'maxElectricFieldInstant', 'maxElectricFieldLat', 'maxElectricFieldLng', 'dataSources', 'auditorReason', 'auditorComment'}, ...
+                        {'ID', 'UD', 'UF', 'Município', 'Tipo', 'Serviço', 'Entidade', 'Fistel', 'Estação', 'Endereço', 'Lat', 'Long', 'Áreas Críticas', 'Qtd. Medidas', 'Qtd. Medidas Acima do Limite', 'Distância Mínima (km)', 'Limite (V/m)', 'Emin (V/m)', 'Emean (V/m)', 'Emax (V/m)', 'Emax - Data da Medição', 'Emax - Latitude', 'Emax - Longitude', 'Fonte de dados', 'Justificativa', 'Observações'} ...
+                    );
+                    referenceTableTag = 'STATIONS';
+
+                case 'EXTERNALREQUEST'
+                    referenceTable = renamevars(referenceTable, ...
+                        {'id', 'stationType', 'stationId', 'stationLat', 'stationLng', 'stationDescription', 'measurementCount', 'measurementsAboveLimit', 'nearestMeasurementDistanceKm', 'electricFieldMin', 'electricFieldMean', 'electricFieldMax', 'maxElectricFieldLat', 'maxElectricFieldLng', 'dataSources', 'auditorReason', 'auditorComment'}, ...
+                        {'ID', 'Type', 'Station', 'Latitude', 'Longitude', 'Description', 'numberOfMeasures', 'numberOfRiskMeasures', 'minDistanceForMeasure', 'minFieldValue', 'meanFieldValue', 'maxFieldValue', 'maxFieldLatitude', 'maxFieldLongitude', 'Fonte de dados', 'Justificativa', 'Observações'} ...
+                    );
+                    referenceTableTag = 'POINTS';
             end
 
-            if strcmp(tableId, 'stationTable')
-                % Insere coordenadas geográficas da estação no campo "Observações", 
-                % caso editadas.
-                idxEditedCoordinates = find((referenceTable.("Lat") ~= referenceTable.("Latitude")) | (referenceTable.("Long") ~= referenceTable.("Longitude")))';
-                for ii = idxEditedCoordinates
-                    Coordinates = struct('lat', struct('original', referenceTable.("Lat")(ii),  'edited', referenceTable.("Latitude")(ii)), ...
-                                         'lng', struct('original', referenceTable.("Long")(ii), 'edited', referenceTable.("Longitude")(ii)));
-            
-                    if ~isempty(referenceTable.("Observações"){ii})
-                        Coordinates.NotaAdicional = referenceTable.("Observações"){ii};
-                    end
-            
-                    referenceTable.("Observações"){ii} = jsonencode(Coordinates);
+            try
+                writetable(referenceTable, fileName, 'FileType', 'spreadsheet', 'WriteMode', 'replacefile',    'Sheet', referenceTableTag)
+                if exportRawMeasuresFlag
+                    writetable(measTable,  fileName, 'FileType', 'spreadsheet', 'WriteMode', 'overwritesheet', 'Sheet', 'MEASURES')
                 end
+
+            catch ME
+                status = false;
+                msgError = ME.message;
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function varargout = prepareReferenceTableToExport(context, referenceTable, generalSettings)
+            arguments
+                context {mustBeMember(context, {'MONITORINGPLAN', 'EXTERNALREQUEST'})}
+                referenceTable
+                generalSettings
+            end
+        
+            electricFieldStrengthThreshold = generalSettings.context.(context).electricFieldStrengthThreshold;
+        
+            switch context
+                case 'MONITORINGPLAN'
+                    stationTable = referenceTable;
+        
+                    % (a) Elimina linhas idênticas, caso existentes.
+                    [~, uniqueIdxs] = unique(stationTable.("Hash"), "stable");
+                    stationTable = stationTable(uniqueIdxs, :);
+            
+                    % (b) Insere coordenadas geográficas da estação no campo "Observações", 
+                    %     caso editadas, e troca valores inválidos ("-1", por exemplo) por 
+                    %     valores nulos.
+                    stationTable = model.ProjectBase.normalizeStationTableAnnotations(stationTable);
+                
+                    % (c) Seleciona colunas que irão compor o arquivo .XLSX, criando coluna 
+                    %     com informação do "Limite".
+                    stationTable = removevars(stationTable, {'Ano', 'Hash', 'Location', 'Latitude', 'Longitude', 'AnalysisFlag'});
+                    stationTable.("electricFieldLimit")(:) = electricFieldStrengthThreshold;
+
+                    stationTable.("Lat")  = round(stationTable.("Lat"),  6);
+                    stationTable.("Long") = round(stationTable.("Long"), 6);
+                    
+                    stationTable.("maxFieldTimestamp").Format = 'yyyyMMdd HH:mm:ss';
+                    stationTable.("maxFieldTimestamp") = string(stationTable.("maxFieldTimestamp"));
+                    stationTable.("maxFieldTimestamp")(ismissing(stationTable.("maxFieldTimestamp"))) = "";
+                
+                    % (d) Edita nomes de algumas das colunas da tabela.
+                    stationTable = renamevars(stationTable, ...
+                        {'ID', 'UD', 'UF', 'Município', 'Tipo', 'Serviço', 'Entidade', 'Fistel', 'Estação', 'Endereço', 'Lat', 'Long', 'Áreas Críticas', 'numberOfMeasures', 'numberOfRiskMeasures', 'minDistanceForMeasure', 'minFieldValue', 'meanFieldValue', 'maxFieldValue', 'maxFieldTimestamp', 'maxFieldLatitude', 'maxFieldLongitude', 'Fonte de dados', 'Justificativa', 'Observações'}, ...
+                        {'id', 'unit', 'state', 'city', 'stationType', 'stationService', 'stationCompanyName', 'stationFistel', 'stationId', 'stationAddress', 'stationLat', 'stationLng', 'criticalAreas', 'measurementCount', 'measurementsAboveLimit', 'nearestMeasurementDistanceKm', 'electricFieldMin', 'electricFieldMean', 'electricFieldMax', 'maxElectricFieldInstant', 'maxElectricFieldLat', 'maxElectricFieldLng', 'dataSources', 'auditorReason', 'auditorComment'} ...
+                    );
+                    stationTable = movevars(stationTable, 'electricFieldLimit', 'After', 'nearestMeasurementDistanceKm');
+                    
+                    varargout = {stationTable};
+        
+                case 'EXTERNALREQUEST'
+                    pointsTable = referenceTable;
+        
+                    % (a) Seleciona colunas que irão compor o arquivo .XLSX, criando coluna 
+                    %     com informação do "Limite".
+                    pointsTable = removevars(pointsTable, {'Hash', 'AnalysisFlag'});
+                    pointsTable.("electricFieldLimit")(:) = electricFieldStrengthThreshold;
+                
+                    % (b) Troca valores inválidos ("-1", por exemplo) por valores nulos.
+                    pointsTable = model.ProjectBase.normalizePointsTableAnnotation(pointsTable);
+                
+                    % (c) Edita nomes de algumas das colunas da tabela.
+                    pointsTable = renamevars(pointsTable, ...
+                        {'ID', 'Type', 'Station', 'Latitude', 'Longitude', 'Description', 'numberOfMeasures', 'numberOfRiskMeasures', 'minDistanceForMeasure', 'minFieldValue', 'meanFieldValue', 'maxFieldValue', 'maxFieldLatitude', 'maxFieldLongitude', 'Fonte de dados', 'Justificativa', 'Observações'}, ...
+                        {'id', 'stationType', 'stationId', 'stationLat', 'stationLng', 'stationDescription', 'measurementCount', 'measurementsAboveLimit', 'nearestMeasurementDistanceKm', 'electricFieldMin', 'electricFieldMean', 'electricFieldMax', 'maxElectricFieldLat', 'maxElectricFieldLng', 'dataSources', 'auditorReason', 'auditorComment'} ...
+                    );
+                    pointsTable = movevars(pointsTable, 'electricFieldLimit', 'After', 'nearestMeasurementDistanceKm');
+        
+                    varargout = {pointsTable};
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function stationTable = normalizeStationTableAnnotations(stationTable, charReplace)
+            arguments
+                stationTable
+                charReplace = ''
             end
 
-            % Troca valores inválidos ("-1", por exemplo) por valores nulos.
-            referenceTable.("Justificativa") = replace(cellstr(referenceTable.("Justificativa")), '-1', charReplace);
+            editedLocationIdxs = find((stationTable.("Lat") ~= stationTable.("Latitude")) | (stationTable.("Long") ~= stationTable.("Longitude")))';
+            for ii = editedLocationIdxs
+                locationInfo = struct( ...
+                    'lat', struct('original', stationTable.("Lat")(ii),  'edited', stationTable.("Latitude")(ii)), ...
+                    'lng', struct('original', stationTable.("Long")(ii), 'edited', stationTable.("Longitude")(ii)) ...
+                );
+        
+                if ~isempty(stationTable.("Observações"){ii})
+                    locationInfo.additionalNote = stationTable.("Observações"){ii};
+                end
+        
+                stationTable.("Observações"){ii} = jsonencode(locationInfo);
+            end
+
+            stationTable.("Justificativa") = replace(cellstr(stationTable.("Justificativa")), '-1', charReplace);
             if ~isempty(charReplace)
-                referenceTable.("Observações")(strcmp(referenceTable.("Observações"), '')) = {charReplace};
+                stationTable.("Observações")(strcmp(stationTable.("Observações"), '')) = {charReplace};
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function pointsTable = normalizePointsTableAnnotation(pointsTable, charReplace)
+            arguments
+                pointsTable
+                charReplace = ''
+            end
+
+            pointsTable.("Justificativa") = replace(cellstr(pointsTable.("Justificativa")), '-1', charReplace);
+            if ~isempty(charReplace)
+                stationTable.("Observações")(strcmp(stationTable.("Observações"), '')) = {charReplace};
             end
         end
 

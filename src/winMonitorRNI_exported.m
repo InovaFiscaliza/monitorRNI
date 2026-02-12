@@ -66,10 +66,17 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         eFiscalizaObj
 
         projectData
+        measData  = model.EMFieldData.empty
+
         rfDataHub
         rfDataHubLOG
         rfDataHubSummary
-        measData  = model.EMFieldData.empty
+        rfDataHubAnnotation = table( ...
+            string.empty, ...
+            int32([]), ...
+            struct('Latitude', {}, 'Longitude', {}, 'AntennaHeight', {}), ...
+            'VariableNames', {'ID', 'Station', 'TXSite'} ...
+        )
     end
 
 
@@ -761,6 +768,17 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             if app ~= callingApp
                 ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', 'onFetchIssueDetails', system, issue, details, msgError)
+
+            else
+                if isempty(msgError)
+                    msg = util.HtmlTextGenerator.issueDetails(system, issue, details);
+                    icon = 'info';
+                else
+                    app.eFiscalizaObj = [];
+                    msg = msgError;
+                    icon = 'error';
+                end
+                ui.Dialog(app.UIFigure, icon, msg);
             end
 
             callingApp.progressDialog.Visible = 'hidden';
@@ -783,7 +801,9 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 else
                     ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', 'onReportGenerate')
                 end
+
             catch ME
+                app.eFiscalizaObj = [];
                 ui.Dialog(callingApp.UIFigure, 'error', getReport(ME));
             end
 
@@ -806,8 +826,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             callingApp.progressDialog.Visible = 'hidden';
             
             if status1 && strcmp(app.projectData.modules.(context).ui.system, 'eFiscaliza')
-                msg2 = reportUploadFilesToSharepoint(app, context);
-                ui.Dialog(callingApp.UIFigure, 'error', msg2);
+                [status2, msg2] = reportUploadFilesToSharepoint(app, context);
+
+                if ~status2
+                    ui.Dialog(callingApp.UIFigure, 'error', msg2);
+                end
             end
         end
 
@@ -867,38 +890,26 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %------------------------------------------------------------------------%
-        function msg = reportUploadFilesToSharepoint(app, context)
-            msg = {};
+        function [status, msg] = reportUploadFilesToSharepoint(app, context)
+            sharepointFileList = { ...
+                getGeneratedDocumentFileName(app.projectData, '.teams',   context), ...
+                getGeneratedDocumentFileName(app.projectData, '.json',    context), ...
+                getGeneratedDocumentFileName(app.projectData, 'rawFiles', context)  ...
+            };
 
-            sharepointFolder = app.General.fileFolder.DataHub_POST;
-            sharepointFileList = getGeneratedDocumentFileName(app.projectData, 'rawFiles', context);
-            if strcmp(context, 'MONITORINGPLAN')
-                sharepointFileList = [sharepointFileList, {getGeneratedDocumentFileName(app.projectData, '.xlsx', context)}];
-            end
-
+            statusList = false(1, numel(sharepointFileList));
+            msgList = {};
+        
             for ii = 1:numel(sharepointFileList)
-                tempFilename = sharepointFileList{ii};
-
-                try
-                    if isfile(tempFilename)
-                        copyfile(tempFilename, sharepointFolder, 'f');
-
-                        if ~endsWith(tempFilename, '.xlsx')
-                            [~, basename]  = fileparts(tempFilename);
-                            jsonFilename   = [basename '.json'];
-                            [~, fileIndex] = ismember(tempFilename, {app.measData.FileName});
-    
-                            if fileIndex
-                                fileWriter.RawFileMetaData(fullfile(sharepointFolder, jsonFilename), app.measData(fileIndex));
-                            end
-                        end
-                    end
-                catch ME
-                    msg{end+1} = ME.message;
+                [statusList(ii), msgWarning] = copyfile(sharepointFileList{ii}, app.General.fileFolder.DataHub_POST, 'f');
+        
+                if ~statusList(ii)
+                    msgList{end+1} = msgWarning;
                 end
             end
-
-            msg = strjoin(msg, '\n');
+        
+            status = all(statusList);
+            msg = strjoin(msgList, '\n\n');
         end
     end
     

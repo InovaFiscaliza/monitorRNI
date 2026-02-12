@@ -152,6 +152,8 @@ classdef Project < handle
                                                 obj.modules.(context).generatedFiles.lastJSONFullPath    = unzipFiles{jj};
                                             case '.xlsx'
                                                 obj.modules.(context).generatedFiles.lastTableFullPath   = unzipFiles{jj};
+                                            case '.teams'
+                                                obj.modules.(context).generatedFiles.lastTEAMSFullPath   = unzipFiles{jj};
                                         end
                                     end
                                     
@@ -292,7 +294,7 @@ classdef Project < handle
         %-----------------------------------------------------------------%
         % ## UPDATE ##
         %-----------------------------------------------------------------%
-        function updateGeneratedFiles(obj, context, id, rawFiles, htmlFile, jsonFile, tableFile, zipFile)
+        function updateGeneratedFiles(obj, context, id, rawFiles, htmlFile, jsonFile, tableFile, teamsFile, zipFile)
             arguments
                 obj
                 context   (1,:) char {mustBeMember(context, {'MONITORINGPLAN', 'EXTERNALREQUEST'})}
@@ -301,6 +303,7 @@ classdef Project < handle
                 htmlFile  char = ''
                 jsonFile  char = ''
                 tableFile char = ''
+                teamsFile char = ''
                 zipFile   char = ''
             end
 
@@ -309,6 +312,7 @@ classdef Project < handle
             obj.modules.(context).generatedFiles.lastHTMLDocFullPath = htmlFile;
             obj.modules.(context).generatedFiles.lastJSONFullPath    = jsonFile;
             obj.modules.(context).generatedFiles.lastTableFullPath   = tableFile;
+            obj.modules.(context).generatedFiles.lastTEAMSFullPath   = teamsFile;
             obj.modules.(context).generatedFiles.lastZIPFullPath     = zipFile;
         end
 
@@ -335,7 +339,7 @@ classdef Project < handle
         function updateUiInfo(obj, context, fieldName, fieldValue)
             arguments
                 obj
-                context    (1,:) char {mustBeMember(context, {'MONITORINGPLAN', 'EXTERNALREQUEST'})}
+                context    (1,:) char {mustBeMember(context, {'self', 'MONITORINGPLAN', 'EXTERNALREQUEST'})}
                 fieldName  (1,:) char
                 fieldValue
             end
@@ -410,7 +414,7 @@ classdef Project < handle
 
                 case 'onPointAdded'
                     valuesToFill = varargin{1};
-                    columsnToFill = {'ID', 'Type', 'Station', 'Latitude', 'Longitude', 'Description', 'Justificativa', 'AnalysisFlag'};
+                    columsnToFill = {'ID', 'Type', 'Station', 'Latitude', 'Longitude', 'Description', 'Justificativa', 'Observações', 'AnalysisFlag'};
                     
                     index = height(obj.modules.EXTERNALREQUEST.pointsTable_I)+1;
                     obj.modules.EXTERNALREQUEST.pointsTable_I(index, columsnToFill) = valuesToFill;
@@ -500,7 +504,7 @@ classdef Project < handle
         function fileName = getGeneratedDocumentFileName(obj, fileExt, context)
             arguments
                 obj
-                fileExt (1,:) char {mustBeMember(fileExt, {'.html', '.json', '.xlsx', '.zip'})}
+                fileExt (1,:) char {mustBeMember(fileExt, {'.html', '.json', '.xlsx', '.teams', '.zip'})}
                 context (1,:) char {mustBeMember(context, {'MONITORINGPLAN', 'EXTERNALREQUEST'})}
             end
 
@@ -511,6 +515,8 @@ classdef Project < handle
                     fileName = obj.modules.(context).generatedFiles.lastJSONFullPath;
                 case '.xlsx'
                     fileName = obj.modules.(context).generatedFiles.lastTableFullPath;
+                case '.teams'
+                    fileName = obj.modules.(context).generatedFiles.lastTEAMSFullPath;
                 case '.zip'
                     fileName = obj.modules.(context).generatedFiles.lastZIPFullPath;
             end
@@ -565,7 +571,7 @@ classdef Project < handle
             details  = getIssueDetailsFromCache(obj, system, issue);
             msgError = '';
 
-            if isempty(details)
+            if isempty(details) && (issue > 0) && (issue < inf)
                 try
                     env = strsplit(system);
                     if isscalar(env)
@@ -579,18 +585,18 @@ classdef Project < handle
                         'id', issue ...
                     );
                     
-                    response = run(eFiscalizaObj, env, 'queryIssue', issueInfo);
-                    if isstruct(response)
-                        details = struct( ...
+                    details = run(eFiscalizaObj, env, 'queryIssue', issueInfo);
+                    if isstruct(details)
+                        newIssueDetails = struct( ...
                             'system', system, ...
                             'issue', issue, ...
-                            'details', response, ...
+                            'details', details, ...
                             'timestamp', datestr(now) ...
                         );
-                        updateUiInfo(obj, 'self', 'issueDetails', details)
+                        updateUiInfo(obj, 'self', 'issueDetails', newIssueDetails)
     
                     else
-                        error(response)
+                        error(details)
                     end    
                 catch ME
                     msgError = ME.message;

@@ -72,6 +72,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
     end
 
 
+    properties (Access = protected, Constant)
+        %-----------------------------------------------------------------%
+        LOCATION_SELECTION_EVENT_MAPPING = dictionary( ...
+            ["Selecionada", "Todas"], ...
+            ["onInspectSelection", "onInspectAll"] ...
+        )
+    end
+
+
     methods (Access = public)
         %-----------------------------------------------------------------%
         function ipcSecondaryJSEventsHandler(app, event)
@@ -135,9 +144,22 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                 refreshAnalysis(app)
 
                             % winMonitorRNI >> auxApp.winMonitoringPlan
-                            % auxApp.dockReportLib >> winMonitorRNI >> auxApp.winProducts
+                            % auxApp.dockReportLib >> winMonitorRNI >> auxApp.winMonitoringPlan
                             case {'onReportGenerate', 'onFinalReportFileChanged'}
                                 updateToolbar(app)
+
+                            case 'onFetchIssueDetails'
+                                system   = varargin{1};
+                                issue    = varargin{2};
+                                details  = varargin{3};
+                                msgError = varargin{4};
+
+                                if ~isempty(msgError)
+                                    error(msgError)
+                                end
+
+                                msg = util.HtmlTextGenerator.issueDetails(system, issue, details);
+                                ui.Dialog(app.UIFigure, 'info', msg);
 
                             % auxApp.dockStationInfo >> winMonitorRNI >> auxApp.winMonitoringPlan
                             case 'onStationInfoChanged'
@@ -277,7 +299,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             updateSelectedListOfLocations(app.projectData, selectedFileLocations, app.Context)
             
-            [stationIdxs, fullListOfLocation] = getAnalyzedStationIndexes(app, 'Todas');            
+            [stationIdxs, fullListOfLocation] = getAnalyzedStationIndexes(app, 'onSelectionChanging');            
             initialSelection = updateTable(app, stationIdxs);
             applyTableStyle(app)
 
@@ -330,7 +352,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 % apesar da rota englobar o município em que está instalada a
                 % estação. Ou estações que apresentaram medições com níveis
                 % acima de 14 V/m.
-                stationIdxs = getAnalyzedStationIndexes(app, 'Selecionada');
+                stationIdxs = getAnalyzedStationIndexes(app, 'onInspectSelection');
                 [invalidRowIdxs, ~, ~, manualEditionRowIdxs, riskMeasurementsIdxs] = validateAuditorClassification(app.projectData, app.Context, app.mainApp.General, stationIdxs);
 
                 if ~isempty(invalidRowIdxs)
@@ -517,16 +539,26 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function [stationIdxs, locations] = getAnalyzedStationIndexes(app, stationScope)
-            fileIdxs = getFileIndexes(app);
+        function [stationIdxs, locations] = getAnalyzedStationIndexes(app, eventName)
+            arguments
+                app
+                eventName {mustBeMember(eventName, {'onSelectionChanging', 'onInspectSelection', 'onInspectAll'})}
+            end
 
-            switch stationScope
-                case 'Todas'
+            switch eventName
+                case 'onSelectionChanging'
+                    fileIdxs    = getFileIndexes(app);
                     locations   = getFullListOfLocation(app.projectData, app.measData(fileIdxs), app.projectData.modules.MONITORINGPLAN.analysis.maxMeasurementDistanceKm);
                     stationIdxs = find(ismember(app.projectData.modules.MONITORINGPLAN.stationTable.Location, locations));
-                case 'Selecionada'
+
+                case 'onInspectSelection'
                     locations   = {};
                     stationIdxs = app.UITable.UserData;
+
+                case 'onInspectAll'
+                    fileIdxs    = 1:numel(app.measData);
+                    locations   = getFullListOfLocation(app.projectData, app.measData(fileIdxs), app.projectData.modules.MONITORINGPLAN.analysis.maxMeasurementDistanceKm);
+                    stationIdxs = find(ismember(app.projectData.modules.MONITORINGPLAN.stationTable.Location, locations));
             end
         end
 
@@ -682,15 +714,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     initialSelection = 'Todas';
                 end
 
-                stationIdxs = getAnalyzedStationIndexes(app, initialSelection);
-                invalidRowIndexes = validateAuditorClassification(app.projectData, context, app.mainApp.General, stationIdxs);
-                
+                stationIdxs = getAnalyzedStationIndexes(app, app.LOCATION_SELECTION_EVENT_MAPPING(initialSelection));
+                invalidRowIndexes = validateAuditorClassification(app.projectData, context, app.mainApp.General, stationIdxs);                
                 if ~isempty(invalidRowIndexes)
                     msgWarning = [
                         'Há registro de estações instaladas na(s) localidade(s) sob análise para as quais ' ...
-                        'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
-                        'o campo "Justificativa" e anotar os registros, caso aplicável.<br><br>Deseja ignorar ' ...
-                        'esse alerta, exportando PRÉVIA da análise?' ...
+                        'não foram identificadas medidas no entorno ou cuja operação foi indicada em local ' ...
+                        'diferente, sem a devida especificação.<br><br>Deseja ignorar esse alerta, exportando ' ...
+                        'PRÉVIA da análise?' ...
                     ];
 
                     userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgWarning, {'Sim', 'Não'}, 2, 2);
@@ -719,13 +750,11 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 %     de agrupamento selecionadas), além do recorte da planilha
                 %     de referência do PM-RNI (stationTable).
                 measTableGlobal = buildMeasurementTable(app.measData(fileIdxs));
-                stationTableGlobal = app.projectData.modules.(context).stationTable;
-                stationIdxs = getAnalyzedStationIndexes(app, 'Todas');
-                stationTable = stationTableGlobal(stationIdxs, :);
+                stationTable    = app.projectData.modules.(context).stationTable(stationIdxs, :);
     
                 % (c) Arquivo no formato .XLSX
                 fileName_XLSX = fullfile(app.mainApp.General.fileFolder.tempPath, 'PM-RNI (Preview).xlsx');
-                [status, msgError] = fileWriter.MonitoringPlan(fileName_XLSX, stationTable, timetable2table(measTableGlobal), app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold, app.mainApp.General.context.MONITORINGPLAN.exportOptions.xlsx);
+                [status, msgError] = model.ProjectBase.exportAnalysisPreview(app.Context, stationTable, app.mainApp.General, timetable2table(measTableGlobal), fileName_XLSX, app.mainApp.General.context.MONITORINGPLAN.exportOptions.xlsx);
                 if status
                     savedFiles{end+1} = fileName_XLSX;
                 else
@@ -747,14 +776,14 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                             TreeFileLocationsSelectionChanged(app, struct('SelectedNodes', app.TreeFileLocations.Children(groupLocationIndex)))
                         end
 
-                        groupLocationText    = replace(app.TreeFileLocations.SelectedNodes.Text, '/', '-');
-                        groupLocationIndexes = getFileIndexes(app);
-                        groupLocationMeasTable = buildMeasurementTable(app.measData(groupLocationIndexes));
+                        groupLocationText      = replace(app.TreeFileLocations.SelectedNodes.Text, '/', '-');
+                        groupLocationIndexes   = getFileIndexes(app);
+                        groupLocationMeasTable = timetable2table(buildMeasurementTable(app.measData(groupLocationIndexes)));
 
                         % MEDIDAS
                         hMeasPlot = findobj(app.UIAxes.Children, 'Tag', 'Measures');                        
                         KML1File  = fullfile(app.mainApp.General.fileFolder.tempPath, sprintf('%s (Measures).kml', groupLocationText));
-                        [status1, msgError1] = fileWriter.KML(KML1File, 'Measures', timetable2table(groupLocationMeasTable), hMeasPlot);
+                        [status1, msgError1] = RF.KML.generateKML(KML1File, 'measures', groupLocationMeasTable, 'FieldValue', hMeasPlot);
                         if status1
                             savedFiles{end+1} = KML1File;
                         else
@@ -763,7 +792,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
                         % ROTA
                         KML2File = fullfile(app.mainApp.General.fileFolder.tempPath, sprintf('%s (Route).kml', groupLocationText));
-                        [status2, msgError2] = fileWriter.KML(KML2File, 'Route', timetable2table(groupLocationMeasTable));
+                        [status2, msgError2] = RF.KML.generateKML(KML2File, 'route', groupLocationMeasTable);
                         if status2
                             savedFiles{end+1} = KML2File;
                         else
@@ -826,7 +855,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 initialSelection = 'Todas';
             end
 
-            stationIdxs = getAnalyzedStationIndexes(app, initialSelection);
+            stationIdxs = getAnalyzedStationIndexes(app, app.LOCATION_SELECTION_EVENT_MAPPING(initialSelection));
             if isempty(stationIdxs)
                 ui.Dialog(app.UIFigure, 'warning', [ ...
                     'Não há estações do PM-RNI associadas às medições. ' ...
@@ -850,8 +879,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             if ~isempty(invalidRowIndexes)
                 msgWarning{end+1} = [
                     '• Há registro de estações instaladas na(s) localidade(s) sob análise para as quais ' ...
-                    'não foram identificadas medidas no entorno. Nesse caso específico, deve-se preencher ' ...
-                    'o campo "Justificativa" e anotar os registros, caso aplicável.' ...
+                    'não foram identificadas medidas no entorno ou cuja operação foi indicada em local ' ...
+                    'diferente, sem a devida especificação.' ...
                 ];
             end
 

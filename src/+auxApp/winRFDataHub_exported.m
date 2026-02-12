@@ -115,13 +115,10 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
         config_Station_Size             matlab.ui.control.Slider
         config_Station_Color            matlab.ui.control.ColorPicker
         config_Station_Label            matlab.ui.control.Label
-        config_geoAxesSubPanel          matlab.ui.container.Panel
-        config_geoAxesSubGrid           matlab.ui.container.GridLayout
         config_Colormap                 matlab.ui.control.DropDown
         config_ColormapLabel            matlab.ui.control.Label
         config_Basemap                  matlab.ui.control.DropDown
         config_BasemapLabel             matlab.ui.control.Label
-        config_geoAxesSublabel          matlab.ui.control.Label
         config_Refresh                  matlab.ui.control.Image
         config_geoAxesLabel             matlab.ui.control.Label
         Toolbar                         matlab.ui.container.GridLayout
@@ -160,12 +157,6 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
         rfDataHub
         rfDataHubLOG
         rfDataHubSummary
-        rfDataHubAnnotation = table( ...
-            string.empty, ...
-            int32([]), ...
-            struct('Latitude', {}, 'Longitude', {}, 'AntennaHeight', {}), ...
-            'VariableNames', {'ID', 'Station', 'TXSite'} ...
-        )
         
         UIAxes1
         UIAxes2
@@ -193,6 +184,8 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
     properties (Access = private, Constant)
         %-----------------------------------------------------------------%
+        ANNOTATION_STYLE = uistyle('Icon', 'edit.svg', 'IconAlignment', 'leftmargin')
+
         FILTER_TYPE_TO_COLUMNS = dictionary( ...
             ["Fonte", "Frequência", "Largura banda", "Entidade", "Fistel", "Serviço", "Estação", "UF", "Município", "Distância"], ...
             ["Source", "Frequency", "BW", "_Name", "Fistel", "Service", "Station", "State", "_Location", "Distance"] ...
@@ -374,9 +367,10 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             % Controles de funcionalidades:
             app.referenceTX_EditionMode.UserData.status = false;
             app.referenceRX_EditionMode.UserData.status = false;
-            app.tool_TableVisibility.UserData.layout = 1;
-            app.tool_RFLinkButton.UserData.status = false;
-            app.tool_PDFButton.UserData.status = false;
+            
+            app.tool_TableVisibility.UserData.layout    = 1;
+            app.tool_RFLinkButton.UserData.status       = false;
+            app.tool_PDFButton.UserData.status          = false;
 
             startup_AxesCreation(app)
 
@@ -521,30 +515,30 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             if idxAnnotation
                 app.referenceTX_Refresh.Visible = 1;
                 % Latitude
-                if app.rfDataHubAnnotation.TXSite(idxAnnotation).Latitude.Status
-                    txLatitude  = app.rfDataHubAnnotation.TXSite(idxAnnotation).Latitude.EditedValue;
+                if app.mainApp.rfDataHubAnnotation.TXSite(idxAnnotation).Latitude.Status
+                    txLatitude  = app.mainApp.rfDataHubAnnotation.TXSite(idxAnnotation).Latitude.EditedValue;
                     txLatitudeFontColor   = [1,1,1];
                     txLatitudeBackground  = [1,0,0];
                 else
-                    txLatitude  = app.rfDataHubAnnotation.TXSite(idxAnnotation).Latitude.RawValue;
+                    txLatitude  = app.mainApp.rfDataHubAnnotation.TXSite(idxAnnotation).Latitude.RawValue;
                 end
 
                 % Longitude
-                if app.rfDataHubAnnotation.TXSite(idxAnnotation).Longitude.Status
-                    txLongitude = app.rfDataHubAnnotation.TXSite(idxAnnotation).Longitude.EditedValue;
+                if app.mainApp.rfDataHubAnnotation.TXSite(idxAnnotation).Longitude.Status
+                    txLongitude = app.mainApp.rfDataHubAnnotation.TXSite(idxAnnotation).Longitude.EditedValue;
                     txLongitudeFontColor  = [1,1,1];
                     txLongitudeBackground = [1,0,0];
                 else
-                    txLongitude = app.rfDataHubAnnotation.TXSite(idxAnnotation).Longitude.RawValue;
+                    txLongitude = app.mainApp.rfDataHubAnnotation.TXSite(idxAnnotation).Longitude.RawValue;
                 end
 
                 % Height
-                if app.rfDataHubAnnotation.TXSite(idxAnnotation).AntennaHeight.Status
-                    txHeight    = app.rfDataHubAnnotation.TXSite(idxAnnotation).AntennaHeight.EditedValue;
+                if app.mainApp.rfDataHubAnnotation.TXSite(idxAnnotation).AntennaHeight.Status
+                    txHeight    = app.mainApp.rfDataHubAnnotation.TXSite(idxAnnotation).AntennaHeight.EditedValue;
                     txHeightFontColor     = [1,1,1];
                     txHeightBackground    = [1,0,0];
                 else
-                    txHeight    = app.rfDataHubAnnotation.TXSite(idxAnnotation).AntennaHeight.RawValue;
+                    txHeight    = app.mainApp.rfDataHubAnnotation.TXSite(idxAnnotation).AntennaHeight.RawValue;
                 end
 
             else
@@ -607,7 +601,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             switch operationType
                 case 'Search'
                     ID = varargin{1};
-                    [~, idxAnnotation] = ismember(ID, app.rfDataHubAnnotation.ID);
+                    [~, idxAnnotation] = ismember(ID, app.mainApp.rfDataHubAnnotation.ID);
                     varargout = {idxAnnotation};
 
                 case 'Add'
@@ -654,14 +648,14 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                         % Evidenciada alteração no registro. Cria-se nova linha
                         % ou edita-se a existente.
                         if idxAnnotation
-                            if isequal(app.rfDataHubAnnotation.TXSite(idxAnnotation), txSiteDiff)
+                            if isequal(app.mainApp.rfDataHubAnnotation.TXSite(idxAnnotation), txSiteDiff)
                                 return
                             end
                         else
-                            idxAnnotation = height(app.rfDataHubAnnotation) + 1;
+                            idxAnnotation = height(app.mainApp.rfDataHubAnnotation) + 1;
                         end
 
-                        app.rfDataHubAnnotation(idxAnnotation, :) = {ID, Station, txSiteDiff};
+                        app.mainApp.rfDataHubAnnotation(idxAnnotation, :) = {ID, Station, txSiteDiff};
                         layout_AddNewTableStyle(app, 'EditedRows')
                         
                         % Força a atualização do painel HTML e dos plots...
@@ -672,7 +666,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                         % caso existente. O usuário, aqui, desfez alteração
                         % manualmente (sem pressionar no Refresh).
                         if idxAnnotation
-                            app.rfDataHubAnnotation(idxAnnotation, :) = [];
+                            app.mainApp.rfDataHubAnnotation(idxAnnotation, :) = [];
                             layout_AddNewTableStyle(app, 'EditedRows')
 
                             app.stationInfo.UserData.idxRFDataHub = [];
@@ -683,7 +677,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                 case 'Del'
                     [~, ~, ~, idxAnnotation] = referenceTX_checkTXSiteTempList(app);
                     if idxAnnotation
-                        app.rfDataHubAnnotation(idxAnnotation, :) = [];
+                        app.mainApp.rfDataHubAnnotation(idxAnnotation, :) = [];
                         layout_AddNewTableStyle(app, 'EditedRows')
 
                         app.stationInfo.UserData.idxRFDataHub = [];
@@ -703,7 +697,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
             % Consulta se esse objeto está na lista temporária de estações
             % editadas do RFDataHub.
-            [~, idxAnnotation] = ismember(ID, app.rfDataHubAnnotation.ID);
+            [~, idxAnnotation] = ismember(ID, app.mainApp.rfDataHubAnnotation.ID);
         end
 
         %-----------------------------------------------------------------%
@@ -714,7 +708,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             txLongitude  = round(double(app.rfDataHub.Longitude(idxRFDataHub)), 6);
             txHeight     = round(str2double(char(app.rfDataHub.AntennaHeight(idxRFDataHub))), 1);
             if txHeight < 0
-                txHeight = app.mainApp.General.context.RFDATAHUB.defaultTx.height;
+                txHeight = app.mainApp.General.context.RFDATAHUB.tx.defaultHeight;
             end
         end
 
@@ -724,44 +718,52 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
         % PAINEL: ESTAÇÃO RECEPTORA - RX
         %-----------------------------------------------------------------%
         function  rxSite = referenceRX_InitialValue(app)
-            refRXFlag = false;
+            if isequal(app.mainApp.General.context.RFDATAHUB.rx.default, app.mainApp.General.context.RFDATAHUB.rx.last)
+                refRXFlag = false;
 
-            switch class(app.mainApp)
-                case 'winAppAnalise'
-                    for ii = 1:numel(app.referenceData)
-                        if app.referenceData(ii).GPS.Status
-                            rxLatitude  = app.referenceData(ii).GPS.Latitude;
-                            rxLongitude = app.referenceData(ii).GPS.Longitude;
-        
-                            % Salvo engano, o campo de altura só existe nos arquivos 
-                            % gerados pelo appColeta, no formato "10m", por exemplo.
-                            rxHeight = [];
-                            if isfield(app.referenceData(ii).MetaData.Antenna, 'Height')
-                                rxHeight = str2double(extractBefore(app.referenceData(ii).MetaData.Antenna.Height, 'm'));
+                switch class(app.mainApp)
+                    case 'winAppAnalise'
+                        for ii = 1:numel(app.referenceData)
+                            if app.referenceData(ii).GPS.Status
+                                rxLatitude  = app.referenceData(ii).GPS.Latitude;
+                                rxLongitude = app.referenceData(ii).GPS.Longitude;
+            
+                                % Salvo engano, o campo de altura só existe nos arquivos 
+                                % gerados pelo appColeta, no formato "10m", por exemplo.
+                                rxHeight = [];
+                                if isfield(app.referenceData(ii).MetaData.Antenna, 'Height')
+                                    rxHeight = str2double(extractBefore(app.referenceData(ii).MetaData.Antenna.Height, 'm'));
+                                end
+            
+                                if isempty(rxHeight) || isnan(rxHeight) || (rxHeight <= 0) || isinf(rxHeight)
+                                    rxHeight = app.mainApp.General.context.RFDATAHUB.rx.default.height;
+                                end
+                                
+                                refRXFlag = true;
+                                break
                             end
-        
-                            if isempty(rxHeight) || isnan(rxHeight) || (rxHeight <= 0) || isinf(rxHeight)
-                                rxHeight = app.mainApp.General.context.RFDATAHUB.defaultRx.height;
-                            end
-                            
-                            refRXFlag   = true;
-                            break
                         end
-                    end
-        
-                    case 'winMonitorRNI'
-                        if ~isempty(app.referenceData)
-                            rxLatitude  = app.referenceData(1).Latitude;
-                            rxLongitude = app.referenceData(1).Longitude;
-                            rxHeight    = app.mainApp.General.context.RFDATAHUB.defaultRx.height;
-                            refRXFlag   = true;
-                        end
-            end
+            
+                        case 'winMonitorRNI'
+                            if ~isempty(app.referenceData)
+                                rxLatitude  = app.referenceData(1).Latitude;
+                                rxLongitude = app.referenceData(1).Longitude;
+                                rxHeight    = app.mainApp.General.context.RFDATAHUB.rx.default.height;
 
-            if ~refRXFlag
-                rxLatitude  = app.mainApp.General.context.RFDATAHUB.defaultRx.latitude;
-                rxLongitude = app.mainApp.General.context.RFDATAHUB.defaultRx.longitude;
-                rxHeight    = app.mainApp.General.context.RFDATAHUB.defaultRx.height;
+                                refRXFlag = true;
+                            end
+                end
+    
+                if ~refRXFlag
+                    rxLatitude  = app.mainApp.General.context.RFDATAHUB.rx.default.latitude;
+                    rxLongitude = app.mainApp.General.context.RFDATAHUB.rx.default.longitude;
+                    rxHeight    = app.mainApp.General.context.RFDATAHUB.rx.default.height;
+                end
+
+            else
+                rxLatitude  = app.mainApp.General.context.RFDATAHUB.rx.last.latitude;
+                rxLongitude = app.mainApp.General.context.RFDATAHUB.rx.last.longitude;
+                rxHeight    = app.mainApp.General.context.RFDATAHUB.rx.last.height;
             end
 
             rxSite = struct('Name',          'RX',        ...
@@ -800,6 +802,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                 case 'Refresh'
                     rxSite = refInitialValue;
                     referenceRX_UpdatePanel(app, rxSite)
+
                 case 'Edit'
                     rxSite = RFLinkObjects(app, 'RX');
             end
@@ -828,6 +831,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             % ocorrido em "Latitude" ou "Longitude".            
             if ~isequal(rmfield(refDistanceColumnSource, 'AntennaHeight'), rmfield(rxSite, 'AntennaHeight'))
                 referenceRX_RefreshTableAndPlots(app, rxSite)
+
             elseif ~isequal(refDistanceColumnSource.AntennaHeight, rxSite.AntennaHeight)
                 app.referenceRX_Refresh.UserData.DistanceColumnSource.AntennaHeight = rxSite.AntennaHeight;
                 app.stationInfo.UserData.idxRFDataHub = [];
@@ -876,9 +880,9 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
         % FILTRAGEM
         %-----------------------------------------------------------------%
         function initializeFilterRules(app)
-            if ~isempty(app.mainApp.General.context.RFDATAHUB.lastColumnFilters)
+            if ~isempty(app.mainApp.General.context.RFDATAHUB.filter.last)
                 try
-                    lastColumnFilters = struct2table(app.mainApp.General.context.RFDATAHUB.lastColumnFilters, "AsArray", true);
+                    lastColumnFilters    = struct2table(app.mainApp.General.context.RFDATAHUB.filter.last, "AsArray", true);
                     
                     lastColumnDataTypes  = matlab.Compatibility.resolveTableVariableTypes(lastColumnFilters, false);
                     filterRulesDataTypes = matlab.Compatibility.resolveTableVariableTypes(app.FilterRules, false);
@@ -894,10 +898,10 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             end
 
             if isempty(app.FilterRules)
-                filterType = app.mainApp.General.context.RFDATAHUB.defaultFilter.columnLabel;
-                filterOperation = app.mainApp.General.context.RFDATAHUB.defaultFilter.operation;
+                filterType = app.mainApp.General.context.RFDATAHUB.filter.default.columnLabel;
+                filterOperation = app.mainApp.General.context.RFDATAHUB.filter.default.operation;
                 columnName = app.FILTER_TYPE_TO_COLUMNS(filterType);
-                filterValue = app.mainApp.General.context.RFDATAHUB.defaultFilter.value;
+                filterValue = app.mainApp.General.context.RFDATAHUB.filter.default.value;
                 hash = model.ProjectBase.computeFileRuleHash(filterType, filterOperation, filterValue);
                 
                 addFilterRule(app, 'Node', -1, filterType, filterOperation, columnName, filterValue, [], hash)
@@ -954,27 +958,50 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
             buildFilterRuleTree(app)
             applyFilterRulesToTable(app)
-            syncFilterRulesToConfig(app)
+            syncRFDATAHUBStateToConfig(app, 'filter')
         end
 
         %-----------------------------------------------------------------%
-        function syncFilterRulesToConfig(app)
-            configRulesHash  = '';
-            if ~isempty(app.mainApp.General.context.RFDATAHUB.lastColumnFilters)
-                configRulesHash  = strjoin(sort({app.mainApp.General.context.RFDATAHUB.lastColumnFilters.Hash}));
-            end
-            currentRulesHash = strjoin(sort(app.FilterRules.Hash));
-
-            if isequal(configRulesHash, currentRulesHash)
-                return                
+        function syncRFDATAHUBStateToConfig(app, updateType)
+            arguments
+                app
+                updateType {mustBeMember(updateType, {'rx', 'filter'})}
             end
 
-            currentRules = app.FilterRules;
-            currentRules.Handle(:) = {[]};
-            currentRules = table2struct(currentRules);
+            switch updateType
+                case 'rx'
+                    configRx  = app.mainApp.General.context.RFDATAHUB.rx.last;
+                    currentRx = struct( ...
+                        'latitude',  round(app.referenceRX_Latitude.Value,  6), ...
+                        'longitude', round(app.referenceRX_Longitude.Value, 6), ...
+                        'height',    round(app.referenceRX_Height.Value,    1)  ...
+                    );
 
-            app.mainApp.General.context.RFDATAHUB.lastColumnFilters   = currentRules;
-            app.mainApp.General_I.context.RFDATAHUB.lastColumnFilters = currentRules;
+                    if isequaln(configRx, currentRx)
+                        return
+                    end
+        
+                    app.mainApp.General.context.RFDATAHUB.rx.last   = currentRx;
+                    app.mainApp.General_I.context.RFDATAHUB.rx.last = currentRx;
+
+                case 'filter'
+                    configRulesHash = '';
+                    if ~isempty(app.mainApp.General.context.RFDATAHUB.filter.last)
+                        configRulesHash = strjoin(sort({app.mainApp.General.context.RFDATAHUB.filter.last.Hash}));
+                    end
+                    currentRulesHash = strjoin(sort(app.FilterRules.Hash));
+        
+                    if isequal(configRulesHash, currentRulesHash)
+                        return                
+                    end
+        
+                    currentRules = app.FilterRules;
+                    currentRules.Handle(:) = {[]};
+                    currentRules = table2struct(currentRules);
+        
+                    app.mainApp.General.context.RFDATAHUB.filter.last   = currentRules;
+                    app.mainApp.General_I.context.RFDATAHUB.filter.last = currentRules;
+            end
             
             appEngine.util.generalSettingsSave(class.Constants.appName, app.mainApp.rootFolder, app.mainApp.General_I, app.mainApp.executionMode)
         end
@@ -1043,25 +1070,24 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     roiType = app.FilterRules.Type{ii};
                     roiSpecification = [
                         structUtil.struct2cellWithFields(jsondecode(app.FilterRules.Value{ii})), ...
-                        {'Color', [0.40,0.73,0.88], 'Tag', 'FilterROI', 'UserData', app.FilterRules.Hash{ii}}
+                        {'Color', [0.40,0.73,0.88], 'LineWidth', 1, 'Deletable', 1, 'FaceSelectable', 0, 'Tag', 'FilterROI', 'UserData', app.FilterRules.Hash{ii}}
                     ];
 
-                    positionPropIdx = find(cellfun(@(x) isequal('Position', x), roiSpecification), 1);
-                    if ~isempty(positionPropIdx)
-                        if iscolumn(roiSpecification{positionPropIdx+1})
-                            roiSpecification{positionPropIdx+1} = roiSpecification{positionPropIdx+1}';
-                        end
+                    columnNumericIdxs = cellfun(@(x) isnumeric(x) && iscolumn(x), roiSpecification);
+                    if any(columnNumericIdxs)
+                        roiSpecification(columnNumericIdxs) = cellfun(@(x) x.', roiSpecification(columnNumericIdxs), 'UniformOutput', false);
                     end
                     
                     if strcmp(app.FilterRules.Type{ii}, 'images.roi.Rectangle')
-                        roiSpecification = [roiSpecification, {'Rotatable', true}];
+                        roiSpecification = [roiSpecification, {'Rotatable', 1}];
                     end
 
                     hROI = plot.ROI.draw(roiType, app.UIAxes1, roiSpecification);
 
                     plot.axes.Interactivity.DefaultEnable(app.UIAxes1)                    
-                    addlistener(hROI, 'MovingROI', @app.filter_ROICallbacks);
-                    addlistener(hROI, 'ROIMoved',  @app.filter_ROICallbacks);
+                    addlistener(hROI, 'MovingROI',   @app.onROIChanged);
+                    addlistener(hROI, 'ROIMoved',    @app.onROIChanged);
+                    addlistener(hROI, 'DeletingROI', @app.onROIChanged);
                     addlistener(hROI, 'ObjectBeingDestroyed', @(src, ~)plot.axes.Interactivity.DeleteROIListeners(src));
 
                     app.FilterRules.Handle{ii} = hROI;                    
@@ -1321,10 +1347,10 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     styleType = "cell";
                     layout_RemoveOldTableStyle(app, styleType)
 
-                    idxRows = find(contains(app.UITable.Data.ID, app.rfDataHubAnnotation.ID));
+                    idxRows = find(contains(app.UITable.Data.ID, app.mainApp.rfDataHubAnnotation.ID));
                     if ~isempty(idxRows)
                         listOfCells = [idxRows, 2*ones(numel(idxRows), 1)];
-                        addStyle(app.UITable, uistyle('Icon', 'Edit_32.png',  'IconAlignment', 'leftmargin'), styleType, listOfCells)
+                        addStyle(app.UITable, app.ANNOTATION_STYLE, styleType, listOfCells)
                     end
 
                 case 'RowSelectionChanged'
@@ -1429,7 +1455,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function filter_ROICallbacks(app, src, event)
+        function onROIChanged(app, src, event)
             switch(event.EventName)
                 case 'MovingROI'
                     plot.axes.Interactivity.DefaultDisable(app.UIAxes1)
@@ -1438,15 +1464,26 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     plot.axes.Interactivity.DefaultEnable(app.UIAxes1)
 
                     filterIdx = find(cellfun(@(x) isequal(src, x), app.FilterRules.Handle), 1);
-                    app.FilterRules.Value{filterIdx} = jsonencode(plot.ROI.specification(src));
+                    filterType = app.FilterRules.Type{filterIdx};
+                    filterOperation = app.FilterRules.Operation{filterIdx};
+                    filterValue = jsonencode(plot.ROI.specification(src));
+
+                    app.FilterRules(filterIdx, {'Value', 'Hash'}) = { ...
+                        jsonencode(plot.ROI.specification(src)), ...
+                        model.ProjectBase.computeFileRuleHash(filterType, filterOperation, filterValue) ...
+                    };
                     
                     buildFilterRuleTree(app)
                     applyFilterRulesToTable(app)
-                    syncFilterRulesToConfig(app)
+                    syncRFDATAHUBStateToConfig(app, 'filter')
 
                     if isvalid(event.Source)
                         uistack(event.Source, 'top')
                     end
+
+                case 'DeletingROI'
+                    filterIdx = find(cellfun(@(x) isequal(src, x), app.FilterRules.Handle), 1);
+                    removeFilterRule(app, filterIdx)
             end            
         end
     end
@@ -1456,26 +1493,21 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
     methods (Access = private)
 
         % Code that executes after component creation
-        function startupFcn(app, mainApp, filterTable, rfDataHubAnnotation)
+        function startupFcn(app, mainApp)
             
             % Módulo auxiliar RFDataHub, consumido, em 18/09/2025, tanto pelo 
             % appAnalise quanto pelo monitorRNI. Toda modificação deste módulo
             % demanda a posterior atualização MANUAL do ".mlapp" em todos os
             % projetos.
             try
+                app.UIFigure.Name = class.Constants.appName;
+
                 switch class(mainApp)
                     case 'winAppAnalise'
                         app.referenceData = mainApp.specData;
+
                     case 'winMonitorRNI'
                         app.referenceData = mainApp.measData;
-                    otherwise
-                        error('UnexpectedCaller')
-                end
-                app.UIFigure.Name = class.Constants.appName;
-        
-                if nargin == 4
-                    app.FilterRules = filterTable;
-                    app.rfDataHubAnnotation = rfDataHubAnnotation;
                 end
 
                 appEngine.boot(app, app.Role, mainApp)
@@ -1775,6 +1807,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                 case app.referenceRX_Refresh
                     referenceRX_EditOrRefreshReferenceRX(app, 'Refresh')
                     referenceRX_EditionPanelLayout(app, 'off')
+                    syncRFDATAHUBStateToConfig(app, 'rx')
 
                 case app.referenceRX_EditionMode
                     app.referenceRX_EditionMode.UserData.status = ~app.referenceRX_EditionMode.UserData.status;
@@ -1789,6 +1822,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                 case app.referenceRX_EditionConfirm
                     referenceRX_EditOrRefreshReferenceRX(app, 'Edit')
                     referenceRX_EditionPanelLayout(app, 'off')
+                    syncRFDATAHUBStateToConfig(app, 'rx')
 
                 case app.referenceRX_EditionCancel
                     rxSite = app.referenceRX_Refresh.UserData.DistanceColumnSource;
@@ -1920,18 +1954,19 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     filterType = app.filter_SecondaryTextList.Value;
                     switch filterType
                         case 'images.roi.Circle';    roiFcn = 'drawcircle';    roiNameArgument = '';
-                        case 'images.roi.Rectangle'; roiFcn = 'drawrectangle'; roiNameArgument = 'Rotatable=true, ';
+                        case 'images.roi.Rectangle'; roiFcn = 'drawrectangle'; roiNameArgument = 'Rotatable=1, ';
                         case 'images.roi.Polygon';   roiFcn = 'drawpolygon';   roiNameArgument = '';
                     end
-                    eval(sprintf('hROI = %s(app.UIAxes1, Color=[0.40,0.73,0.88], LineWidth=1, Deletable=0, FaceSelectable=0, %sTag="FilterROI");', roiFcn, roiNameArgument))
+                    eval(sprintf('hROI = %s(app.UIAxes1, Color=[0.40,0.73,0.88], LineWidth=1, Deletable=1, FaceSelectable=0, %sTag="FilterROI");', roiFcn, roiNameArgument))
                     plot.axes.Interactivity.DefaultEnable(app.UIAxes1)
 
                     if isempty(hROI.Position)
                         delete(hROI)
                         return
                     end
-                    addlistener(hROI, 'MovingROI', @app.filter_ROICallbacks);
-                    addlistener(hROI, 'ROIMoved',  @app.filter_ROICallbacks);
+                    addlistener(hROI, 'MovingROI',   @app.onROIChanged);
+                    addlistener(hROI, 'ROIMoved',    @app.onROIChanged);
+                    addlistener(hROI, 'DeletingROI', @app.onROIChanged);
                     addlistener(hROI, 'ObjectBeingDestroyed', @(src, ~)plot.axes.Interactivity.DeleteROIListeners(src));
 
                     filterValue  = jsonencode(plot.ROI.specification(hROI));
@@ -1960,7 +1995,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
             buildFilterRuleTree(app)
             applyFilterRulesToTable(app)
-            syncFilterRulesToConfig(app)
+            syncRFDATAHUBStateToConfig(app, 'filter')
 
         end
 
@@ -2192,7 +2227,6 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.tool_RFLinkButton = uiimage(app.Toolbar);
             app.tool_RFLinkButton.ScaleMethod = 'none';
             app.tool_RFLinkButton.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
-            app.tool_RFLinkButton.Enable = 'off';
             app.tool_RFLinkButton.Layout.Row = [1 3];
             app.tool_RFLinkButton.Layout.Column = 4;
             app.tool_RFLinkButton.ImageSource = 'Publish_HTML_16.png';
@@ -2201,7 +2235,6 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.tool_PDFButton = uiimage(app.Toolbar);
             app.tool_PDFButton.ScaleMethod = 'none';
             app.tool_PDFButton.ImageClickedFcn = createCallbackFcn(app, @Toolbar_InteractionImageClicked, true);
-            app.tool_PDFButton.Enable = 'off';
             app.tool_PDFButton.Layout.Row = [1 3];
             app.tool_PDFButton.Layout.Column = 5;
             app.tool_PDFButton.ImageSource = 'Publish_PDF_16.png';
@@ -2219,7 +2252,6 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.tool_ExportButton = uiimage(app.Toolbar);
             app.tool_ExportButton.ScaleMethod = 'none';
             app.tool_ExportButton.ImageClickedFcn = createCallbackFcn(app, @Toolbar_exportButtonPushed, true);
-            app.tool_ExportButton.Enable = 'off';
             app.tool_ExportButton.Layout.Row = [1 3];
             app.tool_ExportButton.Layout.Column = 7;
             app.tool_ExportButton.ImageSource = 'Export_16.png';
@@ -2821,29 +2853,29 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             % Create filter_SecondaryType1
             app.filter_SecondaryType1 = uiradiobutton(app.filter_SecondaryTypePanel);
             app.filter_SecondaryType1.Tag = 'Source';
-            app.filter_SecondaryType1.Text = 'Fonte';
+            app.filter_SecondaryType1.Text = 'Base de dados';
             app.filter_SecondaryType1.FontSize = 10.5;
             app.filter_SecondaryType1.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.filter_SecondaryType1.Interpreter = 'html';
-            app.filter_SecondaryType1.Position = [8 69 49 22];
+            app.filter_SecondaryType1.Position = [8 69 94 22];
 
             % Create filter_SecondaryType2
             app.filter_SecondaryType2 = uiradiobutton(app.filter_SecondaryTypePanel);
             app.filter_SecondaryType2.Tag = 'Frequency';
-            app.filter_SecondaryType2.Text = 'Frequência';
+            app.filter_SecondaryType2.Text = 'Frequência (MHz)';
             app.filter_SecondaryType2.FontSize = 10.5;
             app.filter_SecondaryType2.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.filter_SecondaryType2.Interpreter = 'html';
-            app.filter_SecondaryType2.Position = [8 48 83 22];
+            app.filter_SecondaryType2.Position = [8 48 108 22];
 
             % Create filter_SecondaryType3
             app.filter_SecondaryType3 = uiradiobutton(app.filter_SecondaryTypePanel);
             app.filter_SecondaryType3.Tag = 'BW';
-            app.filter_SecondaryType3.Text = 'Largura banda';
+            app.filter_SecondaryType3.Text = 'Largura (kHz)';
             app.filter_SecondaryType3.FontSize = 10.5;
             app.filter_SecondaryType3.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.filter_SecondaryType3.Interpreter = 'html';
-            app.filter_SecondaryType3.Position = [8 27 90 22];
+            app.filter_SecondaryType3.Position = [8 27 88 22];
 
             % Create filter_SecondaryType5
             app.filter_SecondaryType5 = uiradiobutton(app.filter_SecondaryTypePanel);
@@ -2852,7 +2884,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.filter_SecondaryType5.FontSize = 10.5;
             app.filter_SecondaryType5.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.filter_SecondaryType5.Interpreter = 'html';
-            app.filter_SecondaryType5.Position = [131 69 63 22];
+            app.filter_SecondaryType5.Position = [136 69 63 22];
 
             % Create filter_SecondaryType6
             app.filter_SecondaryType6 = uiradiobutton(app.filter_SecondaryTypePanel);
@@ -2861,7 +2893,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.filter_SecondaryType6.FontSize = 10.5;
             app.filter_SecondaryType6.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.filter_SecondaryType6.Interpreter = 'html';
-            app.filter_SecondaryType6.Position = [131 48 47 22];
+            app.filter_SecondaryType6.Position = [136 48 47 22];
 
             % Create filter_SecondaryType7
             app.filter_SecondaryType7 = uiradiobutton(app.filter_SecondaryTypePanel);
@@ -2870,7 +2902,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.filter_SecondaryType7.FontSize = 10.5;
             app.filter_SecondaryType7.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.filter_SecondaryType7.Interpreter = 'html';
-            app.filter_SecondaryType7.Position = [131 27 57 22];
+            app.filter_SecondaryType7.Position = [136 27 57 22];
 
             % Create filter_SecondaryType8
             app.filter_SecondaryType8 = uiradiobutton(app.filter_SecondaryTypePanel);
@@ -2879,7 +2911,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.filter_SecondaryType8.FontSize = 10.5;
             app.filter_SecondaryType8.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.filter_SecondaryType8.Interpreter = 'html';
-            app.filter_SecondaryType8.Position = [131 6 60 22];
+            app.filter_SecondaryType8.Position = [136 6 60 22];
 
             % Create filter_SecondaryType9
             app.filter_SecondaryType9 = uiradiobutton(app.filter_SecondaryTypePanel);
@@ -2937,7 +2969,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             % Create SubGrid3
             app.SubGrid3 = uigridlayout(app.SubTab3);
             app.SubGrid3.ColumnWidth = {'1x', 18};
-            app.SubGrid3.RowHeight = {22, 190, 22, '1x'};
+            app.SubGrid3.RowHeight = {22, 154, 22, '1x'};
             app.SubGrid3.ColumnSpacing = 5;
             app.SubGrid3.RowSpacing = 5;
             app.SubGrid3.Padding = [10 10 10 5];
@@ -2973,39 +3005,12 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             % Create config_geoAxesGrid
             app.config_geoAxesGrid = uigridlayout(app.config_geoAxesPanel);
             app.config_geoAxesGrid.ColumnWidth = {120, 36, '1x', 50};
-            app.config_geoAxesGrid.RowHeight = {17, 64, 1, 22, 22, 22};
+            app.config_geoAxesGrid.RowHeight = {22, 22, 22, 22, 22};
             app.config_geoAxesGrid.RowSpacing = 5;
-            app.config_geoAxesGrid.Padding = [10 10 10 5];
             app.config_geoAxesGrid.BackgroundColor = [1 1 1];
 
-            % Create config_geoAxesSublabel
-            app.config_geoAxesSublabel = uilabel(app.config_geoAxesGrid);
-            app.config_geoAxesSublabel.VerticalAlignment = 'bottom';
-            app.config_geoAxesSublabel.FontSize = 10;
-            app.config_geoAxesSublabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.config_geoAxesSublabel.Layout.Row = 1;
-            app.config_geoAxesSublabel.Layout.Column = 1;
-            app.config_geoAxesSublabel.Text = 'Mapa:';
-
-            % Create config_geoAxesSubPanel
-            app.config_geoAxesSubPanel = uipanel(app.config_geoAxesGrid);
-            app.config_geoAxesSubPanel.AutoResizeChildren = 'off';
-            app.config_geoAxesSubPanel.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.config_geoAxesSubPanel.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.config_geoAxesSubPanel.Layout.Row = 2;
-            app.config_geoAxesSubPanel.Layout.Column = [1 4];
-
-            % Create config_geoAxesSubGrid
-            app.config_geoAxesSubGrid = uigridlayout(app.config_geoAxesSubPanel);
-            app.config_geoAxesSubGrid.ColumnWidth = {156, '1x'};
-            app.config_geoAxesSubGrid.RowHeight = {17, 22};
-            app.config_geoAxesSubGrid.RowSpacing = 5;
-            app.config_geoAxesSubGrid.Padding = [10 10 10 5];
-            app.config_geoAxesSubGrid.BackgroundColor = [1 1 1];
-
             % Create config_BasemapLabel
-            app.config_BasemapLabel = uilabel(app.config_geoAxesSubGrid);
-            app.config_BasemapLabel.VerticalAlignment = 'bottom';
+            app.config_BasemapLabel = uilabel(app.config_geoAxesGrid);
             app.config_BasemapLabel.FontSize = 10;
             app.config_BasemapLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.config_BasemapLabel.Layout.Row = 1;
@@ -3013,34 +3018,33 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.config_BasemapLabel.Text = 'Basemap:';
 
             % Create config_Basemap
-            app.config_Basemap = uidropdown(app.config_geoAxesSubGrid);
+            app.config_Basemap = uidropdown(app.config_geoAxesGrid);
             app.config_Basemap.Items = {'none', 'darkwater', 'streets-light', 'streets-dark', 'satellite', 'topographic', 'grayterrain'};
             app.config_Basemap.ValueChangedFcn = createCallbackFcn(app, @config_geoAxesOthersParametersChanged, true);
             app.config_Basemap.FontSize = 11;
             app.config_Basemap.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.config_Basemap.BackgroundColor = [1 1 1];
-            app.config_Basemap.Layout.Row = 2;
-            app.config_Basemap.Layout.Column = 1;
+            app.config_Basemap.Layout.Row = 1;
+            app.config_Basemap.Layout.Column = [2 4];
             app.config_Basemap.Value = 'satellite';
 
             % Create config_ColormapLabel
-            app.config_ColormapLabel = uilabel(app.config_geoAxesSubGrid);
-            app.config_ColormapLabel.VerticalAlignment = 'bottom';
+            app.config_ColormapLabel = uilabel(app.config_geoAxesGrid);
             app.config_ColormapLabel.FontSize = 10;
             app.config_ColormapLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.config_ColormapLabel.Layout.Row = 1;
-            app.config_ColormapLabel.Layout.Column = 2;
+            app.config_ColormapLabel.Layout.Row = 2;
+            app.config_ColormapLabel.Layout.Column = 1;
             app.config_ColormapLabel.Text = 'Mapa de cor:';
 
             % Create config_Colormap
-            app.config_Colormap = uidropdown(app.config_geoAxesSubGrid);
+            app.config_Colormap = uidropdown(app.config_geoAxesGrid);
             app.config_Colormap.Items = {'winter', 'parula', 'turbo', 'gray', 'hot', 'jet', 'summer'};
             app.config_Colormap.ValueChangedFcn = createCallbackFcn(app, @config_geoAxesOthersParametersChanged, true);
             app.config_Colormap.FontSize = 11;
             app.config_Colormap.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.config_Colormap.BackgroundColor = [1 1 1];
             app.config_Colormap.Layout.Row = 2;
-            app.config_Colormap.Layout.Column = 2;
+            app.config_Colormap.Layout.Column = [2 4];
             app.config_Colormap.Value = 'winter';
 
             % Create config_Station_Label
@@ -3048,7 +3052,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.config_Station_Label.WordWrap = 'on';
             app.config_Station_Label.FontSize = 10;
             app.config_Station_Label.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.config_Station_Label.Layout.Row = 4;
+            app.config_Station_Label.Layout.Row = 3;
             app.config_Station_Label.Layout.Column = 1;
             app.config_Station_Label.Text = 'Estações RFDataHub:';
 
@@ -3056,7 +3060,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.config_Station_Color = uicolorpicker(app.config_geoAxesGrid);
             app.config_Station_Color.Value = [0 1 1];
             app.config_Station_Color.ValueChangedFcn = createCallbackFcn(app, @config_geoAxesColorParameterChanged, true);
-            app.config_Station_Color.Layout.Row = 4;
+            app.config_Station_Color.Layout.Row = 3;
             app.config_Station_Color.Layout.Column = 2;
             app.config_Station_Color.BackgroundColor = [1 1 1];
 
@@ -3069,7 +3073,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.config_Station_Size.FontSize = 10;
             app.config_Station_Size.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.config_Station_Size.Tooltip = {'Tamanho do marcador'};
-            app.config_Station_Size.Layout.Row = 4;
+            app.config_Station_Size.Layout.Row = 3;
             app.config_Station_Size.Layout.Column = [3 4];
             app.config_Station_Size.Value = 1;
 
@@ -3078,7 +3082,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.config_TX_Label.WordWrap = 'on';
             app.config_TX_Label.FontSize = 10;
             app.config_TX_Label.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.config_TX_Label.Layout.Row = 5;
+            app.config_TX_Label.Layout.Row = 4;
             app.config_TX_Label.Layout.Column = [1 2];
             app.config_TX_Label.Text = 'Estação transmissora - TX:';
 
@@ -3086,7 +3090,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.config_TX_Color = uicolorpicker(app.config_geoAxesGrid);
             app.config_TX_Color.Value = [0.7882 0.2784 0.3412];
             app.config_TX_Color.ValueChangedFcn = createCallbackFcn(app, @config_geoAxesColorParameterChanged, true);
-            app.config_TX_Color.Layout.Row = 5;
+            app.config_TX_Color.Layout.Row = 4;
             app.config_TX_Color.Layout.Column = 2;
             app.config_TX_Color.BackgroundColor = [1 1 1];
 
@@ -3099,7 +3103,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.config_TX_Size.FontSize = 10;
             app.config_TX_Size.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.config_TX_Size.Tooltip = {'Tamanho do marcador'};
-            app.config_TX_Size.Layout.Row = 5;
+            app.config_TX_Size.Layout.Row = 4;
             app.config_TX_Size.Layout.Column = 3;
             app.config_TX_Size.Value = 1;
 
@@ -3111,7 +3115,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.config_TX_DataTipVisibility.FontSize = 11;
             app.config_TX_DataTipVisibility.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.config_TX_DataTipVisibility.BackgroundColor = [1 1 1];
-            app.config_TX_DataTipVisibility.Layout.Row = 5;
+            app.config_TX_DataTipVisibility.Layout.Row = 4;
             app.config_TX_DataTipVisibility.Layout.Column = 4;
             app.config_TX_DataTipVisibility.Value = 'off';
 
@@ -3120,7 +3124,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.config_RX_Label.WordWrap = 'on';
             app.config_RX_Label.FontSize = 10;
             app.config_RX_Label.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.config_RX_Label.Layout.Row = 6;
+            app.config_RX_Label.Layout.Row = 5;
             app.config_RX_Label.Layout.Column = [1 2];
             app.config_RX_Label.Text = 'Estação receptora - RX:';
 
@@ -3128,7 +3132,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.config_RX_Color = uicolorpicker(app.config_geoAxesGrid);
             app.config_RX_Color.Value = [0.7882 0.2784 0.3373];
             app.config_RX_Color.ValueChangedFcn = createCallbackFcn(app, @config_geoAxesColorParameterChanged, true);
-            app.config_RX_Color.Layout.Row = 6;
+            app.config_RX_Color.Layout.Row = 5;
             app.config_RX_Color.Layout.Column = 2;
             app.config_RX_Color.BackgroundColor = [1 1 1];
 
@@ -3141,7 +3145,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.config_RX_Size.FontSize = 10;
             app.config_RX_Size.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.config_RX_Size.Tooltip = {'Tamanho do marcador'};
-            app.config_RX_Size.Layout.Row = 6;
+            app.config_RX_Size.Layout.Row = 5;
             app.config_RX_Size.Layout.Column = [3 4];
             app.config_RX_Size.Value = 1;
 
@@ -3164,20 +3168,18 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
             % Create config_ElevationSourceGrid
             app.config_ElevationSourceGrid = uigridlayout(app.config_ElevationSourcePanel);
-            app.config_ElevationSourceGrid.ColumnWidth = {166, '1x'};
-            app.config_ElevationSourceGrid.RowHeight = {17, 22, 40};
+            app.config_ElevationSourceGrid.ColumnWidth = {120, '1x'};
+            app.config_ElevationSourceGrid.RowHeight = {22, 22, 40};
             app.config_ElevationSourceGrid.RowSpacing = 5;
-            app.config_ElevationSourceGrid.Padding = [10 10 10 5];
             app.config_ElevationSourceGrid.BackgroundColor = [1 1 1];
 
             % Create config_ElevationAPISourceLabel
             app.config_ElevationAPISourceLabel = uilabel(app.config_ElevationSourceGrid);
-            app.config_ElevationAPISourceLabel.VerticalAlignment = 'bottom';
             app.config_ElevationAPISourceLabel.FontSize = 10;
             app.config_ElevationAPISourceLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.config_ElevationAPISourceLabel.Layout.Row = 1;
             app.config_ElevationAPISourceLabel.Layout.Column = 1;
-            app.config_ElevationAPISourceLabel.Text = 'Fonte:';
+            app.config_ElevationAPISourceLabel.Text = 'Provedor:';
 
             % Create config_ElevationAPISource
             app.config_ElevationAPISource = uidropdown(app.config_ElevationSourceGrid);
@@ -3185,17 +3187,16 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
             app.config_ElevationAPISource.FontSize = 11;
             app.config_ElevationAPISource.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.config_ElevationAPISource.BackgroundColor = [1 1 1];
-            app.config_ElevationAPISource.Layout.Row = 2;
-            app.config_ElevationAPISource.Layout.Column = 1;
+            app.config_ElevationAPISource.Layout.Row = 1;
+            app.config_ElevationAPISource.Layout.Column = 2;
             app.config_ElevationAPISource.Value = 'Open-Elevation';
 
             % Create config_ElevationNPointsLabel
             app.config_ElevationNPointsLabel = uilabel(app.config_ElevationSourceGrid);
-            app.config_ElevationNPointsLabel.VerticalAlignment = 'bottom';
             app.config_ElevationNPointsLabel.FontSize = 10;
             app.config_ElevationNPointsLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.config_ElevationNPointsLabel.Layout.Row = 1;
-            app.config_ElevationNPointsLabel.Layout.Column = 2;
+            app.config_ElevationNPointsLabel.Layout.Row = 2;
+            app.config_ElevationNPointsLabel.Layout.Column = 1;
             app.config_ElevationNPointsLabel.Text = 'Pontos enlace:';
 
             % Create config_ElevationNPoints
