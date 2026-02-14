@@ -143,12 +143,12 @@ classdef dockReportLib_exported < matlab.apps.AppBase
     methods (Access = private)
 
         % Code that executes after component creation
-        function startupFcn(app, mainApp, callingApp, context)
+        function startupFcn(app, mainApp, callingApp, context, varargin)
             
             try
                 appEngine.boot(app, app.Role, mainApp, callingApp)
 
-                app.inputArgs = struct('context', context);
+                app.inputArgs = struct('context', context, 'varargin', {varargin});
                 updatePanel(app, context)
                 
             catch ME
@@ -186,9 +186,11 @@ classdef dockReportLib_exported < matlab.apps.AppBase
         % Image clicked function: prjOpenFileButton
         function onProjectLoad(app, event)
             
-            context = app.inputArgs.context;
+            appName  = class.Constants.appName;
+            context  = app.inputArgs.context;
+            varargin = app.inputArgs.varargin;
             
-            [fileFullPath, fileFolder] = ui.Dialog(app.UIFigure, 'uigetfile', '', {'*.mat', 'monitorRNI'}, app.mainApp.General.fileFolder.lastVisited, {'MultiSelect', 'off'});
+            [fileFullPath, fileFolder] = ui.Dialog(app.UIFigure, 'uigetfile', '', {'*.mat', [appName ' (*.mat)']}, app.mainApp.General.fileFolder.lastVisited, {'MultiSelect', 'off'});
             if isempty(fileFullPath)
                 return
             end
@@ -197,7 +199,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             d = ui.Dialog(app.UIFigure, "progressdlg", "Em andamento...");
             
             try
-                msg = load(app.projectData, 'file', fileFullPath, app.mainApp.General);
+                [app.mainApp.measData, msg] = load(app.projectData, context, fileFullPath, app.mainApp.General, varargin{:});
                 ipcMainMatlabCallsHandler(app.mainApp, app, 'onProjectLoad', context)
                 updatePanel(app, context)
 
@@ -216,10 +218,12 @@ classdef dockReportLib_exported < matlab.apps.AppBase
         % Image clicked function: prjSaveButton
         function onProjectSave(app, event)
             
-            context = app.inputArgs.context;
+            appName  = class.Constants.appName;
+            context  = app.inputArgs.context;
+            varargin = app.inputArgs.varargin;
 
             if isfile(app.projectData.file)
-                if ~checkIfUpdateNeeded(app.projectData)
+                if ~checkIfUpdateNeeded(app.projectData, varargin{:})
                     msgQuestion = sprintf('Ao que parece, o projeto "<b>%s</b>" não sofreu alterações.<br><br>Deseja continuar mesmo assim?', app.projectData.name);
                     selection   = ui.Dialog(app.UIFigure, "uiconfirm", msgQuestion, {'Sim', 'Não'}, 1, 2);
                     if strcmp(selection, 'Não')
@@ -230,16 +234,16 @@ classdef dockReportLib_exported < matlab.apps.AppBase
                 [defaultPath, defaultFile] = fileparts(app.projectData.file);
                 defaultName = fullfile(defaultPath, defaultFile);
             else
-                defaultName = appEngine.util.DefaultFileName(app.mainApp.General.fileFolder.userPath, 'SCH_ProjectData', -1);
+                defaultName = appEngine.util.DefaultFileName(app.mainApp.General.fileFolder.userPath, [appName '_ProjectData'], -1);
             end
             
             projectName = app.projectData.name;
-            projectFile = ui.Dialog(app.UIFigure, 'uiputfile', '', {'*.mat', 'monitorRNI (*.mat)'}, defaultName);
+            projectFile = ui.Dialog(app.UIFigure, 'uiputfile', '', {'*.mat', [appName ' (*.mat)']}, defaultName);
             if isempty(projectFile)
                 return
             end
 
-            save(app.projectData, context, projectName, projectFile, app.mainApp.General.reportLib.outputCompressionMode)
+            save(app.projectData, context, projectName, projectFile, app.mainApp.General.reportLib.outputCompressionMode, varargin{:})
             updatePanel(app, context)
 
         end

@@ -111,7 +111,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                 app.popupContainer.Parent.Visible = 0;
                                 
                             % winMonitorRNI >> auxApp.winMonitoringPlan
-                            case {'onFileListAdded', 'onFileListRemoved', 'onFileListUnmerged', 'onFileListMerged'}
+                            case {'onFileListAdded', 'onFileListRemoved', 'onFileListUnmerged', 'onFileListMerged', ...
+                                  'onProjectRestart', 'onProjectLoad'}
                                 app.measData = app.mainApp.measData;
                                 buildFileLocationTree(app)
 
@@ -822,7 +823,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         % Image clicked function: tool_OpenPopupProject
         function Toolbar_OpenPopupProjectImageClicked(app, event)
             
-            ipcMainMatlabOpenPopupApp(app.mainApp, app, 'ReportLib', app.Context)
+            ipcMainMatlabOpenPopupApp(app.mainApp, app, 'ReportLib', app.Context, app.measData)
 
         end
 

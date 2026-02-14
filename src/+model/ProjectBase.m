@@ -56,14 +56,6 @@ classdef (Abstract) ProjectBase
         end
 
         %-----------------------------------------------------------------%
-        % Hash do upload do relatório, utilizado para sinalizar ao usuário
-        % os relatórios já enviados ao SEI durante a sessão corrente do app.
-        %-----------------------------------------------------------------%
-        function hash = computeUploadedFileHash(system, issue, status)
-            hash = Hash.sha1(strjoin({system, num2str(issue), status}, ' - '));
-        end
-
-        %-----------------------------------------------------------------%
         % Hash da instância da classe model.EMFieldData.
         %-----------------------------------------------------------------%
         function hash = computeEMFieldDataHash(EMFieldDataObj)
