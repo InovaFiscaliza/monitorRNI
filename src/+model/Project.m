@@ -77,7 +77,7 @@ classdef Project < model.ProjectCommon
             updateNeeded = false;
             
             if ~isempty(obj.name)
-                currentPrjHash = model.ProjectBase.computeProjectHash(obj.name, obj.file, EMFieldObj, obj.issueDetails, obj.entityDetails);
+                currentPrjHash = model.ProjectBase.computeProjectHash(obj.name, obj.file, obj.modules, obj.issueDetails, obj.entityDetails, EMFieldObj);
                 updateNeeded   = ~isequal(obj.hash, currentPrjHash);
             end
         end
@@ -124,7 +124,7 @@ classdef Project < model.ProjectCommon
         function [EMFieldObj, msg] = load(obj, context, fileName, generalSettings, EMFieldObj)
             arguments
                 obj
-                context (1,:) char {mustBeMember(context, {'MONITORINGPLAN', 'EXTERNALREQUEST'})}
+                context (1,:) char {mustBeMember(context, {'FILE', 'MONITORINGPLAN', 'EXTERNALREQUEST'})}
                 fileName
                 generalSettings
                 EMFieldObj
@@ -146,7 +146,7 @@ classdef Project < model.ProjectCommon
     
                 switch prjData.version
                     case 1
-                        restart(obj)
+                        restart(obj, {'MONITORINGPLAN', 'EXTERNALREQUEST'}, 'onProjectLoad', generalSettings)
 
                         obj.name = prjData.variables.name;
                         obj.file = fileName;
@@ -171,6 +171,8 @@ classdef Project < model.ProjectCommon
                                                 obj.modules.(context).generatedFiles.lastTableFullPath   = unzipFiles{jj};
                                             case '.teams'
                                                 obj.modules.(context).generatedFiles.lastTEAMSFullPath   = unzipFiles{jj};
+                                            otherwise
+                                                obj.modules.(context).generatedFiles.rawFiles{end+1}     = unzipFiles{jj};
                                         end
                                     end
                                     
@@ -189,6 +191,8 @@ classdef Project < model.ProjectCommon
                             if ismember(reportModel, obj.modules.(context).ui.templates)
                                 obj.modules.(context).ui.reportModel = reportModel;
                             end
+
+                            obj.modules.(context).annotationTable = prjData.variables.modules.(context).annotationTable;
     
                             obj.modules.(context).uploadedFiles = [prjData.variables.modules.(context).uploadedFiles, obj.modules.(context).uploadedFiles];
                             [~, uniqueUploadedFilesIndexes] = unique({obj.modules.(context).uploadedFiles.hash});
@@ -386,7 +390,9 @@ classdef Project < model.ProjectCommon
                                                          'onLocationListModeChanged',  ... % auxApp.dockListOfLocation >> winMonitorRNI >> auxApp.winMonitoringPlan >> model.Project
                                                          'onStationCoordinatesEdited', ... % auxApp.dockStationInfo    >> winMonitorRNI >> auxApp.winMonitoringPlan >> model.Project
                                                          'onPointAdded',               ... % auxApp.winExternalRequest >> model.Project
-                                                         'onPointRemoved'})}               % auxApp.winExternalRequest >> model.Project
+                                                         'onPointRemoved',             ... % auxApp.winExternalRequest >> model.Project
+                                                         'onProjectRestart',           ...
+                                                         'onProjectLoad'})}
             end
 
             arguments (Repeating)
@@ -401,10 +407,11 @@ classdef Project < model.ProjectCommon
                         updateStationTableAnalysis(obj, EMFieldObj, measTable, generalSettings)
                         updatePointsTableAnalysis(obj, measTable, generalSettings)
     
-                    case {'onAnalysisParameterChanged', ...
-                          'onLocationListModeChanged',  ...
-                          'onStationCoordinatesEdited', ...
-                          'onPointAdded', 'onPointRemoved'}
+                    case {'onAnalysisParameterChanged',     ...
+                          'onLocationListModeChanged',      ...
+                          'onStationCoordinatesEdited',     ...
+                          'onPointAdded', 'onPointRemoved', ...
+                          'onProjectRestart', 'onProjectLoad'}
                         context = varargin{1};
                         
                         switch context
@@ -541,7 +548,7 @@ classdef Project < model.ProjectCommon
             arguments
                 obj
                 contextList
-                operationType {mustBeMember(operationType, {'AppStarted', 'onProjectRestart', 'EMFieldDataEmpty'})}
+                operationType {mustBeMember(operationType, {'AppStarted', 'onProjectLoad', 'onProjectRestart', 'EMFieldDataEmpty'})}
                 generalSettings
             end
 
@@ -572,7 +579,7 @@ classdef Project < model.ProjectCommon
                         end
                     end
 
-                case 'onProjectRestart'
+                case {'onProjectLoad', 'onProjectRestart'}
                     for ii = 1:numel(contextList)
                         context = contextList{ii};
 
@@ -588,6 +595,7 @@ classdef Project < model.ProjectCommon
 
                         contextInitialization(obj, {context}, 'AppStarted', generalSettings)
                         
+                        obj.modules.(context).annotationTable = model.ProjectBase.initializeCustomTable('ANNOTATION');
                         obj.modules.(context).uploadedFiles = uploadedFiles;
 
                         switch context

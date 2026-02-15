@@ -117,6 +117,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                 buildFileLocationTree(app)
 
                                 if ~isempty(app.measData)
+                                    if ~ismember(eventName, {'onFileListUnmerged', 'onFileListMerged'})
+                                        updateAnalysis(app.projectData, app.measData, app.mainApp.General, eventName, app.Context);
+                                    end
+
                                     refreshAnalysis(app)
                                 end
 

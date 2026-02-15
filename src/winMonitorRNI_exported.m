@@ -278,6 +278,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                     case {'onProjectRestart', 'onProjectLoad', 'onFinalReportFileChanged'}
                                         context  = varargin{1};
                                         varargin = [{eventName}, varargin(2:end)];
+
+                                        if strcmp(eventName, 'onProjectLoad')
+                                            buildFileTree(app)
+                                        end
+                                        
                                         ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', varargin{:})
                                         
                                     case 'onUpdateLastVisitedFolder'
@@ -1103,7 +1108,7 @@ msgQuestion = 'Deseja fechar o aplicativo?';
                 [~, ~, fileExt] = fileparts(fileFullName{ii});
                 switch fileExt
                     case '.mat'
-                        [app.measData, msg] = load(app.projectData, app.measData, fileFullName{ii});
+                        [app.measData, msg] = load(app.projectData, app.Context, fileFullName{ii}, app.General, app.measData);
                     
                     otherwise % '.txt', '.csv' etc
                         [app.measData, msg] = addFiles(app.measData, fileFullName{ii});
