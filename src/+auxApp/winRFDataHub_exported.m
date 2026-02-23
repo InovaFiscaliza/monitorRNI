@@ -210,7 +210,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                         filter_delFilter(app, struct('Source', app.contextmenu_del))
 
                     otherwise
-                        error('UnexpectedEvent')
+                        error('auxApp:winRFDataHub:UnexpectedEvent', 'Unexpected event "%s"', event.HTMLEventName)
                 end
 
             catch ME
@@ -228,15 +228,14 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
                         switch operationType
                             case 'onRFDataHubUpdate'
-                                initializeRFDataHub(app)
-                                applyInitialLayout(app)
+                                closeFcn(app)
 
                             otherwise
-                                error('UnexpectedCall')
+                                error('auxApp:winRFDataHub:UnexpectedCall', 'Unexpected call "%s"', operationType)
                         end
 
                     otherwise
-                        error('UnexpectedCaller')
+                        error('auxApp:winRFDataHub:UnexpectedCaller', 'Unexpected caller "%s"', class(callingApp))
                 end
             
             catch ME

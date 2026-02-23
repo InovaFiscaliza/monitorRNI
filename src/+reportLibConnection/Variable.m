@@ -15,7 +15,7 @@ classdef (Abstract) Variable
                     fieldValue = strjoin(unique({EMFieldObj.(fieldName)}), ', ');
                 case 'Content'
                     contentArray = arrayfun(@(x) strjoin(splitlines(x.Content(1:min(500, numel(x.Content)))), '<br>'), EMFieldObj, 'UniformOutput', false);
-                    fieldValue = ['<font style="text-align: justify; word-break: break-all;">', strjoin(strcat(contentArray, '<br><font style="color: red;">[Texto truncado — Fonte:&thinsp;', ' ', {EMFieldObj.FileName}, ']</font>'), '<br><br>') '</font>'];
+                    fieldValue = ['<font style="text-align: justify; word-break: break-all;">', strjoin(strcat(contentArray, '<br><font style="color: red;">[Texto truncado - Fonte:&thinsp;', ' ', {EMFieldObj.FileName}, ']</font>'), '<br><br>') '</font>'];
                 case 'MetaData'
                     fieldValue = strjoin(unique(arrayfun(@(x) jsonencode(x.MetaData), EMFieldObj, 'UniformOutput', false)), '<br>');
                 case 'Measures'

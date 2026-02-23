@@ -171,7 +171,7 @@
                     "Type": "Footnote",
                     "Data": {
                         "Editable": "false",
-                        "Text": "<span style=\"display: block; margin: 10px; margin-bottom: 20px; text-align: justify; word-break: break-all;\">Configurações:<br>•&thinsp;Módulo \"PM-RNI\": %s<br>•&thinsp;DataBinning: %s<br>•&thinsp;Modelo do relatório: %s</span>",
+                        "Text": "<span style=\"display: block; margin: 10px; margin-bottom: 20px; text-align: justify; word-break: break-all;\">Configurações:<br>&#x2022;&thinsp;Módulo \"PM-RNI\": %s<br>&#x2022;&thinsp;DataBinning: %s<br>&#x2022;&thinsp;Modelo do relatório: %s</span>",
                         "Variable": [
                             "cfg_Context",
                             "cfg_DataBinning",

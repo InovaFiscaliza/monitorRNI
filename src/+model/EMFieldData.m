@@ -234,14 +234,14 @@ classdef EMFieldData < handle
                         if isempty(rawMetaData.Serial) && ~isempty(rawMetaData.IDN)
                             probeSerial = rawMetaData.IDN;
                         end    
-                        metaData = struct('Model', rawMetaData.Model, 'Serial', probeSerial, 'Band', '100kHz–3GHz', 'Unit', 'V/m');
+                        metaData = struct('Model', rawMetaData.Model, 'Serial', probeSerial, 'Band', '100kHz-3GHz', 'Unit', 'V/m');
                 end    
             else
                 switch sensorName
                     case 'Wavecontrol'
                         metaData = struct('Model', 'MonitEM',     'Serial', '(Não identificado)', 'Band', '100kHz-8GHz', 'Unit', 'V/m');
                     case 'Narda'
-                        metaData = struct('Model', 'AMB-8059-00', 'Serial', '(Não identificado)', 'Band', '100kHz–3GHz', 'Unit', 'V/m');
+                        metaData = struct('Model', 'AMB-8059-00', 'Serial', '(Não identificado)', 'Band', '100kHz-3GHz', 'Unit', 'V/m');
                 end
             end
         end

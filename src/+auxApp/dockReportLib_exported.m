@@ -86,8 +86,8 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             end
 
             if isempty(app.projectData.modules.(context).ui.entityTypes)
-                updateUiInfo(app.projectData, context, 'entityTypes', app.mainApp.General.ui.typeOfEntity.options)
-                app.projectData.modules.(context).ui.entity.type = app.mainApp.General.ui.typeOfEntity.default;
+                updateUiInfo(app.projectData, context, 'entityTypes', app.mainApp.General.reportLib.entityType.options)
+                app.projectData.modules.(context).ui.entity.type = app.mainApp.General.reportLib.entityType.default;
             end
 
             % PROJECT PANEL
@@ -113,11 +113,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.eFiscalizaSystem.Value = app.projectData.modules.(context).ui.system;
             app.eFiscalizaIssue.Value  = app.projectData.modules.(context).ui.issue;
             set(app.eFiscalizaUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, 'Value', app.projectData.modules.(context).ui.unit)
-
-            validIssue = (app.eFiscalizaIssue.Value > 0) && ~isinf(app.eFiscalizaIssue.Value);
-            if validIssue
-                app.eFiscalizaIssueDetails.Enable = true;
-            end
+            app.eFiscalizaIssueDetails.Enable = (app.eFiscalizaIssue.Value > 0) && ~isinf(app.eFiscalizaIssue.Value);
 
             % REPORT PANEL
             set(app.reportModel, 'Items', app.projectData.modules.(context).ui.templates, 'Value', app.projectData.modules.(context).ui.reportModel)
@@ -170,7 +166,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
         % Image clicked function: prjNewProjectButton
         function onProjectRestart(app, event)
             
-            msgQuestion = 'Deseja excluir todas as referências do projeto (incluindo a lista de produtos sob análise) e iniciar um novo projeto?';
+            msgQuestion = 'Deseja excluir todas as referências do projeto e iniciar um novo projeto?';
             selection   = ui.Dialog(app.UIFigure, "uiconfirm", msgQuestion, {'Sim', 'Não'}, 1, 2, {'Icon', 'error'});
             if strcmp(selection, 'Não')
                 return
@@ -635,7 +631,6 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.eFiscalizaIssue.ValueDisplayFormat = '%d';
             app.eFiscalizaIssue.ValueChangedFcn = createCallbackFcn(app, @onProjectInfoUpdate, true);
             app.eFiscalizaIssue.FontSize = 11;
-            app.eFiscalizaIssue.FontColor = [0.149 0.149 0.149];
             app.eFiscalizaIssue.Layout.Row = 3;
             app.eFiscalizaIssue.Layout.Column = 2;
             app.eFiscalizaIssue.Value = -1;
@@ -695,7 +690,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.reportVersionLabel.WordWrap = 'on';
             app.reportVersionLabel.FontSize = 11;
             app.reportVersionLabel.Layout.Row = 3;
-            app.reportVersionLabel.Layout.Column = 1;
+            app.reportVersionLabel.Layout.Column = [1 2];
             app.reportVersionLabel.Text = 'Versão do relatório:';
 
             % Create reportVersion
@@ -753,7 +748,6 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.reportEntityIdLabel.VerticalAlignment = 'bottom';
             app.reportEntityIdLabel.WordWrap = 'on';
             app.reportEntityIdLabel.FontSize = 11;
-            app.reportEntityIdLabel.FontColor = [0.149 0.149 0.149];
             app.reportEntityIdLabel.Layout.Row = 1;
             app.reportEntityIdLabel.Layout.Column = 2;
             app.reportEntityIdLabel.Text = 'CNPJ/CPF:';
@@ -780,7 +774,6 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.reportEntityNameLabel.VerticalAlignment = 'bottom';
             app.reportEntityNameLabel.WordWrap = 'on';
             app.reportEntityNameLabel.FontSize = 11;
-            app.reportEntityNameLabel.FontColor = [0.149 0.149 0.149];
             app.reportEntityNameLabel.Layout.Row = 3;
             app.reportEntityNameLabel.Layout.Column = 1;
             app.reportEntityNameLabel.Text = 'Nome da fiscalizada:';
