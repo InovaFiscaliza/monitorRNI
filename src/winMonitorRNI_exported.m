@@ -244,6 +244,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                           'onPlotParameterChanged'}
                                         context = varargin{1};
                                         ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', eventName)
+
+                                    case 'onStationListChanged'
+                                        context = varargin{1};
+                                        updateStationTable(app.projectData, eventName, app.rootFolder, app.General, app.measData)
+                                        ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', eventName)
         
                                     otherwise
                                         error('winMonitorRNI:UnexpectedCall', 'Unexpected call "%s"', eventName)
@@ -923,11 +928,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         %------------------------------------------------------------------------%
         function [status, msg] = reportUploadFilesToSharepoint(app, context)
-            sharepointFileList = { ...
-                getGeneratedDocumentFileName(app.projectData, '.teams',   context), ...
-                getGeneratedDocumentFileName(app.projectData, '.json',    context), ...
+            sharepointFileList = [ ...
+                { ...
+                    getGeneratedDocumentFileName(app.projectData, '.teams',   context), ...
+                    getGeneratedDocumentFileName(app.projectData, '.json',    context)
+                }, ...
                 getGeneratedDocumentFileName(app.projectData, 'rawFiles', context)  ...
-            };
+            ];
 
             statusList = false(1, numel(sharepointFileList));
             msgList = {};

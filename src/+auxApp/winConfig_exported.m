@@ -291,7 +291,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             initialSelectedYears = "[ " + strjoin(string(app.mainApp.projectData.modules.MONITORINGPLAN.referenceData.selectedYears), ', ') + " ]";
             currentSelectedYears = app.mainApp.General.context.MONITORINGPLAN.periodYears;
 
-            app.MonitoringPlanFileSubLabel.Text = sprintf('Sessão corrente: %s\n(eventuais alterações nos anos de referência só terão efeito após a reinicialização do aplicativo)', initialSelectedYears);
+            app.MonitoringPlanFileSubLabel.Text = sprintf('Sessão corrente: %s', initialSelectedYears);
 
             if ~isempty(app.MonitoringPlanPeriod.Children)
                 delete(app.MonitoringPlanPeriod.Children)
@@ -629,6 +629,13 @@ classdef winConfig_exported < matlab.apps.AppBase
                     end
                     app.mainApp.General.context.MONITORINGPLAN.periodYears = str2double({app.MonitoringPlanPeriod.CheckedNodes.Text});
 
+                    msgQuestion = 'Atualizar os dados de estações AGORA ou aplicar as alterações apenas na próxima INICIALIZAÇÃO do app?';
+                    userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, {'AGORA', 'INICIALIZAÇÃO'}, 2, 2);                    
+                    if strcmp(userSelection, 'AGORA')
+                        context = 'MONITORINGPLAN';
+                        eventName = 'onStationListChanged';
+                    end
+
                 case app.MonitoringPlanExportXLSX
                     app.mainApp.General.context.MONITORINGPLAN.exportOptions.xlsx = app.MonitoringPlanExportXLSX.Value;
 
@@ -656,12 +663,13 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.mainApp.General_I.context.MONITORINGPLAN = app.mainApp.General.context.MONITORINGPLAN;
             app.mainApp.General_I.context.EXTERNALREQUEST = app.mainApp.General.context.EXTERNALREQUEST;
 
-            updatePanel_Analysis(app)
             saveGeneralSettings(app)
 
             if ~isempty(eventName)
                 ipcMainMatlabCallsHandler(app.mainApp, app, eventName, context)
             end
+
+            updatePanel_Analysis(app)
             
         end
 
@@ -1217,7 +1225,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.MonitoringPlanFileSubLabel.FontColor = [0.502 0.502 0.502];
             app.MonitoringPlanFileSubLabel.Layout.Row = 4;
             app.MonitoringPlanFileSubLabel.Layout.Column = 1;
-            app.MonitoringPlanFileSubLabel.Text = {'Sessão corrente: [ 2026 ]'; '(eventuais alterações nos anos de referência só terão efeito após a reinicialização do aplicativo)'};
+            app.MonitoringPlanFileSubLabel.Text = '';
 
             % Create MonitoringPlanPeriod
             app.MonitoringPlanPeriod = uitree(app.configAnalysisGrid2, 'checkbox');

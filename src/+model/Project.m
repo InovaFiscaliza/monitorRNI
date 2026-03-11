@@ -320,6 +320,20 @@ classdef Project < model.ProjectCommon
                     EMFieldObj = varargin{4};
                     generalSettings = varargin{5};
                     updateAnalysis(obj, EMFieldObj, generalSettings, eventName, 'MONITORINGPLAN')
+
+                case 'onStationListChanged'
+                    rootFolder = varargin{1};
+                    generalSettings = varargin{2};
+                    EMFieldObj = varargin{3};
+
+                    [stationTable, ...
+                     referenceData] = model.ProjectBase.initializeCustomTable('STATIONS', class.Constants.appName, rootFolder, generalSettings);
+
+                    obj.modules.MONITORINGPLAN.stationTable_I = stationTable;
+                    obj.modules.MONITORINGPLAN.stationTable   = stationTable;
+                    obj.modules.MONITORINGPLAN.referenceData  = referenceData;
+
+                    updateAnalysis(obj, EMFieldObj, generalSettings, eventName, 'MONITORINGPLAN')
             end
         end
 
@@ -389,6 +403,7 @@ classdef Project < model.ProjectCommon
                                                          'onAnalysisParameterChanged', ... % auxApp.winConfig >> winMonitorRNI >> auxApp.winMonitoringPlan | auxApp.winExternalRequest >> model.Project
                                                          'onLocationListModeChanged',  ... % auxApp.dockListOfLocation >> winMonitorRNI >> auxApp.winMonitoringPlan >> model.Project
                                                          'onStationCoordinatesEdited', ... % auxApp.dockStationInfo    >> winMonitorRNI >> auxApp.winMonitoringPlan >> model.Project
+                                                         'onStationListChanged',       ... % auxApp.winConfig >> winMonitorRNI >> model.Project >> auxApp.winMonitoringPlan
                                                          'onPointAdded',               ... % auxApp.winExternalRequest >> model.Project
                                                          'onPointRemoved',             ... % auxApp.winExternalRequest >> model.Project
                                                          'onProjectRestart',           ...
@@ -410,6 +425,7 @@ classdef Project < model.ProjectCommon
                     case {'onAnalysisParameterChanged',     ...
                           'onLocationListModeChanged',      ...
                           'onStationCoordinatesEdited',     ...
+                          'onStationListChanged',           ...
                           'onPointAdded', 'onPointRemoved', ...
                           'onProjectRestart', 'onProjectLoad'}
                         context = varargin{1};

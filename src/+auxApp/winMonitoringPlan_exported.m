@@ -139,7 +139,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                                 plot.axes.Colormap(app.UIAxes, app.mainApp.General.plot.geographicAxes.colormap)
                                 plot.axes.Colorbar(app.UIAxes, app.mainApp.General.plot.geographicAxes.colorbar)
 
-                            case 'onPlotParameterChanged'
+                            case {'onPlotParameterChanged', 'onStationListChanged'}
                                 refreshAnalysis(app)
 
                             % winMonitorRNI >> auxApp.winMonitoringPlan
