@@ -4,7 +4,6 @@ classdef dockReportLib_exported < matlab.apps.AppBase
     properties (Access = public)
         UIFigure                matlab.ui.Figure
         GridLayout              matlab.ui.container.GridLayout
-        Document                matlab.ui.container.GridLayout
         reportPanel             matlab.ui.container.Panel
         reportGrid              matlab.ui.container.GridLayout
         reportEntityPanel       matlab.ui.container.Panel
@@ -45,7 +44,6 @@ classdef dockReportLib_exported < matlab.apps.AppBase
         prjSaveButton           matlab.ui.control.Image
         prjOpenFileButton       matlab.ui.control.Image
         prjLabel                matlab.ui.control.Label
-        btnClose                matlab.ui.control.Image
     end
 
     
@@ -153,12 +151,9 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             
         end
 
-        % Callback function: UIFigure, btnClose
+        % Close request function: UIFigure
         function closeFcn(app, event)
             
-            context = app.inputArgs.context;
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'closeFcnCallFromPopupApp', context, 'auxApp.dockReportLib')
-
             delete(app)
             
         end
@@ -400,7 +395,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             if isempty(Container)
                 app.UIFigure = uifigure('Visible', 'off');
                 app.UIFigure.AutoResizeChildren = 'off';
-                app.UIFigure.Position = [100 100 460 602];
+                app.UIFigure.Position = [100 100 460 598];
                 app.UIFigure.Name = 'monitorRNI';
                 app.UIFigure.Icon = 'icon_48.png';
                 app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @closeFcn, true);
@@ -423,34 +418,15 @@ classdef dockReportLib_exported < matlab.apps.AppBase
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.Container);
-            app.GridLayout.ColumnWidth = {'1x', 30};
-            app.GridLayout.RowHeight = {30, '1x'};
-            app.GridLayout.ColumnSpacing = 0;
-            app.GridLayout.RowSpacing = 0;
-            app.GridLayout.Padding = [0 0 0 0];
-            app.GridLayout.BackgroundColor = [0.902 0.902 0.902];
-
-            % Create btnClose
-            app.btnClose = uiimage(app.GridLayout);
-            app.btnClose.ScaleMethod = 'none';
-            app.btnClose.ImageClickedFcn = createCallbackFcn(app, @closeFcn, true);
-            app.btnClose.Tag = 'Close';
-            app.btnClose.Layout.Row = 1;
-            app.btnClose.Layout.Column = 2;
-            app.btnClose.ImageSource = 'Delete_12SVG.svg';
-
-            % Create Document
-            app.Document = uigridlayout(app.GridLayout);
-            app.Document.ColumnWidth = {'1x', 22, 22, 22};
-            app.Document.RowHeight = {17, 136, 22, 100, 22, 230};
-            app.Document.ColumnSpacing = 5;
-            app.Document.RowSpacing = 5;
-            app.Document.Layout.Row = 2;
-            app.Document.Layout.Column = [1 2];
-            app.Document.BackgroundColor = [1 1 1];
+            app.GridLayout.ColumnWidth = {'1x', 22, 22, 22};
+            app.GridLayout.RowHeight = {17, 136, 22, 100, 22, 230};
+            app.GridLayout.ColumnSpacing = 5;
+            app.GridLayout.RowSpacing = 5;
+            app.GridLayout.Padding = [20 20 20 20];
+            app.GridLayout.BackgroundColor = [1 1 1];
 
             % Create prjLabel
-            app.prjLabel = uilabel(app.Document);
+            app.prjLabel = uilabel(app.GridLayout);
             app.prjLabel.VerticalAlignment = 'bottom';
             app.prjLabel.FontSize = 10;
             app.prjLabel.Layout.Row = 1;
@@ -458,7 +434,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.prjLabel.Text = 'PROJETO';
 
             % Create prjOpenFileButton
-            app.prjOpenFileButton = uiimage(app.Document);
+            app.prjOpenFileButton = uiimage(app.GridLayout);
             app.prjOpenFileButton.ScaleMethod = 'none';
             app.prjOpenFileButton.ImageClickedFcn = createCallbackFcn(app, @onProjectLoad, true);
             app.prjOpenFileButton.Tooltip = {'Abre projeto'};
@@ -468,7 +444,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.prjOpenFileButton.ImageSource = 'Import_16.png';
 
             % Create prjSaveButton
-            app.prjSaveButton = uiimage(app.Document);
+            app.prjSaveButton = uiimage(app.GridLayout);
             app.prjSaveButton.ScaleMethod = 'none';
             app.prjSaveButton.ImageClickedFcn = createCallbackFcn(app, @onProjectSave, true);
             app.prjSaveButton.Enable = 'off';
@@ -479,7 +455,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.prjSaveButton.ImageSource = 'save.svg';
 
             % Create prjNewProjectButton
-            app.prjNewProjectButton = uiimage(app.Document);
+            app.prjNewProjectButton = uiimage(app.GridLayout);
             app.prjNewProjectButton.ScaleMethod = 'none';
             app.prjNewProjectButton.ImageClickedFcn = createCallbackFcn(app, @onProjectRestart, true);
             app.prjNewProjectButton.Tooltip = {'Cria novo projeto'};
@@ -489,7 +465,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.prjNewProjectButton.ImageSource = 'new-project.svg';
 
             % Create prjPanel
-            app.prjPanel = uipanel(app.Document);
+            app.prjPanel = uipanel(app.GridLayout);
             app.prjPanel.AutoResizeChildren = 'off';
             app.prjPanel.Layout.Row = 2;
             app.prjPanel.Layout.Column = [1 4];
@@ -562,7 +538,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.prjLastReportDelete.ImageSource = 'close-16px-red.svg';
 
             % Create eFiscalizaLabel
-            app.eFiscalizaLabel = uilabel(app.Document);
+            app.eFiscalizaLabel = uilabel(app.GridLayout);
             app.eFiscalizaLabel.VerticalAlignment = 'bottom';
             app.eFiscalizaLabel.FontSize = 10;
             app.eFiscalizaLabel.Layout.Row = 3;
@@ -570,7 +546,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.eFiscalizaLabel.Text = 'eFISCALIZA';
 
             % Create eFiscalizaPanel
-            app.eFiscalizaPanel = uipanel(app.Document);
+            app.eFiscalizaPanel = uipanel(app.GridLayout);
             app.eFiscalizaPanel.AutoResizeChildren = 'off';
             app.eFiscalizaPanel.Layout.Row = 4;
             app.eFiscalizaPanel.Layout.Column = [1 4];
@@ -646,7 +622,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.eFiscalizaIssueDetails.ImageSource = 'eye.svg';
 
             % Create reportLabel
-            app.reportLabel = uilabel(app.Document);
+            app.reportLabel = uilabel(app.GridLayout);
             app.reportLabel.VerticalAlignment = 'bottom';
             app.reportLabel.FontSize = 10;
             app.reportLabel.Layout.Row = 5;
@@ -654,7 +630,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.reportLabel.Text = 'RELATÓRIO';
 
             % Create reportPanel
-            app.reportPanel = uipanel(app.Document);
+            app.reportPanel = uipanel(app.GridLayout);
             app.reportPanel.AutoResizeChildren = 'off';
             app.reportPanel.BackgroundColor = [1 1 1];
             app.reportPanel.Layout.Row = 6;

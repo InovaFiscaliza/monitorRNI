@@ -107,10 +107,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 switch class(callingApp)
                     case {'winMonitorRNI', 'winMonitorRNI_exported'}
                         switch eventName
-                            % auxApp.dockReportLib >> winMonitorRNI >> auxApp.winExternalRequest
-                            case 'closeFcnCallFromPopupApp'
-                                app.popupContainer.Parent.Visible = 0;
-
                             % winMonitorRNI >> auxApp.winExternalRequest
                             case {'onFileListAdded', 'onFileListRemoved', 'onFileListUnmerged', 'onFileListMerged'}
                                 app.measData = app.mainApp.measData;

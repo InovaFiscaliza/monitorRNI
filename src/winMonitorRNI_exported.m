@@ -62,6 +62,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         executionMode
         progressDialog
         popupContainer
+        popupCurrentApp
 
         eFiscalizaObj
 
@@ -129,6 +130,24 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                     case 'unload'
                         closeFcn(app)
+
+                    case 'closeFcnCallFromPopupApp'
+                        context = event.HTMLEventData.context;
+                        popupCurrentAppTag = event.HTMLEventData.dockAppName;
+
+                        switch context
+                            case {'mainApp', app.Context}
+                                hApp = app;
+                            otherwise
+                                hApp = getAppHandle(app.tabGroupController, context);
+                        end
+                        
+                        if ~isempty(hApp) && isvalid(hApp)
+                            deleteContextMenu(app.tabGroupController, hApp.UIFigure, popupCurrentAppTag)
+                        end
+
+                        delete(app.popupCurrentApp)
+                        app.popupCurrentApp = [];
 
                     case 'customForm'
                         switch event.HTMLEventData.uuid
@@ -249,23 +268,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                   'auxApp.dockReportLib',      'auxApp.dockReportLib_exported',      ...
                                   'auxApp.dockStationInfo',    'auxApp.dockStationInfo_exported'}
                                 switch eventName
-                                    case 'closeFcnCallFromPopupApp'
-                                        context = varargin{1};
-                                        moduleTag = varargin{2};
-        
-                                        switch context
-                                            case {app.Role, app.Context}
-                                                hApp = app;
-                                                app.popupContainer.Parent.Visible = 0;
-                                            otherwise
-                                                hApp = getAppHandle(app.tabGroupController, context);
-                                                ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', eventName)
-                                        end
-                                        
-                                        if ~isempty(hApp)
-                                            deleteContextMenu(app.tabGroupController, hApp.UIFigure, moduleTag)
-                                        end
-
                                     case {'onLocationListModeChanged', ...
                                           'onStationCoordinatesEdited', ...
                                           'onStationInfoChanged', ...
@@ -329,11 +331,12 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
-        function ipcMainMatlabOpenPopupApp(app, callingApp, auxAppName, varargin)
+        function ipcMainMatlabOpenPopupApp(app, callingApp, auxAppName, context, varargin)
             arguments
                 app
                 callingApp
                 auxAppName char {mustBeMember(auxAppName, {'ReportLib', 'ListOfLocation', 'StationInfo'})}
+                context    char {mustBeMember(context, {'mainApp', 'FILE', 'MONITORINGPLAN', 'EXTERNALREQUEST', 'RFDATAHUB', 'CONFIG'})}
             end
 
             arguments (Repeating)
@@ -343,7 +346,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             switch auxAppName
                 case 'ReportLib'
                     screenWidth  = 460;
-                    screenHeight = 602;
+                    screenHeight = 598;
                 case 'ListOfLocation'
                     screenWidth  = 540;
                     screenHeight = 440;
@@ -353,19 +356,35 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             end
 
             requestVisibilityChange(callingApp.progressDialog, 'visible', 'unlocked')
-            ui.PopUpContainer(callingApp, class.Constants.appName, screenWidth, screenHeight)
 
-            % Executa o app auxiliar.
-            inputArguments = [{app, callingApp}, varargin];
-            auxDockAppName = sprintf('auxApp.dock%s', auxAppName);
+            inputArguments = [{app, callingApp, context}, varargin];
             
             if app.General.operationMode.Debug
                 eval(sprintf('auxApp.dock%s(inputArguments{:})', auxAppName))
+
             else
-                eval([auxDockAppName '_exported(callingApp.popupContainer, inputArguments{:})'])
+                ui.PopUpContainer(callingApp, screenWidth, screenHeight)
+
+                auxDockAppName = sprintf('auxApp.dock%s', auxAppName);
+                app.popupCurrentApp = feval([auxDockAppName '_exported'], callingApp.popupContainer, inputArguments{:});
                 
+                ui.CustomizationBase.getElementsDataTag({
+                    callingApp.popupContainer;
+                    app.popupCurrentApp.GridLayout
+                });
+
+                sendEventToHTMLSource(callingApp.jsBackDoor, 'dockContainer', struct( ...
+                    'dockAppName', auxDockAppName, ...
+                    'dockAppDataTag', app.popupCurrentApp.GridLayout.UserData.id, ...
+                    'dockAppContainerDataTag', callingApp.popupContainer.UserData.id, ...
+                    'width', screenWidth, ...
+                    'height', screenHeight+31, ...
+                    'context', context, ...
+                    'numCanvasElements', numel(findobj(app.popupCurrentApp.Container, 'Type', 'axes')) ...
+                ))
+
+                app.popupCurrentApp.GridLayout.UserData.auxDockAppName = auxDockAppName;
                 callingApp.popupContainer.UserData.auxDockAppName = auxDockAppName;
-                callingApp.popupContainer.Parent.Visible = 1;
             end
 
             requestVisibilityChange(callingApp.progressDialog, 'hidden', 'unlocked')

@@ -4,7 +4,6 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
     properties (Access = public)
         UIFigure                matlab.ui.Figure
         GridLayout              matlab.ui.container.GridLayout
-        StationPanel            matlab.ui.container.GridLayout
         NextSelection           matlab.ui.control.Image
         PreviousSelection       matlab.ui.control.Image
         LocationPanel           matlab.ui.container.Panel
@@ -24,7 +23,6 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
         Reason                  matlab.ui.control.DropDown
         ReasonLabel             matlab.ui.control.Label
         Station                 matlab.ui.control.Label
-        btnClose                matlab.ui.control.Image
     end
 
     
@@ -160,10 +158,9 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             
         end
 
-        % Callback function: UIFigure, btnClose
+        % Close request function: UIFigure
         function closeFcn(app, event)
             
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'closeFcnCallFromPopupApp', 'MONITORINGPLAN', 'auxApp.dockStationInfo')
             delete(app)
             
         end
@@ -306,34 +303,15 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.Container);
-            app.GridLayout.ColumnWidth = {'1x', 30};
-            app.GridLayout.RowHeight = {30, '1x'};
-            app.GridLayout.ColumnSpacing = 0;
-            app.GridLayout.RowSpacing = 0;
-            app.GridLayout.Padding = [0 0 0 0];
-            app.GridLayout.BackgroundColor = [0.902 0.902 0.902];
-
-            % Create btnClose
-            app.btnClose = uiimage(app.GridLayout);
-            app.btnClose.ScaleMethod = 'none';
-            app.btnClose.ImageClickedFcn = createCallbackFcn(app, @closeFcn, true);
-            app.btnClose.Tag = 'Close';
-            app.btnClose.Layout.Row = 1;
-            app.btnClose.Layout.Column = 2;
-            app.btnClose.ImageSource = 'Delete_12SVG.svg';
-
-            % Create StationPanel
-            app.StationPanel = uigridlayout(app.GridLayout);
-            app.StationPanel.ColumnWidth = {22, 22, '1x', 1, 212};
-            app.StationPanel.RowHeight = {'1x', 22, 22, 22, 61, 22};
-            app.StationPanel.ColumnSpacing = 5;
-            app.StationPanel.RowSpacing = 5;
-            app.StationPanel.Layout.Row = 2;
-            app.StationPanel.Layout.Column = [1 2];
-            app.StationPanel.BackgroundColor = [1 1 1];
+            app.GridLayout.ColumnWidth = {22, 22, '1x', 1, 212};
+            app.GridLayout.RowHeight = {'1x', 22, 22, 22, 61, 22};
+            app.GridLayout.ColumnSpacing = 5;
+            app.GridLayout.RowSpacing = 5;
+            app.GridLayout.Padding = [20 20 20 20];
+            app.GridLayout.BackgroundColor = [1 1 1];
 
             % Create Station
-            app.Station = uilabel(app.StationPanel);
+            app.Station = uilabel(app.GridLayout);
             app.Station.VerticalAlignment = 'top';
             app.Station.WordWrap = 'on';
             app.Station.FontSize = 11;
@@ -343,7 +321,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.Station.Text = '';
 
             % Create ReasonLabel
-            app.ReasonLabel = uilabel(app.StationPanel);
+            app.ReasonLabel = uilabel(app.GridLayout);
             app.ReasonLabel.VerticalAlignment = 'bottom';
             app.ReasonLabel.FontSize = 10;
             app.ReasonLabel.Layout.Row = 2;
@@ -351,7 +329,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.ReasonLabel.Text = 'Justificativa:';
 
             % Create Reason
-            app.Reason = uidropdown(app.StationPanel);
+            app.Reason = uidropdown(app.GridLayout);
             app.Reason.Items = {};
             app.Reason.ValueChangedFcn = createCallbackFcn(app, @onFormValueChanged, true);
             app.Reason.FontSize = 11;
@@ -361,7 +339,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.Reason.Value = {};
 
             % Create optNotesLabel
-            app.optNotesLabel = uilabel(app.StationPanel);
+            app.optNotesLabel = uilabel(app.GridLayout);
             app.optNotesLabel.VerticalAlignment = 'bottom';
             app.optNotesLabel.FontSize = 10;
             app.optNotesLabel.Layout.Row = 4;
@@ -369,14 +347,14 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.optNotesLabel.Text = 'Observações:';
 
             % Create optNotes
-            app.optNotes = uitextarea(app.StationPanel);
+            app.optNotes = uitextarea(app.GridLayout);
             app.optNotes.ValueChangedFcn = createCallbackFcn(app, @onFormValueChanged, true);
             app.optNotes.FontSize = 11;
             app.optNotes.Layout.Row = 5;
             app.optNotes.Layout.Column = [1 3];
 
             % Create LocationLabelGrid
-            app.LocationLabelGrid = uigridlayout(app.StationPanel);
+            app.LocationLabelGrid = uigridlayout(app.GridLayout);
             app.LocationLabelGrid.ColumnWidth = {'1x', 18, 18, 0, 0};
             app.LocationLabelGrid.RowHeight = {'1x'};
             app.LocationLabelGrid.ColumnSpacing = 5;
@@ -433,7 +411,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.LocationEditionCancel.ImageSource = 'Delete_32Red.png';
 
             % Create LocationPanel
-            app.LocationPanel = uipanel(app.StationPanel);
+            app.LocationPanel = uipanel(app.GridLayout);
             app.LocationPanel.AutoResizeChildren = 'off';
             app.LocationPanel.Layout.Row = 5;
             app.LocationPanel.Layout.Column = 5;
@@ -482,7 +460,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.Longitude.Layout.Column = 2;
 
             % Create PreviousSelection
-            app.PreviousSelection = uiimage(app.StationPanel);
+            app.PreviousSelection = uiimage(app.GridLayout);
             app.PreviousSelection.ImageClickedFcn = createCallbackFcn(app, @onStationSelectionChanged, true);
             app.PreviousSelection.Tooltip = {'Navega para o registro anterior'};
             app.PreviousSelection.Layout.Row = 6;
@@ -490,7 +468,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.PreviousSelection.ImageSource = 'Previous_32.png';
 
             % Create NextSelection
-            app.NextSelection = uiimage(app.StationPanel);
+            app.NextSelection = uiimage(app.GridLayout);
             app.NextSelection.ImageClickedFcn = createCallbackFcn(app, @onStationSelectionChanged, true);
             app.NextSelection.Tooltip = {'Navega para o próximo registro'};
             app.NextSelection.Layout.Row = 6;

@@ -4,7 +4,6 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
     properties (Access = public)
         UIFigure          matlab.ui.Figure
         GridLayout        matlab.ui.container.GridLayout
-        LocationPanel     matlab.ui.container.GridLayout
         Filter            matlab.ui.control.DropDown
         FilterLabel       matlab.ui.control.Label
         FilterIcon        matlab.ui.control.Image
@@ -14,7 +13,6 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         Add               matlab.ui.control.Image
         RefLocation       matlab.ui.control.ListBox
         RefLocationLabel  matlab.ui.control.Label
-        btnClose          matlab.ui.control.Image
     end
 
     
@@ -98,10 +96,9 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             
         end
 
-        % Callback function: UIFigure, btnClose
+        % Close request function: UIFigure
         function closeFcn(app, event)
             
-            ipcMainMatlabCallsHandler(app.mainApp, app, 'closeFcnCallFromPopupApp', 'MONITORINGPLAN', 'auxApp.dockListOfLocation')
             delete(app)
             
         end
@@ -187,34 +184,15 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.Container);
-            app.GridLayout.ColumnWidth = {'1x', 30};
-            app.GridLayout.RowHeight = {30, '1x'};
-            app.GridLayout.ColumnSpacing = 0;
-            app.GridLayout.RowSpacing = 0;
-            app.GridLayout.Padding = [0 0 0 0];
-            app.GridLayout.BackgroundColor = [0.902 0.902 0.902];
-
-            % Create btnClose
-            app.btnClose = uiimage(app.GridLayout);
-            app.btnClose.ScaleMethod = 'none';
-            app.btnClose.ImageClickedFcn = createCallbackFcn(app, @closeFcn, true);
-            app.btnClose.Tag = 'Close';
-            app.btnClose.Layout.Row = 1;
-            app.btnClose.Layout.Column = 2;
-            app.btnClose.ImageSource = 'Delete_12SVG.svg';
-
-            % Create LocationPanel
-            app.LocationPanel = uigridlayout(app.GridLayout);
-            app.LocationPanel.ColumnWidth = {22, 110, '1x', 16, '1x', 42, 90};
-            app.LocationPanel.RowHeight = {32, 22, 22, '1x', 22};
-            app.LocationPanel.ColumnSpacing = 5;
-            app.LocationPanel.RowSpacing = 5;
-            app.LocationPanel.Layout.Row = 2;
-            app.LocationPanel.Layout.Column = [1 2];
-            app.LocationPanel.BackgroundColor = [1 1 1];
+            app.GridLayout.ColumnWidth = {22, 110, '1x', 16, '1x', 42, 90};
+            app.GridLayout.RowHeight = {32, 22, 22, '1x', 22};
+            app.GridLayout.ColumnSpacing = 5;
+            app.GridLayout.RowSpacing = 5;
+            app.GridLayout.Padding = [20 20 20 20];
+            app.GridLayout.BackgroundColor = [1 1 1];
 
             % Create RefLocationLabel
-            app.RefLocationLabel = uilabel(app.LocationPanel);
+            app.RefLocationLabel = uilabel(app.GridLayout);
             app.RefLocationLabel.VerticalAlignment = 'bottom';
             app.RefLocationLabel.FontSize = 10;
             app.RefLocationLabel.Layout.Row = 1;
@@ -223,7 +201,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.RefLocationLabel.Text = {'LOCALIDADES DE REFERÊNCIA:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
 
             % Create RefLocation
-            app.RefLocation = uilistbox(app.LocationPanel);
+            app.RefLocation = uilistbox(app.GridLayout);
             app.RefLocation.Items = {};
             app.RefLocation.Multiselect = 'on';
             app.RefLocation.ValueChangedFcn = createCallbackFcn(app, @Callbacks, true);
@@ -233,7 +211,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.RefLocation.Value = {};
 
             % Create Add
-            app.Add = uiimage(app.LocationPanel);
+            app.Add = uiimage(app.GridLayout);
             app.Add.ScaleMethod = 'none';
             app.Add.ImageClickedFcn = createCallbackFcn(app, @Callbacks, true);
             app.Add.Enable = 'off';
@@ -243,7 +221,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.Add.ImageSource = 'Continue_16.png';
 
             % Create Delete
-            app.Delete = uiimage(app.LocationPanel);
+            app.Delete = uiimage(app.GridLayout);
             app.Delete.ScaleMethod = 'none';
             app.Delete.ImageClickedFcn = createCallbackFcn(app, @Callbacks, true);
             app.Delete.Enable = 'off';
@@ -253,7 +231,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.Delete.ImageSource = 'delete-12px-red.svg';
 
             % Create LocationLabel
-            app.LocationLabel = uilabel(app.LocationPanel);
+            app.LocationLabel = uilabel(app.GridLayout);
             app.LocationLabel.VerticalAlignment = 'bottom';
             app.LocationLabel.FontSize = 10;
             app.LocationLabel.Layout.Row = 1;
@@ -262,7 +240,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.LocationLabel.Text = {'LOCALIDADES SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
 
             % Create Location
-            app.Location = uilistbox(app.LocationPanel);
+            app.Location = uilistbox(app.GridLayout);
             app.Location.Items = {};
             app.Location.Multiselect = 'on';
             app.Location.ValueChangedFcn = createCallbackFcn(app, @Callbacks, true);
@@ -272,14 +250,14 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.Location.Value = {};
 
             % Create FilterIcon
-            app.FilterIcon = uiimage(app.LocationPanel);
+            app.FilterIcon = uiimage(app.GridLayout);
             app.FilterIcon.ScaleMethod = 'none';
             app.FilterIcon.Layout.Row = 5;
             app.FilterIcon.Layout.Column = 1;
             app.FilterIcon.ImageSource = 'Filter_18.png';
 
             % Create FilterLabel
-            app.FilterLabel = uilabel(app.LocationPanel);
+            app.FilterLabel = uilabel(app.GridLayout);
             app.FilterLabel.WordWrap = 'on';
             app.FilterLabel.FontSize = 10;
             app.FilterLabel.Layout.Row = 5;
@@ -287,7 +265,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.FilterLabel.Text = 'Unidade da Federação:';
 
             % Create Filter
-            app.Filter = uidropdown(app.LocationPanel);
+            app.Filter = uidropdown(app.GridLayout);
             app.Filter.Items = {};
             app.Filter.ValueChangedFcn = createCallbackFcn(app, @FilterValueChanged, true);
             app.Filter.FontSize = 11;

@@ -103,13 +103,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             try
                 switch class(callingApp)
                     case {'winMonitorRNI', 'winMonitorRNI_exported'}
-                        switch eventName
-                            % auxApp.dockListOfLocation >> winMonitorRNI >> auxApp.winMonitoringPlan
-                            % auxApp.dockStationInfo    >> winMonitorRNI >> auxApp.winMonitoringPlan
-                            % auxApp.dockReportLib      >> winMonitorRNI >> auxApp.winMonitoringPlan
-                            case 'closeFcnCallFromPopupApp'
-                                app.popupContainer.Parent.Visible = 0;
-                                
+                        switch eventName                                
                             % winMonitorRNI >> auxApp.winMonitoringPlan
                             case {'onFileListAdded', 'onFileListRemoved', 'onFileListUnmerged', 'onFileListMerged', ...
                                   'onProjectRestart', 'onProjectLoad'}
