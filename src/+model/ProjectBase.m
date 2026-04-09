@@ -70,7 +70,7 @@ classdef (Abstract) ProjectBase
         end
 
         %-----------------------------------------------------------------%
-        function hash = computeFileRuleHash(filterType, filterOperation, filterValue)
+        function hash = computeFilterRuleHash(filterType, filterOperation, filterValue)
             hash = Hash.sha1(sprintf('%s - %s - %s', filterType, filterOperation, strjoin(string(filterValue), ' - ')));
         end
 

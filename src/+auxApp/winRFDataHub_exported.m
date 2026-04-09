@@ -901,7 +901,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                 filterOperation = app.mainApp.General.context.RFDATAHUB.filter.default.operation;
                 columnName = app.FILTER_TYPE_TO_COLUMNS(filterType);
                 filterValue = app.mainApp.General.context.RFDATAHUB.filter.default.value;
-                hash = model.ProjectBase.computeFileRuleHash(filterType, filterOperation, filterValue);
+                hash = model.ProjectBase.computeFilterRuleHash(filterType, filterOperation, filterValue);
                 
                 addFilterRule(app, 'Node', -1, filterType, filterOperation, columnName, filterValue, [], hash)
             end
@@ -1469,7 +1469,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
 
                     app.FilterRules(filterIdx, {'Value', 'Hash'}) = { ...
                         jsonencode(plot.ROI.specification(src)), ...
-                        model.ProjectBase.computeFileRuleHash(filterType, filterOperation, filterValue) ...
+                        model.ProjectBase.computeFilterRuleHash(filterType, filterOperation, filterValue) ...
                     };
                     
                     buildFilterRuleTree(app)
@@ -1972,7 +1972,7 @@ classdef winRFDataHub_exported < matlab.apps.AppBase
                     filterHandle = hROI;
             end
 
-            hash = model.ProjectBase.computeFileRuleHash(filterType, filterOperation, filterValue);
+            hash = model.ProjectBase.computeFilterRuleHash(filterType, filterOperation, filterValue);
 
             if ismember(hash, app.FilterRules.Hash)
                 msg = 'Filtro já incluído!';
