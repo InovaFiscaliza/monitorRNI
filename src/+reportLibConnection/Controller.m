@@ -6,9 +6,7 @@ classdef (Abstract) Controller
     %   "Path", "Model" e "Function". Campos opcionais podem ser criados.
 
     % • dataOverview..: lista de estruturas com os campos obrigatórios "ID", 
-    %   "InfoSet" e "HTML". Em "InfoSet", armazena-se um handle para instância 
-    %   da classe model.ECD. As instância desse classe são agrupadas por 
-    %   LOCALIDADE e ordenadas pelo início da monitoração.
+    %   "InfoSet" e "HTML". 
 
     % • analyzedData..: instância de dataOverview (imaginando que dataOverview 
     %   é a variável que possibilita a recorrência).

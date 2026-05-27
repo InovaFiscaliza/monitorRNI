@@ -124,6 +124,8 @@ classdef (Abstract) Plot
                     break
                 end
             end
+
+            delete(hContainer.Children)
         end
 
         %-----------------------------------------------------------------%
