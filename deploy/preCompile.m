@@ -1,8 +1,4 @@
-function preCompile(showDiffApp)
-    arguments
-        showDiffApp logical = false
-    end
-
+function preCompile()
     appName = 'monitorRNI';
 
     % Essa função manipula os arquivos .MLAPP do projeto, gerando versões .M.
@@ -13,7 +9,7 @@ function preCompile(showDiffApp)
     %
     % - "winConfig" etc
     %   A versão .M  traz manipulações que possibilitam que esses módulos do 
-    %   rfPreview possam ser renderizados na figura de "winRFPreview".
+    %   app possam ser renderizados na sua figura principal.
 
     initFolder = fileparts(mfilename('fullpath'));
 
@@ -43,7 +39,6 @@ function preCompile(showDiffApp)
                                sprintf('function app = %s',                 newClassName)};
 
                     matlabCode   = replace(matlabCode, oldTags, newTags);
-                    writematrix(matlabCode, [fileBaseName '_exported.m'], 'FileType', 'text', 'WriteMode', 'overwrite', 'QuoteStrings', 'none')
 
                 otherwise
                     % Salva a versão original do .M em pasta temporária, de
@@ -68,17 +63,16 @@ function preCompile(showDiffApp)
                     % SUBSTITUIÇÃO 2: CreateComponents+FigurePosition
                     matCodePart = char(extractBetween(matlabCode, oldTag2, oldTag3, 'Boundaries', 'inclusive'));
                     figPosition = regexp(matCodePart, 'app\.UIFigure\.Position = \[\d+ \d+ \d+ \d+\];', 'match', 'once');
-                    matlabCode  = replace(matlabCode, matCodePart, sprintf(Step2Pattern(appName), figPosition));
+                    iconFileName= regexp(matCodePart, 'app\.UIFigure\.Icon = ''[\w.]*'';', 'match', 'once');
+
+                    matlabCode  = replace(matlabCode, matCodePart, Step2Pattern(figPosition, appName, iconFileName));
 
                     % SUBSTITUIÇÃO 3: ClassName+Constructor+Delete
                     matlabCode  = replace(matlabCode, [oldTag4 extractAfter(matlabCode, oldTag4)], Step3Pattern(newClassName));
-
-                    writematrix(matlabCode, [fileBaseName '_exported.m'], 'FileType', 'text', 'WriteMode', 'overwrite', 'QuoteStrings', 'none')
-
-                    if showDiffApp
-                        visdiff(fullfile(tempdir, [oldClassName '.m']), [fileBaseName '_exported.m'])
-                    end
             end
+
+            matlabCode = strjoin(splitlines(matlabCode), '\r\n');
+            writematrix(matlabCode, [fileBaseName '_exported.m'], 'FileType', 'text', 'WriteMode', 'overwrite', 'QuoteStrings', 'none')
             fprintf('Criado o arquivo %s\n', [fileBaseName '_exported.m'])
 
         catch ME
@@ -101,17 +95,17 @@ function step1Pattern = Step1Pattern(newClassName)
 end
 
 %-------------------------------------------------------------------------%
-function step2Pattern = Step2Pattern(appName)
+function step2Pattern = Step2Pattern(figPosition, appName, appIcon)
     step2Pattern  = sprintf(['function createComponents(app, Container)\n\n'                          ...
-        '            %%%% Get the file path for locating images\n'                                    ...
+        '            %% Get the file path for locating images\n'                                      ...
         '            pathToMLAPP = fileparts(mfilename(''fullpath''));\n\n'                           ...
-        '            %%%% Create UIFigure and hide until all components are created\n'                ...
+        '            %% Create UIFigure and hide until all components are created\n'                  ...
         '            if isempty(Container)\n'                                                         ...
         '                app.UIFigure = uifigure(''Visible'', ''off'');\n'                            ...
         '                app.UIFigure.AutoResizeChildren = ''off'';\n'                                ...
-        '                %%s\n'                                                                       ... % app.UIFigure.Position = [100 100 1244 660]
+        '                %s\n'                                                                        ... % app.UIFigure.Position = [100 100 1244 660]
         '                app.UIFigure.Name = ''%s'';\n'                                               ...
-        '                app.UIFigure.Icon = ''icon_48.png'';\n'                                      ...
+        '                %s\n'                                                                        ... % app.UIFigure.Icon = 'icon_16.png';
         '                app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @closeFcn, true);\n\n' ...
         '                app.Container = app.UIFigure;\n\n'                                           ...
         '            else\n'                                                                          ...
@@ -126,8 +120,8 @@ function step2Pattern = Step2Pattern(appName)
         '                app.Container.RunningAppInstance = app;\n'                                   ...
         '                app.isDocked  = true;\n'                                                     ...
         '            end\n\n'                                                                         ...
-        '            %%%% Create GridLayout\n'                                                        ...
-        '            app.GridLayout = uigridlayout(app.Container);'], appName);
+        '            %% Create GridLayout\n'                                                          ...
+        '            app.GridLayout = uigridlayout(app.Container);'], figPosition, appName, appIcon);
 end
 
 %-------------------------------------------------------------------------%

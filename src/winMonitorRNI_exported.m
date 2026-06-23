@@ -17,7 +17,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         ButtonsSeparator1        matlab.ui.control.Image
         Tab1Button               matlab.ui.control.StateButton
         AppName                  matlab.ui.control.Label
-        AppIcon                  matlab.ui.control.Image
         TabGroup                 matlab.ui.container.TabGroup
         Tab1_File                matlab.ui.container.Tab
         file_Grid                matlab.ui.container.GridLayout
@@ -175,6 +174,12 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     case 'getNavigatorBasicInformation'
                         app.General.AppVersion.browser = event.HTMLEventData;
 
+                    case 'findResourceStaticURL'
+                        resourceStaticURL = event.HTMLEventData;
+                        if ~isempty(resourceStaticURL)
+                            app.General.AppVersion.application.resourceStaticURL = resourceStaticURL;
+                        end
+
                     % MAINAPP
                     case 'mainApp.FileTree'
                         ContextMenu_DeleteSelectedTreeNode(app)
@@ -182,6 +187,10 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     % AUXAPP.WINEXTERNALREQUEST
                     case 'auxApp.winExternalRequest.TreePoints'
                         ipcMainMatlabCallAuxiliarApp(app, 'EXTERNALREQUEST', 'JS', event)
+
+                    % AUXAPP.WINRFDATAHUB
+                    case 'auxApp.winRFDataHub.FilterTree'
+                        ipcMainMatlabCallAuxiliarApp(app, 'RFDATAHUB', 'MATLAB', event.HTMLEventName)
 
                     otherwise
                         error('winMonitorRNI:UnexpectedEvent', 'Unexpected event "%s"', event.HTMLEventName)
@@ -348,28 +357,29 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 varargin 
             end
 
-            switch auxAppName
-                case 'ReportLib'
-                    screenWidth  = 460;
-                    screenHeight = 598;
-                case 'ListOfLocation'
-                    screenWidth  = 540;
-                    screenHeight = 440;
-                case 'StationInfo'
-                    screenWidth  = 540;
-                    screenHeight = 440;
-            end
-
             requestVisibilityChange(callingApp.progressDialog, 'visible', 'unlocked')
-
             inputArguments = [{app, callingApp, context}, varargin];
-            
+
             if app.General.operationMode.Debug
-                eval(sprintf('auxApp.dock%s(inputArguments{:})', auxAppName))
+                app.popupCurrentApp = eval(sprintf('auxApp.dock%s(inputArguments{:})', auxAppName));
+                app.popupCurrentApp.isDocked = false;
 
             else
-                ui.PopUpContainer(callingApp, screenWidth, screenHeight)
+                popupSpecifications = table( ...
+                    'Size', [15, 4], ...
+                    'VariableTypes', {'string', 'double', 'double', 'logical'}, ...
+                    'VariableNames', {'AuxAppName', 'Width', 'Height', 'IsFluid'} ...
+                );
+                popupSpecifications(1, :) = {"ReportLib",      460, 598, false};
+                popupSpecifications(2, :) = {"ListOfLocation", 540, 440, false};
+                popupSpecifications(3, :) = {"StationInfo",    540, 440, false};
 
+                auxAppNameIdx = find(popupSpecifications.AuxAppName == string(auxAppName), 1);
+                screenWidth = popupSpecifications.Width(auxAppNameIdx);
+                screenHeight = popupSpecifications.Height(auxAppNameIdx);
+                isFluid = popupSpecifications.IsFluid(auxAppNameIdx);
+
+                ui.PopUpContainer(callingApp, screenWidth, screenHeight)
                 auxDockAppName = sprintf('auxApp.dock%s', auxAppName);
                 app.popupCurrentApp = feval([auxDockAppName '_exported'], callingApp.popupContainer, inputArguments{:});
                 
@@ -378,12 +388,17 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     app.popupCurrentApp.GridLayout
                 });
 
+                if isFluid
+                    sizing = struct('type', 'fluid', 'width', 90, 'height', 80);
+                else
+                    sizing = struct('type', 'fixed', 'width', screenWidth, 'height', screenHeight+31);
+                end
+
                 sendEventToHTMLSource(callingApp.jsBackDoor, 'dockContainer', struct( ...
                     'dockAppName', auxDockAppName, ...
                     'dockAppDataTag', app.popupCurrentApp.GridLayout.UserData.id, ...
                     'dockAppContainerDataTag', callingApp.popupContainer.UserData.id, ...
-                    'width', screenWidth, ...
-                    'height', screenHeight+31, ...
+                    'sizing', sizing, ...
                     'context', context, ...
                     'numCanvasElements', numel(findobj(app.popupCurrentApp.Container, 'Type', 'axes')) ...
                 ))
@@ -510,9 +525,17 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 model.RFDataHub.read(appName, app.rootFolder, tempDir)
             end
 
-            app.General            = app.General_I;
+            app.General = app.General_I;
             app.General.AppVersion = util.getAppVersion(app.rootFolder, MFilePath, tempDir);
             sendEventToHTMLSource(app.jsBackDoor, 'getNavigatorBasicInformation')
+
+            % Ideia é identificar URL de pasta estática servida pelo backend, de 
+            % forma que possam ser inseridas imagens em uilabel (como ui.TextView).
+            try
+                [~, resourceName, resourceExt] = fileparts(app.tool_ReadFiles.ImageSource);
+                sendEventToHTMLSource(app.jsBackDoor, 'findResourceStaticURL', struct('resourceName', [resourceName resourceExt], 'resourceTag', 'img', 'resourceId', app.tool_ReadFiles.UserData.id))
+            catch
+            end
         end
 
         %-----------------------------------------------------------------%
@@ -1406,7 +1429,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create NavBar
             app.NavBar = uigridlayout(app.GridLayout);
-            app.NavBar.ColumnWidth = {22, 74, '1x', 34, 5, 34, 34, 5, 34, 34, '1x', 20, 20, 1, 20, 20};
+            app.NavBar.ColumnWidth = {101, '1x', 34, 5, 34, 34, 5, 34, 34, '1x', 20, 20, 1, 20, 20};
             app.NavBar.RowHeight = {5, 7, 20, 7, 5};
             app.NavBar.ColumnSpacing = 5;
             app.NavBar.RowSpacing = 0;
@@ -1416,19 +1439,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.NavBar.Layout.Column = 1;
             app.NavBar.BackgroundColor = [0.2 0.2 0.2];
 
-            % Create AppIcon
-            app.AppIcon = uiimage(app.NavBar);
-            app.AppIcon.Layout.Row = [1 5];
-            app.AppIcon.Layout.Column = 1;
-            app.AppIcon.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'icon_48.png');
-
             % Create AppName
             app.AppName = uilabel(app.NavBar);
             app.AppName.WordWrap = 'on';
             app.AppName.FontSize = 11;
             app.AppName.FontColor = [1 1 1];
             app.AppName.Layout.Row = [1 5];
-            app.AppName.Layout.Column = [2 3];
+            app.AppName.Layout.Column = [1 2];
             app.AppName.Interpreter = 'html';
             app.AppName.Text = {'monitorRNI v. 1.0.0'; '<font style="font-size: 9px;">R2024a</font>'};
 
@@ -1442,7 +1459,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab1Button.BackgroundColor = [0.2 0.2 0.2];
             app.Tab1Button.FontSize = 11;
             app.Tab1Button.Layout.Row = [2 4];
-            app.Tab1Button.Layout.Column = 4;
+            app.Tab1Button.Layout.Column = 3;
             app.Tab1Button.Value = true;
 
             % Create ButtonsSeparator1
@@ -1450,7 +1467,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.ButtonsSeparator1.ScaleMethod = 'none';
             app.ButtonsSeparator1.Enable = 'off';
             app.ButtonsSeparator1.Layout.Row = [2 4];
-            app.ButtonsSeparator1.Layout.Column = 5;
+            app.ButtonsSeparator1.Layout.Column = 4;
             app.ButtonsSeparator1.VerticalAlignment = 'bottom';
             app.ButtonsSeparator1.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV_White.svg');
 
@@ -1464,7 +1481,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab2Button.BackgroundColor = [0.2 0.2 0.2];
             app.Tab2Button.FontSize = 11;
             app.Tab2Button.Layout.Row = [2 4];
-            app.Tab2Button.Layout.Column = 6;
+            app.Tab2Button.Layout.Column = 5;
 
             % Create Tab3Button
             app.Tab3Button = uibutton(app.NavBar, 'state');
@@ -1476,14 +1493,14 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab3Button.BackgroundColor = [0.2 0.2 0.2];
             app.Tab3Button.FontSize = 11;
             app.Tab3Button.Layout.Row = [2 4];
-            app.Tab3Button.Layout.Column = 7;
+            app.Tab3Button.Layout.Column = 6;
 
             % Create ButtonsSeparator2
             app.ButtonsSeparator2 = uiimage(app.NavBar);
             app.ButtonsSeparator2.ScaleMethod = 'none';
             app.ButtonsSeparator2.Enable = 'off';
             app.ButtonsSeparator2.Layout.Row = [2 4];
-            app.ButtonsSeparator2.Layout.Column = 8;
+            app.ButtonsSeparator2.Layout.Column = 7;
             app.ButtonsSeparator2.VerticalAlignment = 'bottom';
             app.ButtonsSeparator2.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'LineV_White.svg');
 
@@ -1497,7 +1514,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab4Button.BackgroundColor = [0.2 0.2 0.2];
             app.Tab4Button.FontSize = 11;
             app.Tab4Button.Layout.Row = [2 4];
-            app.Tab4Button.Layout.Column = 9;
+            app.Tab4Button.Layout.Column = 8;
 
             % Create Tab5Button
             app.Tab5Button = uibutton(app.NavBar, 'state');
@@ -1510,19 +1527,19 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab5Button.BackgroundColor = [0.2 0.2 0.2];
             app.Tab5Button.FontSize = 11;
             app.Tab5Button.Layout.Row = [2 4];
-            app.Tab5Button.Layout.Column = 10;
+            app.Tab5Button.Layout.Column = 9;
 
             % Create jsBackDoor
             app.jsBackDoor = uihtml(app.NavBar);
             app.jsBackDoor.Layout.Row = 3;
-            app.jsBackDoor.Layout.Column = 12;
+            app.jsBackDoor.Layout.Column = 11;
 
             % Create DataHubLamp
             app.DataHubLamp = uiimage(app.NavBar);
             app.DataHubLamp.ImageClickedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.DataHubLamp.Visible = 'off';
             app.DataHubLamp.Layout.Row = 3;
-            app.DataHubLamp.Layout.Column = 13;
+            app.DataHubLamp.Layout.Column = 12;
             app.DataHubLamp.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'red-circle-blink.gif');
 
             % Create FigurePosition
@@ -1531,7 +1548,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.FigurePosition.ImageClickedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.FigurePosition.Visible = 'off';
             app.FigurePosition.Layout.Row = 3;
-            app.FigurePosition.Layout.Column = 15;
+            app.FigurePosition.Layout.Column = 14;
             app.FigurePosition.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'screen-normal-24px-white.svg');
 
             % Create AppInfo
@@ -1539,7 +1556,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.AppInfo.ScaleMethod = 'none';
             app.AppInfo.ImageClickedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.AppInfo.Layout.Row = 3;
-            app.AppInfo.Layout.Column = 16;
+            app.AppInfo.Layout.Column = 15;
             app.AppInfo.ImageSource = fullfile(pathToMLAPP, 'resources', 'Icons', 'kebab-vertical-24px-white.svg');
 
             % Create ContextMenu

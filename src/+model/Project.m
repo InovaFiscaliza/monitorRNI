@@ -329,9 +329,10 @@ classdef Project < model.ProjectCommon
                     [stationTable, ...
                      referenceData] = model.ProjectBase.initializeCustomTable('STATIONS', class.Constants.appName, rootFolder, generalSettings);
 
-                    obj.modules.MONITORINGPLAN.stationTable_I = stationTable;
-                    obj.modules.MONITORINGPLAN.stationTable   = stationTable;
-                    obj.modules.MONITORINGPLAN.referenceData  = referenceData;
+                    obj.modules.MONITORINGPLAN.stationTable_I  = stationTable;
+                    obj.modules.MONITORINGPLAN.stationTable    = stationTable;
+                    obj.modules.MONITORINGPLAN.referenceData   = referenceData;
+                    obj.modules.MONITORINGPLAN.ui.groupMapping = struct('hash', {}, 'auto', {}, 'manual', {});
 
                     updateAnalysis(obj, EMFieldObj, generalSettings, eventName, 'MONITORINGPLAN')
             end

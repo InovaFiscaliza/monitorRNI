@@ -150,7 +150,7 @@ classdef (Abstract) HtmlTextGenerator
         %-----------------------------------------------------------------%
         % AUXAPP.RFDATAHUB
         %-----------------------------------------------------------------%
-        function htmlContent = Station(rfDataHub, idxRFDataHub, rfDataHubLOG, generalSettings)
+        function htmlContent = getStationInfo(rfDataHub, idxRFDataHub, rfDataHubLOG, generalSettings)
             % stationTag
             stationInfo    = table2struct(rfDataHub(idxRFDataHub,:));
             if stationInfo.BW <= 0
@@ -159,7 +159,7 @@ classdef (Abstract) HtmlTextGenerator
                 stationTag = sprintf('%.3f MHz ⌂ %.1f kHz', stationInfo.Frequency, stationInfo.BW);
             end
         
-            % stationService
+            % SERVIÇO
             global id2nameTable
             if isempty(id2nameTable)
                 serviceOptions = generalSettings.eFiscaliza.defaultValues.servicos_da_inspecao.options;
@@ -179,7 +179,7 @@ classdef (Abstract) HtmlTextGenerator
                 stationService = '<font style="color: red;">-1</font>';
             end
             
-            % stationNumber
+            % NÚMERO
             mergeCount = str2double(string(stationInfo.MergeCount));
             if stationInfo.Station == -1
                 stationNumber = sprintf('<font style="color: red;">%d</font>', stationInfo.Station);
@@ -190,7 +190,7 @@ classdef (Abstract) HtmlTextGenerator
                 end
             end
         
-            % stationLocation, stationHeight
+            % LOCAL DE INSTALAÇÃO
             stationLocation = sprintf('(%.6fº, %.6fº)', stationInfo.Latitude, stationInfo.Longitude);
             stationHeight   = str2double(char(stationInfo.AntennaHeight));
             if stationHeight <= 0
@@ -199,46 +199,54 @@ classdef (Abstract) HtmlTextGenerator
                 stationHeight = sprintf('%.1fm', stationHeight);
             end    
         
-            % stationLOG
+            % LOG
             stationLOG = model.RFDataHub.queryLog(rfDataHubLOG, stationInfo.Log);
             if isempty(stationLOG)
                 stationLOG = 'Registro não editado';
             end
         
-            % dataStruct2HTMLContent
-            dataStruct(1) = struct('group', 'Service',     'value', stationService);
-            dataStruct(2) = struct('group', 'Station',     'value', stationNumber);
-            dataStruct(3) = struct('group', 'Localização', 'value', stationLocation);
-            dataStruct(4) = struct('group', 'Altura',      'value', stationHeight);
+            % TEXTO FORMATADO
+            displayEntry = [ ...
+                util.HtmlTextGenerator.makeDisplayEntry('Service', stationService), ...
+                util.HtmlTextGenerator.makeDisplayEntry('Station', stationNumber), ...
+                util.HtmlTextGenerator.makeDisplayEntry('Localização', stationLocation), ...
+                util.HtmlTextGenerator.makeDisplayEntry('Altura', stationHeight) ...
+            ];
 
             editedStationInfo = rmfield(stationInfo, { ...
                 'AntennaPattern', 'BW', 'Description', 'Distance', 'Fistel', 'Frequency',     ...
                 'ID', 'Latitude', 'LocationID', 'Location', 'Log', 'Longitude', 'MergeCount', ...
                 'Name', 'Station', 'StationClass', 'Status', 'Service', 'Source', 'State', 'URL', 'x_Name', 'x_Location' ...
             });
+
             if any(cellfun(@(x) ~isequal(x, categorical(-1)), struct2cell(editedStationInfo)))
-                dataStruct(end+1) = struct('group', 'OUTROS ASPECTOS TÉCNICOS', 'value', editedStationInfo);
+                displayEntry(end+1) = util.HtmlTextGenerator.makeDisplayEntry('OUTROS ASPECTOS TÉCNICOS', editedStationInfo);
             end
 
             if mergeCount > 1
-                dataStruct(end+1) = struct('group', 'NÚMERO ESTAÇÕES AGRUPADAS', 'value', string(mergeCount));
+                displayEntry(end+1) = util.HtmlTextGenerator.makeDisplayEntry('NÚMERO ESTAÇÕES AGRUPADAS', string(mergeCount));
             end
         
             try
                 if isstruct(stationLOG) || ischar(stationLOG)
-                    dataStruct(end+1) = struct('group', 'LOG', 'value', stationLOG);
+                    displayEntry(end+1) = util.HtmlTextGenerator.makeDisplayEntry('LOG', stationLOG);
+
                 elseif iscell(stationLOG)
                     for ii = 1:numel(stationLOG)
-                        dataStruct(end+1) = struct('group', sprintf('LOG #%d', ii), 'value', stationLOG{ii});
+                        displayEntry(end+1) = util.HtmlTextGenerator.makeDisplayEntry(sprintf('LOG #%d', ii), stationLOG{ii});
                     end
                 end
             catch
             end
         
-            freeInitialText = [sprintf('<font style="font-size: 10px; color: white; background-color: red; display: inline-block; vertical-align: middle; padding: 5px; border-radius: 5px;">%s</font><span style="font-size: 10px; display: inline-block; vertical-align: sub; margin-left: 5px;">  ID %s</span><br><br>', stationInfo.Source, stationInfo.ID) ...
-                               sprintf('<font style="font-size: 16px;"><b>%s</b></font><br>', stationTag)                                                                                                                                                                                                                                                     ...
-                               sprintf('<font style="font-size: 11px;">%s</font><br><br>', stationInfo.Description)];
-            htmlContent     = textFormatGUI.struct2PrettyPrintList(dataStruct, 'delete', freeInitialText);
+            htmlIntro = [ ...
+                util.HtmlTextGenerator.receiverBadge(stationInfo.Source) ...
+                sprintf('<span style="font-size: 10px; display: inline-block; vertical-align: sub; margin-left: 5px;">  ID %s</span><br><br>', stationInfo.ID) ...
+                sprintf('<font style="font-size: 16px;"><b>%s</b></font><br>', stationTag) ...
+                sprintf('<font style="font-size: 11px;">%s</font><br><br>', stationInfo.Description) ...
+            ];
+
+            htmlContent = textFormatGUI.struct2PrettyPrintList(displayEntry, 'delete', htmlIntro);
         end
 
 
@@ -371,6 +379,26 @@ classdef (Abstract) HtmlTextGenerator
             dataStruct      = struct('group', 'CADASTRO', 'value', details);
             freeInitialText = sprintf('<font style="font-size: 16px;"><b>%s</b></font><br><br>', id);
             htmlContent     = textFormatGUI.struct2PrettyPrintList(dataStruct, 'delete', freeInitialText, 'popup');
+        end
+    end
+
+
+    methods (Static = true, Access = private)
+        %-----------------------------------------------------------------%
+        function entry = makeDisplayEntry(group, value, link)
+            arguments
+                group
+                value
+                link = ''
+            end
+
+            entry = struct('group', group, 'value', value, 'link', link);
+        end
+
+
+        %-----------------------------------------------------------------%
+        function html = receiverBadge(label)
+            html = sprintf('<font style="color: white; background-color: #b7312c; display: inline-block; vertical-align: middle; padding: 5px; border-radius: 5px;">%s</font>', label);
         end
     end
 end
