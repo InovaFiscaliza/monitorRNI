@@ -295,10 +295,18 @@ classdef (Abstract) Controller
                     JSONFile  = '';
                     TEAMSFile = '';
                     XLSXFile  = '';
-                    RAWFiles  = {EMFieldObj.FileFullName};
                     ZIPFile   = ui.Dialog(callingApp.UIFigure, 'uiputfile', '', {'*.zip', [appName ' (*.zip)']}, fullfile(generalSettings.fileFolder.userPath, [zipFileBase '.zip']));
                     if isempty(ZIPFile)
                         return
+                    end
+
+                    RAWFiles  = {};
+                    for ii = 1:numel(EMFieldObj)
+                        if isfile(EMFieldObj(ii).FileFullName)
+                            RAWFiles{end+1} = EMFieldObj(ii).FileFullName;
+                        else
+                            RAWFiles{end+1} = recreateInputFile(EMFieldObj(ii), generalSettings.fileFolder.tempPath);
+                        end
                     end
 
                     ZIPFileList = [{HTMLFile}, RAWFiles];

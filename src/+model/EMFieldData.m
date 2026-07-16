@@ -10,6 +10,7 @@ classdef EMFieldData < handle
         FileFullName
         
         Content
+        ContentBlob
 
         Sensor
         MetaData
@@ -114,7 +115,8 @@ classdef EMFieldData < handle
                 idx = numel(obj)+1;
 
                 try
-                    fileContent = fileread(fileFullName);
+                    fileBytes = getInputFileBytes(obj, fileFullName);
+                    fileContent = char(fileBytes);
     
                     [sensorName, ...
                      regExp1,    ...
@@ -150,12 +152,25 @@ classdef EMFieldData < handle
                         error('model:EMFieldData:DuplicateFileContent', 'Duplicate file content detected. The file "%s" has the same content hash as a previously parsed file.', [fileName fileExt])
                     end
 
+                    createContentBlob(obj(idx), fileBytes);
+
                 catch ME
                     delete(obj(idx))
                     obj(idx) = [];
                     msg{end+1} = ME.message;
                 end
             end
+        end
+
+        %-----------------------------------------------------------------%
+        function fileBytes = getInputFileBytes(~, fileFullName)
+            fileID = fopen(fileFullName, 'r');
+            if fileID == -1
+                error('File not found.');
+            end
+        
+            fileBytes = fread(fileID, [1, inf], 'uint8=>uint8');
+            fclose(fileID);
         end
 
         %-----------------------------------------------------------------%
@@ -174,6 +189,31 @@ classdef EMFieldData < handle
                 tempMeasTable.FileSource = vertcat(fileList{:});        
                 measTable = sortrows(tempMeasTable, 'Timestamp');                
             end
+        end
+
+        %-----------------------------------------------------------------%
+        function createContentBlob(obj, fileBytes)
+            % Cria o conteúdo comprimido do arquivo de entrada original e
+            % armazena na propriedade "ContentBlob".
+            obj.ContentBlob = matlabCommunity.CompressLib.compress(fileBytes, false);
+        end
+
+        %-----------------------------------------------------------------%
+        function tempFileName = recreateInputFile(obj, outputFolder)
+            if isempty(obj.ContentBlob)
+                error('model:EMFieldData:EmptyContentBlob', 'A propriedade "ContentBlob" está vazia, o que impede a recriação do arquivo de entrada.')
+            end
+
+            if ~isfolder(outputFolder)
+                mkdir(outputFolder);
+            end
+
+            tempFileName = fullfile(outputFolder, obj.FileName);
+            fileBytes = matlabCommunity.CompressLib.decompress(obj.ContentBlob, false);
+
+            fileID = fopen(tempFileName, 'w');
+            fwrite(fileID, fileBytes, 'uint8');
+            fclose(fileID);
         end
     end
 
