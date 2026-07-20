@@ -89,9 +89,6 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                     case 'renderer'
                         appEngine.activate(app, app.Role)
 
-                    case 'auxApp.winExternalRequest.TreePoints'
-                        DeleteSelectedPoint(app, struct('ContextObject', app.TreePoints))
-
                     otherwise
                         ipcMainJSEventsHandler(app.mainApp, event)
                 end
@@ -157,6 +154,10 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
                                 msg = util.HtmlTextGenerator.issueDetails(system, issue, details);
                                 ui.Dialog(app.UIFigure, 'info', msg);
+
+                            % auxApp.winExternalRequest >> winMonitorRNI >> auxApp.winExternalRequest
+                            case 'auxApp.winExternalRequest.TreePoints'
+                                DeleteSelectedPoint(app, struct('ContextObject', app.TreePoints))
 
                             otherwise
                                 error('model:winExternalRequest:UnexpectedCall', 'Unexpected call "%s"', eventName)

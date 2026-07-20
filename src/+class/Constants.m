@@ -2,16 +2,11 @@ classdef (Abstract) Constants
 
     properties (Constant)
         %-----------------------------------------------------------------%
-        appName        = 'monitorRNI'
-        appRelease     = 'R2024a'
-        appVersion     = '1.10.4'
+        appName = 'monitorRNI'
+        appVersion = '1.10.4'
 
-        windowSize     = [1244, 660]
-        windowMinSize  = [ 880, 660]
-
-        gps2locAPI     = 'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=<Latitude>&longitude=<Longitude>&localityLanguage=pt'
-        gps2loc_City   = 'city'
-        gps2loc_Unit   = 'principalSubdivisionCode'
+        windowSize = [1244, 660]
+        windowMinSize = [ 880, 660]
         
         xDecimals      = 5        
         floatDiffTol   = 1e-5
@@ -20,13 +15,9 @@ classdef (Abstract) Constants
         GuiColumnWidth = {35, 70, 70, 70, 70, 70, 70, 70, 70, 'auto', 'auto'}
         
         % Novas colunas para adicionar na UITable
-        GUIColumnsAll     = {'UR', 'UF', 'Município', 'Serviço', 'N° Fistel', 'N° da Estação', 'Latitude da Estação', 'Longitude da Estação', 'Data da Medição', 'Emáx (V/m)', 'Latitude Emáx', 'Longitude Emáx', '> 14 V/M', 'Justificativa (apenas NV)', 'Observações importantes'};
-
-        GUIColumnsSelect  = {'UF', 'Município', 'Serviço', 'N° da Estação', 'Data da Medição', 'Emáx (V/m)', 'Latitude Emáx', 'Longitude Emáx', '> 14 V/M', 'Justificativa (apenas NV)', 'Observações importantes'};
-
-        GUIColumns_Sondas = {'DataTime', 'Latitude', 'Longitude', 'E_VM'};
-
-        
+        GUIColumnsAll     = {'UR', 'UF', 'Município', 'Serviço', 'N° Fistel', 'N° da Estação', 'Latitude da Estação', 'Longitude da Estação', 'Data da Medição', 'Emáx (V/m)', 'Latitude Emáx', 'Longitude Emáx', '> 14 V/M', 'Justificativa (apenas NV)', 'Observações importantes'}
+        GUIColumnsSelect  = {'UF', 'Município', 'Serviço', 'N° da Estação', 'Data da Medição', 'Emáx (V/m)', 'Latitude Emáx', 'Longitude Emáx', '> 14 V/M', 'Justificativa (apenas NV)', 'Observações importantes'}
+        GUIColumns_Sondas = {'DataTime', 'Latitude', 'Longitude', 'E_VM'}
         GuiColumnWidthCalc = {50, 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'}
     end
 

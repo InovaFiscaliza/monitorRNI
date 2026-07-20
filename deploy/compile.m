@@ -40,7 +40,7 @@ function varargout = compile(compilationType, rootCompiledFolder, matlabRuntimeF
     end
 
     % Abre projeto do "monitorRNI", caso fechado, o que mapeia as pastas do
-    % projeto, possibilitar chamar class.Constants.appRelease, por exemplo.
+    % projeto, possibilitando chamar class.Constants.appName, por exemplo.
     try
         prjInfo = currentProject;
 
@@ -160,8 +160,8 @@ function desktopPostCompilation(finalFolder, matlabRuntimeFolder, githubReleaseF
 
     if isfolder(deployApp)
         appName    = class.Constants.appName;
-        appRelease = class.Constants.appRelease;
         appVersion = class.Constants.appVersion;
+        appRelease = matlabRelease.Release;
 
         desktopFinalFolder = fullfile(finalFolder, 'desktop');
 
@@ -207,7 +207,7 @@ function desktopPostCompilation(finalFolder, matlabRuntimeFolder, githubReleaseF
                               'fileHash',    fileExeHash,       ...
                               'fileSize',    fileExeSize);
         
-        writematrix(jsonencode(appIntegrity, 'PrettyPrint', true), fullfile(deployApp, 'config', 'appIntegrity.json'), 'FileType', 'text', 'QuoteStrings', 'none')
+        writematrix(jsonencode(appIntegrity, 'PrettyPrint', true), fullfile(deployApp, 'config', 'appIntegrity.json'), 'FileType', 'text', 'QuoteStrings', 'none', 'Encoding', 'UTF-8')
     
         % Cria arquivos .ZIP e organiza pasta final.
         zipProcess(deployApp, sprintf('%s_Matlab.zip', appName))

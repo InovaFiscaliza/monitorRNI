@@ -186,7 +186,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                     % AUXAPP.WINEXTERNALREQUEST
                     case 'auxApp.winExternalRequest.TreePoints'
-                        ipcMainMatlabCallAuxiliarApp(app, 'EXTERNALREQUEST', 'JS', event)
+                        ipcMainMatlabCallAuxiliarApp(app, 'EXTERNALREQUEST', 'MATLAB', event.HTMLEventName)
 
                     % AUXAPP.WINRFDATAHUB
                     case 'auxApp.winRFDataHub.FilterTree'
@@ -209,12 +209,15 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             try
                 switch eventName
                     case 'closeFcn'
-                        auxAppTag    = varargin{1};
-                        closeModule(app.tabGroupController, auxAppTag, app.General, 'normal')
+                        auxAppTag = varargin{1};
+                        closeModule(app.tabGroupController, auxAppTag, app.General)
 
                     case 'dockButtonPushed'
-                        auxAppTag    = varargin{1};
                         varargout{1} = {app};
+
+                    case 'onUpdateLastVisitedFolder'
+                        filePath = varargin{1};
+                        updateLastVisitedFolder(app, filePath)
 
                     otherwise
                         switch class(callingApp)
@@ -300,10 +303,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                         end
                                         
                                         ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', varargin{:})
-                                        
-                                    case 'onUpdateLastVisitedFolder'
-                                        filePath = varargin{1};
-                                        updateLastVisitedFolder(app, filePath)
 
                                     case 'onFetchIssueDetails'
                                         context  = varargin{1};
@@ -546,7 +545,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function initializeUIComponents(app)
-            app.tabGroupController = ui.TabNavigator(app.NavBar, app.TabGroup, app.progressDialog);
+            app.tabGroupController = ui.TabNavigator(app.NavBar, app.TabGroup, app.progressDialog, app.jsBackDoor);
             addComponent(app.tabGroupController, "Built-in", "",                          app.Tab1Button, "AlwaysOn", struct('On', '', 'Off', ''), matlab.graphics.GraphicsPlaceholder, 1)
             addComponent(app.tabGroupController, "External", "auxApp.winMonitoringPlan",  app.Tab2Button, "AlwaysOn", struct('On', '', 'Off', ''), app.Tab1Button,                      2)
             addComponent(app.tabGroupController, "External", "auxApp.winExternalRequest", app.Tab3Button, "AlwaysOn", struct('On', '', 'Off', ''), app.Tab1Button,                      3)
