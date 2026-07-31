@@ -1,5 +1,5 @@
 {
-    "version": 0.95,
+    "version": 0.98,
     "operationMode": {
         "Debug": false,
         "Dock": true,
@@ -155,6 +155,9 @@
     "reportLib": {
         "system": "eFiscaliza",
         "unit": "",
+        "allowedMacrothemes": [
+            "PM-RNI"
+        ],
         "outputCompressionMode": "Sim",
         "entityType": {
             "default": "",

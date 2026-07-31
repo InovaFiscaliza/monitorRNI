@@ -104,6 +104,9 @@ classdef winConfig_exported < matlab.apps.AppBase
         reportLabel                   matlab.ui.control.Label
         eFiscalizaPanel               matlab.ui.container.Panel
         eFiscalizaGrid                matlab.ui.container.GridLayout
+        MacrothemesList               matlab.ui.control.EditField
+        MacrothemesButton             matlab.ui.control.Image
+        MacrothemesLabel              matlab.ui.control.Label
         reportUnit                    matlab.ui.control.DropDown
         reportUnitLabel               matlab.ui.control.Label
         reportSystem                  matlab.ui.control.DropDown
@@ -206,6 +209,15 @@ classdef winConfig_exported < matlab.apps.AppBase
                     updatePanel_Plot(app)
 
                 case 4
+                    ui.CustomizationBase.getElementsDataTag({app.MacrothemesButton});
+
+                    try
+                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                            struct('appName', class(app), 'dataTag', app.MacrothemesButton.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Habilita ou desabilita a edição da lista de macrotemas<br>Ex: "PM-RNI", "UTE", ""')) ...
+                        });
+                    catch
+                    end
+
                     updatePanel_Report(app)
 
                 case 5
@@ -357,8 +369,12 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function updatePanel_Report(app)
-            app.reportSystem.Value        = app.mainApp.General.reportLib.system;
+            app.reportSystem.Value = app.mainApp.General.reportLib.system;
             set(app.reportUnit, 'Items', app.mainApp.General.eFiscaliza.defaultValues.unit, 'Value', app.mainApp.General.reportLib.unit)
+            
+            app.MacrothemesButton.UserData.status = false;
+            app.MacrothemesButton.ImageSource = 'Edit_32.png';
+            set(app.MacrothemesList, 'Editable', 'off', 'FontColor', [0.65,0.65,0.65], 'Value', textFormatGUI.cellstr2ListWithQuotes(app.mainApp.General.reportLib.allowedMacrothemes, 'none'))
 
             app.reportBasemap.Value       = app.mainApp.General.reportLib.basemap;
             app.reportImgFormat.Value     = app.mainApp.General.reportLib.image.format;
@@ -390,13 +406,13 @@ classdef winConfig_exported < matlab.apps.AppBase
                 'FILE', app.mainApp.General.context.FILE, ...
                 'MONITORINGPLAN', struct( ...
                     'maxMeasurementDistanceKm', app.mainApp.General.context.MONITORINGPLAN.maxMeasurementDistanceKm, ...
-                    'electricFieldStrengthThreshold',  app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold, ...
-                    'exportOptions',      app.mainApp.General.context.MONITORINGPLAN.exportOptions ...
+                    'electricFieldStrengthThreshold', app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold, ...
+                    'exportOptions', app.mainApp.General.context.MONITORINGPLAN.exportOptions ...
                 ), ...
                 'EXTERNALREQUEST', struct( ...
                     'maxMeasurementDistanceKm', app.mainApp.General.context.EXTERNALREQUEST.maxMeasurementDistanceKm, ...
-                    'electricFieldStrengthThreshold',  app.mainApp.General.context.EXTERNALREQUEST.electricFieldStrengthThreshold, ...
-                    'exportOptions',      app.mainApp.General.context.EXTERNALREQUEST.exportOptions ...
+                    'electricFieldStrengthThreshold', app.mainApp.General.context.EXTERNALREQUEST.electricFieldStrengthThreshold, ...
+                    'exportOptions', app.mainApp.General.context.EXTERNALREQUEST.exportOptions ...
                 ), ...
                'plot', app.mainApp.General.plot, ...
                'reportLib', app.mainApp.General.reportLib ...
@@ -904,6 +920,56 @@ classdef winConfig_exported < matlab.apps.AppBase
             end
 
         end
+
+        % Callback function: MacrothemesButton, MacrothemesList
+        function Config_MacrothemesEdition(app, event)
+            
+            switch event.Source
+                case app.MacrothemesButton
+                    app.MacrothemesButton.UserData.status = ~app.MacrothemesButton.UserData.status;
+                    if app.MacrothemesButton.UserData.status
+                        app.MacrothemesButton.ImageSource = 'Edit_32Filled.png';
+                        set(app.MacrothemesList, 'Editable', 'on', 'FontColor', [0,0,0])
+                    else
+                        app.MacrothemesButton.ImageSource = 'Edit_32.png';
+                        set(app.MacrothemesList, 'Editable', 'off', 'FontColor', [0.65,0.65,0.65])
+                    end
+
+                case app.MacrothemesList
+                    parts = strsplit(event.Value, ',');
+                    try
+                        requiredMacrothemes = unique(strtrim(extractBetween(parts, '"', '"')));
+                    catch
+                        app.MacrothemesList.Value = event.PreviousValue;
+                        return
+                    end
+
+                    currentMacrothemes = sort(app.mainApp.General.reportLib.allowedMacrothemes);
+
+                    if numel(requiredMacrothemes) ~= numel(parts) || isequal(currentMacrothemes, requiredMacrothemes)
+                        app.MacrothemesList.Value = event.PreviousValue;
+                        return
+                    end
+
+                    msgQuestion = sprintf([ ...
+                        'LISTA ATUAL:\n%s\n\nLISTA PROPOSTA:\n%s\n\n' ...
+                        'Confirma a troca da lista de macrotemas?' ...
+                    ], textFormatGUI.cellstr2ListWithQuotes(currentMacrothemes, 'none'), textFormatGUI.cellstr2ListWithQuotes(requiredMacrothemes, 'none'));
+
+                    userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 1, 2);
+                    if userSelection == "Não"
+                        app.MacrothemesList.Value = event.PreviousValue;
+                        return
+                    end
+
+                    app.mainApp.General.reportLib.allowedMacrothemes = requiredMacrothemes;
+                    app.mainApp.General_I.reportLib = app.mainApp.General.reportLib;
+
+                    updatePanel_Report(app)
+                    saveGeneralSettings(app)
+            end
+
+        end
     end
 
     % Component initialization
@@ -1098,13 +1164,14 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create configAnalysisGrid1
             app.configAnalysisGrid1 = uigridlayout(app.configAnalysisPanel1);
-            app.configAnalysisGrid1.ColumnWidth = {350, 230};
-            app.configAnalysisGrid1.RowHeight = {22, 22};
+            app.configAnalysisGrid1.ColumnWidth = {110, 110};
+            app.configAnalysisGrid1.RowHeight = {17, 22};
             app.configAnalysisGrid1.RowSpacing = 5;
             app.configAnalysisGrid1.BackgroundColor = [1 1 1];
 
             % Create InputTypeLabel
             app.InputTypeLabel = uilabel(app.configAnalysisGrid1);
+            app.InputTypeLabel.VerticalAlignment = 'bottom';
             app.InputTypeLabel.FontSize = 11;
             app.InputTypeLabel.Layout.Row = 1;
             app.InputTypeLabel.Layout.Column = 1;
@@ -1116,15 +1183,16 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.InputType.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
             app.InputType.FontSize = 11;
             app.InputType.BackgroundColor = [1 1 1];
-            app.InputType.Layout.Row = 1;
-            app.InputType.Layout.Column = 2;
+            app.InputType.Layout.Row = 2;
+            app.InputType.Layout.Column = 1;
             app.InputType.Value = 'file';
 
             % Create SortMethodLabel
             app.SortMethodLabel = uilabel(app.configAnalysisGrid1);
+            app.SortMethodLabel.VerticalAlignment = 'bottom';
             app.SortMethodLabel.FontSize = 11;
-            app.SortMethodLabel.Layout.Row = 2;
-            app.SortMethodLabel.Layout.Column = 1;
+            app.SortMethodLabel.Layout.Row = 1;
+            app.SortMethodLabel.Layout.Column = 2;
             app.SortMethodLabel.Text = 'Visualização árvore:';
 
             % Create SortMethod
@@ -1331,7 +1399,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create SubGrid3
             app.SubGrid3 = uigridlayout(app.SubTab3);
             app.SubGrid3.ColumnWidth = {'1x', 22};
-            app.SubGrid3.RowHeight = {17, 182, 22, '1x'};
+            app.SubGrid3.RowHeight = {17, 136, 22, '1x'};
             app.SubGrid3.RowSpacing = 5;
             app.SubGrid3.BackgroundColor = [1 1 1];
 
@@ -1362,13 +1430,14 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create configPlotGrid1
             app.configPlotGrid1 = uigridlayout(app.configPlotPanel1);
-            app.configPlotGrid1.ColumnWidth = {350, 110, 110};
-            app.configPlotGrid1.RowHeight = {22, 22, 22, 22, 22, 22, 1};
+            app.configPlotGrid1.ColumnWidth = {110, 110, 110, 110};
+            app.configPlotGrid1.RowHeight = {17, 22, 1, 22, 1, 22, 1};
             app.configPlotGrid1.RowSpacing = 5;
             app.configPlotGrid1.BackgroundColor = [1 1 1];
 
             % Create BasemapLabel
             app.BasemapLabel = uilabel(app.configPlotGrid1);
+            app.BasemapLabel.VerticalAlignment = 'bottom';
             app.BasemapLabel.FontSize = 11;
             app.BasemapLabel.Layout.Row = 1;
             app.BasemapLabel.Layout.Column = 1;
@@ -1380,15 +1449,16 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.Basemap.ValueChangedFcn = createCallbackFcn(app, @Config_PlotAxesValueChanged, true);
             app.Basemap.FontSize = 11;
             app.Basemap.BackgroundColor = [1 1 1];
-            app.Basemap.Layout.Row = 1;
-            app.Basemap.Layout.Column = [2 3];
+            app.Basemap.Layout.Row = 2;
+            app.Basemap.Layout.Column = 1;
             app.Basemap.Value = 'satellite';
 
             % Create ColormapLabel
             app.ColormapLabel = uilabel(app.configPlotGrid1);
+            app.ColormapLabel.VerticalAlignment = 'bottom';
             app.ColormapLabel.FontSize = 11;
-            app.ColormapLabel.Layout.Row = 2;
-            app.ColormapLabel.Layout.Column = 1;
+            app.ColormapLabel.Layout.Row = 1;
+            app.ColormapLabel.Layout.Column = 2;
             app.ColormapLabel.Text = 'Mapa de cor:';
 
             % Create Colormap
@@ -1398,14 +1468,15 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.Colormap.FontSize = 11;
             app.Colormap.BackgroundColor = [1 1 1];
             app.Colormap.Layout.Row = 2;
-            app.Colormap.Layout.Column = [2 3];
+            app.Colormap.Layout.Column = 2;
             app.Colormap.Value = 'turbo';
 
             % Create ColorbarLabel
             app.ColorbarLabel = uilabel(app.configPlotGrid1);
+            app.ColorbarLabel.VerticalAlignment = 'bottom';
             app.ColorbarLabel.FontSize = 11;
-            app.ColorbarLabel.Layout.Row = 3;
-            app.ColorbarLabel.Layout.Column = 1;
+            app.ColorbarLabel.Layout.Row = 1;
+            app.ColorbarLabel.Layout.Column = 3;
             app.ColorbarLabel.Text = 'Legenda de cor:';
 
             % Create Colorbar
@@ -1414,16 +1485,17 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.Colorbar.ValueChangedFcn = createCallbackFcn(app, @Config_PlotAxesValueChanged, true);
             app.Colorbar.FontSize = 11;
             app.Colorbar.BackgroundColor = [1 1 1];
-            app.Colorbar.Layout.Row = 3;
-            app.Colorbar.Layout.Column = 2;
+            app.Colorbar.Layout.Row = 2;
+            app.Colorbar.Layout.Column = 3;
             app.Colorbar.Value = 'on';
 
             % Create ZoomOrientationLabel
             app.ZoomOrientationLabel = uilabel(app.configPlotGrid1);
+            app.ZoomOrientationLabel.VerticalAlignment = 'bottom';
             app.ZoomOrientationLabel.WordWrap = 'on';
             app.ZoomOrientationLabel.FontSize = 11;
-            app.ZoomOrientationLabel.Layout.Row = 4;
-            app.ZoomOrientationLabel.Layout.Column = 1;
+            app.ZoomOrientationLabel.Layout.Row = 1;
+            app.ZoomOrientationLabel.Layout.Column = 4;
             app.ZoomOrientationLabel.Text = 'Orientação do zoom:';
 
             % Create ZoomOrientation
@@ -1432,8 +1504,8 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.ZoomOrientation.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
             app.ZoomOrientation.FontSize = 11;
             app.ZoomOrientation.BackgroundColor = [1 1 1];
-            app.ZoomOrientation.Layout.Row = 4;
-            app.ZoomOrientation.Layout.Column = 2;
+            app.ZoomOrientation.Layout.Row = 2;
+            app.ZoomOrientation.Layout.Column = 4;
             app.ZoomOrientation.Value = 'measures';
 
             % Create AutomaticZoomMode
@@ -1441,8 +1513,8 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.AutomaticZoomMode.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
             app.AutomaticZoomMode.Text = 'Habilitar zoom automático em torno da estação/ponto sob análise.';
             app.AutomaticZoomMode.FontSize = 11;
-            app.AutomaticZoomMode.Layout.Row = 5;
-            app.AutomaticZoomMode.Layout.Column = [1 3];
+            app.AutomaticZoomMode.Layout.Row = 4;
+            app.AutomaticZoomMode.Layout.Column = [1 4];
 
             % Create AutomaticZoomFactorLabel
             app.AutomaticZoomFactorLabel = uilabel(app.configPlotGrid1);
@@ -1480,7 +1552,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create configPlotGrid2
             app.configPlotGrid2 = uigridlayout(app.configPlotPanel2);
-            app.configPlotGrid2.ColumnWidth = {350, 36, 64, 110};
+            app.configPlotGrid2.ColumnWidth = {230, 36, 64, 110};
             app.configPlotGrid2.RowHeight = {22, 22, 22, 22, 22, 1};
             app.configPlotGrid2.RowSpacing = 5;
             app.configPlotGrid2.BackgroundColor = [1 1 1];
@@ -1625,7 +1697,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             % Create SubGrid4
             app.SubGrid4 = uigridlayout(app.SubTab4);
             app.SubGrid4.ColumnWidth = {'1x', 22};
-            app.SubGrid4.RowHeight = {17, 70, 22, '1x'};
+            app.SubGrid4.RowHeight = {17, 78, 22, '1x'};
             app.SubGrid4.RowSpacing = 5;
             app.SubGrid4.BackgroundColor = [1 1 1];
 
@@ -1635,7 +1707,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.eFiscalizaLabel.FontSize = 10;
             app.eFiscalizaLabel.Layout.Row = 1;
             app.eFiscalizaLabel.Layout.Column = 1;
-            app.eFiscalizaLabel.Text = 'INICIALIZAÇÃO eFISCALIZA';
+            app.eFiscalizaLabel.Text = 'eFISCALIZA';
 
             % Create eFiscalizaRefresh
             app.eFiscalizaRefresh = uiimage(app.SubGrid4);
@@ -1655,8 +1727,8 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create eFiscalizaGrid
             app.eFiscalizaGrid = uigridlayout(app.eFiscalizaPanel);
-            app.eFiscalizaGrid.ColumnWidth = {350, 110, 110};
-            app.eFiscalizaGrid.RowHeight = {22, 22};
+            app.eFiscalizaGrid.ColumnWidth = {230, 110, 202, 18};
+            app.eFiscalizaGrid.RowHeight = {27, 22};
             app.eFiscalizaGrid.RowSpacing = 5;
             app.eFiscalizaGrid.BackgroundColor = [1 1 1];
 
@@ -1666,7 +1738,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportSystemLabel.FontSize = 11;
             app.reportSystemLabel.Layout.Row = 1;
             app.reportSystemLabel.Layout.Column = 1;
-            app.reportSystemLabel.Text = 'Ambiente do sistema de gestão à fiscalização:';
+            app.reportSystemLabel.Text = {'Ambiente do sistema de gestão à '; 'fiscalização:'};
 
             % Create reportSystem
             app.reportSystem = uidropdown(app.eFiscalizaGrid);
@@ -1674,16 +1746,16 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportSystem.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
             app.reportSystem.FontSize = 11;
             app.reportSystem.BackgroundColor = [1 1 1];
-            app.reportSystem.Layout.Row = 1;
-            app.reportSystem.Layout.Column = [2 3];
+            app.reportSystem.Layout.Row = 2;
+            app.reportSystem.Layout.Column = 1;
             app.reportSystem.Value = 'eFiscaliza';
 
             % Create reportUnitLabel
             app.reportUnitLabel = uilabel(app.eFiscalizaGrid);
             app.reportUnitLabel.WordWrap = 'on';
             app.reportUnitLabel.FontSize = 11;
-            app.reportUnitLabel.Layout.Row = 2;
-            app.reportUnitLabel.Layout.Column = 1;
+            app.reportUnitLabel.Layout.Row = 1;
+            app.reportUnitLabel.Layout.Column = 2;
             app.reportUnitLabel.Text = 'Unidade responsável pela fiscalização:';
 
             % Create reportUnit
@@ -1695,6 +1767,32 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportUnit.Layout.Row = 2;
             app.reportUnit.Layout.Column = 2;
             app.reportUnit.Value = {};
+
+            % Create MacrothemesLabel
+            app.MacrothemesLabel = uilabel(app.eFiscalizaGrid);
+            app.MacrothemesLabel.VerticalAlignment = 'bottom';
+            app.MacrothemesLabel.WordWrap = 'on';
+            app.MacrothemesLabel.FontSize = 11;
+            app.MacrothemesLabel.Layout.Row = 1;
+            app.MacrothemesLabel.Layout.Column = 3;
+            app.MacrothemesLabel.Text = 'Macrotemas aceitos para fins de elaboração do relato:';
+
+            % Create MacrothemesButton
+            app.MacrothemesButton = uiimage(app.eFiscalizaGrid);
+            app.MacrothemesButton.ImageClickedFcn = createCallbackFcn(app, @Config_MacrothemesEdition, true);
+            app.MacrothemesButton.Layout.Row = 1;
+            app.MacrothemesButton.Layout.Column = 4;
+            app.MacrothemesButton.VerticalAlignment = 'bottom';
+            app.MacrothemesButton.ImageSource = 'Edit_32.png';
+
+            % Create MacrothemesList
+            app.MacrothemesList = uieditfield(app.eFiscalizaGrid, 'text');
+            app.MacrothemesList.ValueChangedFcn = createCallbackFcn(app, @Config_MacrothemesEdition, true);
+            app.MacrothemesList.Editable = 'off';
+            app.MacrothemesList.FontSize = 11;
+            app.MacrothemesList.FontColor = [0.651 0.651 0.651];
+            app.MacrothemesList.Layout.Row = 2;
+            app.MacrothemesList.Layout.Column = [3 4];
 
             % Create reportLabel
             app.reportLabel = uilabel(app.SubGrid4);
@@ -1712,16 +1810,17 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create reportGrid
             app.reportGrid = uigridlayout(app.reportPanel);
-            app.reportGrid.ColumnWidth = {350, 110, 110};
-            app.reportGrid.RowHeight = {22, 22, 22, 48, 22, '1x'};
+            app.reportGrid.ColumnWidth = {110, 110, 110, 110};
+            app.reportGrid.RowHeight = {17, 22, 32, 22, 48, 22, 22};
             app.reportGrid.RowSpacing = 5;
             app.reportGrid.BackgroundColor = [1 1 1];
 
             % Create reportBasemapLabel
             app.reportBasemapLabel = uilabel(app.reportGrid);
+            app.reportBasemapLabel.VerticalAlignment = 'bottom';
             app.reportBasemapLabel.FontSize = 11;
             app.reportBasemapLabel.Layout.Row = 1;
-            app.reportBasemapLabel.Layout.Column = 1;
+            app.reportBasemapLabel.Layout.Column = [1 2];
             app.reportBasemapLabel.Text = 'Basemap do eixo geográfico dos plots:';
 
             % Create reportBasemap
@@ -1730,15 +1829,16 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportBasemap.ValueChangedFcn = createCallbackFcn(app, @Config_ProjectParameterValueChanged, true);
             app.reportBasemap.FontSize = 11;
             app.reportBasemap.BackgroundColor = [1 1 1];
-            app.reportBasemap.Layout.Row = 1;
-            app.reportBasemap.Layout.Column = [2 3];
+            app.reportBasemap.Layout.Row = 2;
+            app.reportBasemap.Layout.Column = [1 2];
             app.reportBasemap.Value = 'streets-dark';
 
             % Create reportImageLabel
             app.reportImageLabel = uilabel(app.reportGrid);
+            app.reportImageLabel.VerticalAlignment = 'bottom';
             app.reportImageLabel.FontSize = 11;
-            app.reportImageLabel.Layout.Row = 2;
-            app.reportImageLabel.Layout.Column = 1;
+            app.reportImageLabel.Layout.Row = 1;
+            app.reportImageLabel.Layout.Column = [3 4];
             app.reportImageLabel.Text = 'Formato e resolução (dpi) das imagens:';
 
             % Create reportImgFormat
@@ -1749,7 +1849,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportImgFormat.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.reportImgFormat.BackgroundColor = [1 1 1];
             app.reportImgFormat.Layout.Row = 2;
-            app.reportImgFormat.Layout.Column = 2;
+            app.reportImgFormat.Layout.Column = 3;
             app.reportImgFormat.Value = 'jpeg';
 
             % Create reportImgDpi
@@ -1760,15 +1860,15 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportImgDpi.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.reportImgDpi.BackgroundColor = [1 1 1];
             app.reportImgDpi.Layout.Row = 2;
-            app.reportImgDpi.Layout.Column = 3;
+            app.reportImgDpi.Layout.Column = 4;
             app.reportImgDpi.Value = '100';
 
             % Create reportBinningLabel
             app.reportBinningLabel = uilabel(app.reportGrid);
-            app.reportBinningLabel.VerticalAlignment = 'top';
+            app.reportBinningLabel.VerticalAlignment = 'bottom';
             app.reportBinningLabel.FontSize = 11;
-            app.reportBinningLabel.Layout.Row = [3 4];
-            app.reportBinningLabel.Layout.Column = 1;
+            app.reportBinningLabel.Layout.Row = 3;
+            app.reportBinningLabel.Layout.Column = [1 4];
             app.reportBinningLabel.Text = {'Sumarização de pontos com níveis superiores ao limiar:'; '(Data-Binning)'};
 
             % Create reportBinningPanel
@@ -1776,8 +1876,8 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportBinningPanel.AutoResizeChildren = 'off';
             app.reportBinningPanel.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.reportBinningPanel.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.reportBinningPanel.Layout.Row = [3 4];
-            app.reportBinningPanel.Layout.Column = [2 3];
+            app.reportBinningPanel.Layout.Row = [4 5];
+            app.reportBinningPanel.Layout.Column = [1 2];
 
             % Create reportBinningGrid
             app.reportBinningGrid = uigridlayout(app.reportBinningPanel);
@@ -1795,7 +1895,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.reportBinningLengthLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.reportBinningLengthLabel.Layout.Row = 1;
             app.reportBinningLengthLabel.Layout.Column = 1;
-            app.reportBinningLengthLabel.Text = 'Comprimento quadrícula (metros):';
+            app.reportBinningLengthLabel.Text = {'Comprimento '; 'quadrícula (m):'};
 
             % Create reportBinningLength
             app.reportBinningLength = uispinner(app.reportBinningGrid);
@@ -1832,10 +1932,10 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create prjFileCompressionModeLabel
             app.prjFileCompressionModeLabel = uilabel(app.reportGrid);
-            app.prjFileCompressionModeLabel.WordWrap = 'on';
+            app.prjFileCompressionModeLabel.VerticalAlignment = 'bottom';
             app.prjFileCompressionModeLabel.FontSize = 11;
-            app.prjFileCompressionModeLabel.Layout.Row = 5;
-            app.prjFileCompressionModeLabel.Layout.Column = 1;
+            app.prjFileCompressionModeLabel.Layout.Row = 6;
+            app.prjFileCompressionModeLabel.Layout.Column = [1 3];
             app.prjFileCompressionModeLabel.Text = 'Compressão aplicada ao arquivo de saída do projeto?';
 
             % Create prjFileCompressionMode
@@ -1843,8 +1943,8 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.prjFileCompressionMode.Items = {'Não', 'Sim'};
             app.prjFileCompressionMode.FontSize = 11;
             app.prjFileCompressionMode.BackgroundColor = [1 1 1];
-            app.prjFileCompressionMode.Layout.Row = 5;
-            app.prjFileCompressionMode.Layout.Column = 2;
+            app.prjFileCompressionMode.Layout.Row = 7;
+            app.prjFileCompressionMode.Layout.Column = 1;
             app.prjFileCompressionMode.Value = 'Não';
 
             % Create SubTab5

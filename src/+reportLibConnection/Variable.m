@@ -119,58 +119,8 @@ classdef (Abstract) Variable
                 case 'ReportTemplate'
                      fieldValue = jsonencode(struct('Name', reportInfo.Model.Name, 'DocumentType', reportInfo.Model.DocumentType, 'Version', reportInfo.Model.Version));
 
-                case {'Solicitação de Inspeção'; 
-                      'Ação de Inspeção'; 
-                      'Atividade de Inspeção';
-                      'Unidade Demandante'
-                      'Unidade Executante';
-                      'Sede da Unidade Executante';
-                      'Descrição da Atividade de Inspeção';
-                      'Período Previsto da Fiscalização';
-                      'Lista de Fiscais';
-                      'Processo SEI'}
-
-                    issueDetails = getOrFetchIssueDetails(projectData, projectData.modules.(context).ui.system, projectData.modules.(context).ui.issue, reportInfo.App.eFiscalizaObj);
-
-                    if ~isempty(issueDetails)
-                        switch fieldName
-                            case 'Solicitação de Inspeção'
-                                fieldValue = issueDetails.issueTree.solicitacao;
-                            case 'Ação de Inspeção'
-                                fieldValue = issueDetails.issueTree.acao;
-                            case 'Atividade de Inspeção'
-                                fieldValue = issueDetails.issueTree.atividade;
-                            case 'Unidade Demandante'
-                                issueCode  = issueDetails.issueTree.solicitacao; % 'SOL_GIDS_2024_0002'
-                                fieldValue = char(regexp(issueCode, '^SOL_([^_]+)_', 'tokens', 'once'));
-                            case 'Unidade Executante'
-                                fieldValue = issueDetails.unit;
-                            case 'Sede da Unidade Executante'
-                                unit = issueDetails.unit;
-                                unitIndex = find(strcmp({generalSettings.eFiscaliza.defaultValues.unitCityMapping.unit}, unit), 1);
-                                if ~isempty(unitIndex)
-                                    fieldValue = generalSettings.eFiscaliza.defaultValues.unitCityMapping(unitIndex).city;
-                                else
-                                    fieldValue = '';
-                                end
-                            case 'Descrição da Atividade de Inspeção'
-                                fieldValue = issueDetails.description;
-                            case 'Período Previsto da Fiscalização'
-                                fieldValue = issueDetails.period;
-                            case 'Lista de Fiscais'
-                                fiscais = issueDetails.fiscais;
-                                if isscalar(fiscais)
-                                    fieldValue = char(fiscais);
-                                else
-                                    fieldValue = strjoin(strjoin(fiscais(1:end-1), ', '), fiscais(end), ' e ');
-                                end
-                            case 'Processo SEI'
-                                fieldValue = issueDetails.sei;
-                        end
-                    end
-
                 otherwise
-                    error('UnexpectedFieldName')
+                    error('reportLibConnection:Variable:UnexpectedFieldName', 'Unexpected field name "%s"', fieldName)
             end
         end
     end
