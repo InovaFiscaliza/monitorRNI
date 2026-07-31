@@ -18,7 +18,7 @@ function varargout = compile(compilationType, rootCompiledFolder, matlabRuntimeF
         githubAccount           char    = 'EricMagalhaesDelgado'
     end
 
-    appName     = 'monitorRNI';
+    appName = 'monitorRNI';
 
     initFolder  = fileparts(mfilename('fullpath'));
     finalFolder = fullfile(rootCompiledFolder, appName);
@@ -74,7 +74,7 @@ function varargout = compile(compilationType, rootCompiledFolder, matlabRuntimeF
         end
     end
 
-    if hours(datetime('now') - originalReleaseDate) > 24*7
+    if hours(datetime('now') - originalReleaseDate) > 24*8
         error('RFDataHubNonUpdated')
     end
 
