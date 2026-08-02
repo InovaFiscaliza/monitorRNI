@@ -1727,14 +1727,13 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create eFiscalizaGrid
             app.eFiscalizaGrid = uigridlayout(app.eFiscalizaPanel);
-            app.eFiscalizaGrid.ColumnWidth = {230, 110, 202, 18};
+            app.eFiscalizaGrid.ColumnWidth = {230, 110, '1x', 18};
             app.eFiscalizaGrid.RowHeight = {27, 22};
             app.eFiscalizaGrid.RowSpacing = 5;
             app.eFiscalizaGrid.BackgroundColor = [1 1 1];
 
             % Create reportSystemLabel
             app.reportSystemLabel = uilabel(app.eFiscalizaGrid);
-            app.reportSystemLabel.WordWrap = 'on';
             app.reportSystemLabel.FontSize = 11;
             app.reportSystemLabel.Layout.Row = 1;
             app.reportSystemLabel.Layout.Column = 1;
@@ -1752,11 +1751,10 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create reportUnitLabel
             app.reportUnitLabel = uilabel(app.eFiscalizaGrid);
-            app.reportUnitLabel.WordWrap = 'on';
             app.reportUnitLabel.FontSize = 11;
             app.reportUnitLabel.Layout.Row = 1;
             app.reportUnitLabel.Layout.Column = 2;
-            app.reportUnitLabel.Text = 'Unidade responsável pela fiscalização:';
+            app.reportUnitLabel.Text = {'Unidade responsável '; 'pela fiscalização:'};
 
             % Create reportUnit
             app.reportUnit = uidropdown(app.eFiscalizaGrid);
@@ -1770,12 +1768,10 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create MacrothemesLabel
             app.MacrothemesLabel = uilabel(app.eFiscalizaGrid);
-            app.MacrothemesLabel.VerticalAlignment = 'bottom';
-            app.MacrothemesLabel.WordWrap = 'on';
             app.MacrothemesLabel.FontSize = 11;
             app.MacrothemesLabel.Layout.Row = 1;
             app.MacrothemesLabel.Layout.Column = 3;
-            app.MacrothemesLabel.Text = 'Macrotemas aceitos para fins de elaboração do relato:';
+            app.MacrothemesLabel.Text = {'Macrotemas aceitos para fins de'; 'elaboração do relato:'};
 
             % Create MacrothemesButton
             app.MacrothemesButton = uiimage(app.eFiscalizaGrid);
