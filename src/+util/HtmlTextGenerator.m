@@ -17,19 +17,23 @@ classdef (Abstract) HtmlTextGenerator
         %-----------------------------------------------------------------%
         % WINMONITORRNI - INFO
         %-----------------------------------------------------------------%
-        function htmlContent = AppInfo(generalSettings, rootFolder, executionMode, renderCount, projectData, outputFormat)
+        function htmlContent = getAppInfo(generalSettings, rootFolder, executionMode, renderCount, projectData, eFiscalizaObj, outputFormat)
             arguments
                 generalSettings 
                 rootFolder 
                 executionMode 
                 renderCount
                 projectData
+                eFiscalizaObj
                 outputFormat char {mustBeMember(outputFormat, {'popup', 'textview'})} = 'textview'
             end
+
+            global RFDataHub
+            global RFDataHub_info
         
-            appName    = class.Constants.appName;
+            appName = class.Constants.appName;
             appVersion = generalSettings.AppVersion;
-            appURL     = util.publicLink(appName, rootFolder, appName);
+            appURL = util.publicLink(appName, rootFolder, appName);
         
             switch executionMode
                 case {'MATLABEnvironment', 'desktopStandaloneApp'}
@@ -43,25 +47,26 @@ classdef (Abstract) HtmlTextGenerator
                     end
             end
 
-            dataStruct    = struct('group', 'COMPUTADOR',     'value', struct('Machine', rmfield(appVersion.machine, 'name'), 'Mode', sprintf('%s - %s', executionMode, appMode)));
-            dataStruct(2) = struct('group', 'MATLAB',         'value', rmfield(appVersion.matlab, 'name'));
+            displayEntry = struct('group', 'COMPUTADOR', 'value', struct('Machine', rmfield(appVersion.machine, 'name'), 'Mode', sprintf('%s - %s', executionMode, appMode)));
+            displayEntry(2) = struct('group', 'MATLAB', 'value', rmfield(appVersion.matlab, 'name'));
             if ~isempty(appVersion.browser)
-                dataStruct(3) = struct('group', 'NAVEGADOR',  'value', rmfield(appVersion.browser, 'name'));
+                displayEntry(3) = struct('group', 'NAVEGADOR', 'value', rmfield(appVersion.browser, 'name'));
             end
-            dataStruct(end+1) = struct('group', 'RENDERIZAÇÕES','value', renderCount);
-            dataStruct(end+1) = struct('group', 'APLICATIVO', 'value', appVersion.application);
+            displayEntry(end+1) = struct('group', 'RENDERIZAÇÕES','value', renderCount);
+            displayEntry(end+1) = struct('group', 'APLICATIVO', 'value', appVersion.application);
+            displayEntry(end+1) = struct('group', 'RFDataHub', 'value', struct('releasedDate', RFDataHub_info.ReleaseDate, 'numberOfRows', height(RFDataHub), 'numberOfUniqueStations', numel(unique(RFDataHub.("Station")))));
 
-            dataStruct(end+1) = struct('group', 'PM-RNI DATABASE', 'value', struct( ...
+            displayEntry(end+1) = struct('group', 'PM-RNI DATABASE', 'value', struct( ...
                 'selectedYears', "[ " + strjoin(string(projectData.modules.MONITORINGPLAN.referenceData.selectedYears), ', ') + " ]", ...
                 'numberOfRows', height(projectData.modules.MONITORINGPLAN.stationTable) ...
             ));
 
-            global RFDataHub
-            global RFDataHub_info
-            dataStruct(end+1) = struct('group', 'RFDataHub', 'value', struct('releasedDate', RFDataHub_info.ReleaseDate, 'numberOfRows', height(RFDataHub), 'numberOfUniqueStations', numel(unique(RFDataHub.("Station")))));
+            if ~isempty(eFiscalizaObj) && isvalid(eFiscalizaObj)
+                displayEntry(end+1) = struct('group', 'USUÁRIO AUTENTICADO', 'value', eFiscalizaObj.login);
+            end
         
-            freeInitialText = sprintf('<font style="font-size: 12px;">O repositório das ferramentas desenvolvidas no Laboratório de inovação da SFI pode ser acessado <a href="%s" target="_blank">aqui</a>.</font>\n\n', appURL.Sharepoint);
-            htmlContent     = textFormatGUI.struct2PrettyPrintList(dataStruct, 'print -1', freeInitialText, outputFormat);
+            htmlIntro = sprintf('<font style="font-size: 12px;">O repositório das ferramentas desenvolvidas no Laboratório de inovação da SFI pode ser acessado <a href="%s" target="_blank">aqui</a>.</font>\n\n', appURL.Sharepoint);
+            htmlContent = textFormatGUI.struct2PrettyPrintList(displayEntry, 'print -1', htmlIntro, outputFormat);
         end
 
 
@@ -369,7 +374,13 @@ classdef (Abstract) HtmlTextGenerator
         % AUXAPP.DOCKREPORTLIB
         %-----------------------------------------------------------------%
         function htmlContent = issueDetails(system, issue, details)
-            dataStruct      = struct('group', 'CADASTRO', 'value', details);
+            dataStruct = [ ...
+                struct('group', 'ATIVIDADE DE INSPEÇÃO',   'value', details.issueContext.atividade), ...
+                struct('group', 'AÇÃO DE INSPEÇÃO',        'value', details.issueContext.acao), ...
+                struct('group', 'SOLICITAÇÃO DE INSPEÇÃO', 'value', details.issueContext.solicitacao), ...
+                struct('group', 'USUÁRIO',                 'value', details.usuario) ...
+            ];
+
             freeInitialText = sprintf('<font style="font-size: 16px;"><b>Atividade de Inspeção #%d</b></font> %s<br><br>', issue, system);
             htmlContent     = textFormatGUI.struct2PrettyPrintList(dataStruct, 'print -1', freeInitialText, 'popup');
         end

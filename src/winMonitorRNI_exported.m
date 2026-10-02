@@ -67,6 +67,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         projectData
         measData  = model.EMFieldData.empty
+        elevationObj = RF.Elevation
 
         rfDataHub
         rfDataHubLOG
@@ -150,9 +151,17 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                     case 'customForm'
                         switch event.HTMLEventData.uuid
+                            case 'getAuthenticatedUser'
+                                createEFiscalizaObject(app, event.HTMLEventData)
+
                             case {'onFetchIssueDetails', 'onReportGenerate', 'onUploadArtifacts'}
                                 eventName = event.HTMLEventData.uuid;
                                 context = event.HTMLEventData.context;
+                                
+                                if isfield(event.HTMLEventData, 'error')
+                                    ws.eFiscaliza.getCredentials('manual', app.executionMode, app.jsBackDoor, eventName, context);
+                                    return
+                                end
 
                                 varargin = {};
                                 if isfield(event.HTMLEventData, 'varargin')
@@ -219,6 +228,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                         filePath = varargin{1};
                         updateLastVisitedFolder(app, filePath)
 
+                    case {'onReportGenerate', 'onUploadArtifacts'}
+                        context = varargin{1};
+                        varargin = varargin(2:end);
+                        reportHandleOperation(app, eventName, context, [], varargin{:})
+
                     otherwise
                         switch class(callingApp)
                             % auxApp.winConfig (CONFIG)
@@ -268,16 +282,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
                             case {'auxApp.winMonitoringPlan',  'auxApp.winMonitoringPlan_exported', ...
                                   'auxApp.winExternalRequest', 'auxApp.winExternalRequest_exported'}
-                                switch eventName
-                                    case 'onReportGenerate'
-                                        context = varargin{1};
-                                        indexes = varargin{2};
-                                        reportGenerate(app, context, [], indexes)
-
-                                    case 'onUploadArtifacts'
-                                        context = varargin{1};
-                                        reportUploadArtifacts(app, context, [], 'uploadDocument')
-                                end
+                                % ...
 
 
                             % DOCKS:OTHERS
@@ -540,7 +545,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function initializeAppProperties(app)
             initializeRFDataHub(app)
+            
             app.projectData = model.Project(app, app.rootFolder, app.General);
+
+            if strcmp(app.executionMode, 'webApp')
+                url = ws.eFiscaliza.CURRENT_USER_URL;
+                sendEventToHTMLSource(app.jsBackDoor, 'getAuthenticatedUser', struct('eventName', 'getAuthenticatedUser', 'context', app.Context, 'url', url));
+            end
         end
 
         %-----------------------------------------------------------------%
@@ -746,34 +757,12 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function createEFiscalizaObject(app, credentials)
             if ~isempty(credentials)
-                app.eFiscalizaObj = ws.eFiscaliza(credentials.login, credentials.password);
-            end
-        end
-
-        %-----------------------------------------------------------------%
-        function reportDispatchOperation(app, eventName, varargin)
-            arguments
-                app
-                eventName {mustBeMember(eventName, {'onReportGenerate', 'onUploadArtifacts'})}
-            end
-
-            arguments (Repeating)
-                varargin
-            end
-
-            if isempty(app.eFiscalizaObj) || ~isvalid(app.eFiscalizaObj)
-                dialogBox    = struct('id', 'login',    'label', 'Usuário: ', 'type', 'text');
-                dialogBox(2) = struct('id', 'password', 'label', 'Senha: ',   'type', 'password');
-
-                customFormData = struct('UUID', eventName, 'Fields', dialogBox, 'Context', app.Context);
-                if ~isempty(varargin)
-                    customFormData.Varargin = varargin;
+                loginMode = 'mfa';
+                if ~isfield(credentials, 'mfaLogin')
+                    loginMode = 'manual';
                 end
 
-                sendEventToHTMLSource(app.jsBackDoor, 'customForm', customFormData)
-
-            else
-                reportHandleOperation(app, eventName, app.Context, [], varargin{:})
+                app.eFiscalizaObj = ws.eFiscaliza(loginMode, credentials.login, credentials.password);
             end
         end
 
@@ -825,7 +814,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     msg = util.HtmlTextGenerator.issueDetails(system, issue, details);
                     icon = 'info';
                 else
-                    app.eFiscalizaObj = [];
+                    delete(app.eFiscalizaObj)
+
                     msg = msgError;
                     icon = 'error';
                 end
@@ -854,7 +844,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 end
 
             catch ME
-                app.eFiscalizaObj = [];
+                delete(app.eFiscalizaObj)
                 ui.Dialog(callingApp.UIFigure, 'error', getReport(ME));
             end
 
@@ -944,7 +934,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 msg = response;
 
             catch ME
-                app.eFiscalizaObj = [];
+                delete(app.eFiscalizaObj)
                 
                 status = false;
                 icon = 'error';
@@ -1050,12 +1040,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     focus(findobj(app.NavBar.Children, 'Type', 'uistatebutton', 'Value', true))
 
                 case app.AppInfo
-                    appInfo = util.HtmlTextGenerator.AppInfo( ...
+                    appInfo = util.HtmlTextGenerator.getAppInfo( ...
                         app.General, ...
                         app.rootFolder, ...
                         app.executionMode, ...
                         app.renderCount, ...
                         app.projectData, ...
+                        app.eFiscalizaObj, ...
                         "popup" ...
                     );
                     ui.Dialog(app.UIFigure, 'info', appInfo);
@@ -1434,7 +1425,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create NavBar
             app.NavBar = uigridlayout(app.GridLayout);
-            app.NavBar.ColumnWidth = {101, '1x', 34, 5, 34, 34, 5, 34, 34, '1x', 20, 20, 1, 20, 20};
+            app.NavBar.ColumnWidth = {106, '1x', 34, 5, 34, 34, 5, 34, 34, '1x', 20, 20, 1, 20, 20};
             app.NavBar.RowHeight = {5, 7, 20, 7, 5};
             app.NavBar.ColumnSpacing = 5;
             app.NavBar.RowSpacing = 0;
@@ -1452,7 +1443,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.AppName.Layout.Row = [1 5];
             app.AppName.Layout.Column = [1 2];
             app.AppName.Interpreter = 'html';
-            app.AppName.Text = {'monitorRNI v. 1.0.0'; '<font style="font-size: 9px;">R2024a</font>'};
+            app.AppName.Text = {'monitorRNI v. 1.10.6'; '<font style="font-size: 9px;">R2024a</font>'};
 
             % Create Tab1Button
             app.Tab1Button = uibutton(app.NavBar, 'state');

@@ -442,6 +442,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             end
         end
 
+        
         %-----------------------------------------------------------------%
         % ## PLOT ##
         %-----------------------------------------------------------------%
@@ -500,6 +501,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             end
         end
 
+
         %-----------------------------------------------------------------%
         % ## GET ##
         %-----------------------------------------------------------------%
@@ -513,30 +515,20 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             end
         end
 
+
         %-----------------------------------------------------------------%
-        % ## REPORTLIB ##
+        % ## RELATÓRIO ##
         %-----------------------------------------------------------------%
         function reportDispatchOperation(app, eventName, varargin)
-            arguments
-                app
-                eventName {mustBeMember(eventName, {'onReportGenerate', 'onUploadArtifacts'})}
-            end
-
-            arguments (Repeating)
-                varargin
-            end
-
             if isempty(app.mainApp.eFiscalizaObj) || ~isvalid(app.mainApp.eFiscalizaObj)
-                dialogBox    = struct('id', 'login',    'label', 'Usuário: ', 'type', 'text');
-                dialogBox(2) = struct('id', 'password', 'label', 'Senha: ',   'type', 'password');
+                eventData = ws.eFiscaliza.getCredentials('auto', app.mainApp.executionMode, app.jsBackDoor, eventName, app.Context, varargin{:});
+                if ~isempty(eventData)
+                    eventData.uuid = eventName;
+                    eventData.context = app.Context;
+                    eventData.varargin = varargin{:};
 
-                customFormData = struct('UUID', eventName, 'Fields', dialogBox, 'Context', app.Context);
-                if ~isempty(varargin)
-                    customFormData.Varargin = varargin;
+                    ipcMainJSEventsHandler(app.mainApp, struct('HTMLEventName', 'customForm', 'HTMLEventData', eventData))
                 end
-
-                sendEventToHTMLSource(app.jsBackDoor, 'customForm', customFormData)
-
             else
                 ipcMainMatlabCallsHandler(app.mainApp, app, eventName, app.Context, varargin{:})
             end

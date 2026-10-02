@@ -65,6 +65,10 @@ classdef EMFieldData < handle
                 dataTable = sortrows(dataTable, 'Timestamp');
             end
             dataTable.Timestamp.Format = 'dd/MM/yyyy HH:mm:ss';
+
+            % Elimina registros com informações inválidas
+            % de timestamp.
+            dataTable(isnat(dataTable.Timestamp), :) = [];
             
             obj.Data = dataTable;
             obj.Measures = height(dataTable);
