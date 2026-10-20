@@ -13,6 +13,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         Add               matlab.ui.control.Image
         RefLocation       matlab.ui.control.ListBox
         RefLocationLabel  matlab.ui.control.Label
+        Title             matlab.ui.control.Label
     end
 
     
@@ -161,7 +162,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             if isempty(Container)
                 app.UIFigure = uifigure('Visible', 'off');
                 app.UIFigure.AutoResizeChildren = 'off';
-                app.UIFigure.Position = [100 100 540 440];
+                app.UIFigure.Position = [100 100 540 464];
                 app.UIFigure.Name = 'monitorRNI';
                 app.UIFigure.Icon = 'icon_48.png';
                 app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @closeFcn, true);
@@ -184,18 +185,28 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.Container);
-            app.GridLayout.ColumnWidth = {22, 110, '1x', 16, '1x', 42, 90};
-            app.GridLayout.RowHeight = {32, 22, 22, '1x', 22};
+            app.GridLayout.ColumnWidth = {22, 120, 85, 16, 85, 147};
+            app.GridLayout.RowHeight = {40, 32, 22, 22, 261, 22};
             app.GridLayout.ColumnSpacing = 5;
             app.GridLayout.RowSpacing = 5;
             app.GridLayout.Padding = [20 20 20 20];
             app.GridLayout.BackgroundColor = [1 1 1];
 
+            % Create Title
+            app.Title = uilabel(app.GridLayout);
+            app.Title.VerticalAlignment = 'top';
+            app.Title.FontSize = 15;
+            app.Title.FontColor = [0 0.4471 0.7412];
+            app.Title.Layout.Row = 1;
+            app.Title.Layout.Column = [1 6];
+            app.Title.Interpreter = 'html';
+            app.Title.Text = {'<b>Seleção de localidades</b>'; '<font style="color: gray; font-size: 10px;">Confira as localidades identificadas automaticamente e inclua aquelas visitadas que não foram detectadas</font>'};
+
             % Create RefLocationLabel
             app.RefLocationLabel = uilabel(app.GridLayout);
             app.RefLocationLabel.VerticalAlignment = 'bottom';
             app.RefLocationLabel.FontSize = 10;
-            app.RefLocationLabel.Layout.Row = 1;
+            app.RefLocationLabel.Layout.Row = 2;
             app.RefLocationLabel.Layout.Column = [1 3];
             app.RefLocationLabel.Interpreter = 'html';
             app.RefLocationLabel.Text = {'LOCALIDADES DE REFERÊNCIA:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
@@ -206,7 +217,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.RefLocation.Multiselect = 'on';
             app.RefLocation.ValueChangedFcn = createCallbackFcn(app, @Callbacks, true);
             app.RefLocation.FontSize = 11;
-            app.RefLocation.Layout.Row = [2 4];
+            app.RefLocation.Layout.Row = [3 5];
             app.RefLocation.Layout.Column = [1 3];
             app.RefLocation.Value = {};
 
@@ -215,8 +226,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.Add.ScaleMethod = 'none';
             app.Add.ImageClickedFcn = createCallbackFcn(app, @Callbacks, true);
             app.Add.Enable = 'off';
-            app.Add.Tooltip = {'Adiciona localidades selecionadas'};
-            app.Add.Layout.Row = 2;
+            app.Add.Layout.Row = 3;
             app.Add.Layout.Column = 4;
             app.Add.ImageSource = 'Continue_16.png';
 
@@ -225,8 +235,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.Delete.ScaleMethod = 'none';
             app.Delete.ImageClickedFcn = createCallbackFcn(app, @Callbacks, true);
             app.Delete.Enable = 'off';
-            app.Delete.Tooltip = {'Exclui localidades selecionadas'};
-            app.Delete.Layout.Row = 3;
+            app.Delete.Layout.Row = 4;
             app.Delete.Layout.Column = 4;
             app.Delete.ImageSource = 'delete-12px-red.svg';
 
@@ -234,8 +243,8 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.LocationLabel = uilabel(app.GridLayout);
             app.LocationLabel.VerticalAlignment = 'bottom';
             app.LocationLabel.FontSize = 10;
-            app.LocationLabel.Layout.Row = 1;
-            app.LocationLabel.Layout.Column = [5 7];
+            app.LocationLabel.Layout.Row = 2;
+            app.LocationLabel.Layout.Column = [5 6];
             app.LocationLabel.Interpreter = 'html';
             app.LocationLabel.Text = {'LOCALIDADES SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
 
@@ -245,22 +254,22 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.Location.Multiselect = 'on';
             app.Location.ValueChangedFcn = createCallbackFcn(app, @Callbacks, true);
             app.Location.FontSize = 11;
-            app.Location.Layout.Row = [2 4];
-            app.Location.Layout.Column = [5 7];
+            app.Location.Layout.Row = [3 5];
+            app.Location.Layout.Column = [5 6];
             app.Location.Value = {};
 
             % Create FilterIcon
             app.FilterIcon = uiimage(app.GridLayout);
             app.FilterIcon.ScaleMethod = 'none';
-            app.FilterIcon.Layout.Row = 5;
+            app.FilterIcon.Layout.Row = 6;
             app.FilterIcon.Layout.Column = 1;
-            app.FilterIcon.ImageSource = 'Filter_18.png';
+            app.FilterIcon.ImageSource = 'filter.svg';
 
             % Create FilterLabel
             app.FilterLabel = uilabel(app.GridLayout);
             app.FilterLabel.WordWrap = 'on';
-            app.FilterLabel.FontSize = 10;
-            app.FilterLabel.Layout.Row = 5;
+            app.FilterLabel.FontSize = 11;
+            app.FilterLabel.Layout.Row = 6;
             app.FilterLabel.Layout.Column = 2;
             app.FilterLabel.Text = 'Unidade da Federação:';
 
@@ -270,7 +279,7 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.Filter.ValueChangedFcn = createCallbackFcn(app, @FilterValueChanged, true);
             app.Filter.FontSize = 11;
             app.Filter.BackgroundColor = [1 1 1];
-            app.Filter.Layout.Row = 5;
+            app.Filter.Layout.Row = 6;
             app.Filter.Layout.Column = 3;
             app.Filter.Value = {};
 

@@ -376,9 +376,9 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     'VariableTypes', {'string', 'double', 'double', 'logical'}, ...
                     'VariableNames', {'AuxAppName', 'Width', 'Height', 'IsFluid'} ...
                 );
-                popupSpecifications(1, :) = {"ReportLib",      460, 598, false};
-                popupSpecifications(2, :) = {"ListOfLocation", 540, 440, false};
-                popupSpecifications(3, :) = {"StationInfo",    540, 440, false};
+                popupSpecifications(1, :) = {"ReportLib",      460, 608, false};
+                popupSpecifications(2, :) = {"ListOfLocation", 540, 464, false};
+                popupSpecifications(3, :) = {"StationInfo",    540, 464, false};
 
                 auxAppNameIdx = find(popupSpecifications.AuxAppName == string(auxAppName), 1);
                 screenWidth = popupSpecifications.Width(auxAppNameIdx);

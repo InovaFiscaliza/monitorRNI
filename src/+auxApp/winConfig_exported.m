@@ -12,9 +12,9 @@ classdef winConfig_exported < matlab.apps.AppBase
         SubGrid1                      matlab.ui.container.GridLayout
         openAuxiliarApp2Debug         matlab.ui.control.CheckBox
         openAuxiliarAppAsDocked       matlab.ui.control.CheckBox
+        versionInfo                   matlab.ui.control.Label
         tool_RFDataHubButton          matlab.ui.control.Image
         tool_versionInfoRefresh       matlab.ui.control.Image
-        versionInfo                   matlab.ui.control.Label
         versionInfoLabel              matlab.ui.control.Label
         SubTab2                       matlab.ui.container.Tab
         SubGrid2                      matlab.ui.container.GridLayout
@@ -174,12 +174,14 @@ classdef winConfig_exported < matlab.apps.AppBase
                 return
             end
             app.SubTabGroup.UserData.isTabInitialized(tabIndex) = true;
-            
+            appName = class(app);
+
             switch tabIndex
                 case 1
-                    appName = class(app);
                     elToModify = {
                         app.versionInfo;
+                        app.tool_versionInfoRefresh;
+                        app.tool_RFDataHubButton;
                         app.tool_simulationMode;
                         app.tool_openDevTools;
                         app.dockModule_Undock;
@@ -194,26 +196,48 @@ classdef winConfig_exported < matlab.apps.AppBase
 
                     try
                         sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
-                            struct('appName', appName, 'dataTag', app.tool_simulationMode.UserData.id, 'tooltip', struct('defaultPosition', 'top',    'textContent', 'Leitura arquivos de simulação')), ...
-                            struct('appName', appName, 'dataTag', app.tool_openDevTools.UserData.id,   'tooltip', struct('defaultPosition', 'top',    'textContent', 'Abre DevTools')), ...
-                            struct('appName', appName, 'dataTag', app.dockModule_Undock.UserData.id,   'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Reabre módulo em outra janela')), ...
-                            struct('appName', appName, 'dataTag', app.dockModule_Close.UserData.id,    'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Fecha módulo')) ...
+                            struct('appName', appName, 'dataTag', app.tool_versionInfoRefresh.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Verifica atualizações')), ...
+                            struct('appName', appName, 'dataTag', app.tool_RFDataHubButton.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Atualiza RF.DataHub')), ...
+                            struct('appName', appName, 'dataTag', app.tool_simulationMode.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Leitura arquivos de simulação')), ...
+                            struct('appName', appName, 'dataTag', app.tool_openDevTools.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Abre DevTools')), ...
+                            struct('appName', appName, 'dataTag', app.dockModule_Undock.UserData.id, 'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Reabre módulo em outra janela')), ...
+                            struct('appName', appName, 'dataTag', app.dockModule_Close.UserData.id, 'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Fecha módulo')) ...
                         });
                     catch
                     end
 
                 case 2
-                    updatePanel_Analysis(app)
-
-                case 3
-                    updatePanel_Plot(app)
-
-                case 4
-                    ui.CustomizationBase.getElementsDataTag({app.MacrothemesButton});
+                    ui.CustomizationBase.getElementsDataTag({app.configAnalysisRefresh, app.MonitoringPlanOpenFile});
 
                     try
                         sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
-                            struct('appName', class(app), 'dataTag', app.MacrothemesButton.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Habilita ou desabilita a edição da lista de macrotemas<br>Ex: "PM-RNI", "UTE", ""')) ...
+                            struct('appName', appName, 'dataTag', app.configAnalysisRefresh.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Retorna às configurações iniciais')), ...
+                            struct('appName', appName, 'dataTag', app.MonitoringPlanOpenFile.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Abrir no Excel a planilha de referência')) ...
+                        });
+                    catch
+                    end
+
+                    updatePanel_Analysis(app)
+
+                case 3
+                    ui.CustomizationBase.getElementsDataTag({app.configPlotRefresh});
+
+                    try
+                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                            struct('appName', appName, 'dataTag', app.configPlotRefresh.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Retorna às configurações iniciais')) ...
+                        });
+                    catch
+                    end
+
+                    updatePanel_Plot(app)
+
+                case 4
+                    ui.CustomizationBase.getElementsDataTag({app.eFiscalizaRefresh, app.MacrothemesButton});
+
+                    try
+                        sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                            struct('appName', appName, 'dataTag', app.eFiscalizaRefresh.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Retorna às configurações iniciais')), ...
+                            struct('appName', appName, 'dataTag', app.MacrothemesButton.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Habilita ou desabilita a edição da lista de macrotemas<br>Ex: "PM-RNI", "UTE", ""')) ...
                         });
                     catch
                     end
@@ -1018,7 +1042,7 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create Toolbar
             app.Toolbar = uigridlayout(app.GridLayout);
-            app.Toolbar.ColumnWidth = {22, '1x', 22, 22};
+            app.Toolbar.ColumnWidth = {22, '1x', 22};
             app.Toolbar.RowHeight = {4, 17, '1x'};
             app.Toolbar.ColumnSpacing = 5;
             app.Toolbar.RowSpacing = 0;
@@ -1041,7 +1065,7 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.tool_openDevTools.ImageClickedFcn = createCallbackFcn(app, @Toolbar_OpenDevToolsClicked, true);
             app.tool_openDevTools.Enable = 'off';
             app.tool_openDevTools.Layout.Row = [1 3];
-            app.tool_openDevTools.Layout.Column = 4;
+            app.tool_openDevTools.Layout.Column = 3;
             app.tool_openDevTools.ImageSource = 'Debug_18.png';
 
             % Create SubTabGroup
@@ -1073,6 +1097,23 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.versionInfoLabel.Layout.Column = 1;
             app.versionInfoLabel.Text = 'AMBIENTE:';
 
+            % Create tool_versionInfoRefresh
+            app.tool_versionInfoRefresh = uiimage(app.SubGrid1);
+            app.tool_versionInfoRefresh.ScaleMethod = 'none';
+            app.tool_versionInfoRefresh.ImageClickedFcn = createCallbackFcn(app, @Toolbar_AppEnvRefreshButtonPushed, true);
+            app.tool_versionInfoRefresh.Enable = 'off';
+            app.tool_versionInfoRefresh.Layout.Row = 1;
+            app.tool_versionInfoRefresh.Layout.Column = 2;
+            app.tool_versionInfoRefresh.ImageSource = 'Refresh_18.png';
+
+            % Create tool_RFDataHubButton
+            app.tool_RFDataHubButton = uiimage(app.SubGrid1);
+            app.tool_RFDataHubButton.ImageClickedFcn = createCallbackFcn(app, @Toolbar_RFDataHubButtonPushed, true);
+            app.tool_RFDataHubButton.Enable = 'off';
+            app.tool_RFDataHubButton.Layout.Row = 1;
+            app.tool_RFDataHubButton.Layout.Column = 3;
+            app.tool_RFDataHubButton.ImageSource = 'mosaic_32.png';
+
             % Create versionInfo
             app.versionInfo = uilabel(app.SubGrid1);
             app.versionInfo.BackgroundColor = [1 1 1];
@@ -1083,26 +1124,6 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.versionInfo.Layout.Column = [1 3];
             app.versionInfo.Interpreter = 'html';
             app.versionInfo.Text = '';
-
-            % Create tool_versionInfoRefresh
-            app.tool_versionInfoRefresh = uiimage(app.SubGrid1);
-            app.tool_versionInfoRefresh.ScaleMethod = 'none';
-            app.tool_versionInfoRefresh.ImageClickedFcn = createCallbackFcn(app, @Toolbar_AppEnvRefreshButtonPushed, true);
-            app.tool_versionInfoRefresh.Enable = 'off';
-            app.tool_versionInfoRefresh.Tooltip = {'Verifica atualizações'};
-            app.tool_versionInfoRefresh.Layout.Row = 1;
-            app.tool_versionInfoRefresh.Layout.Column = 2;
-            app.tool_versionInfoRefresh.VerticalAlignment = 'bottom';
-            app.tool_versionInfoRefresh.ImageSource = 'Refresh_18.png';
-
-            % Create tool_RFDataHubButton
-            app.tool_RFDataHubButton = uiimage(app.SubGrid1);
-            app.tool_RFDataHubButton.ImageClickedFcn = createCallbackFcn(app, @Toolbar_RFDataHubButtonPushed, true);
-            app.tool_RFDataHubButton.Enable = 'off';
-            app.tool_RFDataHubButton.Tooltip = {'Atualiza RFDataHub'};
-            app.tool_RFDataHubButton.Layout.Row = 1;
-            app.tool_RFDataHubButton.Layout.Column = 3;
-            app.tool_RFDataHubButton.ImageSource = 'mosaic_32.png';
 
             % Create openAuxiliarAppAsDocked
             app.openAuxiliarAppAsDocked = uicheckbox(app.SubGrid1);
@@ -1150,10 +1171,8 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.configAnalysisRefresh.ScaleMethod = 'none';
             app.configAnalysisRefresh.ImageClickedFcn = createCallbackFcn(app, @Config_AnalysisRefreshImageClicked, true);
             app.configAnalysisRefresh.Visible = 'off';
-            app.configAnalysisRefresh.Tooltip = {'Retorna às configurações iniciais'};
             app.configAnalysisRefresh.Layout.Row = 1;
             app.configAnalysisRefresh.Layout.Column = 2;
-            app.configAnalysisRefresh.VerticalAlignment = 'bottom';
             app.configAnalysisRefresh.ImageSource = 'Refresh_18.png';
 
             % Create configAnalysisPanel1
@@ -1281,7 +1300,6 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.MonitoringPlanOpenFile = uiimage(app.configAnalysisGrid2);
             app.MonitoringPlanOpenFile.ScaleMethod = 'none';
             app.MonitoringPlanOpenFile.ImageClickedFcn = createCallbackFcn(app, @Config_AnalysisOpenReferenceFile, true);
-            app.MonitoringPlanOpenFile.Tooltip = {'Abrir no Excel a planilha de referência'};
             app.MonitoringPlanOpenFile.Layout.Row = 3;
             app.MonitoringPlanOpenFile.Layout.Column = 4;
             app.MonitoringPlanOpenFile.ImageSource = 'Import_16.png';
@@ -1417,10 +1435,8 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.configPlotRefresh.ScaleMethod = 'none';
             app.configPlotRefresh.ImageClickedFcn = createCallbackFcn(app, @Config_PlotRefreshImageClicked, true);
             app.configPlotRefresh.Visible = 'off';
-            app.configPlotRefresh.Tooltip = {'Retorna às configurações iniciais'};
             app.configPlotRefresh.Layout.Row = 1;
             app.configPlotRefresh.Layout.Column = 2;
-            app.configPlotRefresh.VerticalAlignment = 'bottom';
             app.configPlotRefresh.ImageSource = 'Refresh_18.png';
 
             % Create configPlotPanel1
@@ -1580,8 +1596,6 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.StationsSize.MajorTicks = [];
             app.StationsSize.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
             app.StationsSize.MinorTicks = [];
-            app.StationsSize.FontSize = 10;
-            app.StationsSize.Tooltip = {'Tamanho do marcador'};
             app.StationsSize.Layout.Row = 1;
             app.StationsSize.Layout.Column = [3 4];
             app.StationsSize.Value = 12;
@@ -1608,8 +1622,6 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.SelectedStationSize.MajorTicks = [];
             app.SelectedStationSize.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
             app.SelectedStationSize.MinorTicks = [];
-            app.SelectedStationSize.FontSize = 10;
-            app.SelectedStationSize.Tooltip = {'Tamanho do marcador'};
             app.SelectedStationSize.Layout.Row = 2;
             app.SelectedStationSize.Layout.Column = [3 4];
             app.SelectedStationSize.Value = 32;
@@ -1636,8 +1648,6 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.PeakSize.MajorTicks = [];
             app.PeakSize.ValueChangedFcn = createCallbackFcn(app, @Config_PlotParameterValueChanged, true);
             app.PeakSize.MinorTicks = [];
-            app.PeakSize.FontSize = 10;
-            app.PeakSize.Tooltip = {'Tamanho do marcador'};
             app.PeakSize.Layout.Row = 3;
             app.PeakSize.Layout.Column = [3 4];
             app.PeakSize.Value = 32;
@@ -1715,10 +1725,8 @@ classdef winConfig_exported < matlab.apps.AppBase
             app.eFiscalizaRefresh.ScaleMethod = 'none';
             app.eFiscalizaRefresh.ImageClickedFcn = createCallbackFcn(app, @Config_ProjectRefreshImageClicked, true);
             app.eFiscalizaRefresh.Visible = 'off';
-            app.eFiscalizaRefresh.Tooltip = {'Retorna às configurações iniciais'};
             app.eFiscalizaRefresh.Layout.Row = 1;
             app.eFiscalizaRefresh.Layout.Column = 2;
-            app.eFiscalizaRefresh.VerticalAlignment = 'bottom';
             app.eFiscalizaRefresh.ImageSource = 'Refresh_18.png';
 
             % Create eFiscalizaPanel

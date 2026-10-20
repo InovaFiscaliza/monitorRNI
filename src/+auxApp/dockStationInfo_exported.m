@@ -4,8 +4,8 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
     properties (Access = public)
         UIFigure                matlab.ui.Figure
         GridLayout              matlab.ui.container.GridLayout
-        NextSelection           matlab.ui.control.Image
-        PreviousSelection       matlab.ui.control.Image
+        EditableFieldsPanel     matlab.ui.container.Panel
+        EditableFieldsGrid      matlab.ui.container.GridLayout
         LocationPanel           matlab.ui.container.Panel
         LocationPanelGrid       matlab.ui.container.GridLayout
         Longitude               matlab.ui.control.NumericEditField
@@ -22,7 +22,14 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
         optNotesLabel           matlab.ui.control.Label
         Reason                  matlab.ui.control.DropDown
         ReasonLabel             matlab.ui.control.Label
+        EditableFieldsLabel     matlab.ui.control.Label
+        StationPanel            matlab.ui.container.Panel
+        StationGrid             matlab.ui.container.GridLayout
         Station                 matlab.ui.control.Label
+        SummaryLabel            matlab.ui.control.Label
+        NextSelection           matlab.ui.control.Image
+        PreviousSelection       matlab.ui.control.Image
+        Title                   matlab.ui.control.Label
     end
 
     
@@ -53,13 +60,32 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
         function jsBackDoor_Customizations(app)
             drawnow
 
-            elToModify = {app.Station};
-            elDataTag  = ui.CustomizationBase.getElementsDataTag(elToModify);
-    
-            if ~isempty(elDataTag)
-                appName = class.Constants.appName;
-                ui.TextView.startup(app.jsBackDoor, elToModify{1}, appName);
+            appName = class.Constants.appName;
+            elToModify = {
+                app.Station;
+                app.LocationRefresh;
+                app.LocationEditionMode;
+                app.LocationEditionConfirm;
+                app.LocationEditionCancel
+            };
+            ui.CustomizationBase.getElementsDataTag(elToModify);
+
+            try
+                ui.TextView.startup(app.jsBackDoor, app.Station, appName, struct('class', {{'textview--borderless', 'textview--wordbreak'}}));
+            catch
             end
+
+            try
+                sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
+                    struct('appName', appName, 'dataTag', app.LocationRefresh.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Retorna aos valores constantes em base', 'zIndex', 901)), ...
+                    struct('appName', appName, 'dataTag', app.LocationEditionMode.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Habilita ou desabilita edição de características da estação', 'zIndex', 901)), ...
+                    struct('appName', appName, 'dataTag', app.LocationEditionConfirm.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Confirma edição', 'zIndex', 901)), ...
+                    struct('appName', appName, 'dataTag', app.LocationEditionCancel.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Cancela edição', 'zIndex', 901)) ...
+                });
+            catch
+            end
+
+            app.LocationEditionMode.UserData.status = false;
         end
 
         %-----------------------------------------------------------------%
@@ -114,7 +140,8 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             switch editionStatus
                 case 'on'
-                    set(app.LocationEditionMode, 'ImageSource', 'Edit_32Filled.png', 'UserData', true, 'Tooltip', 'Desabilita painel de edição')
+                    app.LocationEditionMode.ImageSource = 'Edit_32Filled.png';
+                    app.LocationEditionMode.UserData.status = true;
                     set(hEditFields, 'Editable', true)
                     
                     app.LocationLabelGrid.ColumnWidth(end-1:end) = {18, 18};
@@ -122,7 +149,8 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
                     app.LocationEditionCancel.Enable  = 1;
 
                 case 'off'
-                    set(app.LocationEditionMode, 'ImageSource', 'Edit_32.png', 'UserData', false, 'Tooltip', 'Habilita painel de edição')
+                    app.LocationEditionMode.ImageSource = 'Edit_32.png';
+                    app.LocationEditionMode.UserData.status = false;
                     set(hEditFields, 'Editable', false)
 
                     app.LocationLabelGrid.ColumnWidth(end-1:end) = {0,0};
@@ -209,8 +237,8 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
                     onFormValueChanged(app, struct('Source', event.Source))
 
                 case app.LocationEditionMode
-                    app.LocationEditionMode.UserData = ~app.LocationEditionMode.UserData;
-                    if app.LocationEditionMode.UserData
+                    app.LocationEditionMode.UserData.status = ~app.LocationEditionMode.UserData.status;
+                    if app.LocationEditionMode.UserData.status
                         updateLocationPanelLayout(app, 'on')
                         onLocationInfoChanged(app, struct('Source', event.Source))
                     else
@@ -280,7 +308,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             if isempty(Container)
                 app.UIFigure = uifigure('Visible', 'off');
                 app.UIFigure.AutoResizeChildren = 'off';
-                app.UIFigure.Position = [100 100 540 440];
+                app.UIFigure.Position = [100 100 540 464];
                 app.UIFigure.Name = 'monitorRNI';
                 app.UIFigure.Icon = 'icon_48.png';
                 app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @closeFcn, true);
@@ -303,64 +331,133 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.Container);
-            app.GridLayout.ColumnWidth = {22, 22, '1x', 1, 212};
-            app.GridLayout.RowHeight = {'1x', 22, 22, 22, 61, 22};
+            app.GridLayout.ColumnWidth = {442, 24, 24};
+            app.GridLayout.RowHeight = {40, 22, 160, 22, 160};
             app.GridLayout.ColumnSpacing = 5;
             app.GridLayout.RowSpacing = 5;
             app.GridLayout.Padding = [20 20 20 20];
             app.GridLayout.BackgroundColor = [1 1 1];
 
+            % Create Title
+            app.Title = uilabel(app.GridLayout);
+            app.Title.VerticalAlignment = 'top';
+            app.Title.FontSize = 15;
+            app.Title.FontColor = [0 0.4471 0.7412];
+            app.Title.Layout.Row = 1;
+            app.Title.Layout.Column = 1;
+            app.Title.Interpreter = 'html';
+            app.Title.Text = {'<b>Justificar ausência de medição</b>'; '<font style="color: gray; font-size: 10px;">Informe o motivo da ausência de medição e, se aplicável, o local de instalação da estação</font>'};
+
+            % Create PreviousSelection
+            app.PreviousSelection = uiimage(app.GridLayout);
+            app.PreviousSelection.ImageClickedFcn = createCallbackFcn(app, @onStationSelectionChanged, true);
+            app.PreviousSelection.Layout.Row = 1;
+            app.PreviousSelection.Layout.Column = 2;
+            app.PreviousSelection.ImageSource = 'chevron-left.svg';
+
+            % Create NextSelection
+            app.NextSelection = uiimage(app.GridLayout);
+            app.NextSelection.ImageClickedFcn = createCallbackFcn(app, @onStationSelectionChanged, true);
+            app.NextSelection.Layout.Row = 1;
+            app.NextSelection.Layout.Column = 3;
+            app.NextSelection.ImageSource = 'chevron-right.svg';
+
+            % Create SummaryLabel
+            app.SummaryLabel = uilabel(app.GridLayout);
+            app.SummaryLabel.VerticalAlignment = 'bottom';
+            app.SummaryLabel.FontSize = 11;
+            app.SummaryLabel.FontWeight = 'bold';
+            app.SummaryLabel.FontColor = [0 0.4471 0.7412];
+            app.SummaryLabel.Layout.Row = 2;
+            app.SummaryLabel.Layout.Column = [1 3];
+            app.SummaryLabel.Text = 'Informações da estação selecionada';
+
+            % Create StationPanel
+            app.StationPanel = uipanel(app.GridLayout);
+            app.StationPanel.Layout.Row = 3;
+            app.StationPanel.Layout.Column = [1 3];
+
+            % Create StationGrid
+            app.StationGrid = uigridlayout(app.StationPanel);
+            app.StationGrid.ColumnWidth = {'1x'};
+            app.StationGrid.RowHeight = {'1x'};
+            app.StationGrid.Padding = [0 0 0 0];
+            app.StationGrid.BackgroundColor = [1 1 1];
+
             % Create Station
-            app.Station = uilabel(app.GridLayout);
+            app.Station = uilabel(app.StationGrid);
             app.Station.VerticalAlignment = 'top';
             app.Station.WordWrap = 'on';
             app.Station.FontSize = 11;
             app.Station.Layout.Row = 1;
-            app.Station.Layout.Column = [1 5];
+            app.Station.Layout.Column = 1;
             app.Station.Interpreter = 'html';
             app.Station.Text = '';
 
+            % Create EditableFieldsLabel
+            app.EditableFieldsLabel = uilabel(app.GridLayout);
+            app.EditableFieldsLabel.VerticalAlignment = 'bottom';
+            app.EditableFieldsLabel.FontSize = 11;
+            app.EditableFieldsLabel.FontWeight = 'bold';
+            app.EditableFieldsLabel.FontColor = [0 0.4471 0.7412];
+            app.EditableFieldsLabel.Layout.Row = 4;
+            app.EditableFieldsLabel.Layout.Column = [1 3];
+            app.EditableFieldsLabel.Text = 'Justificativa';
+
+            % Create EditableFieldsPanel
+            app.EditableFieldsPanel = uipanel(app.GridLayout);
+            app.EditableFieldsPanel.AutoResizeChildren = 'off';
+            app.EditableFieldsPanel.Layout.Row = 5;
+            app.EditableFieldsPanel.Layout.Column = [1 3];
+
+            % Create EditableFieldsGrid
+            app.EditableFieldsGrid = uigridlayout(app.EditableFieldsPanel);
+            app.EditableFieldsGrid.ColumnWidth = {'1x', '1x', 212};
+            app.EditableFieldsGrid.RowHeight = {17, 22, 22, '1x'};
+            app.EditableFieldsGrid.RowSpacing = 5;
+            app.EditableFieldsGrid.BackgroundColor = [1 1 1];
+
             % Create ReasonLabel
-            app.ReasonLabel = uilabel(app.GridLayout);
+            app.ReasonLabel = uilabel(app.EditableFieldsGrid);
             app.ReasonLabel.VerticalAlignment = 'bottom';
             app.ReasonLabel.FontSize = 10;
-            app.ReasonLabel.Layout.Row = 2;
-            app.ReasonLabel.Layout.Column = [1 5];
-            app.ReasonLabel.Text = 'Justificativa:';
+            app.ReasonLabel.Layout.Row = 1;
+            app.ReasonLabel.Layout.Column = [1 3];
+            app.ReasonLabel.Text = 'Motivo:';
 
             % Create Reason
-            app.Reason = uidropdown(app.GridLayout);
+            app.Reason = uidropdown(app.EditableFieldsGrid);
             app.Reason.Items = {};
             app.Reason.ValueChangedFcn = createCallbackFcn(app, @onFormValueChanged, true);
             app.Reason.FontSize = 11;
             app.Reason.BackgroundColor = [1 1 1];
-            app.Reason.Layout.Row = 3;
-            app.Reason.Layout.Column = [1 5];
+            app.Reason.Layout.Row = 2;
+            app.Reason.Layout.Column = [1 3];
             app.Reason.Value = {};
 
             % Create optNotesLabel
-            app.optNotesLabel = uilabel(app.GridLayout);
+            app.optNotesLabel = uilabel(app.EditableFieldsGrid);
             app.optNotesLabel.VerticalAlignment = 'bottom';
             app.optNotesLabel.FontSize = 10;
-            app.optNotesLabel.Layout.Row = 4;
-            app.optNotesLabel.Layout.Column = [1 3];
+            app.optNotesLabel.Layout.Row = 3;
+            app.optNotesLabel.Layout.Column = 1;
             app.optNotesLabel.Text = 'Observações:';
 
             % Create optNotes
-            app.optNotes = uitextarea(app.GridLayout);
+            app.optNotes = uitextarea(app.EditableFieldsGrid);
             app.optNotes.ValueChangedFcn = createCallbackFcn(app, @onFormValueChanged, true);
             app.optNotes.FontSize = 11;
-            app.optNotes.Layout.Row = 5;
-            app.optNotes.Layout.Column = [1 3];
+            app.optNotes.Layout.Row = 4;
+            app.optNotes.Layout.Column = [1 2];
 
             % Create LocationLabelGrid
-            app.LocationLabelGrid = uigridlayout(app.GridLayout);
+            app.LocationLabelGrid = uigridlayout(app.EditableFieldsGrid);
             app.LocationLabelGrid.ColumnWidth = {'1x', 18, 18, 0, 0};
             app.LocationLabelGrid.RowHeight = {'1x'};
             app.LocationLabelGrid.ColumnSpacing = 5;
             app.LocationLabelGrid.Padding = [0 0 0 0];
-            app.LocationLabelGrid.Layout.Row = 4;
-            app.LocationLabelGrid.Layout.Column = 5;
+            app.LocationLabelGrid.Layout.Row = 3;
+            app.LocationLabelGrid.Layout.Column = 3;
             app.LocationLabelGrid.BackgroundColor = [1 1 1];
 
             % Create LocationLabel
@@ -373,9 +470,9 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
 
             % Create LocationRefresh
             app.LocationRefresh = uiimage(app.LocationLabelGrid);
+            app.LocationRefresh.ScaleMethod = 'none';
             app.LocationRefresh.ImageClickedFcn = createCallbackFcn(app, @onLocationEditionModeChanged, true);
             app.LocationRefresh.Visible = 'off';
-            app.LocationRefresh.Tooltip = {'Retorna à informação inicial'; '(extraída da tabela de referência)'};
             app.LocationRefresh.Layout.Row = 1;
             app.LocationRefresh.Layout.Column = 2;
             app.LocationRefresh.VerticalAlignment = 'bottom';
@@ -384,7 +481,6 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             % Create LocationEditionMode
             app.LocationEditionMode = uiimage(app.LocationLabelGrid);
             app.LocationEditionMode.ImageClickedFcn = createCallbackFcn(app, @onLocationEditionModeChanged, true);
-            app.LocationEditionMode.Tooltip = {'Habilita painel de edição'};
             app.LocationEditionMode.Layout.Row = 1;
             app.LocationEditionMode.Layout.Column = 3;
             app.LocationEditionMode.VerticalAlignment = 'bottom';
@@ -394,7 +490,6 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.LocationEditionConfirm = uiimage(app.LocationLabelGrid);
             app.LocationEditionConfirm.ImageClickedFcn = createCallbackFcn(app, @onLocationEditionModeChanged, true);
             app.LocationEditionConfirm.Enable = 'off';
-            app.LocationEditionConfirm.Tooltip = {'Confirma edição'};
             app.LocationEditionConfirm.Layout.Row = 1;
             app.LocationEditionConfirm.Layout.Column = 4;
             app.LocationEditionConfirm.VerticalAlignment = 'bottom';
@@ -404,20 +499,20 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.LocationEditionCancel = uiimage(app.LocationLabelGrid);
             app.LocationEditionCancel.ImageClickedFcn = createCallbackFcn(app, @onLocationEditionModeChanged, true);
             app.LocationEditionCancel.Enable = 'off';
-            app.LocationEditionCancel.Tooltip = {'Cancela edição'};
             app.LocationEditionCancel.Layout.Row = 1;
             app.LocationEditionCancel.Layout.Column = 5;
             app.LocationEditionCancel.VerticalAlignment = 'bottom';
             app.LocationEditionCancel.ImageSource = 'Delete_32Red.png';
 
             % Create LocationPanel
-            app.LocationPanel = uipanel(app.GridLayout);
+            app.LocationPanel = uipanel(app.EditableFieldsGrid);
             app.LocationPanel.AutoResizeChildren = 'off';
-            app.LocationPanel.Layout.Row = 5;
-            app.LocationPanel.Layout.Column = 5;
+            app.LocationPanel.Layout.Row = 4;
+            app.LocationPanel.Layout.Column = 3;
 
             % Create LocationPanelGrid
             app.LocationPanelGrid = uigridlayout(app.LocationPanel);
+            app.LocationPanelGrid.ColumnWidth = {90, 90};
             app.LocationPanelGrid.RowHeight = {17, 22};
             app.LocationPanelGrid.RowSpacing = 5;
             app.LocationPanelGrid.Padding = [10 10 10 5];
@@ -458,22 +553,6 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.Longitude.FontSize = 11;
             app.Longitude.Layout.Row = 2;
             app.Longitude.Layout.Column = 2;
-
-            % Create PreviousSelection
-            app.PreviousSelection = uiimage(app.GridLayout);
-            app.PreviousSelection.ImageClickedFcn = createCallbackFcn(app, @onStationSelectionChanged, true);
-            app.PreviousSelection.Tooltip = {'Navega para o registro anterior'};
-            app.PreviousSelection.Layout.Row = 6;
-            app.PreviousSelection.Layout.Column = 1;
-            app.PreviousSelection.ImageSource = 'Previous_32.png';
-
-            % Create NextSelection
-            app.NextSelection = uiimage(app.GridLayout);
-            app.NextSelection.ImageClickedFcn = createCallbackFcn(app, @onStationSelectionChanged, true);
-            app.NextSelection.Tooltip = {'Navega para o próximo registro'};
-            app.NextSelection.Layout.Row = 6;
-            app.NextSelection.Layout.Column = 2;
-            app.NextSelection.ImageSource = 'After_32.png';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

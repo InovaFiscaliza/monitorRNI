@@ -314,18 +314,18 @@ classdef (Abstract) HtmlTextGenerator
         %-----------------------------------------------------------------%
         % AUXAPP.DOCKSTATIONINFO
         %-----------------------------------------------------------------%
-        function htmlContent = StationInfo(stationTable, idxStation, rfDataHub)
+        function htmlContent = StationInfo(stationTable, stationIdx, rfDataHub)
             % PM-RNI
             % (planilha de referência)
-            stationTable = stationTable(idxStation, :);
-            stationID    = stationTable.("Estação");
+            stationTable = stationTable(stationIdx, :);
+            stationId = stationTable.("Estação");
         
-            stationEntity   = '';
+            stationEntity = '';
             if ~isempty(stationTable.("Entidade"){1})
                 stationEntity = [stationTable.("Entidade"){1} ' '];
             end
         
-            stationAddress  = '';
+            stationAddress = '';
             if ~isempty(stationTable.("Endereço"){1})
                 stationAddress = sprintf(', Endereço="%s"', stationTable.("Endereço"){1});
             end
@@ -335,38 +335,40 @@ classdef (Abstract) HtmlTextGenerator
                 stationCritical = sprintf('\nÁreas críticas: %s', stationTable.("Áreas Críticas"){1});
             end    
         
-            stationMonitoringPlan  = sprintf('%s, %s(Fistel=%.0f, Estação=%.0f), %s/%s @ (Latitude=%.6fº, Longitude=%.6fº%s)%s', ...
-                upper(stationTable.("Serviço"){1}), stationEntity, stationTable.("Fistel")(1), stationTable.("Estação")(1), stationTable.("Município"){1}, stationTable.UF{1}, ...
-                stationTable.("Lat")(1), stationTable.("Long")(1), stationAddress, stationCritical);
+            stationMonitoringPlan = sprintf([ ...
+                '%s, %s(Fistel=%.0f, Estação=%.0f), %s/%s @ (Latitude=%.6fº, ' ...
+                'Longitude=%.6fº%s)%s' ...
+            ], upper(stationTable.("Serviço"){1}), stationEntity, stationTable.("Fistel")(1), stationTable.("Estação")(1), stationTable.("Município"){1}, stationTable.UF{1}, stationTable.("Lat")(1), stationTable.("Long")(1), stationAddress, stationCritical);
         
             % RFDATAHUB
-            idxRFDataHub = [];            
-            if stationID > 0
-                idxRFDataHub = find(rfDataHub.Station == stationID);
+            rdDataHubIdx = [];            
+            if stationId > 0
+                rdDataHubIdx = find(rfDataHub.Station == stationId);
             end
         
-            if ~isempty(idxRFDataHub)
+            if ~isempty(rdDataHubIdx)
                 % Frequência central e descrição:
                 stationRFDataHub   = {};
-                for ii = idxRFDataHub'
-                    stationTag     = sprintf('%.3f MHz', rfDataHub.Frequency(ii));
+                for ii = rdDataHubIdx'
+                    stationTag = sprintf('%.3f MHz', rfDataHub.Frequency(ii));
                     if rfDataHub.BW(ii) > 0
                         stationTag = [stationTag sprintf(' ⌂ %.1f kHz', rfDataHub.BW(ii))];
                     end
                     stationRFDataHub{end+1} = [stationTag newline model.RFDataHub.Description(rfDataHub, ii)];
                 end
-                stationRFDataHub   = strjoin(unique(stationRFDataHub, 'stable'), '\n\n');
+                stationRFDataHub = strjoin(unique(stationRFDataHub, 'stable'), '\n\n');
         
             else
-                stationRFDataHub   = '(registro não encontrado na base do RFDataHub)';
+                stationRFDataHub = '(registro não encontrado na base do RF.DataHub)';
             end
         
-            dataStruct(1)  = struct('group', 'PM-RNI', 'value', stationMonitoringPlan);
-            dataStruct(2)  = struct('group', 'RFDATAHUB',   'value', stationRFDataHub);
+            dataStruct = [
+                struct('group', 'PM-RNI',    'value', stationMonitoringPlan);
+                struct('group', 'RFDATAHUB', 'value', stationRFDataHub)
+            ];
         
-            htmlContent{1} = sprintf('<p style="padding-left: 10px; padding-top: 10px; font-size: 16px;"><b>Estação nº %.0f</b></p>', stationID);
-            htmlContent{2} = textFormatGUI.struct2PrettyPrintList(dataStruct, 'delete');
-            htmlContent    = strjoin(htmlContent);
+            htmlIntro = sprintf('<font style="font-size: 14px;"><b>Estação nº %.0f</b><br></font>', stationId);
+            htmlContent = textFormatGUI.struct2PrettyPrintList(dataStruct, 'delete', htmlIntro, 'textview', 'normal+gray');
         end
 
         
