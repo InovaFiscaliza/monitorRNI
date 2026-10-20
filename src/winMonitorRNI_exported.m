@@ -146,8 +146,10 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                             deleteContextMenu(app.tabGroupController, hApp.UIFigure, popupCurrentAppTag)
                         end
 
-                        delete(app.popupCurrentApp)
-                        app.popupCurrentApp = [];
+                        if contains(class(app.popupCurrentApp), popupCurrentAppTag)
+                            delete(app.popupCurrentApp)
+                            app.popupCurrentApp = [];
+                        end
 
                     case 'customForm'
                         switch event.HTMLEventData.uuid
@@ -1293,11 +1295,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             % Create file_Grid
             app.file_Grid = uigridlayout(app.Tab1_File);
-            app.file_Grid.ColumnWidth = {10, '1x', '1x', 10, '0.25x', 360, 10};
-            app.file_Grid.RowHeight = {94, 10, '1x', 10, 34};
+            app.file_Grid.ColumnWidth = {20, '1x', '1x', 10, '0.25x', 360, 20};
+            app.file_Grid.RowHeight = {94, 20, '1x', 20, 34};
             app.file_Grid.ColumnSpacing = 0;
             app.file_Grid.RowSpacing = 0;
-            app.file_Grid.Padding = [0 0 0 40];
+            app.file_Grid.Padding = [0 0 0 50];
             app.file_Grid.BackgroundColor = [1 1 1];
 
             % Create file_toolGrid
@@ -1443,7 +1445,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.AppName.Layout.Row = [1 5];
             app.AppName.Layout.Column = [1 2];
             app.AppName.Interpreter = 'html';
-            app.AppName.Text = {'monitorRNI v. 1.10.6'; '<font style="font-size: 9px;">R2024a</font>'};
+            app.AppName.Text = {'monitorRNI v. 1.10.7'; '<font style="font-size: 9px;">R2024a</font>'};
 
             % Create Tab1Button
             app.Tab1Button = uibutton(app.NavBar, 'state');
@@ -1504,7 +1506,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab4Button = uibutton(app.NavBar, 'state');
             app.Tab4Button.ValueChangedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.Tab4Button.Tag = 'RFDATAHUB';
-            app.Tab4Button.Tooltip = {'RFDataHub'};
+            app.Tab4Button.Tooltip = {'RF.DataHub'};
             app.Tab4Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'database-24px-white.svg');
             app.Tab4Button.Text = '';
             app.Tab4Button.BackgroundColor = [0.2 0.2 0.2];

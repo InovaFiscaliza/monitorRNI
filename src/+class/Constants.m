@@ -3,7 +3,7 @@ classdef (Abstract) Constants
     properties (Constant)
         %-----------------------------------------------------------------%
         appName = 'monitorRNI'
-        appVersion = '1.10.6'
+        appVersion = '1.10.7'
 
         windowSize = [1244, 660]
         windowMinSize = [880, 660]
