@@ -58,20 +58,18 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
         function updateLayout(app, editionType)
             switch editionType
                 case 'RefLocationSelectionChanged'
-                    app.Add.Enable        = 1;
-                    app.Delete.Enable     = 0;
-                    app.Location.Value    = {};
+                    app.Add.Enable = ~isempty(app.RefLocation.Value);
+                    app.Delete.Enable = false;
+                    app.Location.Value = {};
 
                 case 'LocationSelectionChanged'
-                    app.Add.Enable        = 0;
-                    app.Delete.Enable     = 1;
+                    app.Add.Enable = false;
+                    app.Delete.Enable = ~isempty(app.Location.Value);
                     app.RefLocation.Value = {};
 
-                otherwise % 'AddedLocation' | 'DeletedLocation'
-                    app.Add.Enable        = 0;
-                    app.Delete.Enable     = 0;
-                    app.Location.Value    = {};
-                    app.RefLocation.Value = {};
+                otherwise % 'AddedLocation' | 'DeletedLocation' | 'EmptySelection'
+                    set([app.Add, app.Delete], 'Enable', false)
+                    set([app.Location, app.RefLocation], 'Value', {})
             end
         end
     end
