@@ -680,9 +680,17 @@ classdef Project < model.ProjectCommon
 
             if ~isempty(annotationTable)
                 [~, stationIdxs] = ismember(annotationTable.Hash, stationTable.Hash);
-                variableNames = setdiff(annotationTable.Properties.VariableNames, 'Hash', 'stable');
+                
+                unmatchedAnnotationMask = stationIdxs == 0;
+                if any(unmatchedAnnotationMask)
+                    stationIdxs(unmatchedAnnotationMask) = [];
+                    annotationTable(unmatchedAnnotationMask, :) = [];
+                end
 
-                stationTable(stationIdxs, variableNames) = annotationTable(:, variableNames);
+                if ~isempty(stationIdxs)
+                    variableNames = setdiff(annotationTable.Properties.VariableNames, 'Hash', 'stable');
+                    stationTable(stationIdxs, variableNames) = annotationTable(:, variableNames);
+                end
             end
 
             stationIndexes = find(ismember(stationTable.Location, getFullListOfLocation(obj, EMFieldObj, MAX_MEAS_DISTANCE_KM)))';

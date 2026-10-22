@@ -668,14 +668,21 @@ classdef winConfig_exported < matlab.apps.AppBase
                         app.MonitoringPlanPeriod.CheckedNodes = event.PreviousCheckedNodes;
                         return
                     end
-                    app.mainApp.General.context.MONITORINGPLAN.periodYears = str2double({app.MonitoringPlanPeriod.CheckedNodes.Text});
-
-                    msgQuestion = 'Atualizar os dados de estações AGORA ou aplicar as alterações apenas na próxima INICIALIZAÇÃO do app?';
-                    userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, {'AGORA', 'INICIALIZAÇÃO'}, 2, 2);                    
-                    if strcmp(userSelection, 'AGORA')
-                        context = 'MONITORINGPLAN';
-                        eventName = 'onStationListChanged';
+                    
+                    msgQuestion = [ ...
+                        'Confirma a troca da base das estações de referência do PM-RNI?<br><br>' ...
+                        'Ao fazer isso, o monitorRNI reanalisará os dados, identificando ' ...
+                        'pontos de medida no entorno de cada uma das estações da nova base.' ...
+                    ];
+                    userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 2, 2);
+                    if strcmp(userSelection, 'Não')
+                        app.MonitoringPlanPeriod.CheckedNodes = event.PreviousCheckedNodes;
+                        return
                     end
+
+                    app.mainApp.General.context.MONITORINGPLAN.periodYears = str2double({app.MonitoringPlanPeriod.CheckedNodes.Text});
+                    context = 'MONITORINGPLAN';
+                    eventName = 'onStationListChanged';
 
                 case app.MonitoringPlanExportXLSX
                     app.mainApp.General.context.MONITORINGPLAN.exportOptions.xlsx = app.MonitoringPlanExportXLSX.Value;
