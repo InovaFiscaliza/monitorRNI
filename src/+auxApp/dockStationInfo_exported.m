@@ -311,6 +311,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
                 app.UIFigure.Position = [100 100 540 464];
                 app.UIFigure.Name = 'monitorRNI';
                 app.UIFigure.Icon = 'icon_48.png';
+                app.UIFigure.Resize = 'off';
                 app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @closeFcn, true);
 
                 app.Container = app.UIFigure;

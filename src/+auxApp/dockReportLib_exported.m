@@ -433,6 +433,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
                 app.UIFigure.Position = [100 100 460 608];
                 app.UIFigure.Name = 'monitorRNI';
                 app.UIFigure.Icon = 'icon_48.png';
+                app.UIFigure.Resize = 'off';
                 app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @closeFcn, true);
 
                 app.Container = app.UIFigure;
