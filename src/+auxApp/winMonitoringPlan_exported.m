@@ -4,6 +4,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
     properties (Access = public)
         UIFigure                    matlab.ui.Figure
         GridLayout                  matlab.ui.container.GridLayout
+        DockModule                  matlab.ui.container.GridLayout
+        DockCloseButton             matlab.ui.control.Image
+        DockUndockButton            matlab.ui.control.Image
+        Document                    matlab.ui.container.GridLayout
+        AxesToolbar                 matlab.ui.container.GridLayout
+        AxesRegionZoomButton        matlab.ui.control.Image
+        AxesRestoreViewButton       matlab.ui.control.Image
+        PlotPanel                   matlab.ui.container.Panel
+        UITable                     matlab.ui.control.Table
         SubTabGroup                 matlab.ui.container.TabGroup
         SubTab1                     matlab.ui.container.Tab
         SubGrid1                    matlab.ui.container.GridLayout
@@ -12,19 +21,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         Card2_numberOfRiskStations  matlab.ui.control.Label
         Card1_numberOfStations      matlab.ui.control.Label
         LocationList                matlab.ui.control.TextArea
-        LocationListEdit            matlab.ui.control.Image
+        LocationListButton          matlab.ui.control.Image
         LocationListLabel           matlab.ui.control.Label
         TreeFileLocations           matlab.ui.container.Tree
-        config_geoAxesLabel_2       matlab.ui.control.Label
-        DockModule                  matlab.ui.container.GridLayout
-        dockModule_Close            matlab.ui.control.Image
-        dockModule_Undock           matlab.ui.control.Image
-        Document                    matlab.ui.container.GridLayout
-        AxesToolbar                 matlab.ui.container.GridLayout
-        axesTool_RegionZoom         matlab.ui.control.Image
-        axesTool_RestoreView        matlab.ui.control.Image
-        plotPanel                   matlab.ui.container.Panel
-        UITable                     matlab.ui.control.Table
+        TreeFileLocationsLabel      matlab.ui.control.Label
         Toolbar                     matlab.ui.container.GridLayout
         tool_UploadFinalFile        matlab.ui.control.Image
         tool_GenerateReport         matlab.ui.control.Image
@@ -215,7 +215,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     appName = class(app);
                     elToModify = {
                         app.AxesToolbar;
-                        app.LocationListEdit;
+                        app.LocationListButton;
                         app.tool_PanelVisibility;
                         app.tool_TableVisibility;
                         app.tool_TableEdition;
@@ -224,15 +224,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                         app.tool_OpenPopupProject;
                         app.tool_GenerateReport;
                         app.tool_UploadFinalFile;
-                        app.dockModule_Undock;
-                        app.dockModule_Close
+                        app.DockUndockButton;
+                        app.DockCloseButton
                     };
                     ui.CustomizationBase.getElementsDataTag(elToModify);
 
                     try
                         sendEventToHTMLSource(app.jsBackDoor, 'initializeComponents', { ...
                             struct('appName', appName, 'dataTag', app.AxesToolbar.UserData.id,    'styleImportant', struct('borderTopLeftRadius', '0', 'borderTopRightRadius', '0')), ...
-                            struct('appName', appName, 'dataTag', app.LocationListEdit.UserData.id,      'tooltip', struct('defaultPosition', 'top',    'textContent', 'Edita lista de localidades sob análise')), ...
+                            struct('appName', appName, 'dataTag', app.LocationListButton.UserData.id,    'tooltip', struct('defaultPosition', 'top',    'textContent', 'Edita lista de localidades sob análise')), ...
                             struct('appName', appName, 'dataTag', app.tool_PanelVisibility.UserData.id,  'tooltip', struct('defaultPosition', 'top',    'textContent', 'Alterna visibilidade do painel')), ...
                             struct('appName', appName, 'dataTag', app.tool_TableVisibility.UserData.id,  'tooltip', struct('defaultPosition', 'top',    'textContent', 'Alterna entre três layouts do conjunto plot+tabela<br>(apenas plot, apenas tabela ou plot+tabela)')), ...
                             struct('appName', appName, 'dataTag', app.tool_TableEdition.UserData.id,     'tooltip', struct('defaultPosition', 'top',    'textContent', 'Edita, em formulário, as informações do registro selecionado na tabela')), ...
@@ -241,8 +241,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                             struct('appName', appName, 'dataTag', app.tool_OpenPopupProject.UserData.id, 'tooltip', struct('defaultPosition', 'top',    'textContent', 'Edita informações do projeto<br>(fiscalizada, arquivo de backup etc)')), ...
                             struct('appName', appName, 'dataTag', app.tool_GenerateReport.UserData.id,   'tooltip', struct('defaultPosition', 'top',    'textContent', 'Gera relatório')), ...
                             struct('appName', appName, 'dataTag', app.tool_UploadFinalFile.UserData.id,  'tooltip', struct('defaultPosition', 'top',    'textContent', 'Upload relatório')), ...
-                            struct('appName', appName, 'dataTag', app.dockModule_Undock.UserData.id,     'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Reabre módulo em outra janela')), ...
-                            struct('appName', appName, 'dataTag', app.dockModule_Close.UserData.id,      'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Fecha módulo')) ...
+                            struct('appName', appName, 'dataTag', app.DockUndockButton.UserData.id,      'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Reabre módulo em outra janela')), ...
+                            struct('appName', appName, 'dataTag', app.DockCloseButton.UserData.id,       'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Fecha módulo')) ...
                         });
                     catch
                     end
@@ -260,7 +260,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function initializeUIComponents(app)
             if ~strcmp(app.mainApp.executionMode, 'webApp')
-                app.dockModule_Undock.Enable = 1;
+                app.DockUndockButton.Enable = 1;
             end
 
             if app.mainApp.General.context.MONITORINGPLAN.electricFieldStrengthThreshold ~= 14
@@ -268,7 +268,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             end
             app.UITable.RowName = 'numbered';
 
-            [app.UIAxes, app.restoreView] = plot.axesCreationController(app.plotPanel, app.mainApp.General);
+            [app.UIAxes, app.restoreView] = plot.axesCreationController(app.PlotPanel, app.mainApp.General);
             
             buildFileLocationTree(app)
             if ~isempty(app.measData)
@@ -402,7 +402,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             rowTableSelected                = ~isempty(app.UITable.Selection);
             reportFinalVersionGenerated     = ~isempty(app.projectData.modules.(app.Context).generatedFiles.lastHTMLDocFullPath);
 
-            app.LocationListEdit.Enable     = measDataNonEmpty;
+            app.LocationListButton.Enable   = measDataNonEmpty;
             app.tool_TableEdition.Enable    = measDataNonEmpty && rowTableSelected;
             app.tool_ExportFiles.Enable     = measDataNonEmpty;
             app.tool_GenerateReport.Enable  = measDataNonEmpty;
@@ -609,13 +609,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             
         end
 
-        % Image clicked function: dockModule_Close, dockModule_Undock
+        % Image clicked function: DockCloseButton, DockUndockButton
         function DockModuleGroup_ButtonPushed(app, event)
             
             [idx, auxAppTag, relatedButton] = getAppInfoFromHandle(app.mainApp.tabGroupController, app);
 
             switch event.Source
-                case app.dockModule_Undock
+                case app.DockUndockButton
                     appGeneral = app.mainApp.General;
                     appGeneral.operationMode.Dock = false;
                     
@@ -627,7 +627,7 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                     
                     delete(app)
 
-                case app.dockModule_Close
+                case app.DockCloseButton
                     closeModule(app.mainApp.tabGroupController, auxAppTag, app.mainApp.General)
             end
 
@@ -1011,15 +1011,16 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
         end
 
-        % Image clicked function: axesTool_RegionZoom, axesTool_RestoreView
+        % Image clicked function: AxesRegionZoomButton, 
+        % ...and 1 other component
         function AxesToolbarImageClicked(app, event)
             
             switch event.Source
-                case app.axesTool_RestoreView
+                case app.AxesRestoreViewButton
                     geolimits(app.UIAxes, app.restoreView(1).xLim, app.restoreView(1).yLim)
 
-                case app.axesTool_RegionZoom
-                    plot.axes.Interactivity.GeographicRegionZoomInteraction(app.UIAxes, app.axesTool_RegionZoom)
+                case app.AxesRegionZoomButton
+                    plot.axes.Interactivity.GeographicRegionZoomInteraction(app.UIAxes, app.AxesRegionZoomButton)
             end
 
         end
@@ -1070,8 +1071,8 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             
         end
 
-        % Image clicked function: LocationListEdit
-        function LocationListEditClicked(app, event)
+        % Image clicked function: LocationListButton
+        function LocationListButtonClicked(app, event)
 
             ipcMainMatlabOpenPopupApp(app.mainApp, app, 'ListOfLocation', app.Context, getFileIndexes(app))
 
@@ -1099,9 +1100,11 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 app.Container = app.UIFigure;
 
             else
-                if ~isempty(Container.Children)
-                    delete(Container.Children)
+                children = Container.Children;
+                if isa(Container, 'matlab.ui.Figure') && isprop(Container, 'RunningAppInstance') && isprop(Container.RunningAppInstance, 'jsBackDoor')
+                    children(children == Container.RunningAppInstance.jsBackDoor) = [];
                 end
+                delete(children)
 
                 app.UIFigure  = ancestor(Container, 'figure');
                 app.Container = Container;
@@ -1225,95 +1228,6 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.tool_UploadFinalFile.Layout.Column = 11;
             app.tool_UploadFinalFile.ImageSource = 'up-20px.png';
 
-            % Create Document
-            app.Document = uigridlayout(app.GridLayout);
-            app.Document.ColumnWidth = {5, 50, '1x'};
-            app.Document.RowHeight = {24, '1x', 10, 186};
-            app.Document.ColumnSpacing = 0;
-            app.Document.RowSpacing = 0;
-            app.Document.Padding = [0 0 0 0];
-            app.Document.Layout.Row = [4 5];
-            app.Document.Layout.Column = [4 5];
-            app.Document.BackgroundColor = [1 1 1];
-
-            % Create UITable
-            app.UITable = uitable(app.Document);
-            app.UITable.BackgroundColor = [1 1 1;0.96078431372549 0.96078431372549 0.96078431372549];
-            app.UITable.ColumnName = {'FISTEL'; 'ESTAÇÃO'; 'LOCALIDADE'; 'SERVIÇO'; 'Qtd.|Medidas'; 'Qtd.|> 14 V/m'; 'Dmin|(km)'; 'Emin|(V/m)'; 'Emean|(V/m)'; 'Emax|(V/m)'; 'JUSTIFICATIVA'};
-            app.UITable.ColumnWidth = {100, 75, 150, 'auto', 70, 70, 70, 70, 70, 70, 'auto'};
-            app.UITable.RowName = {};
-            app.UITable.ColumnSortable = [true true true true true true true true true true false];
-            app.UITable.SelectionType = 'row';
-            app.UITable.ColumnEditable = [false false false false false false false false false false true];
-            app.UITable.CellEditCallback = createCallbackFcn(app, @UITableCellEdit, true);
-            app.UITable.SelectionChangedFcn = createCallbackFcn(app, @UITableSelectionChanged, true);
-            app.UITable.Multiselect = 'off';
-            app.UITable.ForegroundColor = [0.149 0.149 0.149];
-            app.UITable.Layout.Row = 4;
-            app.UITable.Layout.Column = [1 3];
-            app.UITable.FontSize = 11;
-
-            % Create plotPanel
-            app.plotPanel = uipanel(app.Document);
-            app.plotPanel.AutoResizeChildren = 'off';
-            app.plotPanel.BorderType = 'none';
-            app.plotPanel.BackgroundColor = [1 1 1];
-            app.plotPanel.Layout.Row = [1 2];
-            app.plotPanel.Layout.Column = [1 3];
-
-            % Create AxesToolbar
-            app.AxesToolbar = uigridlayout(app.Document);
-            app.AxesToolbar.ColumnWidth = {22, 22};
-            app.AxesToolbar.RowHeight = {22};
-            app.AxesToolbar.ColumnSpacing = 0;
-            app.AxesToolbar.Padding = [2 2 2 0];
-            app.AxesToolbar.Layout.Row = 1;
-            app.AxesToolbar.Layout.Column = 2;
-            app.AxesToolbar.BackgroundColor = [1 1 1];
-
-            % Create axesTool_RestoreView
-            app.axesTool_RestoreView = uiimage(app.AxesToolbar);
-            app.axesTool_RestoreView.ScaleMethod = 'none';
-            app.axesTool_RestoreView.ImageClickedFcn = createCallbackFcn(app, @AxesToolbarImageClicked, true);
-            app.axesTool_RestoreView.Layout.Row = 1;
-            app.axesTool_RestoreView.Layout.Column = 1;
-            app.axesTool_RestoreView.ImageSource = 'Home_18.png';
-
-            % Create axesTool_RegionZoom
-            app.axesTool_RegionZoom = uiimage(app.AxesToolbar);
-            app.axesTool_RegionZoom.ScaleMethod = 'none';
-            app.axesTool_RegionZoom.ImageClickedFcn = createCallbackFcn(app, @AxesToolbarImageClicked, true);
-            app.axesTool_RegionZoom.Layout.Row = 1;
-            app.axesTool_RegionZoom.Layout.Column = 2;
-            app.axesTool_RegionZoom.ImageSource = 'ZoomRegion_20.png';
-
-            % Create DockModule
-            app.DockModule = uigridlayout(app.GridLayout);
-            app.DockModule.RowHeight = {'1x'};
-            app.DockModule.ColumnSpacing = 2;
-            app.DockModule.Padding = [5 2 5 2];
-            app.DockModule.Visible = 'off';
-            app.DockModule.Layout.Row = [2 4];
-            app.DockModule.Layout.Column = [5 7];
-            app.DockModule.BackgroundColor = [0.2 0.2 0.2];
-
-            % Create dockModule_Undock
-            app.dockModule_Undock = uiimage(app.DockModule);
-            app.dockModule_Undock.ScaleMethod = 'none';
-            app.dockModule_Undock.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
-            app.dockModule_Undock.Enable = 'off';
-            app.dockModule_Undock.Layout.Row = 1;
-            app.dockModule_Undock.Layout.Column = 1;
-            app.dockModule_Undock.ImageSource = 'Undock_18White.png';
-
-            % Create dockModule_Close
-            app.dockModule_Close = uiimage(app.DockModule);
-            app.dockModule_Close.ScaleMethod = 'none';
-            app.dockModule_Close.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
-            app.dockModule_Close.Layout.Row = 1;
-            app.dockModule_Close.Layout.Column = 2;
-            app.dockModule_Close.ImageSource = 'Delete_12SVG_white.svg';
-
             % Create SubTabGroup
             app.SubTabGroup = uitabgroup(app.GridLayout);
             app.SubTabGroup.AutoResizeChildren = 'off';
@@ -1332,15 +1246,15 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.SubGrid1.RowSpacing = 0;
             app.SubGrid1.BackgroundColor = [1 1 1];
 
-            % Create config_geoAxesLabel_2
-            app.config_geoAxesLabel_2 = uilabel(app.SubGrid1);
-            app.config_geoAxesLabel_2.VerticalAlignment = 'bottom';
-            app.config_geoAxesLabel_2.WordWrap = 'on';
-            app.config_geoAxesLabel_2.FontSize = 10;
-            app.config_geoAxesLabel_2.Layout.Row = 1;
-            app.config_geoAxesLabel_2.Layout.Column = [1 2];
-            app.config_geoAxesLabel_2.Interpreter = 'html';
-            app.config_geoAxesLabel_2.Text = {'LOCALIDADES DE AGRUPAMENTO:'; '<font style="color: gray; font-size: 9px;">(relacionadas aos arquivos de medição)</font>'};
+            % Create TreeFileLocationsLabel
+            app.TreeFileLocationsLabel = uilabel(app.SubGrid1);
+            app.TreeFileLocationsLabel.VerticalAlignment = 'bottom';
+            app.TreeFileLocationsLabel.WordWrap = 'on';
+            app.TreeFileLocationsLabel.FontSize = 10;
+            app.TreeFileLocationsLabel.Layout.Row = 1;
+            app.TreeFileLocationsLabel.Layout.Column = [1 2];
+            app.TreeFileLocationsLabel.Interpreter = 'html';
+            app.TreeFileLocationsLabel.Text = {'LOCALIDADES DE AGRUPAMENTO:'; '<font style="color: gray; font-size: 9px;">(relacionadas aos arquivos de medição)</font>'};
 
             % Create TreeFileLocations
             app.TreeFileLocations = uitree(app.SubGrid1);
@@ -1358,13 +1272,13 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.LocationListLabel.Interpreter = 'html';
             app.LocationListLabel.Text = {'LOCALIDADES SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
 
-            % Create LocationListEdit
-            app.LocationListEdit = uiimage(app.SubGrid1);
-            app.LocationListEdit.ImageClickedFcn = createCallbackFcn(app, @LocationListEditClicked, true);
-            app.LocationListEdit.Enable = 'off';
-            app.LocationListEdit.Layout.Row = 5;
-            app.LocationListEdit.Layout.Column = 3;
-            app.LocationListEdit.ImageSource = 'Edit_32.png';
+            % Create LocationListButton
+            app.LocationListButton = uiimage(app.SubGrid1);
+            app.LocationListButton.ImageClickedFcn = createCallbackFcn(app, @LocationListButtonClicked, true);
+            app.LocationListButton.Enable = 'off';
+            app.LocationListButton.Layout.Row = 5;
+            app.LocationListButton.Layout.Column = 3;
+            app.LocationListButton.ImageSource = 'Edit_32.png';
 
             % Create LocationList
             app.LocationList = uitextarea(app.SubGrid1);
@@ -1421,6 +1335,95 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
             app.Card4_stationsOutRoute.Interpreter = 'html';
             app.Card4_stationsOutRoute.Text = {'<p style="margin: 10 2 0 2px;"><font style="color: #a2142f; font-size: 32px;">0</font>'; 'ESTAÇÕES INSTALADAS FORA DA ROTA</p>'};
 
+            % Create Document
+            app.Document = uigridlayout(app.GridLayout);
+            app.Document.ColumnWidth = {5, 50, '1x'};
+            app.Document.RowHeight = {24, '1x', 10, 186};
+            app.Document.ColumnSpacing = 0;
+            app.Document.RowSpacing = 0;
+            app.Document.Padding = [0 0 0 0];
+            app.Document.Layout.Row = [4 5];
+            app.Document.Layout.Column = [4 5];
+            app.Document.BackgroundColor = [1 1 1];
+
+            % Create UITable
+            app.UITable = uitable(app.Document);
+            app.UITable.BackgroundColor = [1 1 1;0.96078431372549 0.96078431372549 0.96078431372549];
+            app.UITable.ColumnName = {'FISTEL'; 'ESTAÇÃO'; 'LOCALIDADE'; 'SERVIÇO'; 'Qtd.|Medidas'; 'Qtd.|> 14 V/m'; 'Dmin|(km)'; 'Emin|(V/m)'; 'Emean|(V/m)'; 'Emax|(V/m)'; 'JUSTIFICATIVA'};
+            app.UITable.ColumnWidth = {100, 75, 150, 'auto', 70, 70, 70, 70, 70, 70, 'auto'};
+            app.UITable.RowName = {};
+            app.UITable.ColumnSortable = [true true true true true true true true true true false];
+            app.UITable.SelectionType = 'row';
+            app.UITable.ColumnEditable = [false false false false false false false false false false true];
+            app.UITable.CellEditCallback = createCallbackFcn(app, @UITableCellEdit, true);
+            app.UITable.SelectionChangedFcn = createCallbackFcn(app, @UITableSelectionChanged, true);
+            app.UITable.Multiselect = 'off';
+            app.UITable.ForegroundColor = [0.149 0.149 0.149];
+            app.UITable.Layout.Row = 4;
+            app.UITable.Layout.Column = [1 3];
+            app.UITable.FontSize = 11;
+
+            % Create PlotPanel
+            app.PlotPanel = uipanel(app.Document);
+            app.PlotPanel.AutoResizeChildren = 'off';
+            app.PlotPanel.BorderType = 'none';
+            app.PlotPanel.BackgroundColor = [1 1 1];
+            app.PlotPanel.Layout.Row = [1 2];
+            app.PlotPanel.Layout.Column = [1 3];
+
+            % Create AxesToolbar
+            app.AxesToolbar = uigridlayout(app.Document);
+            app.AxesToolbar.ColumnWidth = {22, 22};
+            app.AxesToolbar.RowHeight = {22};
+            app.AxesToolbar.ColumnSpacing = 0;
+            app.AxesToolbar.Padding = [2 2 2 0];
+            app.AxesToolbar.Layout.Row = 1;
+            app.AxesToolbar.Layout.Column = 2;
+            app.AxesToolbar.BackgroundColor = [1 1 1];
+
+            % Create AxesRestoreViewButton
+            app.AxesRestoreViewButton = uiimage(app.AxesToolbar);
+            app.AxesRestoreViewButton.ScaleMethod = 'none';
+            app.AxesRestoreViewButton.ImageClickedFcn = createCallbackFcn(app, @AxesToolbarImageClicked, true);
+            app.AxesRestoreViewButton.Layout.Row = 1;
+            app.AxesRestoreViewButton.Layout.Column = 1;
+            app.AxesRestoreViewButton.ImageSource = 'Home_18.png';
+
+            % Create AxesRegionZoomButton
+            app.AxesRegionZoomButton = uiimage(app.AxesToolbar);
+            app.AxesRegionZoomButton.ScaleMethod = 'none';
+            app.AxesRegionZoomButton.ImageClickedFcn = createCallbackFcn(app, @AxesToolbarImageClicked, true);
+            app.AxesRegionZoomButton.Layout.Row = 1;
+            app.AxesRegionZoomButton.Layout.Column = 2;
+            app.AxesRegionZoomButton.ImageSource = 'ZoomRegion_20.png';
+
+            % Create DockModule
+            app.DockModule = uigridlayout(app.GridLayout);
+            app.DockModule.RowHeight = {'1x'};
+            app.DockModule.ColumnSpacing = 2;
+            app.DockModule.Padding = [5 2 5 2];
+            app.DockModule.Visible = 'off';
+            app.DockModule.Layout.Row = [2 4];
+            app.DockModule.Layout.Column = [5 7];
+            app.DockModule.BackgroundColor = [0.1294 0.2 0.2392];
+
+            % Create DockUndockButton
+            app.DockUndockButton = uiimage(app.DockModule);
+            app.DockUndockButton.ScaleMethod = 'none';
+            app.DockUndockButton.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
+            app.DockUndockButton.Enable = 'off';
+            app.DockUndockButton.Layout.Row = 1;
+            app.DockUndockButton.Layout.Column = 1;
+            app.DockUndockButton.ImageSource = 'Undock_18White.png';
+
+            % Create DockCloseButton
+            app.DockCloseButton = uiimage(app.DockModule);
+            app.DockCloseButton.ScaleMethod = 'none';
+            app.DockCloseButton.ImageClickedFcn = createCallbackFcn(app, @DockModuleGroup_ButtonPushed, true);
+            app.DockCloseButton.Layout.Row = 1;
+            app.DockCloseButton.Layout.Column = 2;
+            app.DockCloseButton.ImageSource = 'Delete_12SVG_white.svg';
+
             % Create ContextMenu
             app.ContextMenu = uicontextmenu(app.UIFigure);
             app.ContextMenu.Tag = 'auxApp.winMonitoringPlan';
@@ -1457,7 +1460,11 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
 
             % Delete UIFigure when app is deleted
             if app.isDocked
-                delete(app.Container.Children)
+                children = app.Container.Children;
+                if isa(app.Container, 'matlab.ui.Figure') && isprop(app.Container, 'RunningAppInstance') && isprop(app.Container.RunningAppInstance, 'jsBackDoor')
+                    children(children == app.Container.RunningAppInstance.jsBackDoor) = [];
+                end
+                delete(children)
             else
                 delete(app.UIFigure)
             end

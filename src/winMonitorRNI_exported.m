@@ -58,7 +58,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         tabGroupController
         renderCount = 0
 
-        executionMode
+        executionMode = ''
         progressDialog
         popupContainer
         popupCurrentApp
@@ -990,33 +990,39 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
         % Close request function: UIFigure
         function closeFcn(app, event)
 
-            if strcmp(app.progressDialog.Visible, 'visible')
-                app.progressDialog.Visible = 'hidden';
-                return
-            end
-
-            msgQuestion = '';
-            if checkIfUpdateNeeded(app.projectData, app.measData)
-                msgQuestion = sprintf([ ...
-                    'O projeto "%s" foi modificado (nome, arquivo de saída, '      ...
-                    'lista de arquivos de entrada ou anotações das estações). '    ...
-                    'Caso o aplicativo seja encerrado agora, todas as alterações ' ...
-                    'serão descartadas.\n\nDeseja realmente fechar o aplicativo?'  ...
-                    ], app.projectData.name);
-
-            elseif ~strcmp(app.executionMode, 'webApp')
-                msgQuestion = 'Deseja fechar o aplicativo?';
-            end
-
-            if ~isempty(msgQuestion)                
-                userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 1, 2);
-                if userSelection == "Não"
+            if exist('event', 'var') && event.Source == app.UIFigure
+                if strcmp(app.progressDialog.Visible, 'visible')
+                    app.progressDialog.Visible = 'hidden';
                     return
+                end
+    
+                msgQuestion = '';
+                if checkIfUpdateNeeded(app.projectData, app.measData)
+                    msgQuestion = sprintf([ ...
+                        'O projeto "%s" foi modificado (nome, arquivo de saída, '      ...
+                        'lista de arquivos de entrada ou anotações das estações). '    ...
+                        'Caso o aplicativo seja encerrado agora, todas as alterações ' ...
+                        'serão descartadas.\n\nDeseja realmente fechar o aplicativo?'  ...
+                        ], app.projectData.name);
+    
+                elseif ~strcmp(app.executionMode, 'webApp')
+                    msgQuestion = 'Deseja fechar o aplicativo?';
+                end
+    
+                if ~isempty(msgQuestion)                
+                    userSelection = ui.Dialog(app.UIFigure, 'uiconfirm', msgQuestion, {'Sim', 'Não'}, 1, 2);
+                    if userSelection == "Não"
+                        return
+                    end
                 end
             end
 
-            % Aspectos gerais (comum em todos os apps):
-            appEngine.beforeDeleteApp(app.progressDialog, app.General_I.fileFolder.tempPath, app.tabGroupController, app.executionMode)
+            try
+                appEngine.beforeDeleteApp(app.progressDialog, app.General_I.fileFolder.tempPath, app.tabGroupController, app.executionMode)
+            catch ME
+                appEngine.util.killingMATLABRuntime(app.executionMode)
+            end
+
             delete(app)
             
         end
@@ -1296,7 +1302,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             % Create file_Grid
             app.file_Grid = uigridlayout(app.Tab1_File);
             app.file_Grid.ColumnWidth = {20, '1x', '1x', 10, '0.25x', 360, 20};
-            app.file_Grid.RowHeight = {94, 20, '1x', 20, 34};
+            app.file_Grid.RowHeight = {94, 10, '1x', 20, 34};
             app.file_Grid.ColumnSpacing = 0;
             app.file_Grid.RowSpacing = 0;
             app.file_Grid.Padding = [0 0 0 50];
@@ -1435,7 +1441,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.NavBar.Tag = 'COLORLOCKED';
             app.NavBar.Layout.Row = 1;
             app.NavBar.Layout.Column = 1;
-            app.NavBar.BackgroundColor = [0.2 0.2 0.2];
+            app.NavBar.BackgroundColor = [0.1294 0.2 0.2392];
 
             % Create AppName
             app.AppName = uilabel(app.NavBar);
@@ -1454,7 +1460,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab1Button.Tooltip = {'Leitura de arquivos'};
             app.Tab1Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'folder-active-24px-yellow.svg');
             app.Tab1Button.Text = '';
-            app.Tab1Button.BackgroundColor = [0.2 0.2 0.2];
+            app.Tab1Button.BackgroundColor = [0.1294 0.2 0.2392];
             app.Tab1Button.FontSize = 11;
             app.Tab1Button.Layout.Row = [2 4];
             app.Tab1Button.Layout.Column = 3;
@@ -1476,7 +1482,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab2Button.Tooltip = {'PM-RNI'};
             app.Tab2Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'graph-line-24px-white.svg');
             app.Tab2Button.Text = '';
-            app.Tab2Button.BackgroundColor = [0.2 0.2 0.2];
+            app.Tab2Button.BackgroundColor = [0.1294 0.2 0.2392];
             app.Tab2Button.FontSize = 11;
             app.Tab2Button.Layout.Row = [2 4];
             app.Tab2Button.Layout.Column = 5;
@@ -1488,7 +1494,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab3Button.Tooltip = {'Demanda externa'};
             app.Tab3Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'report-24px-2hite.svg');
             app.Tab3Button.Text = '';
-            app.Tab3Button.BackgroundColor = [0.2 0.2 0.2];
+            app.Tab3Button.BackgroundColor = [0.1294 0.2 0.2392];
             app.Tab3Button.FontSize = 11;
             app.Tab3Button.Layout.Row = [2 4];
             app.Tab3Button.Layout.Column = 6;
@@ -1509,7 +1515,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab4Button.Tooltip = {'RF.DataHub'};
             app.Tab4Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'database-24px-white.svg');
             app.Tab4Button.Text = '';
-            app.Tab4Button.BackgroundColor = [0.2 0.2 0.2];
+            app.Tab4Button.BackgroundColor = [0.1294 0.2 0.2392];
             app.Tab4Button.FontSize = 11;
             app.Tab4Button.Layout.Row = [2 4];
             app.Tab4Button.Layout.Column = 8;
@@ -1522,7 +1528,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab5Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'gear-24px-white.svg');
             app.Tab5Button.IconAlignment = 'right';
             app.Tab5Button.Text = '';
-            app.Tab5Button.BackgroundColor = [0.2 0.2 0.2];
+            app.Tab5Button.BackgroundColor = [0.1294 0.2 0.2392];
             app.Tab5Button.FontSize = 11;
             app.Tab5Button.Layout.Row = [2 4];
             app.Tab5Button.Layout.Column = 9;
