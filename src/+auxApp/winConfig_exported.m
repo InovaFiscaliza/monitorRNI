@@ -170,6 +170,11 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function applyJSCustomizations(app, tabIndex)
+            arguments
+                app
+                tabIndex = 1
+            end
+
             if app.SubTabGroup.UserData.isTabInitialized(tabIndex)
                 return
             end
