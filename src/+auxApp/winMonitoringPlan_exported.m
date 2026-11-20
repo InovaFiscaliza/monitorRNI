@@ -562,7 +562,10 @@ classdef winMonitoringPlan_exported < matlab.apps.AppBase
                 if ~isempty(eventData)
                     eventData.uuid = eventName;
                     eventData.context = app.Context;
-                    eventData.varargin = varargin{:};
+                    
+                    if ~isempty(varargin)
+                        eventData.varargin = varargin;
+                    end
 
                     ipcMainJSEventsHandler(app.mainApp, struct('HTMLEventName', 'customForm', 'HTMLEventData', eventData))
                 end
