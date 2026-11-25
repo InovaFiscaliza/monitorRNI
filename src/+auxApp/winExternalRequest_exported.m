@@ -71,6 +71,10 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         measData
         measTable
 
+        % Localidades de agrupamento marcadas em auxApp.dockReportLib, as quais 
+        % compõem o relatório. Inicia vazia (nenhuma localidade marcada).
+        reportLocations = {}
+
         UIAxes
         restoreView = struct( ...
             'ID', {}, ...
@@ -106,7 +110,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                         switch eventName
                             % winMonitorRNI >> auxApp.winExternalRequest
                             case {'onFileListAdded', 'onFileListRemoved', 'onFileListUnmerged', 'onFileListMerged'}
-                                app.measData = app.mainApp.measData;
+                                app.measData = getFullEMFieldData(app.projectData, app.mainApp.measData);
                                 buildFileLocationTree(app)
 
                                 if ~isempty(app.measData)
@@ -141,6 +145,10 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                             % auxApp.dockReportLib >> winMonitorRNI >> auxApp.winExternalRequest
                             case {'onReportGenerate', 'onFinalReportFileChanged'}
                                 updateToolbar(app)
+
+                            % auxApp.dockReportLib >> winMonitorRNI >> auxApp.winExternalRequest
+                            case 'onReportLocationsChanged'
+                                updateLocationTreeMarks(app)
 
                             case 'onFetchIssueDetails'
                                 system   = varargin{1};
@@ -369,20 +377,36 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         end
 
         %-----------------------------------------------------------------%
+        function updateLocationTreeMarks(app)
+            % Localidades que compõem o relatório (marcadas em auxApp.dockReportLib) 
+            % são identificadas com um símbolo verde. O nome da localidade é 
+            % preservado em "NodeData".
+            for treeNode = app.TreeFileLocations.Children'
+                treeNode.Text = treeNode.NodeData;
+                if ismember(treeNode.NodeData, app.reportLocations)
+                    treeNode.Text = [treeNode.NodeData ' 🟢'];
+                end
+            end
+        end
+
+        %-----------------------------------------------------------------%
         function buildFileLocationTree(app)
             if ~isempty(app.TreeFileLocations.Children)
                 delete(app.TreeFileLocations.Children)
             end
 
             locationGroups = unique({app.measData.Location});
+            app.reportLocations = app.reportLocations(ismember(app.reportLocations, locationGroups));
             selectedNodes = [];
             for ii = 1:numel(locationGroups)
-                treeNode = uitreenode(app.TreeFileLocations, 'Text', locationGroups{ii});
+                treeNode = uitreenode(app.TreeFileLocations, 'Text', locationGroups{ii}, 'NodeData', locationGroups{ii});
 
                 if strcmp(locationGroups{ii}, app.projectData.modules.EXTERNALREQUEST.ui.selectedGroup)
                     selectedNodes = [selectedNodes; treeNode];
                 end
             end
+
+            updateLocationTreeMarks(app)
 
             measDataNonEmpty = ~isempty(app.measData);
             if measDataNonEmpty
@@ -507,12 +531,17 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         %-----------------------------------------------------------------%
         function [idxFile, selectedFileLocations] = getFileIndexes(app)
             if ~isempty(app.TreeFileLocations.SelectedNodes)
-                selectedFileLocations = {app.TreeFileLocations.SelectedNodes.Text};
+                selectedFileLocations = {app.TreeFileLocations.SelectedNodes.NodeData};
                 idxFile = find(ismember({app.measData.Location}, selectedFileLocations));
             else
                 selectedFileLocations = {};
                 idxFile = [];
             end
+        end
+
+        %-----------------------------------------------------------------%
+        function idxFile = getReportFileIndexes(app)
+            idxFile = find(ismember({app.measData.Location}, app.reportLocations));
         end
 
 
@@ -544,7 +573,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             
             try
                 app.projectData = mainApp.projectData;
-                app.measData    = mainApp.measData;
+                app.measData    = getFullEMFieldData(app.projectData, mainApp.measData);
 
                 appEngine.boot(app, app.Role, mainApp)
             catch ME
@@ -699,14 +728,14 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
 
                     for ii = 1:numel(groupLocations)
                         groupLocation = groupLocations{ii};
-                        [~, groupLocationIndex] = ismember(groupLocation, {app.TreeFileLocations.Children.Text});
+                        [~, groupLocationIndex] = ismember(groupLocation, {app.TreeFileLocations.Children.NodeData});
 
                         if ~isequal(app.TreeFileLocations.SelectedNodes, app.TreeFileLocations.Children(groupLocationIndex))
                             app.TreeFileLocations.SelectedNodes = app.TreeFileLocations.Children(groupLocationIndex);
                             TreeFileLocationsSelectionChanged(app, struct('SelectedNodes', app.TreeFileLocations.Children(groupLocationIndex)))
                         end
 
-                        groupLocationText      = replace(app.TreeFileLocations.SelectedNodes.Text, '/', '-');
+                        groupLocationText      = replace(app.TreeFileLocations.SelectedNodes.NodeData, '/', '-');
                         groupLocationIndexes   = getFileIndexes(app);
                         groupLocationMeasTable = timetable2table(buildMeasurementTable(app.measData(groupLocationIndexes)));
 
@@ -760,7 +789,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
         function Toolbar_GenerateReportImageClicked(app, event)
             
             context = app.Context;
-            fileIdxs = getFileIndexes(app);
+            fileIdxs = getReportFileIndexes(app);
             
             issue = app.projectData.modules.(context).ui.issue;
             reportVersion = app.projectData.modules.(context).ui.reportVersion;
@@ -771,16 +800,9 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
             end
 
             % <VALIDAÇÕES>
-            if numel(fileIdxs) < numel(app.measData)
-                initialQuestion  = 'Deseja gerar relatório que contemple informações de TODAS as localidades de agrupamento, ou apenas da SELECIONADA?';
-                initialSelection = ui.Dialog(app.UIFigure, 'uiconfirm', initialQuestion, {'Todas', 'Selecionada', 'Cancelar'}, 1, 3);
-
-                switch initialSelection
-                    case 'Cancelar'
-                        return
-                    case 'Todas'
-                        fileIdxs = 1:numel(app.measData);
-                end
+            if isempty(fileIdxs)
+                ui.Dialog(app.UIFigure, 'warning', 'Nenhuma localidade de agrupamento está marcada para inclusão no relatório. Marque ao menos uma em "Gerenciamento do projeto".');
+                return
             end
 
             msgWarning = {};
@@ -883,7 +905,7 @@ classdef winExternalRequest_exported < matlab.apps.AppBase
                 return
             end
 
-            selectedMeasData  = app.measData(getFileIndexes(app));
+            selectedMeasData  = app.measData(getReportFileIndexes(app));
             storedReportHash  = app.projectData.modules.(context).generatedFiles.id;
             currentReportHash = model.ProjectBase.computeReportAnalysisResultsHash(app.projectData.modules, context, selectedMeasData);
 

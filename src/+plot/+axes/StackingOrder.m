@@ -4,6 +4,7 @@ classdef (Abstract) StackingOrder
         %-----------------------------------------------------------------%
         RFDataHub = {'FilterROI', 'RFLink', 'TX', 'RX', 'Stations'}
         RFLink    = {'StationLabel', 'Station', 'Link', 'Fresnel', 'FirstObstruction', 'Footnote', 'Terrain'}
+        ManualMeasurement = {'MeasurementPoint', 'Station', 'RiskMeasures', 'Measures'}
     end
 
 
@@ -16,6 +17,9 @@ classdef (Abstract) StackingOrder
 
                 case 'RFLink'
                     refStackingOrder = plot.axes.StackingOrder.RFLink;
+
+                case 'ManualMeasurement'
+                    refStackingOrder = plot.axes.StackingOrder.ManualMeasurement;
 
                 otherwise
                     error('Unexpected option.')
