@@ -287,10 +287,6 @@ classdef (Abstract) ProjectBase
                     referenceTableTag = 'STATIONS';
 
                 case 'EXTERNALREQUEST'
-                    referenceTable = renamevars(referenceTable, ...
-                        {'id', 'stationType', 'stationId', 'stationLat', 'stationLng', 'stationDescription', 'measurementCount', 'measurementsAboveLimit', 'nearestMeasurementDistanceKm', 'electricFieldMin', 'electricFieldMean', 'electricFieldMax', 'maxElectricFieldLat', 'maxElectricFieldLng', 'dataSources', 'auditorReason', 'auditorComment'}, ...
-                        {'ID', 'Type', 'Station', 'Latitude', 'Longitude', 'Description', 'numberOfMeasures', 'numberOfRiskMeasures', 'minDistanceForMeasure', 'minFieldValue', 'meanFieldValue', 'maxFieldValue', 'maxFieldLatitude', 'maxFieldLongitude', 'Fonte de dados', 'Justificativa', 'Observações'} ...
-                    );
                     referenceTableTag = 'POINTS';
             end
 

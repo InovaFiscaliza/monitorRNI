@@ -197,20 +197,21 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             app.Title = uilabel(app.GridLayout);
             app.Title.VerticalAlignment = 'top';
             app.Title.FontSize = 15;
-            app.Title.FontColor = [0 0.4471 0.7412];
+            app.Title.FontColor = [0 0.1294 0.2392];
             app.Title.Layout.Row = 1;
             app.Title.Layout.Column = [1 6];
             app.Title.Interpreter = 'html';
-            app.Title.Text = {'<b>Seleção de localidades</b>'; '<font style="color: gray; font-size: 10px;">Confira as localidades identificadas automaticamente e inclua aquelas visitadas que não foram detectadas</font>'};
+            app.Title.Text = {'<b>Seleção de localidades</b>'; '<font style="font-size: 11px;">Confira as localidades identificadas e adicione às visitadas que ainda não constam na lista</font>'};
 
             % Create RefLocationLabel
             app.RefLocationLabel = uilabel(app.GridLayout);
             app.RefLocationLabel.VerticalAlignment = 'bottom';
-            app.RefLocationLabel.FontSize = 10;
+            app.RefLocationLabel.FontSize = 11;
+            app.RefLocationLabel.FontColor = [0 0.1294 0.2392];
             app.RefLocationLabel.Layout.Row = 2;
             app.RefLocationLabel.Layout.Column = [1 3];
             app.RefLocationLabel.Interpreter = 'html';
-            app.RefLocationLabel.Text = {'LOCALIDADES DE REFERÊNCIA:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
+            app.RefLocationLabel.Text = {'Localidades de referência:'; '<font style="color: gray; font-size: 10px;">(relacionadas às estações previstas no PM-RNI)</font>'};
 
             % Create RefLocation
             app.RefLocation = uilistbox(app.GridLayout);
@@ -243,11 +244,12 @@ classdef dockListOfLocation_exported < matlab.apps.AppBase
             % Create LocationLabel
             app.LocationLabel = uilabel(app.GridLayout);
             app.LocationLabel.VerticalAlignment = 'bottom';
-            app.LocationLabel.FontSize = 10;
+            app.LocationLabel.FontSize = 11;
+            app.LocationLabel.FontColor = [0 0.1294 0.2392];
             app.LocationLabel.Layout.Row = 2;
             app.LocationLabel.Layout.Column = [5 6];
             app.LocationLabel.Interpreter = 'html';
-            app.LocationLabel.Text = {'LOCALIDADES SOB ANÁLISE:'; '<font style="color: gray; font-size: 9px;">(relacionadas às estações previstas no PM-RNI)</font>'};
+            app.LocationLabel.Text = {'Localidades sob análise:'; '<font style="color: gray; font-size: 10px;">(relacionadas às estações previstas no PM-RNI)</font>'};
 
             % Create Location
             app.Location = uilistbox(app.GridLayout);

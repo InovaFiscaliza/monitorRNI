@@ -61,7 +61,7 @@ classdef (Abstract) HtmlTextGenerator
                 'numberOfRows', height(projectData.modules.MONITORINGPLAN.stationTable) ...
             ));
 
-            if ~isempty(eFiscalizaObj) && isvalid(eFiscalizaObj)
+            if ~isempty(eFiscalizaObj) && isvalid(eFiscalizaObj) && isprop(eFiscalizaObj, 'userAttributes') && ~isempty(eFiscalizaObj.userAttributes)
                 displayEntry(end+1) = struct('group', 'USUÁRIO AUTENTICADO', 'value', eFiscalizaObj.userAttributes);
             end
         
@@ -149,109 +149,6 @@ classdef (Abstract) HtmlTextGenerator
 
             htmlContent = sprintf(['No monitorRNI, a informação constante nos arquivos é agrupada por LOCALIDADE.<br><br>' ...
                                    'A seguir informações acerca dos arquivos selecionados:<br>%s<br><br>%s'], strjoin(fileInfo, '<br>'), specificContent);
-        end
-
-
-        %-----------------------------------------------------------------%
-        % AUXAPP.RFDATAHUB
-        %-----------------------------------------------------------------%
-        function htmlContent = getStationInfo(rfDataHub, idxRFDataHub, rfDataHubLOG, generalSettings)
-            % stationTag
-            stationInfo    = table2struct(rfDataHub(idxRFDataHub,:));
-            if stationInfo.BW <= 0
-                stationTag = sprintf('%.3f MHz',            stationInfo.Frequency);
-            else
-                stationTag = sprintf('%.3f MHz ⌂ %.1f kHz', stationInfo.Frequency, stationInfo.BW);
-            end
-        
-            % SERVIÇO
-            global id2nameTable
-            if isempty(id2nameTable)
-                serviceOptions = generalSettings.eFiscaliza.defaultValues.servicos_da_inspecao.options;
-                serviceIDs     = int16(str2double(extractBefore(serviceOptions, '-')));
-                id2nameTable   = table(serviceIDs, serviceOptions, 'VariableNames', {'ID', 'Serviço'});
-            end
-            stationService = ws.eFiscaliza.serviceMapping(stationInfo.Service);
-        
-            [~, idxService] = ismember(stationInfo.Service, id2nameTable.ID);
-            if idxService
-                stationService = id2nameTable.("Serviço"){idxService};
-            else
-                stationService = num2str(stationService);
-            end
-        
-            if strcmp(stationService, '-1')
-                stationService = '<font style="color: red;">-1</font>';
-            end
-            
-            % NÚMERO
-            mergeCount = str2double(string(stationInfo.MergeCount));
-            if stationInfo.Station == -1
-                stationNumber = sprintf('<font style="color: red;">%d</font>', stationInfo.Station);
-            else
-                stationNumber = num2str(stationInfo.Station);
-                if mergeCount > 1
-                    stationNumber = sprintf('%s*', stationNumber);
-                end
-            end
-        
-            % LOCAL DE INSTALAÇÃO
-            stationLocation = sprintf('(%.6fº, %.6fº)', stationInfo.Latitude, stationInfo.Longitude);
-            stationHeight   = str2double(char(stationInfo.AntennaHeight));
-            if stationHeight <= 0
-                stationHeight = '<font style="color: red;">-1</font>';
-            else
-                stationHeight = sprintf('%.1fm', stationHeight);
-            end    
-        
-            % LOG
-            stationLOG = model.RFDataHub.queryLog(rfDataHubLOG, stationInfo.Log);
-            if isempty(stationLOG)
-                stationLOG = 'Registro não editado';
-            end
-        
-            % TEXTO FORMATADO
-            displayEntry = [ ...
-                util.HtmlTextGenerator.makeDisplayEntry('Service', stationService), ...
-                util.HtmlTextGenerator.makeDisplayEntry('Station', stationNumber), ...
-                util.HtmlTextGenerator.makeDisplayEntry('Localização', stationLocation), ...
-                util.HtmlTextGenerator.makeDisplayEntry('Altura', stationHeight) ...
-            ];
-
-            editedStationInfo = rmfield(stationInfo, { ...
-                'AntennaPattern', 'BW', 'Description', 'Distance', 'Fistel', 'Frequency',     ...
-                'ID', 'Latitude', 'LocationID', 'Location', 'Log', 'Longitude', 'MergeCount', ...
-                'Name', 'Station', 'StationClass', 'Status', 'Service', 'Source', 'State', 'URL', 'x_Name', 'x_Location' ...
-            });
-
-            if any(cellfun(@(x) ~isequal(x, categorical(-1)), struct2cell(editedStationInfo)))
-                displayEntry(end+1) = util.HtmlTextGenerator.makeDisplayEntry('OUTROS ASPECTOS TÉCNICOS', editedStationInfo);
-            end
-
-            if mergeCount > 1
-                displayEntry(end+1) = util.HtmlTextGenerator.makeDisplayEntry('NÚMERO ESTAÇÕES AGRUPADAS', string(mergeCount));
-            end
-        
-            try
-                if isstruct(stationLOG) || ischar(stationLOG)
-                    displayEntry(end+1) = util.HtmlTextGenerator.makeDisplayEntry('LOG', stationLOG);
-
-                elseif iscell(stationLOG)
-                    for ii = 1:numel(stationLOG)
-                        displayEntry(end+1) = util.HtmlTextGenerator.makeDisplayEntry(sprintf('LOG #%d', ii), stationLOG{ii});
-                    end
-                end
-            catch
-            end
-        
-            htmlIntro = [ ...
-                util.HtmlTextGenerator.receiverBadge(stationInfo.Source) ...
-                sprintf('<span style="font-size: 10px; display: inline-block; vertical-align: sub; margin-left: 5px;">  ID %s</span><br><br>', stationInfo.ID) ...
-                sprintf('<font style="font-size: 16px;"><b>%s</b></font><br>', stationTag) ...
-                sprintf('<font style="font-size: 11px;">%s</font><br><br>', stationInfo.Description) ...
-            ];
-
-            htmlContent = textFormatGUI.struct2PrettyPrintList(displayEntry, 'delete', htmlIntro);
         end
 
 
