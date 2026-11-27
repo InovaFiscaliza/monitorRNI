@@ -22,9 +22,12 @@ classdef Project < model.ProjectCommon
     %   |   └── updateAnalysis
     %   ├── syncAnnotationTable
     %   ├── updateAnalysis
+    %   |   |── getFullEMFieldData
     %   |   |── updateStationTableAnalysis
     %   |   |── updatePointsTableAnalysis
     %   |   └── restart
+    %   ├── getFullEMFieldData
+    %   |   └── getManualEMFieldData
     %   ├── updateSelectedListOfLocations
     %   ├── addAutomaticLocations
     %   ├── delLocationCache
@@ -37,7 +40,17 @@ classdef Project < model.ProjectCommon
     %   │   └── initialization (SuperClass)
     %   ├── updateStationTableAnalysis
     %   |   └── getFullListOfLocation
-    %   └── updatePointsTableAnalysis
+    %   ├── updatePointsTableAnalysis
+    %   └── getManualEMFieldData
+
+
+    properties (Access = private)
+        %-----------------------------------------------------------------%
+        % Cache dos objetos EMFieldData derivados de "manualMeasurement", 
+        % recriado apenas quando a tabela de origem é alterada.
+        manualEMFieldData       = model.EMFieldData.empty
+        manualEMFieldDataSource = []
+    end
 
 
     methods
@@ -79,11 +92,15 @@ classdef Project < model.ProjectCommon
             if ~isempty(obj.name)
                 currentPrjHash = model.ProjectBase.computeProjectHash(obj.name, obj.file, obj.modules, obj.issueDetails, obj.entityDetails, EMFieldObj);
                 updateNeeded   = ~isequal(obj.hash, currentPrjHash);
+
+            else
+                % Medidas manuais registradas sem que o projeto tenha sido salvo.
+                updateNeeded = ~isempty(obj.modules.MONITORINGPLAN.manualMeasurement);
             end
         end
 
         %-----------------------------------------------------------------%
-        function save(obj, context, prjName, prjFile, outputFileCompressionMode, EMFieldObj)
+        function save(obj, context, prjName, prjFile, outputFileCompressionMode, EMFieldObj, reportLocations)
             arguments
                 obj
                 context (1,:) char {mustBeMember(context, {'MONITORINGPLAN', 'EXTERNALREQUEST'})}
@@ -91,6 +108,7 @@ classdef Project < model.ProjectCommon
                 prjFile
                 outputFileCompressionMode
                 EMFieldObj
+                reportLocations cell = {}
             end
 
             source    = class.Constants.appName;
@@ -98,11 +116,26 @@ classdef Project < model.ProjectCommon
             version   = 1;
             userData  = [];
 
-            prjHash   = model.ProjectBase.computeProjectHash(prjName, prjFile, obj.modules, obj.issueDetails, obj.entityDetails, EMFieldObj);
+            % Apenas os dados das localidades selecionadas para o relatório são 
+            % exportados: arquivos de medição (todos os contextos) e, no contexto 
+            % "MONITORINGPLAN", também as anotações das estações e as medidas manuais.
+            % O hash considera o que de fato é salvo, de modo que dados não 
+            % exportados sejam sinalizados como alteração pendente.
+            prjModules = obj.modules;
+            EMFieldObj = EMFieldObj(~model.EMFieldData.isManualInsertion(EMFieldObj));
+            EMFieldObj = EMFieldObj(ismember({EMFieldObj.Location}, reportLocations));
+
+            if strcmp(context, 'MONITORINGPLAN')
+                stationTable = prjModules.MONITORINGPLAN.stationTable;
+                prjModules.MONITORINGPLAN.annotationTable    = model.ProjectBase.filterAnnotation(prjModules.MONITORINGPLAN.annotationTable, stationTable, reportLocations);
+                prjModules.MONITORINGPLAN.manualMeasurement  = model.ProjectBase.filterManualMeasurement(prjModules.MONITORINGPLAN.manualMeasurement, stationTable, reportLocations);
+            end
+
+            prjHash   = model.ProjectBase.computeProjectHash(prjName, prjFile, prjModules, obj.issueDetails, obj.entityDetails, EMFieldObj);
             variables = struct( ...
                 'name',    prjName, ...
                 'hash',    prjHash, ...
-                'modules', obj.modules, ...
+                'modules', prjModules, ...
                 'issueDetails', obj.issueDetails, ...
                 'entityDetails', obj.entityDetails, ...
                 'EMFieldObj', EMFieldObj ...
@@ -193,7 +226,11 @@ classdef Project < model.ProjectCommon
                             end
 
                             obj.modules.(context).annotationTable = prjData.variables.modules.(context).annotationTable;
-    
+
+                            if isfield(prjData.variables.modules.(context), 'manualMeasurement')
+                                obj.modules.(context).manualMeasurement = prjData.variables.modules.(context).manualMeasurement;
+                            end
+
                             obj.modules.(context).uploadedFiles = [prjData.variables.modules.(context).uploadedFiles, obj.modules.(context).uploadedFiles];
                             [~, uniqueUploadedFilesIndexes] = unique({obj.modules.(context).uploadedFiles.hash});
                             obj.modules.(context).uploadedFiles = obj.modules.(context).uploadedFiles(uniqueUploadedFilesIndexes);
@@ -212,14 +249,18 @@ classdef Project < model.ProjectCommon
 
                         % Pode ocorrer uma coincidência de fluxos que compõem
                         % o projeto e fluxos já lidos. Se evidenciado, serão
-                        % mantidos os fluxos do projeto.
-                        idx = ismember({EMFieldObj.Hash}, {prjData.variables.EMFieldObj.Hash});
+                        % mantidos os fluxos do projeto. Medidas manuais não 
+                        % compõem EMFieldObj, sendo derivadas de "manualMeasurement".
+                        EMFieldObj = EMFieldObj(~model.EMFieldData.isManualInsertion(EMFieldObj));
+                        projectEMFieldObj = prjData.variables.EMFieldObj(~model.EMFieldData.isManualInsertion(prjData.variables.EMFieldObj));
+
+                        idx = ismember({EMFieldObj.Hash}, {projectEMFieldObj.Hash});
                         if any(idx)
                             delete(EMFieldObj(idx))
                             EMFieldObj(idx) = [];
                         end
     
-                        EMFieldObj = [EMFieldObj, prjData.variables.EMFieldObj];
+                        EMFieldObj = [EMFieldObj, projectEMFieldObj];
     
                     otherwise
                         error('UnexpectedVersion')
@@ -294,6 +335,34 @@ classdef Project < model.ProjectCommon
                     manualEditionRowIndexes   = find(addedObservationLogical | editedLocationLogical);
                     riskMeasurementsIndexes   = find(currentPointsTable.numberOfRiskMeasures > 0);
             end
+        end
+
+        %-----------------------------------------------------------------%
+        % ## MANUAL MEASUREMENTS ##
+        %-----------------------------------------------------------------%
+        function addManualMeasurement(obj, newMeasurements)
+            % As medidas de um mesmo conjunto (estação+sensor) substituem as 
+            % registradas anteriormente, evitando duplicidade quando o usuário
+            % salva novamente os dados de uma mesma estação.
+            currentTable = obj.modules.MONITORINGPLAN.manualMeasurement;
+
+            if ~isempty(currentTable)
+                currentKeys = strcat(string(currentTable.Station), '|', string(currentTable.SIADS), '|', string(currentTable.SerialNumber));
+                newKeys     = unique(strcat(string(newMeasurements.Station), '|', string(newMeasurements.SIADS), '|', string(newMeasurements.SerialNumber)));
+                currentTable(ismember(currentKeys, newKeys), :) = [];
+            end
+
+            obj.modules.MONITORINGPLAN.manualMeasurement = sortrows([currentTable; newMeasurements], {'Station', 'SIADS', 'SerialNumber', 'Timestamp'});
+        end
+
+        %-----------------------------------------------------------------%
+        function removeManualMeasurement(obj, station, siads, serialNumber)
+            currentTable = obj.modules.MONITORINGPLAN.manualMeasurement;
+            isRemoved    = currentTable.Station == station & ...
+                           string(currentTable.SIADS) == string(siads) & ...
+                           string(currentTable.SerialNumber) == string(serialNumber);
+
+            obj.modules.MONITORINGPLAN.manualMeasurement(isRemoved, :) = [];
         end
 
         %-----------------------------------------------------------------%
@@ -420,6 +489,8 @@ classdef Project < model.ProjectCommon
                 varargin
             end
 
+            EMFieldObj = getFullEMFieldData(obj, EMFieldObj);
+
             if ~isempty(EMFieldObj)
                 measTable = buildMeasurementTable(EMFieldObj);
 
@@ -446,6 +517,22 @@ classdef Project < model.ProjectCommon
 
             else
                 restart(obj, {'MONITORINGPLAN', 'EXTERNALREQUEST'}, 'EMFieldDataEmpty', generalSettings)
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function EMFieldObj = getFullEMFieldData(obj, EMFieldObj)
+            % As medidas inseridas manualmente (auxApp.dockManualMeasurement) não
+            % constam em app.measData: são derivadas de 
+            % obj.modules.MONITORINGPLAN.manualMeasurement e acrescentadas aos dados 
+            % de arquivos nos fluxos de análise, visualização e relatório. Como 
+            % tais fluxos dependem de dados de arquivos, não havendo nenhum, 
+            % nada é acrescentado. O método é idempotente: objetos manuais já 
+            % presentes em EMFieldObj são substituídos pelos atuais.
+            EMFieldObj = EMFieldObj(~model.EMFieldData.isManualInsertion(EMFieldObj));
+
+            if ~isempty(EMFieldObj)
+                EMFieldObj = [EMFieldObj, getManualEMFieldData(obj)];
             end
         end
 
@@ -566,6 +653,43 @@ classdef Project < model.ProjectCommon
 
     methods (Access = private)
         %-----------------------------------------------------------------%
+        function manualObj = getManualEMFieldData(obj)
+            manualTable = obj.modules.MONITORINGPLAN.manualMeasurement;
+
+            if ~isequal(manualTable, obj.manualEMFieldDataSource)
+                manualObj = model.EMFieldData.empty;
+
+                % Um objeto por conjunto (estação + sensor + nº de série). O UUID é 
+                % mantido estável (igual ao hash do conteúdo), de modo que o cache 
+                % de localidades (groupMapping) não seja invalidado a cada recriação.
+                groupKeys = strcat(string(manualTable.Station), '|', string(manualTable.SIADS), '|', string(manualTable.SerialNumber));
+                [~, ~, groupIdxs] = unique(groupKeys, 'stable');
+
+                for ii = 1:max([groupIdxs; 0])
+                    group       = manualTable(groupIdxs == ii, :);
+                    sensorName  = char(group.Sensor{1});
+                    description = sprintf('Patrimônio SIADS: %s | Nº de Série: %s', group.SIADS{1}, group.SerialNumber{1});
+                    measTable   = group(:, {'Timestamp', 'Latitude', 'Longitude', 'Altitude', 'FieldValue'});
+
+                    % O modelo é o último termo do texto "Marca / Modelo".
+                    modelTokens = split(string(sensorName), ' / ');
+                    sensorInfo  = struct('Model', char(strtrim(modelTokens(end))), 'Serial', char(group.SerialNumber{1}));
+
+                    manualObj = addManualData(manualObj, sensorName, description, measTable, group.Station(1), sensorInfo);
+                    manualObj(end).UUID = manualObj(end).Hash;
+                end
+
+                obj.manualEMFieldData       = manualObj;
+                obj.manualEMFieldDataSource = manualTable;
+            end
+
+            manualObj = obj.manualEMFieldData;
+        end
+    end
+
+
+    methods (Access = private)
+        %-----------------------------------------------------------------%
         function contextInitialization(obj, contextList, operationType, generalSettings)
             arguments
                 obj
@@ -595,6 +719,7 @@ classdef Project < model.ProjectCommon
                                 obj.modules.MONITORINGPLAN.stationTable_I  = [];
                                 obj.modules.MONITORINGPLAN.referenceData   = struct('years', [], 'locations', {{}}, 'states', {{}});
                                 obj.modules.MONITORINGPLAN.ui.groupMapping = struct('hash', {}, 'auto', {}, 'manual', {});
+                                obj.modules.MONITORINGPLAN.manualMeasurement = model.ProjectBase.initializeCustomTable('MANUALMEASUREMENT');
                             case 'EXTERNALREQUEST'
                                 obj.modules.EXTERNALREQUEST.pointsTable    = [];
                                 obj.modules.EXTERNALREQUEST.pointsTable_I  = [];
@@ -648,6 +773,7 @@ classdef Project < model.ProjectCommon
                             case 'MONITORINGPLAN'
                                 stationTable_I = obj.modules.MONITORINGPLAN.stationTable_I;
                                 referenceData  = obj.modules.MONITORINGPLAN.referenceData;
+                                manualMeasurement = obj.modules.MONITORINGPLAN.manualMeasurement;
                             case 'EXTERNALREQUEST'
                                 pointsTable_I  = obj.modules.EXTERNALREQUEST.pointsTable_I;
                         end
@@ -663,6 +789,7 @@ classdef Project < model.ProjectCommon
                                 obj.modules.MONITORINGPLAN.stationTable    = stationTable_I;
                                 obj.modules.MONITORINGPLAN.stationTable_I  = stationTable_I;
                                 obj.modules.MONITORINGPLAN.referenceData   = referenceData;
+                                obj.modules.MONITORINGPLAN.manualMeasurement = manualMeasurement;
                             case 'EXTERNALREQUEST'
                                 obj.modules.EXTERNALREQUEST.pointsTable    = pointsTable_I;
                                 obj.modules.EXTERNALREQUEST.pointsTable_I  = pointsTable_I;

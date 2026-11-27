@@ -14,6 +14,8 @@ classdef EMFieldData < handle
 
         Sensor
         MetaData
+        % Entrada para indicar se inserção de dados foi manual ou
+        % autimático
         
         Data
         Measures
@@ -26,7 +28,11 @@ classdef EMFieldData < handle
         Latitude
         Longitude
 
-        % "Location_I" corresponde à localidade de agrupamento, que é identificada 
+        % Altitude (m) de cada registro de "Data", preenchida apenas nas 
+        % medições inseridas manualmente (NaN quando não informada).
+        Altitude
+
+        % "Location_I" corresponde à localidade de agrupamento, que é identificada
         % automaticamente pelo app ao parsear o arquivo. "Location", por outro lado, 
         % registra eventuais edições manuais na GUI desse valor.
         Location
@@ -46,7 +52,7 @@ classdef EMFieldData < handle
         function obj = EMFieldData(fileFullName, sensorName, metaData, dataTable, contentSample)
             arguments
                 fileFullName  char
-                sensorName    char {mustBeMember(sensorName, {'Wavecontrol', 'Narda'})}
+                sensorName    char
                 metaData      struct
                 dataTable     timetable
                 contentSample char = ''
@@ -91,7 +97,10 @@ classdef EMFieldData < handle
             obj.Longitude = round(mean(dataTable.Longitude), 6);            
             obj.Location = gpsLib.findNearestCity(struct('Latitude', obj.Latitude, 'Longitude', obj.Longitude));
             obj.Location_I = obj.Location;
-            obj.CoveredDistanceKm = round(sum(deg2km(distance(dataTable.Latitude(2:end), dataTable.Longitude(2:end), dataTable.Latitude(1:end-1), dataTable.Longitude(1:end-1)))), 6);
+            obj.CoveredDistanceKm = 0;
+            if height(dataTable) > 1
+                obj.CoveredDistanceKm = round(sum(deg2km(distance(dataTable.Latitude(2:end), dataTable.Longitude(2:end), dataTable.Latitude(1:end-1), dataTable.Longitude(1:end-1)))), 6);
+            end
 
             obj.UUID = char(matlab.lang.internal.uuid());
             obj.Hash = model.ProjectBase.computeEMFieldDataHash(obj);
@@ -159,11 +168,82 @@ classdef EMFieldData < handle
                     createContentBlob(obj(idx), fileBytes);
 
                 catch ME
-                    delete(obj(idx))
-                    obj(idx) = [];
+                    % O objeto só existe se a exceção ocorreu após o construtor; 
+                    % caso contrário, indexar "obj(idx)" mascararia o erro original.
+                    if idx <= numel(obj)
+                        delete(obj(idx))
+                        obj(idx) = [];
+                    end
                     msg{end+1} = ME.message;
                 end
             end
+        end
+
+        %-----------------------------------------------------------------%
+        function obj = addManualData(obj, sensorName, description, measTable, stationId, sensorInfo)
+            arguments
+                obj
+                sensorName  char
+                description char
+                measTable   table % Timestamp, Latitude, Longitude, Altitude, FieldValue
+                stationId   double = NaN
+                sensorInfo  struct = struct('Model', '', 'Serial', '')
+            end
+
+            measTable = sortrows(measTable, 'Timestamp');
+
+            stationText = '(Não informada)';
+            if ~isnan(stationId)
+                stationText = sprintf('%d', stationId);
+            end
+
+            % Nome determinístico: o objeto é recriado a partir de "manualMeasurement" 
+            % e o nome é referenciado em "Fonte de dados" das tabelas de análise.
+            fileName = regexprep(sprintf('Manual_%s_%s_%s.csv', stationText, sensorName, description), '[^\w\-\.]+', '_');
+            fileName = regexprep(fileName, '_+', '_');
+
+            % Modelo e nº de série vêm da planilha de equipamentos; a faixa de 
+            % frequência é inferida do modelo.
+            modelText  = 'Manual';
+            serialText = '(Não identificado)';
+            if isfield(sensorInfo, 'Model') && ~isempty(strtrim(sensorInfo.Model))
+                modelText = char(strtrim(sensorInfo.Model));
+            end
+            if isfield(sensorInfo, 'Serial') && ~isempty(strtrim(sensorInfo.Serial)) && ~strcmp(strtrim(sensorInfo.Serial), '-')
+                serialText = char(strtrim(sensorInfo.Serial));
+            end
+            bandText = model.EMFieldData.getManualSensorBand(modelText);
+
+            metaData = struct('Model', modelText, 'Serial', serialText, 'Band', bandText, 'Unit', 'V/m', 'Description', description, 'Insertion', 'Manual', 'Station', stationText);
+            if isempty(description)
+                metaData.Description = '(Não informada)';
+            end
+
+            dataTable = timetable( ...
+                measTable.Timestamp, ...
+                measTable.Latitude, ...
+                measTable.Longitude, ...
+                measTable.FieldValue, ...
+                'VariableNames', {'Latitude', 'Longitude', 'FieldValue'}, ...
+                'DimensionNames', {'Timestamp', 'Variables'} ...
+            );
+
+            % O arquivo de entrada é sintetizado (CSV) para que as medições manuais
+            % possam ser recriadas e anexadas ao relatório como os demais arquivos.
+            timestamps = string(measTable.Timestamp, 'dd/MM/yyyy HH:mm:ss');
+            csvLines   = [ ...
+                sprintf("Sensor: %s", sensorName); ...
+                sprintf("Descrição: %s", metaData.Description); ...
+                "Timestamp;Latitude;Longitude;Altitude;FieldValue"; ...
+                compose("%s;%.6f;%.6f;%.2f;%.6f", timestamps, measTable.Latitude, measTable.Longitude, measTable.Altitude, measTable.FieldValue) ...
+            ];
+            fileText      = char(strjoin(csvLines, newline));
+            contentSample = fileText(1:min(1000, numel(fileText)));
+
+            idx = numel(obj)+1;
+            obj(idx) = model.EMFieldData(fileName, sensorName, metaData, dataTable, contentSample);
+            obj(idx).Altitude = measTable.Altitude;
+            createContentBlob(obj(idx), unicode2native(fileText, 'UTF-8'));
         end
 
         %-----------------------------------------------------------------%
@@ -223,6 +303,33 @@ classdef EMFieldData < handle
 
 
     methods (Static = true)
+        %-----------------------------------------------------------------%
+        function isManual = isManualInsertion(EMFieldObj)
+            % Medidas inseridas manualmente (auxApp.dockManualMeasurement) são 
+            % derivadas de "manualMeasurement" (model.Project), não constando em 
+            % app.measData.
+            isManual = false(1, numel(EMFieldObj));
+            for ii = 1:numel(EMFieldObj)
+                isManual(ii) = isfield(EMFieldObj(ii).MetaData, 'Insertion') && strcmp(EMFieldObj(ii).MetaData.Insertion, 'Manual');
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        function bandText = getManualSensorBand(modelName)
+            % Faixa de frequência por modelo (comparação sem espaços, hífens 
+            % e distinção de maiúsculas; p.ex. "AMB 8059-00" -> "amb805900"). 
+            % Também aceita o texto "Marca / Modelo".
+            normalizedModel = lower(regexprep(char(modelName), '[\s\-]', ''));
+
+            if     contains(normalizedModel, 'nbm520')
+                bandText = '100 kHz a 6 GHz';
+            elseif contains(normalizedModel, {'amb8059', 'smp3', 'monitem'})
+                bandText = '100 kHz a 8 GHz';
+            else
+                bandText = '(Não informada)';
+            end
+        end
+
         %-----------------------------------------------------------------%
         function [sensorName, regExpression1, regExpression2, dateFormat] = getSensorName(fileFullName, fileContent)
             % Inicialmente, busca-se no conteúdo do arquivo um TAG que 

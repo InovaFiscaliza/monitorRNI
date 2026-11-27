@@ -4,7 +4,8 @@ classdef dockReportLib_exported < matlab.apps.AppBase
     properties (Access = public)
         UIFigure                matlab.ui.Figure
         GridLayout              matlab.ui.container.GridLayout
-        reportPanel             matlab.ui.container.Panel
+        eFiscalizaLabel_2       matlab.ui.control.Label
+        TreeLocsRelatorio       matlab.ui.container.CheckBoxTree
         reportGrid              matlab.ui.container.GridLayout
         reportEntityPanel       matlab.ui.container.Panel
         reportEntityGrid        matlab.ui.container.GridLayout
@@ -20,6 +21,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
         reportVersionLabel      matlab.ui.control.Label
         reportModel             matlab.ui.control.DropDown
         reportModelLabel        matlab.ui.control.Label
+        reportPanel             matlab.ui.container.Panel
         reportLabel             matlab.ui.control.Label
         eFiscalizaPanel         matlab.ui.container.Panel
         eFiscalizaGrid          matlab.ui.container.GridLayout
@@ -159,6 +161,26 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             set(app.reportEntityId, 'Value', app.projectData.modules.(context).ui.entity.id, 'BackgroundColor', backgroundColor, 'FontColor', fontColor)
             app.reportEntityIdCheck.Enable = ~isempty(app.reportEntityId.Value);
         end
+
+        %-----------------------------------------------------------------%
+        function updateLocationTree(app)
+            % Reflete em "TreeLocsRelatorio" as localidades de agrupamento listadas no
+            % módulo que abriu o painel (MONITORINGPLAN ou EXTERNALREQUEST), marcando 
+            % apenas aquelas que compõem o relatório (inicialmente nenhuma).
+            delete(app.TreeLocsRelatorio.Children)
+
+            locations = {app.callingApp.TreeFileLocations.Children.NodeData};
+            for ii = 1:numel(locations)
+                uitreenode(app.TreeLocsRelatorio, 'Text', locations{ii});
+            end
+
+            % CheckedNodes só aceita array vazio 0x0 ou nós-filhos; por isso a
+            % atribuição é omitida quando nenhuma localidade está marcada.
+            isChecked = ismember(locations, app.callingApp.reportLocations);
+            if any(isChecked)
+                app.TreeLocsRelatorio.CheckedNodes = app.TreeLocsRelatorio.Children(isChecked);
+            end
+        end
     end
     
 
@@ -172,8 +194,10 @@ classdef dockReportLib_exported < matlab.apps.AppBase
                 appEngine.boot(app, app.Role, mainApp, callingApp)
 
                 applyJSCustomization(app)
+                app.TreeLocsRelatorio.CheckedNodesChangedFcn = createCallbackFcn(app, @onLocationCheckChanged, true);
                 app.inputArgs = struct('context', context, 'varargin', {varargin});
                 updatePanel(app, context)
+                updateLocationTree(app)
                 
             catch ME
                 ui.Dialog(app.UIFigure, 'error', getReport(ME), 'CloseFcn', @(~,~)closeFcn(app));
@@ -201,6 +225,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             restart(app.projectData, {context}, 'onProjectRestart', app.mainApp.General)
             ipcMainMatlabCallsHandler(app.mainApp, app, 'onProjectRestart', context)
             updatePanel(app, context)
+            updateLocationTree(app)
 
         end
 
@@ -223,6 +248,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
                 [app.mainApp.measData, msg] = load(app.projectData, context, fileFullPath, app.mainApp.General, varargin{:});
                 ipcMainMatlabCallsHandler(app.mainApp, app, 'onProjectLoad', context)
                 updatePanel(app, context)
+                updateLocationTree(app)
 
                 if ~isempty(msg)
                     ui.Dialog(app.UIFigure, "warning", msg)
@@ -242,6 +268,19 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             appName  = class.Constants.appName;
             context  = app.inputArgs.context;
             varargin = app.inputArgs.varargin;
+
+            % Apenas os dados dos fluxos marcados em "TreeLocsRelatorio" são exportados.
+            % Com nenhum nó marcado, CheckedNodes pode não ser um TreeNode (sem propriedade Text).
+            checkedNodes     = app.TreeLocsRelatorio.CheckedNodes;
+            checkedLocations = {};
+            if isa(checkedNodes, 'matlab.ui.container.TreeNode') && ~isempty(checkedNodes)
+                checkedLocations = {checkedNodes.Text};
+            end
+
+            if isempty(checkedLocations)
+                ui.Dialog(app.UIFigure, 'warning', 'Selecione no mínimo um fluxo na lista de localidades para salvar o projeto.');
+                return
+            end
 
             if isfile(app.projectData.file)
                 if ~checkIfUpdateNeeded(app.projectData, varargin{:})
@@ -264,7 +303,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
                 return
             end
 
-            save(app.projectData, context, projectName, projectFile, app.mainApp.General.reportLib.outputCompressionMode, varargin{:})
+            save(app.projectData, context, projectName, projectFile, app.mainApp.General.reportLib.outputCompressionMode, varargin{:}, checkedLocations)
             updatePanel(app, context)
 
         end
@@ -397,7 +436,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
 
         % Image clicked function: reportEntityIdCheck
         function reportEntityIdCheckImageClicked(app, event)
-            
+              
             details = getEntityDetailsFromCache(app.projectData, app.reportEntityId.Value);
 
             if isempty(details)
@@ -415,6 +454,21 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             ui.Dialog(app.UIFigure, "none", msg);
 
         end
+
+        % Callback function: TreeLocsRelatorio
+        function onLocationCheckChanged(app, event)
+
+            % Com nenhum nó marcado, CheckedNodes pode não ser um TreeNode (sem propriedade Text).
+            checkedNodes     = app.TreeLocsRelatorio.CheckedNodes;
+            checkedLocations = {};
+            if isa(checkedNodes, 'matlab.ui.container.TreeNode') && ~isempty(checkedNodes)
+                checkedLocations = {checkedNodes.Text};
+            end
+            app.callingApp.reportLocations = checkedLocations;
+
+            ipcMainMatlabCallsHandler(app.mainApp, app, 'onReportLocationsChanged', app.inputArgs.context)
+            
+        end
     end
 
     % Component initialization
@@ -430,7 +484,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             if isempty(Container)
                 app.UIFigure = uifigure('Visible', 'off');
                 app.UIFigure.AutoResizeChildren = 'off';
-                app.UIFigure.Position = [100 100 460 608];
+                app.UIFigure.Position = [100 100 838 608];
                 app.UIFigure.Name = 'monitorRNI';
                 app.UIFigure.Icon = 'icon_48.png';
                 app.UIFigure.Resize = 'off';
@@ -594,7 +648,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.eFiscalizaPanel = uipanel(app.GridLayout);
             app.eFiscalizaPanel.AutoResizeChildren = 'off';
             app.eFiscalizaPanel.Layout.Row = 5;
-            app.eFiscalizaPanel.Layout.Column = [1 4];
+            app.eFiscalizaPanel.Layout.Column = 1;
 
             % Create eFiscalizaGrid
             app.eFiscalizaGrid = uigridlayout(app.eFiscalizaPanel);
@@ -679,13 +733,15 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.reportPanel.AutoResizeChildren = 'off';
             app.reportPanel.BackgroundColor = [1 1 1];
             app.reportPanel.Layout.Row = 7;
-            app.reportPanel.Layout.Column = [1 4];
+            app.reportPanel.Layout.Column = 1;
 
             % Create reportGrid
-            app.reportGrid = uigridlayout(app.reportPanel);
+            app.reportGrid = uigridlayout(app.GridLayout);
             app.reportGrid.ColumnWidth = {'1x', '1x', '1x', 17};
             app.reportGrid.RowHeight = {17, 22, 22, '1x'};
             app.reportGrid.RowSpacing = 5;
+            app.reportGrid.Layout.Row = 7;
+            app.reportGrid.Layout.Column = 1;
             app.reportGrid.BackgroundColor = [1 1 1];
 
             % Create reportModelLabel
@@ -802,6 +858,24 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.reportEntityName.FontSize = 11;
             app.reportEntityName.Layout.Row = 4;
             app.reportEntityName.Layout.Column = [1 3];
+
+            % Create TreeLocsRelatorio
+            app.TreeLocsRelatorio = uitree(app.GridLayout, 'checkbox');
+            app.TreeLocsRelatorio.Layout.Row = [5 7];
+            app.TreeLocsRelatorio.Layout.Column = [2 5];
+
+            % Assign Checked Nodes
+            app.TreeLocsRelatorio.CheckedNodesChangedFcn = createCallbackFcn(app, @onLocationCheckChanged, true);
+
+            % Create eFiscalizaLabel_2
+            app.eFiscalizaLabel_2 = uilabel(app.GridLayout);
+            app.eFiscalizaLabel_2.VerticalAlignment = 'bottom';
+            app.eFiscalizaLabel_2.FontSize = 11;
+            app.eFiscalizaLabel_2.FontWeight = 'bold';
+            app.eFiscalizaLabel_2.FontColor = [0 0.451 0.7412];
+            app.eFiscalizaLabel_2.Layout.Row = 4;
+            app.eFiscalizaLabel_2.Layout.Column = [2 5];
+            app.eFiscalizaLabel_2.Text = 'LOCALIDADES A INCLUIR NO RELATÓRIO';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

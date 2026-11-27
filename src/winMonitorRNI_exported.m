@@ -151,6 +151,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                             app.popupCurrentApp = [];
                         end
 
+                    case 'syncPopupWithPanel'
+                        if ~isempty(app.popupCurrentApp) && isvalid(app.popupCurrentApp)
+                            app.popupCurrentApp.Container.Position(1:2) = [event.HTMLEventData.x, event.HTMLEventData.y];
+                        end
+
                     case 'customForm'
                         switch event.HTMLEventData.uuid
                             case 'getAuthenticatedUser'
@@ -284,9 +289,43 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
 
                             % DOCKS:OTHERS
-                            case {'auxApp.dockListOfLocation',     'auxApp.dockListOfLocation_exported',     ...
-                                  'auxApp.dockReportLib',          'auxApp.dockReportLib_exported',          ...
+                            case {'auxApp.dockManualMeasurement', 'auxApp.dockManualMeasurement_exported'}
+                                switch eventName
+                                    case 'onManualMeasurementChanged'
+                                        % Registro das medidas manuais no projeto, de onde são 
+                                        % derivadas para a análise (model.Project).
+                                        addManualMeasurement(app.projectData, varargin{1})
+                                        refreshProjectAnalysis(app, 'onFileListAdded')
+
+                                    case 'onManualMeasurementRemoved'
+                                        stationId = varargin{1};
+                                        siads     = varargin{2};
+                                        serial    = varargin{3};
+
+                                        removeManualMeasurement(app.projectData, stationId, siads, serial)
+                                        refreshProjectAnalysis(app, 'onFileListRemoved')
+
+                                    case 'onStationCoordinatesEdited'
+                                        context    = varargin{1};
+                                        stationIdx = varargin{2};
+                                        latitude   = varargin{3};
+                                        longitude  = varargin{4};
+
+                                        updateStationTable(app.projectData, eventName, stationIdx, latitude, longitude, app.measData, app.General)
+                                        ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', 'onStationCoordinatesUpdated')
+
+                                    case 'onStationSelectionChanged'
+                                        context  = varargin{1};
+                                        varargin = [{eventName}, varargin(2:end)];
+                                        ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', varargin{:})
+
+                                    otherwise
+                                        error('winMonitorRNI:UnexpectedCall', 'Unexpected call "%s"', eventName)
+                                end
+
+                            case {'auxApp.dockListOfLocation', 'auxApp.dockListOfLocation_exported', ...
                                   'auxApp.dockRFDataHubLocation',  'auxApp.dockRFDataHubLocation_exported',  ... % RFDATAHUB
+                                  'auxApp.dockReportLib',          'auxApp.dockReportLib_exported',          ...
                                   'auxApp.dockStationInfo',        'auxApp.dockStationInfo_exported',        ...
                                   'auxApp.dockTableFilter',        'auxApp.dockTableFilter_exported'}            % RFDATAHUB
                                 switch eventName
@@ -304,7 +343,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                     case {'onLocationListModeChanged', ...
                                           'onStationCoordinatesEdited', ...
                                           'onStationInfoChanged', ...
-                                          'onStationSelectionChanged'}
+                                          'onStationSelectionChanged', ...
+                                          'onReportLocationsChanged'}
                                         context = varargin{1};
                                         varargin = [{eventName}, varargin(2:end)];
                                         ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', varargin{:})
@@ -364,7 +404,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             arguments
                 app
                 callingApp
-                auxAppName char {mustBeMember(auxAppName, {'ReportLib', 'ListOfLocation', 'StationInfo', 'RFDataHubLocation', 'RFDataHubChannelReport', 'TableFilter'})}
+                auxAppName char {mustBeMember(auxAppName, {'ReportLib', 'ListOfLocation', 'StationInfo', 'ManualMeasurement', 'RFDataHubLocation', 'RFDataHubChannelReport', 'TableFilter'})}
                 context    char {mustBeMember(context, {'mainApp', 'FILE', 'MONITORINGPLAN', 'EXTERNALREQUEST', 'RFDATAHUB', 'CONFIG'})}
             end
 
@@ -385,12 +425,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     'VariableTypes', {'string', 'double', 'double', 'logical'}, ...
                     'VariableNames', {'AuxAppName', 'Width', 'Height', 'IsFluid'} ...
                 );
-                popupSpecifications(1, :) = {"ReportLib",      460, 608, false};
+                popupSpecifications(1, :) = {"ReportLib",     838, 608, false};
                 popupSpecifications(2, :) = {"ListOfLocation", 540, 464, false};
                 popupSpecifications(3, :) = {"StationInfo",    540, 464, false};
                 popupSpecifications(4, :) = {"RFDataHubLocation",      412, 156, false};
                 popupSpecifications(5, :) = {"RFDataHubChannelReport", 720, 560, true};
                 popupSpecifications(6, :) = {"TableFilter",            518, 376, false};
+                popupSpecifications(7, :) = {"ManualMeasurement",      968, 612, false};
 
                 auxAppNameIdx = find(popupSpecifications.AuxAppName == string(auxAppName), 1);
                 screenWidth = popupSpecifications.Width(auxAppNameIdx);
@@ -622,7 +663,14 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             end
 
             buildFileTree(app, indexes)
+            refreshProjectAnalysis(app, updateType)
+        end
 
+        %-----------------------------------------------------------------%
+        function refreshProjectAnalysis(app, updateType)
+            % Também é utilizado quando se altera apenas as medidas manuais do 
+            % projeto, as quais não constam em app.measData (e, portanto, na 
+            % árvore de arquivos), mas compõem a análise (model.Project).
             if ismember(updateType, {'onFileListAdded', 'onFileListRemoved'})
                 updateAnalysis(app.projectData, app.measData, app.General, updateType);
             end
@@ -722,6 +770,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             end
 
             treeText = sprintf('%s  - ⌛%s  -  📐%s%s', treeNodePreffix, string(taskEnd-taskBegin), sprintf('[%.1f - %.1f] V/m', currentMeasData.FieldValueLimits(:)), mergeStatusIcon);
+
             treeNode = uitreenode(treeNodeParent, 'Text', treeText, ...
                                                   'NodeData', index, ...
                                                   'ContextMenu', app.ContextMenu);
@@ -854,7 +903,8 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
             createEFiscalizaObject(app, credentials)
             try
-                reportLibConnection.Controller.Run(app, callingApp, context, app.measData(indexes))
+                allEMFieldObj = getFullEMFieldData(app.projectData, app.measData);
+                reportLibConnection.Controller.Run(app, callingApp, context, allEMFieldObj(indexes))
                 if app == callingApp
                     updateToolbar(app)
                 else
@@ -1011,12 +1061,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     app.progressDialog.Visible = 'hidden';
                     return
                 end
-    
+
                 msgQuestion = '';
                 if checkIfUpdateNeeded(app.projectData, app.measData)
                     msgQuestion = sprintf([ ...
                         'O projeto "%s" foi modificado (nome, arquivo de saída, '      ...
-                        'lista de arquivos de entrada ou anotações das estações). '    ...
+                        'lista de arquivos de entrada, anotações das estações ou '     ...
+                        'medidas manuais). '                                           ...
                         'Caso o aplicativo seja encerrado agora, todas as alterações ' ...
                         'serão descartadas.\n\nDeseja realmente fechar o aplicativo?'  ...
                         ], app.projectData.name);
@@ -1283,7 +1334,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.AutoResizeChildren = 'off';
-            app.UIFigure.Color = [0.96078431372549 0.96078431372549 0.96078431372549];
             app.UIFigure.Position = [100 100 1244 660];
             app.UIFigure.Name = 'monitorRNI';
             app.UIFigure.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'icon_48.png');
@@ -1295,7 +1345,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.GridLayout.RowHeight = {54, '1x'};
             app.GridLayout.RowSpacing = 0;
             app.GridLayout.Padding = [0 0 0 0];
-            app.GridLayout.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
 
             % Create TabGroup
             app.TabGroup = uitabgroup(app.GridLayout);
@@ -1326,7 +1375,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.file_toolGrid.Padding = [10 5 10 5];
             app.file_toolGrid.Layout.Row = 5;
             app.file_toolGrid.Layout.Column = [1 7];
-            app.file_toolGrid.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
 
             % Create tool_ReadFiles
             app.tool_ReadFiles = uiimage(app.file_toolGrid);
@@ -1364,7 +1412,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.SubTab1.AutoResizeChildren = 'off';
             app.SubTab1.Title = 'ARQUIVOS';
             app.SubTab1.BackgroundColor = 'none';
-            app.SubTab1.ForegroundColor = [0.129411764705882 0.129411764705882 0.129411764705882];
 
             % Create SubGrid1
             app.SubGrid1 = uigridlayout(app.SubTab1);
@@ -1406,7 +1453,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.FileTree.Multiselect = 'on';
             app.FileTree.SelectionChangedFcn = createCallbackFcn(app, @onTreeSelectionChanged, true);
             app.FileTree.FontSize = 11;
-            app.FileTree.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.FileTree.Layout.Row = 3;
             app.FileTree.Layout.Column = [2 3];
 

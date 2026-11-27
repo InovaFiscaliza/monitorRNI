@@ -33,10 +33,15 @@ classdef (Abstract) ProjectBase
 
             contextList = fieldnames(prjModules);
             annotationTable = [];
+            manualMeasurementTable = [];
 
             for ii = 1:numel(contextList)
                 context = contextList{ii};
                 annotationTable = [annotationTable; prjModules.(context).annotationTable];
+
+                if isfield(prjModules.(context), 'manualMeasurement') && ~isempty(prjModules.(context).manualMeasurement)
+                    manualMeasurementTable = [manualMeasurementTable; prjModules.(context).manualMeasurement];
+                end
             end
 
             if ~isempty(annotationTable)
@@ -44,6 +49,45 @@ classdef (Abstract) ProjectBase
             end
 
             hash = Hash.sha1(sprintf('%s - %s - %s - %s - %s - %s', prjName, prjFile, strjoin(hashList, ' - '), jsonencode(annotationTable), jsonencode(prjIssueDetails), jsonencode(prjEntityDetails)));
+
+            % As medidas manuais só compõem o hash quando existem, preservando 
+            % o hash de projetos gerados antes da sua introdução.
+            if ~isempty(manualMeasurementTable)
+                hash = Hash.sha1(sprintf('%s - %s', hash, jsonencode(manualMeasurementTable)));
+            end
+        end
+
+        %-----------------------------------------------------------------%
+        % Anotações das estações relacionadas às localidades informadas.
+        %-----------------------------------------------------------------%
+        function annotationTable = filterAnnotation(annotationTable, stationTable, locations)
+            if isempty(annotationTable)
+                return
+            end
+
+            validHashes = {};
+            if ~isempty(stationTable)
+                validHashes = stationTable.Hash(ismember(stationTable.Location, locations));
+            end
+
+            annotationTable = annotationTable(ismember(annotationTable.Hash, validHashes), :);
+        end
+
+        %-----------------------------------------------------------------%
+        % Medidas manuais relacionadas às localidades informadas, identificadas 
+        % a partir da estação ("Station") na tabela de estações do PM-RNI.
+        %-----------------------------------------------------------------%
+        function manualTable = filterManualMeasurement(manualTable, stationTable, locations)
+            if isempty(manualTable)
+                return
+            end
+
+            validStations = [];
+            if ~isempty(stationTable)
+                validStations = unique(double(stationTable.("Estação")(ismember(stationTable.Location, locations))));
+            end
+
+            manualTable = manualTable(ismember(manualTable.Station, validStations), :);
         end
 
         %-----------------------------------------------------------------%
@@ -77,7 +121,7 @@ classdef (Abstract) ProjectBase
         %-----------------------------------------------------------------%
         function varargout = initializeCustomTable(tableId, varargin)
             arguments
-                tableId {mustBeMember(tableId, {'STATIONS', 'POINTS', 'ANNOTATION'})}
+                tableId {mustBeMember(tableId, {'STATIONS', 'POINTS', 'ANNOTATION', 'MANUALMEASUREMENT'})}
             end
 
             arguments (Repeating)
@@ -183,6 +227,19 @@ classdef (Abstract) ProjectBase
                         'VariableNames', {'Hash', 'Latitude', 'Longitude', 'Justificativa', 'Observações'} ...
                     );
                     varargout = {annotationTable};
+
+                case 'MANUALMEASUREMENT'
+                    % Uma linha por medida inserida manualmente (auxApp.dockManualMeasurement),
+                    % acompanhada da identificação da estação e do sensor. Os demais dados da
+                    % estação (coordenadas, município etc) são consultados na tabela de estações
+                    % por meio do campo "Station".
+                    manualMeasurementTable = table( ...
+                        'Size', [0, 12], ...
+                        'VariableTypes', {'double', 'cell', 'cell', 'cell', 'cell', 'cell', 'cell', 'datetime', 'double', 'double', 'double', 'double'}, ...
+                        'VariableNames', {'Station', 'Service', 'Entity', 'UD', 'Sensor', 'SIADS', 'SerialNumber', 'Timestamp', 'Latitude', 'Longitude', 'Altitude', 'FieldValue'} ...
+                    );
+                    manualMeasurementTable.Timestamp.Format = 'dd/MM/yyyy HH:mm:ss';
+                    varargout = {manualMeasurementTable};
             end
         end
 
