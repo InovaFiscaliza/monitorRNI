@@ -1117,20 +1117,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             if app.General.operationMode.Simulation
                 app.General.operationMode.Simulation = false;
                 
-                [projectFolder, ...
-                 programDataFolder] = appEngine.util.Path(class.Constants.appName, app.rootFolder);
-                simulationFolders   = {programDataFolder, projectFolder};
+                filePath    = fullfile(app.rootFolder, 'resources', 'Simulation');
+                listOfFiles = dir(filePath);
+                fileName    = {listOfFiles.name};
+                fileName    = fileName(endsWith(lower(fileName), '.txt'));
 
-                for ii = 1:numel(simulationFolders)
-                    filePath    = fullfile(simulationFolders{ii}, 'Simulation');    
-                    listOfFiles = dir(filePath);
-                    fileName    = {listOfFiles.name};
-                    fileName    = fileName(endsWith(lower(fileName), '.txt'));
-                    
-                    if ~isempty(fileName)
-                        fileFullName = fullfile(filePath, fileName);
-                        break
-                    end
+                if ~isempty(fileName)
+                    fileFullName = fullfile(filePath, fileName);
                 end
 
                 if isempty(fileFullName)
