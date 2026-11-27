@@ -234,6 +234,11 @@ classdef Project < model.ProjectCommon
                             obj.modules.(context).uploadedFiles = [prjData.variables.modules.(context).uploadedFiles, obj.modules.(context).uploadedFiles];
                             [~, uniqueUploadedFilesIndexes] = unique({obj.modules.(context).uploadedFiles.hash});
                             obj.modules.(context).uploadedFiles = obj.modules.(context).uploadedFiles(uniqueUploadedFilesIndexes);
+
+                            if isfield(prjData.variables.modules.(context), 'pointsTable_I')
+                                obj.modules.(context).pointsTable_I = prjData.variables.modules.(context).pointsTable_I;
+                                obj.modules.(context).pointsTable = obj.modules.(context).pointsTable_I;
+                            end
                         end
 
                         obj.issueDetails = [prjData.variables.issueDetails, obj.issueDetails];                        

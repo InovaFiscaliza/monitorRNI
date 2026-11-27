@@ -510,7 +510,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.Container);
-            app.GridLayout.ColumnWidth = {440, '1x', 22, 22, 22};
+            app.GridLayout.ColumnWidth = {339, 22, 22, 22};
             app.GridLayout.RowHeight = {40, 22, 140, 22, 66, 22, 226};
             app.GridLayout.ColumnSpacing = 5;
             app.GridLayout.RowSpacing = 5;
@@ -520,20 +520,18 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             % Create Title
             app.Title = uilabel(app.GridLayout);
             app.Title.VerticalAlignment = 'top';
-            app.Title.WordWrap = 'on';
             app.Title.FontSize = 15;
-            app.Title.FontColor = [0 0.4471 0.7412];
+            app.Title.FontColor = [0 0.1294 0.2392];
             app.Title.Layout.Row = 1;
-            app.Title.Layout.Column = [1 5];
+            app.Title.Layout.Column = [1 4];
             app.Title.Interpreter = 'html';
-            app.Title.Text = {'<b>Gerenciamento do projeto</b>'; '<font style="color: gray; font-size: 10px;">Salve e abra projetos, registre informações da atividade e configure o relatório</font>'};
+            app.Title.Text = {'<b>Gerenciamento do projeto</b>'; '<font style="font-size: 11px;">Salve e abra projetos, registre informações da atividade e configure o relatório</font>'};
 
             % Create prjLabel
             app.prjLabel = uilabel(app.GridLayout);
             app.prjLabel.VerticalAlignment = 'bottom';
             app.prjLabel.FontSize = 11;
-            app.prjLabel.FontWeight = 'bold';
-            app.prjLabel.FontColor = [0 0.451 0.7412];
+            app.prjLabel.FontColor = [0 0.1294 0.2392];
             app.prjLabel.Layout.Row = 2;
             app.prjLabel.Layout.Column = 1;
             app.prjLabel.Text = 'Projeto';
@@ -543,7 +541,8 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.prjOpenFileButton.ScaleMethod = 'none';
             app.prjOpenFileButton.ImageClickedFcn = createCallbackFcn(app, @onProjectLoad, true);
             app.prjOpenFileButton.Layout.Row = 2;
-            app.prjOpenFileButton.Layout.Column = 3;
+            app.prjOpenFileButton.Layout.Column = 2;
+            app.prjOpenFileButton.VerticalAlignment = 'bottom';
             app.prjOpenFileButton.ImageSource = 'Import_16.png';
 
             % Create prjSaveButton
@@ -552,7 +551,8 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.prjSaveButton.ImageClickedFcn = createCallbackFcn(app, @onProjectSave, true);
             app.prjSaveButton.Enable = 'off';
             app.prjSaveButton.Layout.Row = 2;
-            app.prjSaveButton.Layout.Column = 4;
+            app.prjSaveButton.Layout.Column = 3;
+            app.prjSaveButton.VerticalAlignment = 'bottom';
             app.prjSaveButton.ImageSource = 'save.svg';
 
             % Create prjNewProjectButton
@@ -560,14 +560,15 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.prjNewProjectButton.ScaleMethod = 'none';
             app.prjNewProjectButton.ImageClickedFcn = createCallbackFcn(app, @onProjectRestart, true);
             app.prjNewProjectButton.Layout.Row = 2;
-            app.prjNewProjectButton.Layout.Column = 5;
+            app.prjNewProjectButton.Layout.Column = 4;
+            app.prjNewProjectButton.VerticalAlignment = 'bottom';
             app.prjNewProjectButton.ImageSource = 'new-project.svg';
 
             % Create prjPanel
             app.prjPanel = uipanel(app.GridLayout);
             app.prjPanel.AutoResizeChildren = 'off';
             app.prjPanel.Layout.Row = 3;
-            app.prjPanel.Layout.Column = [1 5];
+            app.prjPanel.Layout.Column = [1 4];
 
             % Create prjGrid
             app.prjGrid = uigridlayout(app.prjPanel);
@@ -638,8 +639,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.eFiscalizaLabel = uilabel(app.GridLayout);
             app.eFiscalizaLabel.VerticalAlignment = 'bottom';
             app.eFiscalizaLabel.FontSize = 11;
-            app.eFiscalizaLabel.FontWeight = 'bold';
-            app.eFiscalizaLabel.FontColor = [0 0.451 0.7412];
+            app.eFiscalizaLabel.FontColor = [0 0.1294 0.2392];
             app.eFiscalizaLabel.Layout.Row = 4;
             app.eFiscalizaLabel.Layout.Column = 1;
             app.eFiscalizaLabel.Text = 'Sistema de gestão à fiscalização - eFiscaliza';
@@ -723,8 +723,7 @@ classdef dockReportLib_exported < matlab.apps.AppBase
             app.reportLabel = uilabel(app.GridLayout);
             app.reportLabel.VerticalAlignment = 'bottom';
             app.reportLabel.FontSize = 11;
-            app.reportLabel.FontWeight = 'bold';
-            app.reportLabel.FontColor = [0 0.451 0.7412];
+            app.reportLabel.FontColor = [0 0.1294 0.2392];
             app.reportLabel.Layout.Row = 6;
             app.reportLabel.Layout.Column = 1;
             app.reportLabel.Text = 'Relatório';

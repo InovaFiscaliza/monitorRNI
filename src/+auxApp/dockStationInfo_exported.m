@@ -345,11 +345,11 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.Title = uilabel(app.GridLayout);
             app.Title.VerticalAlignment = 'top';
             app.Title.FontSize = 15;
-            app.Title.FontColor = [0 0.4471 0.7412];
+            app.Title.FontColor = [0 0.1294 0.2392];
             app.Title.Layout.Row = 1;
             app.Title.Layout.Column = 1;
             app.Title.Interpreter = 'html';
-            app.Title.Text = {'<b>Justificar ausência de medição</b>'; '<font style="color: gray; font-size: 10px;">Informe o motivo da ausência de medição e, se aplicável, o local de instalação da estação</font>'};
+            app.Title.Text = {'<b>Justificar ausência de medição</b>'; '<font style="font-size: 11px;">Informe o motivo da ausência de medição e, se aplicável, o local de instalação da estação</font>'};
 
             % Create PreviousSelection
             app.PreviousSelection = uiimage(app.GridLayout);
@@ -369,8 +369,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.SummaryLabel = uilabel(app.GridLayout);
             app.SummaryLabel.VerticalAlignment = 'bottom';
             app.SummaryLabel.FontSize = 11;
-            app.SummaryLabel.FontWeight = 'bold';
-            app.SummaryLabel.FontColor = [0 0.4471 0.7412];
+            app.SummaryLabel.FontColor = [0 0.1294 0.2392];
             app.SummaryLabel.Layout.Row = 2;
             app.SummaryLabel.Layout.Column = [1 3];
             app.SummaryLabel.Text = 'Informações da estação selecionada';
@@ -401,8 +400,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             app.EditableFieldsLabel = uilabel(app.GridLayout);
             app.EditableFieldsLabel.VerticalAlignment = 'bottom';
             app.EditableFieldsLabel.FontSize = 11;
-            app.EditableFieldsLabel.FontWeight = 'bold';
-            app.EditableFieldsLabel.FontColor = [0 0.4471 0.7412];
+            app.EditableFieldsLabel.FontColor = [0 0.1294 0.2392];
             app.EditableFieldsLabel.Layout.Row = 4;
             app.EditableFieldsLabel.Layout.Column = [1 3];
             app.EditableFieldsLabel.Text = 'Justificativa';
@@ -423,7 +421,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             % Create ReasonLabel
             app.ReasonLabel = uilabel(app.EditableFieldsGrid);
             app.ReasonLabel.VerticalAlignment = 'bottom';
-            app.ReasonLabel.FontSize = 10;
+            app.ReasonLabel.FontSize = 11;
             app.ReasonLabel.Layout.Row = 1;
             app.ReasonLabel.Layout.Column = [1 3];
             app.ReasonLabel.Text = 'Motivo:';
@@ -441,7 +439,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             % Create optNotesLabel
             app.optNotesLabel = uilabel(app.EditableFieldsGrid);
             app.optNotesLabel.VerticalAlignment = 'bottom';
-            app.optNotesLabel.FontSize = 10;
+            app.optNotesLabel.FontSize = 11;
             app.optNotesLabel.Layout.Row = 3;
             app.optNotesLabel.Layout.Column = 1;
             app.optNotesLabel.Text = 'Observações:';
@@ -466,7 +464,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             % Create LocationLabel
             app.LocationLabel = uilabel(app.LocationLabelGrid);
             app.LocationLabel.VerticalAlignment = 'bottom';
-            app.LocationLabel.FontSize = 10;
+            app.LocationLabel.FontSize = 11;
             app.LocationLabel.Layout.Row = 1;
             app.LocationLabel.Layout.Column = 1;
             app.LocationLabel.Text = 'Local de instalação:';
@@ -524,7 +522,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             % Create LatitudeLabel
             app.LatitudeLabel = uilabel(app.LocationPanelGrid);
             app.LatitudeLabel.VerticalAlignment = 'bottom';
-            app.LatitudeLabel.FontSize = 10;
+            app.LatitudeLabel.FontSize = 11;
             app.LatitudeLabel.Layout.Row = 1;
             app.LatitudeLabel.Layout.Column = 1;
             app.LatitudeLabel.Text = 'Latitude:';
@@ -542,7 +540,7 @@ classdef dockStationInfo_exported < matlab.apps.AppBase
             % Create LongitudeLabel
             app.LongitudeLabel = uilabel(app.LocationPanelGrid);
             app.LongitudeLabel.VerticalAlignment = 'bottom';
-            app.LongitudeLabel.FontSize = 10;
+            app.LongitudeLabel.FontSize = 11;
             app.LongitudeLabel.Layout.Row = 1;
             app.LongitudeLabel.Layout.Column = 2;
             app.LongitudeLabel.Text = 'Longitude:';

@@ -170,6 +170,11 @@ classdef winConfig_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function applyJSCustomizations(app, tabIndex)
+            arguments
+                app
+                tabIndex = 1
+            end
+
             if app.SubTabGroup.UserData.isTabInitialized(tabIndex)
                 return
             end
@@ -200,8 +205,9 @@ classdef winConfig_exported < matlab.apps.AppBase
                             struct('appName', appName, 'dataTag', app.tool_RFDataHubButton.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Atualiza RF.DataHub')), ...
                             struct('appName', appName, 'dataTag', app.tool_simulationMode.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Leitura arquivos de simulação')), ...
                             struct('appName', appName, 'dataTag', app.tool_openDevTools.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Abre DevTools')), ...
-                            struct('appName', appName, 'dataTag', app.DockUndockButton.UserData.id, 'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Reabre módulo em outra janela')), ...
-                            struct('appName', appName, 'dataTag', app.DockCloseButton.UserData.id, 'tooltip', struct('defaultPosition', 'bottom', 'textContent', 'Fecha módulo')) ...
+                            ...
+                            struct('appName', appName, 'dataTag', app.DockUndockButton.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Reabre módulo em outra janela')), ...
+                            struct('appName', appName, 'dataTag', app.DockCloseButton.UserData.id, 'tooltip', struct('defaultPosition', 'top', 'textContent', 'Fecha módulo')) ...
                         });
                     catch
                     end
@@ -1268,6 +1274,9 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create MonitoringPlanDistance
             app.MonitoringPlanDistance = uieditfield(app.configAnalysisGrid2, 'numeric');
+            app.MonitoringPlanDistance.Limits = [0 Inf];
+            app.MonitoringPlanDistance.RoundFractionalValues = 'on';
+            app.MonitoringPlanDistance.ValueDisplayFormat = '%d';
             app.MonitoringPlanDistance.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
             app.MonitoringPlanDistance.FontSize = 11;
             app.MonitoringPlanDistance.Layout.Row = 1;
@@ -1284,6 +1293,9 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create MonitoringPlanLevel
             app.MonitoringPlanLevel = uieditfield(app.configAnalysisGrid2, 'numeric');
+            app.MonitoringPlanLevel.Limits = [0 Inf];
+            app.MonitoringPlanLevel.RoundFractionalValues = 'on';
+            app.MonitoringPlanLevel.ValueDisplayFormat = '%d';
             app.MonitoringPlanLevel.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
             app.MonitoringPlanLevel.FontSize = 11;
             app.MonitoringPlanLevel.Layout.Row = 2;
@@ -1381,6 +1393,9 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create ExternalRequestDistance
             app.ExternalRequestDistance = uieditfield(app.configAnalysisGrid3, 'numeric');
+            app.ExternalRequestDistance.Limits = [0 Inf];
+            app.ExternalRequestDistance.RoundFractionalValues = 'on';
+            app.ExternalRequestDistance.ValueDisplayFormat = '%d';
             app.ExternalRequestDistance.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
             app.ExternalRequestDistance.FontSize = 11;
             app.ExternalRequestDistance.Layout.Row = 1;
@@ -1397,6 +1412,9 @@ classdef winConfig_exported < matlab.apps.AppBase
 
             % Create ExternalRequestLevel
             app.ExternalRequestLevel = uieditfield(app.configAnalysisGrid3, 'numeric');
+            app.ExternalRequestLevel.Limits = [0 Inf];
+            app.ExternalRequestLevel.RoundFractionalValues = 'on';
+            app.ExternalRequestLevel.ValueDisplayFormat = '%d';
             app.ExternalRequestLevel.ValueChangedFcn = createCallbackFcn(app, @Config_AnalysisParameterValueChanged, true);
             app.ExternalRequestLevel.FontSize = 11;
             app.ExternalRequestLevel.Layout.Row = 2;

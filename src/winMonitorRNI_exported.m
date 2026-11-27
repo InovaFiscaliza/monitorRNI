@@ -204,10 +204,6 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     case 'auxApp.winExternalRequest.TreePoints'
                         ipcMainMatlabCallAuxiliarApp(app, 'EXTERNALREQUEST', 'MATLAB', event.HTMLEventName)
 
-                    % AUXAPP.WINRFDATAHUB
-                    case 'auxApp.winRFDataHub.FilterTree'
-                        ipcMainMatlabCallAuxiliarApp(app, 'RFDATAHUB', 'MATLAB', event.HTMLEventName)
-
                     otherwise
                         error('winMonitorRNI:UnexpectedEvent', 'Unexpected event "%s"', event.HTMLEventName)
                 end
@@ -328,9 +324,22 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                                 end
 
                             case {'auxApp.dockListOfLocation', 'auxApp.dockListOfLocation_exported', ...
-                                  'auxApp.dockReportLib',      'auxApp.dockReportLib_exported',      ...
-                                  'auxApp.dockStationInfo',    'auxApp.dockStationInfo_exported'}
+                                  'auxApp.dockRFDataHubLocation',  'auxApp.dockRFDataHubLocation_exported',  ... % RFDATAHUB
+                                  'auxApp.dockReportLib',          'auxApp.dockReportLib_exported',          ...
+                                  'auxApp.dockStationInfo',        'auxApp.dockStationInfo_exported',        ...
+                                  'auxApp.dockTableFilter',        'auxApp.dockTableFilter_exported'}            % RFDATAHUB
                                 switch eventName
+                                    % auxApp.dockTableFilter
+                                    case 'onFilterRulesChanged'
+                                        context = varargin{1};
+                                        ipcMainMatlabCallAuxiliarApp(app, context, 'MATLAB', eventName)
+
+                                    % auxApp.dockRFDataHubLocation
+                                    case 'onRFDataHubLocationChanged'
+                                        stationType = varargin{2};
+                                        ipcMainMatlabCallAuxiliarApp(app, 'RFDATAHUB', 'MATLAB', eventName, stationType)
+
+                                    % auxApp.dockListOfLocation | auxApp.dockStationInfo
                                     case {'onLocationListModeChanged', ...
                                           'onStationCoordinatesEdited', ...
                                           'onStationInfoChanged', ...
@@ -395,7 +404,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             arguments
                 app
                 callingApp
-                auxAppName char {mustBeMember(auxAppName, {'ReportLib', 'ListOfLocation', 'StationInfo', 'ManualMeasurement'})}
+                auxAppName char {mustBeMember(auxAppName, {'ReportLib', 'ListOfLocation', 'StationInfo', 'ManualMeasurement', 'RFDataHubLocation', 'RFDataHubChannelReport', 'TableFilter'})}
                 context    char {mustBeMember(context, {'mainApp', 'FILE', 'MONITORINGPLAN', 'EXTERNALREQUEST', 'RFDATAHUB', 'CONFIG'})}
             end
 
@@ -419,7 +428,10 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                 popupSpecifications(1, :) = {"ReportLib",     838, 608, false};
                 popupSpecifications(2, :) = {"ListOfLocation", 540, 464, false};
                 popupSpecifications(3, :) = {"StationInfo",    540, 464, false};
-                popupSpecifications(4, :) = {"ManualMeasurement", 968, 612, false};
+                popupSpecifications(4, :) = {"RFDataHubLocation",      412, 156, false};
+                popupSpecifications(5, :) = {"RFDataHubChannelReport", 720, 560, true};
+                popupSpecifications(6, :) = {"TableFilter",            518, 376, false};
+                popupSpecifications(7, :) = {"ManualMeasurement",      968, 612, false};
 
                 auxAppNameIdx = find(popupSpecifications.AuxAppName == string(auxAppName), 1);
                 screenWidth = popupSpecifications.Width(auxAppNameIdx);
@@ -447,7 +459,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     'dockAppContainerDataTag', callingApp.popupContainer.UserData.id, ...
                     'sizing', sizing, ...
                     'context', context, ...
-                    'numCanvasElements', numel(findobj(app.popupCurrentApp.Container, 'Type', 'tiledlayout')) ...
+                    'numCanvasElements', ui.countCanvasElements(app.popupCurrentApp.Container) ...
                 ))
 
                 app.popupCurrentApp.GridLayout.UserData.auxDockAppName = auxDockAppName;
@@ -467,6 +479,11 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function applyJSCustomizations(app, tabIndex)
+            arguments
+                app
+                tabIndex = 1
+            end
+
             if app.SubTabGroup.UserData.isTabInitialized(tabIndex)
                 return
             end
@@ -599,13 +616,12 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
 
         %-----------------------------------------------------------------%
         function initializeUIComponents(app)
-            app.tabGroupController = ui.TabNavigator(app.NavBar, app.TabGroup, app.progressDialog, app.jsBackDoor);
-            addComponent(app.tabGroupController, "Built-in", "",                          app.Tab1Button, "AlwaysOn", struct('On', '', 'Off', ''), matlab.graphics.GraphicsPlaceholder, 1)
-            addComponent(app.tabGroupController, "External", "auxApp.winMonitoringPlan",  app.Tab2Button, "AlwaysOn", struct('On', '', 'Off', ''), app.Tab1Button,                      2)
-            addComponent(app.tabGroupController, "External", "auxApp.winExternalRequest", app.Tab3Button, "AlwaysOn", struct('On', '', 'Off', ''), app.Tab1Button,                      3)
-            addComponent(app.tabGroupController, "External", "auxApp.winRFDataHub",       app.Tab4Button, "AlwaysOn", struct('On', '', 'Off', ''), app.Tab1Button,                      4)
-            addComponent(app.tabGroupController, "External", "auxApp.winConfig",          app.Tab5Button, "AlwaysOn", struct('On', '', 'Off', ''), app.Tab1Button,                      5)
-            app.tabGroupController.inlineSVG = true;
+            app.tabGroupController = ui.TabNavigator(app);
+            addComponent(app.tabGroupController, "Built-in", "",                          app.Tab1Button, "AlwaysOn", matlab.graphics.GraphicsPlaceholder, 1)
+            addComponent(app.tabGroupController, "External", "auxApp.winMonitoringPlan",  app.Tab2Button, "AlwaysOn", app.Tab1Button,                      2)
+            addComponent(app.tabGroupController, "External", "auxApp.winExternalRequest", app.Tab3Button, "AlwaysOn", app.Tab1Button,                      3)
+            addComponent(app.tabGroupController, "External", "auxApp.winRFDataHub",       app.Tab4Button, "AlwaysOn", app.Tab1Button,                      4)
+            addComponent(app.tabGroupController, "External", "auxApp.winConfig",          app.Tab5Button, "AlwaysOn", app.Tab1Button,                      5)
 
             addStyle(app.FileTree, uistyle('Interpreter', 'html'))
         end
@@ -813,7 +829,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
                     loginMode = 'manual';
                 end
 
-                app.eFiscalizaObj = ws.eFiscaliza(loginMode, credentials.login, credentials.password);
+                app.eFiscalizaObj = ws.eFiscaliza(loginMode, credentials.login, credentials.password, credentials);
             end
         end
 
@@ -1152,20 +1168,13 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             if app.General.operationMode.Simulation
                 app.General.operationMode.Simulation = false;
                 
-                [projectFolder, ...
-                 programDataFolder] = appEngine.util.Path(class.Constants.appName, app.rootFolder);
-                simulationFolders   = {programDataFolder, projectFolder};
+                filePath    = fullfile(app.rootFolder, 'resources', 'Simulation');
+                listOfFiles = dir(filePath);
+                fileName    = {listOfFiles.name};
+                fileName    = fileName(endsWith(lower(fileName), '.txt'));
 
-                for ii = 1:numel(simulationFolders)
-                    filePath    = fullfile(simulationFolders{ii}, 'Simulation');    
-                    listOfFiles = dir(filePath);
-                    fileName    = {listOfFiles.name};
-                    fileName    = fileName(endsWith(lower(fileName), '.txt'));
-                    
-                    if ~isempty(fileName)
-                        fileFullName = fullfile(filePath, fileName);
-                        break
-                    end
+                if ~isempty(fileName)
+                    fileFullName = fullfile(filePath, fileName);
                 end
 
                 if isempty(fileFullName)
@@ -1420,7 +1429,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.file_ModuleIntro.FontColor = [0.149 0.149 0.149];
             app.file_ModuleIntro.Layout.Row = 1;
             app.file_ModuleIntro.Layout.Column = [1 3];
-            app.file_ModuleIntro.Text = 'Este aplicativo permite a leitura de arquivos gerados em medições de campo elétrico no âmbito do PM-RNI.';
+            app.file_ModuleIntro.Text = 'Este aplicativo permite a leitura de arquivos gerados em medições de campo elétrico no âmbito do Plano de Monitoração de Radiação Não Ionizante (PM-RNI).';
 
             % Create file_FileSortMethod
             app.file_FileSortMethod = uidropdown(app.SubGrid1);
@@ -1526,7 +1535,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab2Button.ValueChangedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.Tab2Button.Tag = 'MONITORINGPLAN';
             app.Tab2Button.Tooltip = {'PM-RNI'};
-            app.Tab2Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'graph-line-24px-white.svg');
+            app.Tab2Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'route_white.svg');
             app.Tab2Button.Text = '';
             app.Tab2Button.BackgroundColor = [0.1294 0.2 0.2392];
             app.Tab2Button.FontSize = 11;
@@ -1538,7 +1547,7 @@ classdef winMonitorRNI_exported < matlab.apps.AppBase
             app.Tab3Button.ValueChangedFcn = createCallbackFcn(app, @onTabNavigatorButtonPushed, true);
             app.Tab3Button.Tag = 'EXTERNALREQUEST';
             app.Tab3Button.Tooltip = {'Demanda externa'};
-            app.Tab3Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'report-24px-2hite.svg');
+            app.Tab3Button.Icon = fullfile(pathToMLAPP, 'resources', 'Icons', 'report-24px-white.svg');
             app.Tab3Button.Text = '';
             app.Tab3Button.BackgroundColor = [0.1294 0.2 0.2392];
             app.Tab3Button.FontSize = 11;
